@@ -21,7 +21,4 @@ class ResolveBee(Bee):
         return self._bee.implements(cls)
 
     def __getattr__(self, attr):
-        if attr.startswith("_"):
-            return object.__getattribute__(self, attr)
-
         return getattr(self._bee, attr)
