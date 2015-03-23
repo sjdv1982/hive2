@@ -1,5 +1,6 @@
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from . import get_mode, manager
+from .context_factory import ContextFactory
+from . import manager
 from . import get_building_hive
 
 
@@ -23,17 +24,19 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
             return self
         
     def export(self):
-        #TODO: somehow log the redirection path
-        t = self._func
-        if isinstance(t, Exportable):
-            e = t.export()            
-            return self.__class__(e, bound=self._bound)
+        # TODO: somehow log the redirection path
+        func = self._func
+
+        if isinstance(func, Exportable):
+            exported = func.export()
+            return self.__class__(exported, bound=self._bound)
 
         else:
             return self
     
     def _hive_connectable_target(self, source):
-        assert isinstance(source, Plugin) #TODO : nicer error message
+        # TODO : nicer error message
+        assert isinstance(source, Plugin)
 
     def _hive_connect_target(self, source):
         plugin = source.plugin()
@@ -43,7 +46,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
     def __init__(self, target):
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     @manager.getinstance
@@ -52,23 +55,17 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         if isinstance(target, Bee): 
             target = target.getinstance(hiveobject)
 
-        ret = HiveSocket(target)
-        return ret
+        return HiveSocket(target)
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         target = self._target
         if isinstance(target, Exportable):
-            e = target.export()
-            return self.__class__(e)
+            exported = target.export()
+            return self.__class__(exported)
 
         else:
             return self
 
 
-def socket(func):
-    if get_mode() == "immediate":
-        return HiveSocket(func)
-
-    else:
-        return HiveSocketBee(func)
+socket = ContextFactory("hive.socket", immediate_cls=HiveSocket, deferred_cls=HiveSocketBee)
