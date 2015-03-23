@@ -1,12 +1,11 @@
 from ..mixins import Bee, Exportable
-from ..hive import HiveObject
 
 
 class HiveInternals(object):
 
-    def __init__(self, hivecls):
-        assert hivecls is not None
-        self._hivecls = hivecls
+    def __init__(self, hive_cls):
+        assert hive_cls is not None
+        self._hive_cls = hive_cls
         self._attrs = []
 
     def __setattr__(self, name, value):
@@ -25,17 +24,17 @@ class HiveInternals(object):
         if not isinstance(value, Bee):
             raise TypeError("HiveInternals (i) attribute '%s' must be a Bee, not '%s'" % (name,    value.__class__))
 
-        if isinstance(value, Exportable) and not isinstance(value, HiveObject):
+        if isinstance(value, Exportable) and not value.allowed_internal:
             raise TypeError("HiveInternals (i) attribute '%s' must not be Exportable; Exportables must be added to ex"
                             % name)
 
         if value._hive_cls is None:
             raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), but the Bee was not built by any hive" % (name, self._hivecls.__name__))
+                                 " classes), but the Bee was not built by any hive" % (name, self._hive_cls.__name__))
 
-        if not issubclass(value._hive_cls, self._hivecls):
+        if not issubclass(value._hive_cls, self._hive_cls):
             raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), not '%s'" % (name, self._hivecls.__name__, value._hive_cls.__name__))
+                                 " classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
 
         if name not in self._attrs:
             self._attrs.append(name)

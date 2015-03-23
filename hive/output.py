@@ -7,24 +7,24 @@ from . import manager
 from .antenna import compare_types
 
 class OutputBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, datatype, bound=False, runhive=None):
+    def __init__(self, target, datatype, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.datatype = datatype
         self._bound = bound
-        self._runhive = runhive
+        self._run_hive = run_hive
         self._trig = Pusher(self)
         self._pretrig = Pusher(self)                
                 
     @manager.bind
-    def bind(self, runhive):
-        self._runhive = runhive
+    def bind(self, run_hive):
+        self._run_hive = run_hive
         if self._bound: return self
         target = self.target
         if isinstance(target, Bindable):
-            target = target.bind(runhive)
-        ret = self.__class__(target, self.datatype, bound=True, runhive=runhive)
+            target = target.bind(run_hive)
+        ret = self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
         return ret        
 
     def _hive_trigger_source(self, targetfunc):
@@ -38,7 +38,7 @@ class PullOutput(OutputBase):
         # TODO: exception handling hooks
         self._pretrig.push()
         if self._stateful:
-            value = self.target._hive_stateful_getter(self._runhive)
+            value = self.target._hive_stateful_getter(self._run_hive)
         else:
             value = self.target()
         self._trig.push()
@@ -52,14 +52,14 @@ class PullOutput(OutputBase):
     
 class PushOutput(OutputBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
-    def __init__(self, target, datatype, bound=False, runhive=None):
-        OutputBase.__init__(self, target, datatype, bound, runhive)
+    def __init__(self, target, datatype, bound=False, run_hive=None):
+        OutputBase.__init__(self, target, datatype, bound, run_hive)
         self._targets = []
     def push(self):
         # TODO: exception handling hooks
         self._pretrig.push()
         if self._stateful:
-            value = self.target._hive_stateful_getter(self._runhive)        
+            value = self.target._hive_stateful_getter(self._run_hive)
         else:
             value = self.target()
         for target in self._targets:

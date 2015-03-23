@@ -1,14 +1,21 @@
-import sys, os
-currdir = os.path.split(os.path.abspath(__file__))[0]
-sys.path.append(currdir + "/" + "..")
+from __future__ import print_function
+
+import sys
+import os
+
+current_directory = os.path.split(os.path.abspath(__file__))[0]
+sys.path.append(current_directory + "/" + "..")
+
 import hive as h
-import traceback
+
 
 def ping():
-  print "PING"
+    print("PING")
+
 
 def pong():
-  print "PONG"
+    print("PONG")
+
 
 #hping is a function; when called, it calls ping and then send a trigger
 hping = h.triggerfunc(ping)
@@ -21,106 +28,117 @@ hpang = h.triggerfunc()
 #hpang will send its triggers to hpong
 h.trigger(hpang, hpong)
 
-print 1
+print(1)
 hping() # => PING PONG
-print 2
+
+print(2)
 hpang() # => PONG
 
+
 class dog(object):
-  def __init__(self, name):
-    self._hive = h.get_runhive()
-    self.name = name
-    self.woofs = 0
-  def getname(self):
-    return self.name
-  def call(self):
-    print "CALL", self.name
-  def woof(self):
-    self.woofs += 1
-    print "WOOF", self.name, self.woofs
-    self._hive.woofed()
-  
+
+    def __init__(self, name):
+        self._hive = h.get_run_hive()
+        self.name = name
+        self.woofs = 0
+
+    def getname(self):
+        return self.name
+
+    def call(self):
+        print("CALL", self.name)
+
+    def woof(self):
+        self.woofs += 1
+        print("WOOF", self.name, self.woofs)
+        self._hive.woofed()
+    
 def build_dog(cls, i, ex, args):
-  i.call = h.triggerfunc(cls.call)    
-  i.woof = h.triggerable(cls.woof)
-  #h.trigger(i.call, i.woof)
-  h.connect(i.call, i.woof)
-  i.bark = h.triggerfunc()
-  h.trigger(i.bark, i.woof)  
-  i.woofed = h.triggerfunc()  
-  
-  ex.getname = cls.getname
-  ex.woofs = h.property(cls, "woofs")
-  ex.woof = h.entry(i.woof)
-  ex.woofed = h.hook(i.woofed)
-  ex.bark = h.hook(i.bark)
-  ex.call = h.hook(i.call)
-  
+    i.call = h.triggerfunc(cls.call)        
+    i.woof = h.triggerable(cls.woof)
+    #h.trigger(i.call, i.woof)
+    h.connect(i.call, i.woof)
+    i.bark = h.triggerfunc()
+    h.trigger(i.bark, i.woof)    
+    i.woofed = h.triggerfunc()    
+    
+    ex.getname = cls.getname
+    ex.woofs = h.property(cls, "woofs")
+    ex.woof = h.entry(i.woof)
+    ex.woofed = h.hook(i.woofed)
+    ex.bark = h.hook(i.bark)
+    ex.call = h.hook(i.call)
+    
 
 dog = h.hive("dog", build_dog, dog)
 
 spot = dog("Spot")
 spike = dog("Spike")
 
-print 3
+print(3)
 spot.call() #=> CALL Spot WOOF Spot 1
-spot.call() #=> CALL Spot WOOF Spot 2        
-print "SPOT WOOFS", spot.woofs #=> SPOT WOOFS 2
-print 4
+spot.call() #=> CALL Spot WOOF Spot 2                
+print( "SPOT WOOFS", spot.woofs) #=> SPOT WOOFS 2
+print(4)
 spot.bark() #=> WOOF Spot 3
-print 5
+print(5)
 spike.call() #=> CALL Spike WOOF Spike 1
-spike.call() #=> CALL Spike WOOF Spike 2      
-print 6
+spike.call() #=> CALL Spike WOOF Spike 2            
+print(6)
 spike.bark() #=> WOOF Spike 3
 
-class house(object):
-  def dog_comes(self):
-    print "A dog comes"
-  def mail(self):
-    print "Mail arrives"
+
+class House(object):
+
+    def dog_comes(self):
+        print("A dog comes")
+
+    def mail(self):
+        print("Mail arrives")
+
 
 def build_house(cls, i, ex, args):
-  i.brutus = dog("Brutus")
-  i.fifi = dog("Fifi")
-  
-  i.dog_comes = h.triggerable(cls.dog_comes)
-  h.trigger(i.brutus.call, i.dog_comes)
-  
-  i.mail = h.triggerfunc(cls.mail)
-  h.trigger(i.mail, i.fifi.woof)
-  
-  ex.brutus = i.brutus
-  ex.fifi = i.fifi
-  ex.mail = h.hook(i.mail)
-  ex.dog_comes = h.entry(i.dog_comes)
+    i.brutus = dog("Brutus")
+    i.fifi = dog("Fifi")
+    
+    i.dog_comes = h.triggerable(cls.dog_comes)
+    h.trigger(i.brutus.call, i.dog_comes)
+    
+    i.mail = h.triggerfunc(cls.mail)
+    h.trigger(i.mail, i.fifi.woof)
+    
+    ex.brutus = i.brutus
+    ex.fifi = i.fifi
+    ex.mail = h.hook(i.mail)
+    ex.dog_comes = h.entry(i.dog_comes)
 
 
-house = h.hive("house", build_house, house)
+house = h.hive("House", build_house, House)
 
 h2 = house()
-print 7
+print(7)
 h2.mail() #=> Mail arrives; WOOF Fifi 1 
-print 8
+print(8)
 h2.brutus.call() #=> CALL Brutus WOOF Brutus 1; A dog comes 
-print 9
+print(9)
 h2.fifi.bark() #=> WOOF Fifi 2
-print "9a"
+print("9a")
 h2.dog_comes() #=> A dog comes
 
+
 def build_kennel(i, ex, args):
-  i.brutus = dog("Brutus")
-  i.fifi = dog("Fifi")
-  h.trigger(i.fifi.call, i.brutus.woof)
-  #h.trigger(i.fifi.call, i.brutus)
-  
+    i.brutus = dog("Brutus")
+    i.fifi = dog("Fifi")
+    h.trigger(i.fifi.call, i.brutus.woof)
+    #h.trigger(i.fifi.call, i.brutus)
+    
 #underscore (_) names for brutus and fifi, since they are not in ex
 
 kennel = h.hive("kennel", build_kennel)
 k = kennel()
 k2 = kennel()
 
-print 10
+print(10)
 k._fifi.call() #=> CALL Fifi; WOOF Fifi 1; WOOF Brutus 1
 
 h.connect(k._brutus.woofed, k._fifi.woof)
@@ -128,20 +146,18 @@ h.connect(k._brutus.woofed, k._fifi.woof)
 #or: h.trigger(k.brutus.woofed, k.fifi)
 ###or:
 #try:
-#  h.trigger(k.brutus, k.fifi) #TypeError: ambiguity between woofed and call
+#    h.trigger(k.brutus, k.fifi) #TypeError: ambiguity between woofed and call
 #except:
-#  traceback.print_exc()  
+#    traceback.print_exc()    
 
-print 11
+print(11)
 k._fifi.call() #=> CALL Fifi; WOOF Fifi 2; WOOF Brutus 2; WOOF Fifi 3
-print "FIFI WOOFS", k._fifi.woofs #FIFI WOOFS 3
+print("FIFI WOOFS", k._fifi.woofs) #FIFI WOOFS 3
 k._fifi.woofs = 10
-print "FIFI WOOFS", k._fifi.woofs #FIFI WOOFS 10
-print "K2 FIFI WOOFS", k2._fifi.woofs #FIFI WOOFS 0
-print 12
+print("FIFI WOOFS", k._fifi.woofs) #FIFI WOOFS 10
+print("K2 FIFI WOOFS", k2._fifi.woofs) #FIFI WOOFS 0
+print(12)
 k._brutus.call() #=> CALL Brutus; WOOF Brutus 3; WOOF Fifi 11
-print 13
+print(13)
 k2._brutus.call() #=> CALL Brutus; WOOF Brutus 1
-
-  
-print "END"  
+print( "END")

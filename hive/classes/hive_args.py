@@ -1,13 +1,14 @@
 class HiveArgument(object):
-    def __init__(self, name, hiveargs):
-        self._hiveargs = hiveargs
+    def __init__(self, name, hive_args):
+        self._hive_args = hive_args
         self.name = name
 
 
 class HiveArgs(object):
-    def __init__(self, hivecls):
+
+    def __init__(self, hive_cls):
         self._args = {}
-        self._hivecls = hivecls
+        self._hive_cls = hive_cls
 
     def __setattr__(self, name, value):
         if name == "parent":

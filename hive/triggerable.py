@@ -19,14 +19,14 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         self._func()
         
     @manager.bind
-    def bind(self, runhive):
+    def bind(self, run_hive):
         if self._bound:
             return self
 
         func = self._func
 
         if isinstance(func, Bindable):
-            func = func.bind(runhive)
+            func = func.bind(run_hive)
 
         return self.__class__(func, bound=True)
 

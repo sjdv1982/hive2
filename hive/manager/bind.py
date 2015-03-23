@@ -3,20 +3,20 @@ from .getinstance import partialmethod
 import functools
 
 
-_runhives = WeakKeyDictionary()
+_run_hives = WeakKeyDictionary()
 _buildclassobjects = WeakKeyDictionary()
 
 
-def register_runhive(runhive):
-    assert runhive not in _runhives, runhive
-    _runhives[runhive] = {}
+def register_run_hive(run_hive):
+    assert run_hive not in _run_hives, run_hive
+    _run_hives[run_hive] = {}
 
 
-def bind_manager(self, func, runhive):
-    assert runhive in _runhives, runhive
-    if self not in _runhives[runhive]:
-        _runhives[runhive][self] = func(self, runhive)
-    return _runhives[runhive][self]
+def bind_manager(self, func, run_hive):
+    assert run_hive in _run_hives, run_hive
+    if self not in _run_hives[run_hive]:
+        _run_hives[run_hive][self] = func(self, run_hive)
+    return _run_hives[run_hive][self]
 
 
 def bind(bindfunc):

@@ -11,5 +11,5 @@ class Pusher(object):
 
     def push(self, *args, **kwargs):
         for tname, tfunc in self._targets: 
-            #TODO: exception handling
+            # TODO: exception handling
             tfunc(*args, **kwargs)

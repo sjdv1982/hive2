@@ -12,7 +12,7 @@ class commandlineclass(object):
 
     def __init__(self):
 
-        self._hive = h.get_runhive()
+        self._hive = h.get_run_hive()
 
         self._commands = []
 

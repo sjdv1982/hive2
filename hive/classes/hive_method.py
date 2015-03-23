@@ -7,16 +7,16 @@ import functools
 class Method(Bindable, Callable, Exportable):
 
     def __init__(self, func): 
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         # TODO support py3 here
         assert hasattr(func, "im_class"), func #must be a method
         self._func = func
 
     @manager.bind
-    def bind(self, runhive):
+    def bind(self, run_hive):
         cls = self._func.im_class
-        assert id(cls) in runhive._hive_buildclass_instances, cls
-        instance = runhive._hive_buildclass_instances[id(cls)]
+        assert id(cls) in run_hive._hive_buildclass_instances, cls
+        instance = run_hive._hive_buildclass_instances[id(cls)]
         return functools.partial(self._func, instance)
 
     def export(self):

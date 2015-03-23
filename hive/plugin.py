@@ -32,12 +32,12 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
             return self
         
     @manager.bind
-    def bind(self, runhive):
+    def bind(self, run_hive):
         if self._bound: 
             return self
 
         if isinstance(self._func, Bindable):
-            func = self._func.bind(runhive)
+            func = self._func.bind(run_hive)
             return self.__class__(func, bound=True)
 
         else:

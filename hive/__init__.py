@@ -19,23 +19,23 @@ def set_building_hive(building_hive):
     _building_hive = building_hive
 
 
-_runhive = None
-def get_runhive():
-    return _runhive
+_run_hive = None
+def get_run_hive():
+    return _run_hive
 
-def set_runhive(runhive):
-    global _runhive    
-    assert runhive is None or isinstance(runhive, RunHive), runhive
-    _runhive = runhive
+def set_run_hive(run_hive):
+    global _run_hive
+    assert run_hive is None or isinstance(run_hive, RunHive), run_hive
+    _run_hive = run_hive
 
-from .hive import hive, Hive, runhive as RunHive
+from .hive import hive, Hive, RunHive
 
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
-#from .modifier import modifier # TODO (akin to triggerable, but receives runhive as self)
+#from .modifier import modifier # TODO (akin to triggerable, but receives run_hive as self)
 from .property import property
-#from .buffer import buffer # TODO (akin to property, but is stored on the runhive)
+#from .buffer import buffer # TODO (akin to property, but is stored on the run_hive)
 from .ppin import pushin, pullin
 from .ppout import pushout, pullout
 

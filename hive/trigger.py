@@ -21,14 +21,14 @@ class Trigger(Bindable):
         self.pretrigger = pretrigger
 
     @manager.bind
-    def bind(self, runhive):
+    def bind(self, run_hive):
         source = self.source
         if isinstance(source, Bindable):
-            source = source.bind(runhive)
+            source = source.bind(run_hive)
 
         target = self.target
         if isinstance(target, Bindable):
-            target = target.bind(runhive)
+            target = target.bind(run_hive)
 
         return build_trigger(source, target, self.pretrigger)    
 

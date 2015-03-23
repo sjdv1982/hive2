@@ -23,14 +23,14 @@ class Connection(Bindable):
         self.target = target
 
     @manager.bind
-    def bind(self, runhive):
+    def bind(self, run_hive):
         source = self.source
         if isinstance(source, Bindable):
-            source = source.bind(runhive)
+            source = source.bind(run_hive)
 
         target = self.target
         if isinstance(target, Bindable):
-            target = target.bind(runhive)
+            target = target.bind(run_hive)
 
         return build_connection(source, target)    
 
@@ -41,21 +41,21 @@ class ConnectionBee(HiveBee):
         HiveBee.__init__(self, None, source, target)
 
     @manager.getinstance
-    def getinstance(self, hiveobject):
+    def getinstance(self, hive_object):
         source, target = self.args
         if isinstance(source, HiveObject):
             #source = source.get_trigger_source()
             raise NotImplementedError
 
         if isinstance(source, Bee):
-            source = source.getinstance(hiveobject)
+            source = source.getinstance(hive_object)
 
         if isinstance(target, HiveObject):
             #target = target.get_trigger_target()            
             raise NotImplementedError
 
         if isinstance(target, Bee):    
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         if get_mode() == "immediate":            
             return build_connection(source, target)

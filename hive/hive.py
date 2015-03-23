@@ -1,6 +1,6 @@
 from .mixins import *
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
-from . import get_mode, set_mode, get_building_hive, set_building_hive, get_runhive, set_runhive
+from . import get_mode, set_mode, get_building_hive, set_building_hive, get_run_hive, set_run_hive
 from . import manager
 
 import inspect
@@ -49,7 +49,7 @@ class HiveMethodWrapper(object):
         raise AttributeError("HiveMethodWrapper of class '%s' is read-only" % self._cls.__name__)
 
 
-class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
@@ -59,10 +59,10 @@ class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         self._attrs = ["_drones"]
         self._drones = []
 
-        manager.register_runhive(self) 
+        manager.register_run_hive(self)
         
-        current_run_hive = get_runhive()
-        set_runhive(self)
+        current_run_hive = get_run_hive()
+        set_run_hive(self)
 
         try:
             for builder, bcls in builders:
@@ -76,13 +76,13 @@ class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
                     self._drones.append(buildclass_instance)
                     bcls.__init__(buildclass_instance, *args, **kwargs)                
         finally:
-            set_runhive(current_run_hive)
+            set_run_hive(current_run_hive)
             
         m = get_mode()
         bh = get_building_hive()        
         set_mode("build")
         set_building_hive(self._hive_object._hive_parent_class)
-        set_runhive(self)
+        set_run_hive(self)
 
         try:            
             bees = []
@@ -136,7 +136,7 @@ class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         finally:
             set_mode(m)
             set_building_hive(bh)
-            set_runhive(current_run_hive)
+            set_run_hive(current_run_hive)
 
     def _hive_trigger_source(self, target_func):
         attr = self._hive_object.search_trigger_source()        
@@ -204,7 +204,7 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         return self.instantiate()
     
     def instantiate(self):        
-        manager.register_hiveobject(self)            
+        manager.register_hive_object(self)
         return self._hive_run_class(self, self._hive_parent_class._builders)
     
     @classmethod
@@ -357,7 +357,7 @@ class Hive(object):
                 run_hive_class_dict[attr] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
 
         class_dict = {
-            "_hive_run_class": type("{}::runhive".format(cls.__name__), (runhive,), run_hive_class_dict),
+            "_hive_run_class": type("{}::run_hive".format(cls.__name__), (RunHive,), run_hive_class_dict),
             "_hive_parent_class": cls,
         }
 

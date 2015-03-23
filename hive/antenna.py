@@ -11,13 +11,13 @@ def compare_types(b1, b2):
                         raise TypeError((b1.datatype, b2.datatype)) # TODO: nice error message
 
 class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-        def __init__(self, target, datatype, bound=False, runhive=None):
+        def __init__(self, target, datatype, bound=False, run_hive=None):
                 assert isinstance(target, Stateful) or target.implements(Callable), target
                 self._stateful = isinstance(target, Stateful)
                 self.target = target
                 self.datatype = datatype
                 self._bound = bound
-                self._runhive = runhive
+                self._run_hive = run_hive
                 self._trig = Pusher(self)
                 self._pretrig = Pusher(self)                
                                 
@@ -27,13 +27,13 @@ class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 self._pretrig.add_target(targetfunc)
                                 
         @manager.bind
-        def bind(self, runhive):
-                self._runhive = runhive
+        def bind(self, run_hive):
+                self._run_hive = run_hive
                 if self._bound: return self
                 target = self.target
                 if isinstance(target, Bindable):
-                        target = target.bind(runhive)
-                ret = self.__class__(target, self.datatype, bound=True, runhive=runhive)
+                        target = target.bind(run_hive)
+                ret = self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
                 return ret                
 
 class PushAntenna(AntennaBase):
@@ -42,7 +42,7 @@ class PushAntenna(AntennaBase):
                 # TODO: exception handling hooks
                 self._pretrig.push()
                 if self._stateful:
-                        self.target._hive_stateful_setter(self._runhive, value)
+                        self.target._hive_stateful_setter(self._run_hive, value)
                 else:
                         self.target(value)
                 self._trig.push()
@@ -62,7 +62,7 @@ class PullAntenna(AntennaBase, TriggerTarget):
                 self._pretrig.push()
                 value = self._pull_callback()
                 if self._stateful:
-                        self.target._hive_stateful_setter(self._runhive, value)
+                        self.target._hive_stateful_setter(self._run_hive, value)
                 else:
                         self.target(value)                        
                 self._trig.push()                
