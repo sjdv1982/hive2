@@ -36,8 +36,8 @@ class Output(Bee):
     def pull(self): #only needs to be defined if mode is "pull"
         raise NotImplementedError 
 
-from .Stateful import Stateful
-from .ConnectSource import ConnectSourceBase, ConnectSource, ConnectSourceDerived
-from .ConnectTarget import ConnectTargetBase, ConnectTarget, ConnectTargetDerived
-from .TriggerSource import TriggerSource
-from .TriggerTarget import TriggerTarget
+from .stateful import Stateful
+from .connect_source import ConnectSourceBase, ConnectSource, ConnectSourceDerived
+from .connect_target import ConnectTargetBase, ConnectTarget, ConnectTargetDerived
+from .trigger_source import TriggerSource
+from .trigger_target import TriggerTarget
