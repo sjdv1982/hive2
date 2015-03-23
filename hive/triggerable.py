@@ -11,12 +11,12 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         self._func = func
         self._bound = bound
 
+    def __call__(self):
+        self.trigger()
+
     def trigger(self):
         #TODO: exception handling hooks
         self._func()
-
-    def __call__(self):
-        self.trigger()
         
     @manager.bind
     def bind(self, runhive):
@@ -52,14 +52,13 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
         if isinstance(func, Bee): 
             func = func.getinstance(hiveobject)
 
-        ret = Triggerable(func)
-        return ret
+        return Triggerable(func)
 
     def implements(self, cls):
-        if HiveBee.implements(self, cls):
+        if cls is Callable:
             return True
 
-        if cls == Callable:
+        if HiveBee.implements(self, cls):
             return True
 
         func, = self.args
