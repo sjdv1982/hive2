@@ -8,7 +8,7 @@ from . import manager
 def compare_types(b1, b2):
         for t1, t2 in zip(b1.datatype, b2.datatype):
                 if t1 != t2:
-                        raise TypeError((b1.datatype, b2.datatype)) #TODO: nice error message
+                        raise TypeError((b1.datatype, b2.datatype)) # TODO: nice error message
 
 class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         def __init__(self, target, datatype, bound=False, runhive=None):
@@ -39,7 +39,7 @@ class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 class PushAntenna(AntennaBase):
         mode = "push"
         def push(self, value):
-                #TODO: exception handling hooks
+                # TODO: exception handling hooks
                 self._pretrig.push()
                 if self._stateful:
                         self.target._hive_stateful_setter(self._runhive, value)
@@ -47,8 +47,8 @@ class PushAntenna(AntennaBase):
                         self.target(value)
                 self._trig.push()
         def _hive_connectable_target(self, source):
-                assert isinstance(source, Output) #TODO : nicer error message
-                assert source.mode == "push" #TODO : nicer error message
+                assert isinstance(source, Output) # TODO : nicer error message
+                assert source.mode == "push" # TODO : nicer error message
                 compare_types(source, self)
         def _hive_connect_target(self, source):
                 pass                
@@ -58,7 +58,7 @@ class PullAntenna(AntennaBase, TriggerTarget):
         mode = "pull"
         _pull_callback = None
         def pull(self):
-                #TODO: exception handling hooks
+                # TODO: exception handling hooks
                 self._pretrig.push()
                 value = self._pull_callback()
                 if self._stateful:
@@ -67,12 +67,12 @@ class PullAntenna(AntennaBase, TriggerTarget):
                         self.target(value)                        
                 self._trig.push()                
         def _hive_connectable_target(self, source):
-                assert isinstance(source, Output) #TODO : nicer error message
-                assert source.mode == "pull" #TODO : nicer error message
+                assert isinstance(source, Output) # TODO : nicer error message
+                assert source.mode == "pull" # TODO : nicer error message
                 compare_types(source, self)
         def _hive_connect_target(self, source):
                 if self._pull_callback is not None:
-                        raise TypeError("PullAntenna cannot accept more than one connection") #TODO: nicer error message, with names
+                        raise TypeError("PullAntenna cannot accept more than one connection") # TODO: nicer error message, with names
                 self._pull_callback = source.pull
         
         def _hive_trigger_target(self):
@@ -82,8 +82,8 @@ class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
         def __init__(self, mode, target, *datatype):
                 assert mode in ("push", "pull")
                 self.mode = mode
-                self.datatype = datatype #TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
-                assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) #TODO: nice error message
+                self.datatype = datatype # TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
+                assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
                 HiveBee.__init__(self, None, target)
         @manager.getinstance
         def getinstance(self, hiveobject):                
@@ -111,12 +111,12 @@ class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
                 return False
                 
 def antenna(mode, target, *datatype):
-        assert mode in ("push", "pull"), mode #TODO: nicer error message
-        assert isinstance(target, Bee), target #TODO: nicer error message        
+        assert mode in ("push", "pull"), mode # TODO: nicer error message
+        assert isinstance(target, Bee), target # TODO: nicer error message
         if get_mode() == "immediate":
                 if isinstance(target, Exportable):
                         target = target.export()                
-                assert isinstance(target, Stateful) or target.implements(Callable) #TODO: nicer error message
+                assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nicer error message
                 if mode == "push":
                         return PushAntenna(target, *datatype)                
                 else:
@@ -138,7 +138,7 @@ class HiveAntenna(Antenna, Exportable):
         self._target = target
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         target = self._target
 
         if isinstance(target, Exportable):
@@ -147,4 +147,4 @@ class HiveAntenna(Antenna, Exportable):
         return target
 
 
-triggerable = ContextFactory("hive.antenna", deferred_cls=HiveAntenna)
+antenna = ContextFactory("hive.antenna", deferred_cls=HiveAntenna)
