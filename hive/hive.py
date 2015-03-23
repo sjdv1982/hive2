@@ -265,7 +265,7 @@ class Hive(object):
     _hive_ex = None
     _hive_args = None    
     _hive_hive_kwargs = False
-    _hive_object_class = None
+    _hive_object_cls = None
 
     def __new__(cls, *args, **kwargs):        
         if not cls._hive_built:
@@ -361,7 +361,7 @@ class Hive(object):
             "_hive_parent_class": cls,
         }
 
-        cls._hive_object_class = type(cls.__name__+"{}::hiveobject".format(cls.__name__), (HiveObject,), class_dict)
+        cls._hive_object_cls = type(cls.__name__+"{}::hiveobject".format(cls.__name__), (HiveObject,), class_dict)
         cls._hive_built = True 
      
     @classmethod
