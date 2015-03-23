@@ -23,6 +23,7 @@ hping = h.triggerfunc(ping)
 hpong = h.triggerable(pong)
 #hping will send its triggers to hpong
 h.trigger(hping, hpong)
+
 #hpang is a function; when called, it sends a trigger
 hpang = h.triggerfunc()
 #hpang will send its triggers to hpong
@@ -35,15 +36,12 @@ print(2)
 hpang() # => PONG
 
 
-class dog(object):
+class Dog(object):
 
     def __init__(self, name):
         self._hive = h.get_run_hive()
         self.name = name
         self.woofs = 0
-
-    def getname(self):
-        return self.name
 
     def call(self):
         print("CALL", self.name)
@@ -52,7 +50,8 @@ class dog(object):
         self.woofs += 1
         print("WOOF", self.name, self.woofs)
         self._hive.woofed()
-    
+
+
 def build_dog(cls, i, ex, args):
     i.call = h.triggerfunc(cls.call)        
     i.woof = h.triggerable(cls.woof)
@@ -61,8 +60,7 @@ def build_dog(cls, i, ex, args):
     i.bark = h.triggerfunc()
     h.trigger(i.bark, i.woof)    
     i.woofed = h.triggerfunc()    
-    
-    ex.getname = cls.getname
+
     ex.woofs = h.property(cls, "woofs")
     ex.woof = h.entry(i.woof)
     ex.woofed = h.hook(i.woofed)
@@ -70,7 +68,7 @@ def build_dog(cls, i, ex, args):
     ex.call = h.hook(i.call)
     
 
-dog = h.hive("dog", build_dog, dog)
+dog = h.hive("dog", build_dog, Dog)
 
 spot = dog("Spot")
 spike = dog("Spike")
