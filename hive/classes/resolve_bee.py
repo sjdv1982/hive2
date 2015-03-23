@@ -1,17 +1,21 @@
 from ..mixins import Bee, Bindable
 
-class CrossBee(Bee):
+
+class ResolveBee(Bee):
+    """Wraps Bee instance to resolve appropriate reference at runtime"""
+
     def __init__(self, bee, ownhiveobject):
         self._bee = bee
         self._ownhiveobject = ownhiveobject
 
     def getinstance(self, hiveobject): 
-        rhive = self._ownhiveobject.getinstance(hiveobject)        
-        ret = self._bee.getinstance(rhive._hive_object)
-        if isinstance(ret, Bindable):
-            ret = ret.bind(rhive)
+        hive_instance = self._ownhiveobject.getinstance(hiveobject)
+        result = self._bee.getinstance(hive_instance._hive_object)
 
-        return ret
+        if isinstance(result, Bindable):
+            result = result.bind(hive_instance)
+
+        return result
 
     def implements(self, cls):
         return self._bee.implements(cls)
