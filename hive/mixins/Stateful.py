@@ -9,7 +9,7 @@ A Stateful object's getter/setter always accept a runhive object, which will be 
 """
 
 class Stateful(object):
-  def _hive_stateful_getter(self, runhive):
-    raise NotImplementedError
-  def _hive_stateful_setter(self, runhive, value):
-    raise NotImplementedError  
+    def _hive_stateful_getter(self, runhive):
+        raise NotImplementedError
+    def _hive_stateful_setter(self, runhive, value):
+        raise NotImplementedError    

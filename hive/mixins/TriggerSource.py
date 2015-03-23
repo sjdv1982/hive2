@@ -5,8 +5,12 @@ This method must return a callable or raise an informative HiveConnectError
 """
 
 from . import Connectable
+
+
 class TriggerSource(Connectable):
-  def _hive_trigger_source(self, targetfunc):
-    raise NotImplementedError
-  def _hive_pretrigger_source(self, targetfunc):
-    raise NotImplementedError
+
+    def _hive_trigger_source(self, targetfunc):
+        raise NotImplementedError
+
+    def _hive_pretrigger_source(self, targetfunc):
+        raise NotImplementedError

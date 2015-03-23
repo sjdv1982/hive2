@@ -5,7 +5,9 @@ This method must return a callable or raise an informative HiveConnectError
 """
 
 from . import Connectable
+
+
 class TriggerTarget(Connectable):
-  def _hive_trigger_target(self):
-    raise NotImplementedError
-    
+
+    def _hive_trigger_target(self):
+        raise NotImplementedError
