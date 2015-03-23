@@ -23,7 +23,7 @@ class Callable(Bee):
 
 
 class Exportable(Bee):
-    allowed_internal = False
+    export_only = True
 
     def export(self):
         raise NotImplementedError

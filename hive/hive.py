@@ -157,6 +157,8 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
     _hive_run_class = None
     _hive_bee_name = tuple()
 
+    export_only = False
+
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls)
         self._hive_cls = get_building_hive()

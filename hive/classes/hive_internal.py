@@ -24,7 +24,7 @@ class HiveInternals(object):
         if not isinstance(value, Bee):
             raise TypeError("HiveInternals (i) attribute '%s' must be a Bee, not '%s'" % (name,    value.__class__))
 
-        if isinstance(value, Exportable) and not value.allowed_internal:
+        if isinstance(value, Exportable) and value.export_only:
             raise TypeError("HiveInternals (i) attribute '%s' must not be Exportable; Exportables must be added to ex"
                             % name)
 
