@@ -1,6 +1,5 @@
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
-from .classes import HiveBee
-from . import get_mode
+from .context_factory import ContextFactory
 from . import manager
 from . import get_building_hive
 
@@ -23,10 +22,11 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         
     def export(self):
         #TODO: somehow log the redirection path
-        t = self._func
-        if isinstance(t, Exportable):
-            e = t.export()
-            return self.__class__(e, bound=self._bound)
+        func = self._func
+
+        if isinstance(func, Exportable):
+            exported = func.export()
+            return self.__class__(exported, bound=self._bound)
 
         else:
             return self
@@ -45,8 +45,9 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
+
     def __init__(self, target):
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     @manager.getinstance
@@ -56,24 +57,18 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         if isinstance(target, Bee):
             target = target.getinstance(hiveobject)
 
-        ret = HivePlugin(target)
-        return ret
+        return HivePlugin(target)
 
     def export(self):
         #TODO: somehow log the redirection path
         target = self._target
 
         if isinstance(target, Exportable):
-            e = target.export()
-            return self.__class__(e)
+            exported = target.export()
+            return self.__class__(exported)
 
         else:
             return self
 
 
-def plugin(func):
-    if get_mode() == "immediate":
-        return HivePlugin(func)
-
-    else:
-        return HivePluginBee(func)
+plugin = ContextFactory("hive.plugin", immediate_cls=HivePlugin, deferred_cls=HivePluginBee)

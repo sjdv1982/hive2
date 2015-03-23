@@ -159,7 +159,7 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
 
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls)
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         
         #TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
         

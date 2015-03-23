@@ -8,6 +8,9 @@ class ResolveBee(Bee):
         self._bee = bee
         self._ownhiveobject = ownhiveobject
 
+    def __getattr__(self, attr):
+        return getattr(self._bee, attr)
+
     def getinstance(self, hiveobject): 
         hive_instance = self._ownhiveobject.getinstance(hiveobject)
         result = self._bee.getinstance(hive_instance._hive_object)
@@ -19,6 +22,3 @@ class ResolveBee(Bee):
 
     def implements(self, cls):
         return self._bee.implements(cls)
-
-    def __getattr__(self, attr):
-        return getattr(self._bee, attr)

@@ -6,7 +6,7 @@ class Hook(Exportable, Bee):
 
     def __init__(self, target):
         assert isinstance(target, TriggerSource), target
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     def export(self):

@@ -134,17 +134,17 @@ class HiveAntenna(Antenna, Exportable):
 
     def __init__(self, target):
         assert isinstance(target, Antenna), target
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     def export(self):
         #TODO: somehow log the redirection path
-        t = self._target
+        target = self._target
 
-        if isinstance(t, Exportable):
-                t = t.export()
+        if isinstance(target, Exportable):
+            target = target.export()
 
-        return t
+        return target
 
 
 triggerable = ContextFactory("hive.antenna", deferred_cls=HiveAntenna)

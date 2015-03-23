@@ -111,7 +111,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         else:
             self.datatype = ()
 
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self.target = target
 
     @manager.getinstance

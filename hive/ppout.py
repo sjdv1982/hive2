@@ -117,22 +117,23 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         else:
             self.datatype = ()
 
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self.target = target
 
     @manager.getinstance
-    def getinstance(self, hiveobject):        
+    def getinstance(self, hive_object):
         target = self.target
+
         if isinstance(target, Bee): 
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         if self.mode == "push":    
-            ret = PushOut(target, self.datatype)
+            instance = PushOut(target, self.datatype)
 
         else:
-            ret = PullOut(target, self.datatype)
+            instance = PullOut(target, self.datatype)
 
-        return ret
+        return instance
 
     def implements(self, cls):
         if isinstance(self, cls):
@@ -154,7 +155,9 @@ class PullOutBee(PPOutBee):
 
 
 def pushout(target):
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) #TODO: nice error message
+    # TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+
     if get_mode() == "immediate":
         return PushOut(target)
 
@@ -163,7 +166,9 @@ def pushout(target):
 
 
 def pullout(target):
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) #TODO: nice error message
+    # TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+
     if get_mode() == "immediate":
         return PullOut(target)
 

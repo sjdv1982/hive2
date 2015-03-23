@@ -7,15 +7,16 @@ class Entry(Exportable, Bee):
 
     def __init__(self, target):
         assert isinstance(target, TriggerTarget), target
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     def export(self):
         #TODO: somehow log the redirection path
-        t = self._target
-        if isinstance(t, Exportable):
-            t = t.export()
-        return t    
+        target = self._target
+        if isinstance(target, Exportable):
+            target = target.export()
+
+        return target
 
 
 entry = ContextFactory("hive.entry", deferred_cls=Entry)

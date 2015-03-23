@@ -130,29 +130,25 @@ def output(mode, target, *datatype):
     else:
         return OutputBee(mode, target, *datatype)
 """
-from .mixins import Bee, Output, Exportable
-from . import get_mode, get_building_hive
+from .mixins import Output, Exportable
+from .context_factory import ContextFactory
+from . import get_building_hive
 
 
 class HiveOutput(Output, Exportable):
 
     def __init__(self, target):
         assert isinstance(target, Output), target
-        self._hivecls = get_building_hive()
+        self._hive_cls = get_building_hive()
         self._target = target
 
     def export(self):
         #TODO: somehow log the redirection path
-        t = self._target
-        if isinstance(t, Exportable):
-            t = t.export()
+        target = self._target
+        if isinstance(target, Exportable):
+            target = target.export()
 
-        return t    
+        return target
 
 
-def output(target):
-    if get_mode() == "immediate":
-        raise ValueError("hive.output cannot be used in immediate mode")
-
-    else:
-        return HiveOutput(target)
+output = ContextFactory("hive.output", immediate_cls=None, deferred_cls=HiveOutput)

@@ -39,28 +39,29 @@ class TriggerBee(HiveBee):
         HiveBee.__init__(self, None, source, target, pretrigger)
 
     @manager.getinstance
-    def getinstance(self, hiveobject):
-        source, target, pretrigger = self.args
+    def getinstance(self, hive_object):
+        source, target, pre_trigger = self.args
+
         if isinstance(source, HiveObject):
             source = source.get_trigger_source()
 
         if isinstance(source, Bee):
-            source = source.getinstance(hiveobject)
+            source = source.getinstance(hive_object)
 
         if isinstance(target, HiveObject):
             target = target.get_trigger_target()
 
         if isinstance(target, Bee):    
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         if get_mode() == "immediate":            
-            return build_trigger(source, target, pretrigger)
+            return build_trigger(source, target, pre_trigger)
 
         else:
-            return Trigger(source, target, pretrigger)
+            return Trigger(source, target, pre_trigger)
 
 
-def _trigger(source, target, pretrigger):
+def _trigger(source, target, pre_trigger):
     if isinstance(source, Bee):
         assert source.implements(TriggerSource), source
         assert target.implements(TriggerTarget), target
@@ -70,13 +71,13 @@ def _trigger(source, target, pretrigger):
         assert isinstance(target, TriggerTarget), target
 
     if get_mode() == "immediate":
-        build_trigger(source, target,pretrigger)
+        build_trigger(source, target,pre_trigger)
 
     else:
-        triggerbee = TriggerBee(source, target, pretrigger)        
-        manager.register_bee(triggerbee)
-        return triggerbee
+        trigger_bee = TriggerBee(source, target, pre_trigger)
+        manager.register_bee(trigger_bee)
+        return trigger_bee
 
 
-def trigger(source, target, pre=False):
-    return _trigger(source, target, pre)
+def trigger(source, target, pre_trigger=False):
+    return _trigger(source, target, pre_trigger)
