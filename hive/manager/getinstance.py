@@ -4,11 +4,12 @@ from functools import partial
 
 ###
 #snippet retrieved from https://gist.github.com/carymrobbins/8940382
-class partialmethod(partial):
+class partial_method(partial):
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
+
         return partial(self.func, instance, *(self.args or ()), **(self.keywords or {}))
 ###
 
@@ -29,6 +30,6 @@ def getinstance_manager(self, func, hive_object):
 
 
 def getinstance(getinstance_func):
-    func = partialmethod(getinstance_manager, getinstance_func)
+    func = partial_method(getinstance_manager, getinstance_func)
     functools.update_wrapper(func, getinstance_func)
     return func

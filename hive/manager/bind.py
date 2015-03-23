@@ -1,5 +1,5 @@
 from weakref import WeakKeyDictionary
-from .getinstance import partialmethod
+from .getinstance import partial_method
 import functools
 
 
@@ -20,6 +20,6 @@ def bind_manager(self, func, run_hive):
 
 
 def bind(bindfunc):
-    func = partialmethod(bind_manager, bindfunc)
+    func = partial_method(bind_manager, bindfunc)
     functools.update_wrapper(func, bindfunc)
     return func
