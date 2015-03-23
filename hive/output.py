@@ -35,7 +35,7 @@ class OutputBase(Output, ConnectSource, TriggerSource, Bindable):
 class PullOutput(OutputBase):
     mode = "pull"
     def pull(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._runhive)
@@ -44,8 +44,8 @@ class PullOutput(OutputBase):
         self._trig.push()
         return value
     def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna) #TODO : nicer error message
-        assert target.mode == "pull" #TODO : nicer error message
+        assert isinstance(target, Antenna) # TODO : nicer error message
+        assert target.mode == "pull" # TODO : nicer error message
         compare_types(self, target)
     def _hive_connect_source(self, target):
         pass        
@@ -56,7 +56,7 @@ class PushOutput(OutputBase, Socket, ConnectTarget, TriggerTarget):
         OutputBase.__init__(self, target, datatype, bound, runhive)
         self._targets = []
     def push(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._runhive)        
@@ -69,14 +69,14 @@ class PushOutput(OutputBase, Socket, ConnectTarget, TriggerTarget):
         return self.push
     
     def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna), target #TODO : nicer error message
-        assert source.mode == "push" #TODO : nicer error message    
+        assert isinstance(target, Antenna), target # TODO : nicer error message
+        assert source.mode == "push" # TODO : nicer error message
         compare_types(target, self)
     def _hive_connect_source(self, target):
         self._targets.append(target.push)
             
     def _hive_connectable_target(self, source):
-        assert isinstance(source, Plugin), source #TODO : nicer error message            
+        assert isinstance(source, Plugin), source # TODO : nicer error message
     def _hive_connect_target(self, source):
         self._targets.append(source.plugin)
             
@@ -88,8 +88,8 @@ class OutputBee(HiveBee, Output, ConnectSource, TriggerSource, Exportable):
     def __init__(self, mode, target, *datatype):
         assert mode in ("push", "pull")
         self.mode = mode
-        self.datatype = datatype #TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
-        assert isinstance(target, Stateful) or isinstance(target,Output) or target.implements(Callable) #TODO: nice error message
+        self.datatype = datatype # TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
+        assert isinstance(target, Stateful) or isinstance(target,Output) or target.implements(Callable) # TODO: nice error message
         HiveBee.__init__(self, None, target)
     @manager.getinstance
     def getinstance(self, hiveobject):        
@@ -117,12 +117,12 @@ class OutputBee(HiveBee, Output, ConnectSource, TriggerSource, Exportable):
         return False
         
 def output(mode, target, *datatype):
-    assert mode in ("push", "pull"), mode #TODO: nicer error message
-    assert isinstance(target, Bee), target #TODO: nicer error message    
+    assert mode in ("push", "pull"), mode # TODO: nicer error message
+    assert isinstance(target, Bee), target # TODO: nicer error message
     if get_mode() == "immediate":
         if isinstance(target, Exportable):
             target = target.export()        
-        assert isinstance(target, Stateful) or target.implements(Callable) #TODO: nicer error message
+        assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nicer error message
         if mode == "push":
             return PushOutput(target, *datatype)        
         else:
@@ -143,7 +143,7 @@ class HiveOutput(Output, Exportable):
         self._target = target
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         target = self._target
         if isinstance(target, Exportable):
             target = target.export()

@@ -362,8 +362,8 @@ class chesskeeper(object):
     self._ep = c._ep
     self.finished = c.finished
 
-  def trig_make_move(self): #TODO: remove
-    self.make_move(self.prop_move) #TODO: remove
+  def trig_make_move(self): # TODO: remove
+    self.make_move(self.prop_move) # TODO: remove
 """      
 from bee import *
 import libcontext
@@ -394,9 +394,9 @@ def build_chesskeeper(cls, i, ex, args):
   ex.format_move = cls.make_move
   
   
-  prop_move = h.property(cls, "prop_move", "str") #TODO: make buffer
+  prop_move = h.property(cls, "prop_move", "str") # TODO: make buffer
   i.make_move = h.pushin(prop_move)
-  i.trig_make_move = h.triggerable(cls.trig_make_move) #TODO: make modifier
+  i.trig_make_move = h.triggerable(cls.trig_make_move) # TODO: make modifier
   h.trigger(i.make_move, i.trig_make_move)
    
   ex.make_move = h.antenna(i.make_move)

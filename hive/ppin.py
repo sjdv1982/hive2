@@ -7,7 +7,7 @@ from . import manager
 def compare_types(b1, b2):
     for t1, t2 in zip(b1.datatype, b2.datatype):
         if t1 != t2:
-            raise TypeError((b1.datatype, b2.datatype)) #TODO: nice error message
+            raise TypeError((b1.datatype, b2.datatype)) # TODO: nice error message
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
@@ -45,7 +45,7 @@ class PushIn(PPInBase):
     mode = "push"
 
     def push(self, value):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
 
         if self._stateful:
@@ -57,8 +57,8 @@ class PushIn(PPInBase):
         self._trig.push()
 
     def _hive_connectable_target(self, source):
-        assert isinstance(source, Output) #TODO : nicer error message
-        assert source.mode == "push" #TODO : nicer error message
+        assert isinstance(source, Output) # TODO : nicer error message
+        assert source.mode == "push" # TODO : nicer error message
         compare_types(source, self)
 
     def _hive_connect_target(self, source):
@@ -73,7 +73,7 @@ class PullIn(PPInBase, TriggerTarget):
         self.pull()
 
     def pull(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
         value = self._pull_callback()
 
@@ -86,13 +86,13 @@ class PullIn(PPInBase, TriggerTarget):
         self._trig.push()
 
     def _hive_connectable_target(self, source):
-        assert isinstance(source, Output) #TODO : nicer error message
-        assert source.mode == "pull" #TODO : nicer error message
+        assert isinstance(source, Output) # TODO : nicer error message
+        assert source.mode == "pull" # TODO : nicer error message
         compare_types(source, self)
 
     def _hive_connect_target(self, source):
         if self._pull_callback is not None:
-            raise TypeError("PullIn cannot accept more than one connection") #TODO: nicer error message, with names
+            raise TypeError("PullIn cannot accept more than one connection") # TODO: nicer error message, with names
 
         self._pull_callback = source.pull
     
@@ -104,7 +104,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
     mode = None
 
     def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) #TODO: nice error message
+        assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
         if isinstance(target, Stateful) or isinstance(target, Antenna):
             self.datatype = target.datatype
 
@@ -149,7 +149,7 @@ class PullInBee(PPInBee, TriggerTarget):
 
 
 def pushin(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) #TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PushIn(target)
 
@@ -158,7 +158,7 @@ def pushin(target):
 
 
 def pullin(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) #TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PullIn(target)
 

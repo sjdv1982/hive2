@@ -93,7 +93,7 @@ class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
             for name in dir(hive_externals):
                 bee = getattr(hive_externals, name)
                 bee = bee.export()
-                #TODO: nice exception reporting
+                # TODO: nice exception reporting
                 instance = bee.getinstance(self._hive_object)
 
                 if isinstance(instance, Bindable):
@@ -110,7 +110,7 @@ class runhive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
                 # Protected attribute starting with _hive
                 assert not hasattr(self, private_name), private_name
 
-                #TODO: nice exception reporting
+                # TODO: nice exception reporting
                 instance = bee.getinstance(self._hive_object)
                 if isinstance(instance, Bindable):                    
                     instance = instance.bind(self)
@@ -161,13 +161,13 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         self = object.__new__(cls)
         self._hive_cls = get_building_hive()
         
-        #TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
+        # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
         
         #args to make parameter dict for bee.parameter
         self._hive_param_args = args #for now
         self._hive_param_kwargs = kwargs #for now
         
-        #TODO: instantiate parameter dict and send it to the resolve manager
+        # TODO: instantiate parameter dict and send it to the resolve manager
 
         #args to instantiate builderclass instances
         self._hive_builder_args = args #for now

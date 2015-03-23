@@ -5,7 +5,7 @@ from . import manager
 from .hive import HiveObject
 
 def build_trigger(source, target, pre):
-    #TODO: register connection, or insert a listener function in between    
+    # TODO: register connection, or insert a listener function in between
     targetfunc = target._hive_trigger_target()
     if pre:
         source._hive_pretrigger_source(targetfunc)

@@ -15,7 +15,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         self.trigger()
 
     def trigger(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._func()
         
     @manager.bind
@@ -34,7 +34,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         return self.trigger
     
     def _hive_connectable_target(self, source):
-        #TODO : nicer error message
+        # TODO : nicer error message
         assert isinstance(source, TriggerSource)
 
     def _hive_connect_target(self, source):

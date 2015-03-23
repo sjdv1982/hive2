@@ -15,13 +15,13 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         return self._func
         
     def _hive_connectable_source(self, target):
-        assert isinstance(target, Socket), target #TODO : nicer error message
+        assert isinstance(target, Socket), target # TODO : nicer error message
 
     def _hive_connect_source(self, target):
         pass
         
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         func = self._func
 
         if isinstance(func, Exportable):
@@ -60,7 +60,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         return HivePlugin(target)
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         target = self._target
 
         if isinstance(target, Exportable):

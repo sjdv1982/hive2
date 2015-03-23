@@ -10,7 +10,7 @@ class Hook(Exportable, Bee):
         self._target = target
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         t = self._target
         if isinstance(t, Exportable):
             t = t.export()

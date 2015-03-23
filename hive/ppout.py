@@ -42,7 +42,7 @@ class PullOut(PPOutBase):
     mode = "pull"
 
     def pull(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._runhive)
@@ -52,8 +52,8 @@ class PullOut(PPOutBase):
         return value
 
     def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna) #TODO : nicer error message
-        assert target.mode == "pull" #TODO : nicer error message
+        assert isinstance(target, Antenna) # TODO : nicer error message
+        assert target.mode == "pull" # TODO : nicer error message
         compare_types(self, target)
 
     def _hive_connect_source(self, target):
@@ -71,7 +71,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         self.push()
 
     def push(self):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pretrig.push()
 
         if self._stateful:
@@ -89,15 +89,15 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         return self.push
     
     def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna), target #TODO : nicer error message
-        assert target.mode == "push" #TODO : nicer error message    
+        assert isinstance(target, Antenna), target # TODO : nicer error message
+        assert target.mode == "push" # TODO : nicer error message
         compare_types(target, self)
     
     def _hive_connect_source(self, target): #Socket
         self._targets.append(target.push)
             
     def _hive_connectable_target(self, source):
-        assert isinstance(source, Plugin), source #TODO : nicer error message
+        assert isinstance(source, Plugin), source # TODO : nicer error message
 
     def _hive_connect_target(self, source):
         self._targets.append(source.plugin)
@@ -110,7 +110,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
     mode = None
 
     def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) #TODO: nice error message
+        assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) # TODO: nice error message
         if isinstance(target, Stateful) or isinstance(target, Output):
             self.datatype = target.datatype
 

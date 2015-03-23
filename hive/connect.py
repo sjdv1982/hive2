@@ -6,7 +6,7 @@ from .hive import HiveObject
 
 
 def build_connection(source, target):
-    #TODO: register connection, or insert a listener function in between    
+    # TODO: register connection, or insert a listener function in between
     
     #will raise an Exception if incompatible:
     source._hive_connectable_source(target)

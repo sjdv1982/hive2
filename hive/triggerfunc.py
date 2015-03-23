@@ -16,7 +16,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         self._name_counter = 0
 
     def __call__(self, *args, **kwargs):
-        #TODO: exception handling hooks
+        # TODO: exception handling hooks
         self._pre_trigger.push()
         if self._func is not None:
             self._func(*args, **kwargs)

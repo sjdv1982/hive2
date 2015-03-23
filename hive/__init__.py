@@ -33,9 +33,9 @@ from .hive import hive, Hive, runhive as RunHive
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
-#from .modifier import modifier #TODO (akin to triggerable, but receives runhive as self)
+#from .modifier import modifier # TODO (akin to triggerable, but receives runhive as self)
 from .property import property
-#from .buffer import buffer #TODO (akin to property, but is stored on the runhive)
+#from .buffer import buffer # TODO (akin to property, but is stored on the runhive)
 from .ppin import pushin, pullin
 from .ppout import pushout, pullout
 
@@ -50,8 +50,8 @@ from .socket import socket
 from .plugin import plugin
 from .antenna import antenna
 from .output import output
-#TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
-#TODO: supplier, required etc. for sockets/plugins
-#TODO: autosocket default policy (for parent and for children) on args object
+# TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
+# TODO: supplier, required etc. for sockets/plugins
+# TODO: autosocket default policy (for parent and for children) on args object
 #    - if there are named sockets, a policy towards the parent MUST be defined
 #    - a policy towards the children is optional     

@@ -4,7 +4,7 @@ from .. import manager
 
 
 class HiveBee(Bee):
-    #TODO: resolve method for arguments that are bees (returns a new HiveBee class?)
+    # TODO: resolve method for arguments that are bees (returns a new HiveBee class?)
 
     def __init__(self, cls, *args, **kwargs):
         self._hivecls = get_building_hive()

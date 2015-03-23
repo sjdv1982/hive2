@@ -11,7 +11,7 @@ class Entry(Exportable, Bee):
         self._target = target
 
     def export(self):
-        #TODO: somehow log the redirection path
+        # TODO: somehow log the redirection path
         target = self._target
         if isinstance(target, Exportable):
             target = target.export()
