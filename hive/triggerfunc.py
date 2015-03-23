@@ -6,7 +6,7 @@ from . import manager
 
 class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
 
-    def __init__(self, func, bound=False):
+    def __init__(self, func=None, bound=False):
         assert callable(func) or func is None or isinstance(func, Callable), func
         self._bound = bound
         self._func = func
@@ -53,7 +53,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
 
 class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
 
-    def __init__(self, func):
+    def __init__(self, func=None):
         HiveBee.__init__(self, None, func)
 
     @manager.getinstance
