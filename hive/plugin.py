@@ -51,11 +51,11 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self._target = target
 
     @manager.getinstance
-    def getinstance(self, hiveobject):        
+    def getinstance(self, hive_object):
         target = self._target
 
         if isinstance(target, Bee):
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         return HivePlugin(target)
 

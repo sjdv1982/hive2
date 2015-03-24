@@ -7,15 +7,15 @@ from . import manager
 from .antenna import compare_types
 
 class OutputBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, datatype, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
-        self.datatype = datatype
+        self.data_type = data_type
         self._bound = bound
         self._run_hive = run_hive
-        self._trig = Pusher(self)
-        self._pretrig = Pusher(self)                
+        self._trigger = Pusher(self)
+        self._pretrigger = Pusher(self)
                 
     @manager.bind
     def bind(self, run_hive):
@@ -24,24 +24,24 @@ class OutputBase(Output, ConnectSource, TriggerSource, Bindable):
         target = self.target
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
-        ret = self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
+        ret = self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
         return ret        
 
     def _hive_trigger_source(self, targetfunc):
-        self._trig.add_target(targetfunc)
+        self._trigger.add_target(targetfunc)
     def _hive_pretrigger_source(self, targetfunc):
-        self._pretrig.add_target(targetfunc)
+        self._pretrigger.add_target(targetfunc)
 
 class PullOutput(OutputBase):
     mode = "pull"
     def pull(self):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
         else:
             value = self.target()
-        self._trig.push()
+        self._trigger.push()
         return value
     def _hive_connectable_source(self, target):
         assert isinstance(target, Antenna) # TODO : nicer error message
@@ -52,19 +52,19 @@ class PullOutput(OutputBase):
     
 class PushOutput(OutputBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
-    def __init__(self, target, datatype, bound=False, run_hive=None):
-        OutputBase.__init__(self, target, datatype, bound, run_hive)
+    def __init__(self, target, data_type, bound=False, run_hive=None):
+        OutputBase.__init__(self, target, data_type, bound, run_hive)
         self._targets = []
     def push(self):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
         else:
             value = self.target()
         for target in self._targets:
             target(value)
-        self._trig.push()
+        self._trigger.push()
     def socket(self):
         return self.push
     
@@ -85,21 +85,21 @@ class PushOutput(OutputBase, Socket, ConnectTarget, TriggerTarget):
     
 
 class OutputBee(HiveBee, Output, ConnectSource, TriggerSource, Exportable):
-    def __init__(self, mode, target, *datatype):
+    def __init__(self, mode, target, *data_type):
         assert mode in ("push", "pull")
         self.mode = mode
-        self.datatype = datatype # TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
+        self.data_type = data_type # TODO: retrieve data_type info from target and check that it matches (TODO add it to h.property and h.buffer)
         assert isinstance(target, Stateful) or isinstance(target,Output) or target.implements(Callable) # TODO: nice error message
         HiveBee.__init__(self, None, target)
     @manager.getinstance
-    def getinstance(self, hiveobject):        
+    def getinstance(self, hive_object):
         target, = self.args
         if isinstance(target, Bee): 
-            target = target.getinstance(hiveobject)            
+            target = target.getinstance(hive_object)
         if self.mode == "push":    
-            ret = PushOutput(target, self.datatype)    
+            ret = PushOutput(target, self.data_type)
         else:
-            ret = PullOutput(target, self.datatype)    
+            ret = PullOutput(target, self.data_type)
         return ret
     def export(self):
         target, = self.args
@@ -116,7 +116,7 @@ class OutputBee(HiveBee, Output, ConnectSource, TriggerSource, Exportable):
             return True
         return False
         
-def output(mode, target, *datatype):
+def output(mode, target, *data_type):
     assert mode in ("push", "pull"), mode # TODO: nicer error message
     assert isinstance(target, Bee), target # TODO: nicer error message
     if get_mode() == "immediate":
@@ -124,11 +124,11 @@ def output(mode, target, *datatype):
             target = target.export()        
         assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nicer error message
         if mode == "push":
-            return PushOutput(target, *datatype)        
+            return PushOutput(target, *data_type)
         else:
-            return PullOutput(target, *datatype)        
+            return PullOutput(target, *data_type)
     else:
-        return OutputBee(mode, target, *datatype)
+        return OutputBee(mode, target, *data_type)
 """
 from .mixins import Output, Exportable
 from .context_factory import ContextFactory

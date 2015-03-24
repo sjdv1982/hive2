@@ -5,27 +5,27 @@ from . import manager
 
 
 def compare_types(b1, b2):
-    for t1, t2 in zip(b1.datatype, b2.datatype):
+    for t1, t2 in zip(b1.data_type, b2.data_type):
         if t1 != t2:
-            raise TypeError((b1.datatype, b2.datatype)) # TODO: nice error message
+            raise TypeError((b1.data_type, b2.data_type)) # TODO: nice error message
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-    def __init__(self, target, datatype, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
-        self.datatype = datatype
+        self.data_type = data_type
         self._bound = bound
         self._run_hive = run_hive
-        self._trig = Pusher(self)
-        self._pretrig = Pusher(self)        
+        self._trigger = Pusher(self)
+        self._pretrigger = Pusher(self)
                 
     def _hive_trigger_source(self, targetfunc):
-        self._trig.add_target(targetfunc)
+        self._trigger.add_target(targetfunc)
 
     def _hive_pretrigger_source(self, targetfunc):
-        self._pretrig.add_target(targetfunc)
+        self._pretrigger.add_target(targetfunc)
                 
     @manager.bind
     def bind(self, run_hive):
@@ -37,14 +37,14 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
+        return self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
 
 class PushIn(PPInBase):
     mode = "push"
 
     def push(self, value):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
 
         if self._stateful:
             self.target._hive_stateful_setter(self._run_hive, value)
@@ -52,7 +52,7 @@ class PushIn(PPInBase):
         else:
             self.target(value)
 
-        self._trig.push()
+        self._trigger.push()
 
     def _hive_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
@@ -72,7 +72,7 @@ class PullIn(PPInBase, TriggerTarget):
 
     def pull(self):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
         value = self._pull_callback()
 
         if self._stateful:
@@ -81,7 +81,7 @@ class PullIn(PPInBase, TriggerTarget):
         else:
             self.target(value)
 
-        self._trig.push()
+        self._trigger.push()
 
     def _hive_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
@@ -104,26 +104,26 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
     def __init__(self, target):        
         assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
         if isinstance(target, Stateful) or isinstance(target, Antenna):
-            self.datatype = target.datatype
+            self.data_type = target.data_type
 
         else:
-            self.datatype = ()
+            self.data_type = ()
 
         self._hive_cls = get_building_hive()
         self.target = target
 
     @manager.getinstance
-    def getinstance(self, hiveobject):        
+    def getinstance(self, hive_object):
         target = self.target
 
         if isinstance(target, Bee): 
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         if self.mode == "push":    
-            ret = PushIn(target, self.datatype)
+            ret = PushIn(target, self.data_type)
 
         else:
-            ret = PullIn(target, self.datatype)
+            ret = PullIn(target, self.data_type)
 
         return ret
 

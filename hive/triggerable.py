@@ -47,10 +47,10 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
         HiveBee.__init__(self, None, func)
 
     @manager.getinstance
-    def getinstance(self, hiveobject):                
+    def getinstance(self, hive_object):
         func, = self.args
         if isinstance(func, Bee): 
-            func = func.getinstance(hiveobject)
+            func = func.getinstance(hive_object)
 
         return Triggerable(func)
 
