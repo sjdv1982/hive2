@@ -6,25 +6,25 @@ from . import manager
 
 
 def compare_types(b1, b2):
-        for t1, t2 in zip(b1.datatype, b2.datatype):
+        for t1, t2 in zip(b1.data_type, b2.data_type):
                 if t1 != t2:
-                        raise TypeError((b1.datatype, b2.datatype)) # TODO: nice error message
+                        raise TypeError((b1.data_type, b2.data_type)) # TODO: nice error message
 
 class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-        def __init__(self, target, datatype, bound=False, run_hive=None):
+        def __init__(self, target, data_type, bound=False, run_hive=None):
                 assert isinstance(target, Stateful) or target.implements(Callable), target
                 self._stateful = isinstance(target, Stateful)
                 self.target = target
-                self.datatype = datatype
+                self.data_type = data_type
                 self._bound = bound
                 self._run_hive = run_hive
-                self._trig = Pusher(self)
-                self._pretrig = Pusher(self)                
+                self._trigger = Pusher(self)
+                self._pretrigger = Pusher(self)
                                 
         def _hive_trigger_source(self, targetfunc):
-                self._trig.add_target(targetfunc)
+                self._trigger.add_target(targetfunc)
         def _hive_pretrigger_source(self, targetfunc):
-                self._pretrig.add_target(targetfunc)
+                self._pretrigger.add_target(targetfunc)
                                 
         @manager.bind
         def bind(self, run_hive):
@@ -33,19 +33,19 @@ class AntennaBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 target = self.target
                 if isinstance(target, Bindable):
                         target = target.bind(run_hive)
-                ret = self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
+                ret = self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
                 return ret                
 
 class PushAntenna(AntennaBase):
         mode = "push"
         def push(self, value):
                 # TODO: exception handling hooks
-                self._pretrig.push()
+                self._pretrigger.push()
                 if self._stateful:
                         self.target._hive_stateful_setter(self._run_hive, value)
                 else:
                         self.target(value)
-                self._trig.push()
+                self._trigger.push()
         def _hive_connectable_target(self, source):
                 assert isinstance(source, Output) # TODO : nicer error message
                 assert source.mode == "push" # TODO : nicer error message
@@ -59,13 +59,13 @@ class PullAntenna(AntennaBase, TriggerTarget):
         _pull_callback = None
         def pull(self):
                 # TODO: exception handling hooks
-                self._pretrig.push()
+                self._pretrigger.push()
                 value = self._pull_callback()
                 if self._stateful:
                         self.target._hive_stateful_setter(self._run_hive, value)
                 else:
                         self.target(value)                        
-                self._trig.push()                
+                self._trigger.push()
         def _hive_connectable_target(self, source):
                 assert isinstance(source, Output) # TODO : nicer error message
                 assert source.mode == "pull" # TODO : nicer error message
@@ -79,10 +79,10 @@ class PullAntenna(AntennaBase, TriggerTarget):
                 return self.pull
 
 class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
-        def __init__(self, mode, target, *datatype):
+        def __init__(self, mode, target, *data_type):
                 assert mode in ("push", "pull")
                 self.mode = mode
-                self.datatype = datatype # TODO: retrieve datatype info from target and check that it matches (TODO add it to h.property and h.buffer)
+                self.data_type = data_type # TODO: retrieve data_type info from target and check that it matches (TODO add it to h.property and h.buffer)
                 assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
                 HiveBee.__init__(self, None, target)
         @manager.getinstance
@@ -91,9 +91,9 @@ class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
                 if isinstance(target, Bee): 
                         target = target.getinstance(hiveobject)                        
                 if self.mode == "push":        
-                        ret = PushAntenna(target, self.datatype)        
+                        ret = PushAntenna(target, self.data_type)
                 else:
-                        ret = PullAntenna(target, self.datatype)        
+                        ret = PullAntenna(target, self.data_type)
                 return ret
         def export(self):
                 target, = self.args
@@ -110,7 +110,7 @@ class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
                         return True
                 return False
                 
-def antenna(mode, target, *datatype):
+def antenna(mode, target, *data_type):
         assert mode in ("push", "pull"), mode # TODO: nicer error message
         assert isinstance(target, Bee), target # TODO: nicer error message
         if get_mode() == "immediate":
@@ -118,11 +118,11 @@ def antenna(mode, target, *datatype):
                         target = target.export()                
                 assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nicer error message
                 if mode == "push":
-                        return PushAntenna(target, *datatype)                
+                        return PushAntenna(target, *data_type)
                 else:
-                        return PullAntenna(target, *datatype)                
+                        return PullAntenna(target, *data_type)
         else:
-                return AntennaBee(mode, target, *datatype)
+                return AntennaBee(mode, target, *data_type)
 """
 
 from .mixins import Antenna, Exportable

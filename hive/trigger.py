@@ -18,10 +18,10 @@ def build_trigger(source, target, pre):
 
 class Trigger(Bindable):
 
-    def __init__(self, source, target, pre_trigger):
+    def __init__(self, source, target, pretrigger):
         self.source = source
         self.target = target
-        self.pre_trigger = pre_trigger
+        self.pretrigger = pretrigger
 
     @manager.bind
     def bind(self, run_hive):
@@ -33,17 +33,17 @@ class Trigger(Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return build_trigger(source, target, self.pre_trigger)
+        return build_trigger(source, target, self.pretrigger)
 
 
 class TriggerBee(HiveBee):
 
-    def __init__(self, source, target, pre_trigger):
-        HiveBee.__init__(self, None, source, target, pre_trigger)
+    def __init__(self, source, target, pretrigger):
+        HiveBee.__init__(self, None, source, target, pretrigger)
 
     @manager.getinstance
     def getinstance(self, hive_object):
-        source, target, pre_trigger = self.args
+        source, target, pretrigger = self.args
 
         if isinstance(source, HiveObject):
             source = source.get_trigger_source()
@@ -58,13 +58,13 @@ class TriggerBee(HiveBee):
             target = target.getinstance(hive_object)
 
         if get_mode() == "immediate":            
-            return build_trigger(source, target, pre_trigger)
+            return build_trigger(source, target, pretrigger)
 
         else:
-            return Trigger(source, target, pre_trigger)
+            return Trigger(source, target, pretrigger)
 
 
-def _trigger(source, target, pre_trigger):
+def _trigger(source, target, pretrigger):
     if isinstance(source, Bee):
         assert source.implements(TriggerSource), source
         assert target.implements(TriggerTarget), target
@@ -74,13 +74,13 @@ def _trigger(source, target, pre_trigger):
         assert isinstance(target, TriggerTarget), target
 
     if get_mode() == "immediate":
-        build_trigger(source, target,pre_trigger)
+        build_trigger(source, target,pretrigger)
 
     else:
-        trigger_bee = TriggerBee(source, target, pre_trigger)
+        trigger_bee = TriggerBee(source, target, pretrigger)
         manager.register_bee(trigger_bee)
         return trigger_bee
 
 
-def trigger(source, target, pre_trigger=False):
-    return _trigger(source, target, pre_trigger)
+def trigger(source, target, pretrigger=False):
+    return _trigger(source, target, pretrigger)
