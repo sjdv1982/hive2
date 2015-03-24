@@ -115,11 +115,11 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         self.target = target
 
     @manager.getinstance
-    def getinstance(self, hiveobject):        
+    def getinstance(self, hive_object):
         target = self.target
 
         if isinstance(target, Bee): 
-            target = target.getinstance(hiveobject)
+            target = target.getinstance(hive_object)
 
         if self.mode == "push":    
             ret = PushIn(target, self.data_type)

@@ -380,7 +380,7 @@ class Hive(object):
             "_hive_parent_class": cls,
         }
 
-        cls._hive_object_cls = type(cls.__name__+"{}::hiveobject".format(cls.__name__), (HiveObject,), class_dict)
+        cls._hive_object_cls = type(cls.__name__+"{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
         cls._hive_built = True 
      
     @classmethod

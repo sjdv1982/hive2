@@ -86,10 +86,10 @@ class AntennaBee(HiveBee, Antenna, ConnectTarget, TriggerSource, Exportable):
                 assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
                 HiveBee.__init__(self, None, target)
         @manager.getinstance
-        def getinstance(self, hiveobject):                
+        def getinstance(self, hive_object):
                 target, = self.args
                 if isinstance(target, Bee): 
-                        target = target.getinstance(hiveobject)                        
+                        target = target.getinstance(hive_object)
                 if self.mode == "push":        
                         ret = PushAntenna(target, self.data_type)
                 else:
