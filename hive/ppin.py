@@ -11,7 +11,6 @@ def compare_types(b1, b2):
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-
     def __init__(self, target, datatype, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
@@ -39,7 +38,6 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
             target = target.bind(run_hive)
 
         return self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
-
 
 class PushIn(PPInBase):
     mode = "push"
