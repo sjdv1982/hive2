@@ -15,7 +15,7 @@ def get_building_hive():
 
 def set_building_hive(building_hive):
     global _building_hive    
-    assert building_hive is None or issubclass(building_hive, Hive), building_hive
+    assert building_hive is None or issubclass(building_hive, HiveBuilder), building_hive
     _building_hive = building_hive
 
 
@@ -28,7 +28,7 @@ def set_run_hive(run_hive):
     assert run_hive is None or isinstance(run_hive, RuntimeHive), run_hive
     _run_hive = run_hive
 
-from .hive import hive, Hive, RuntimeHive
+from .hive import hive, HiveBuilder, RuntimeHive
 
 #i primitives
 from .triggerfunc import triggerfunc
