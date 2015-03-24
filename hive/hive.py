@@ -118,7 +118,7 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
                 bees.append((name, instance))
             
-            #add internal bees that are hives, Callable or Stateful
+            # Add internal bees that are hives, Callable or Stateful
             hive_internals = self._hive_object._hive_parent_class._hive_i
             for name in hive_internals._attrs:
                 bee = getattr(hive_internals, name)

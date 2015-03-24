@@ -19,5 +19,4 @@ class Hook(Exportable, Bee):
         return target
 
 
-
 hook = ContextFactory("hive.hook", deferred_cls=Hook)

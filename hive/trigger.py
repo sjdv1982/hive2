@@ -4,21 +4,24 @@ from . import get_mode
 from . import manager
 from .hive import HiveObject
 
+
 def build_trigger(source, target, pre):
     # TODO: register connection, or insert a listener function in between
-    targetfunc = target._hive_trigger_target()
+    target_func = target._hive_trigger_target()
+
     if pre:
-        source._hive_pretrigger_source(targetfunc)
+        source._hive_pretrigger_source(target_func)
+
     else:
-        source._hive_trigger_source(targetfunc)
+        source._hive_trigger_source(target_func)
 
 
 class Trigger(Bindable):
 
-    def __init__(self, source, target, pretrigger):
+    def __init__(self, source, target, pre_trigger):
         self.source = source
         self.target = target
-        self.pretrigger = pretrigger
+        self.pre_trigger = pre_trigger
 
     @manager.bind
     def bind(self, run_hive):
@@ -30,13 +33,13 @@ class Trigger(Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return build_trigger(source, target, self.pretrigger)    
+        return build_trigger(source, target, self.pre_trigger)
 
 
 class TriggerBee(HiveBee):
 
-    def __init__(self, source, target, pretrigger):
-        HiveBee.__init__(self, None, source, target, pretrigger)
+    def __init__(self, source, target, pre_trigger):
+        HiveBee.__init__(self, None, source, target, pre_trigger)
 
     @manager.getinstance
     def getinstance(self, hive_object):
