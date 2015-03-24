@@ -11,25 +11,25 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         self._bound = bound
         self._func = func
         self._trigger = Pusher(self)
-        self._pre_trigger = Pusher(self)
+        self._pretrigger = Pusher(self)
         # TODO
         self._name_counter = 0
 
     def __call__(self, *args, **kwargs):
         # TODO: exception handling hooks
-        self._pre_trigger.push()
+        self._pretrigger.push()
         if self._func is not None:
             self._func(*args, **kwargs)
 
         self._trigger.push()
 
-    def _hive_trigger_source(self, targetfunc):
+    def _hive_trigger_source(self, target_func):
         self._name_counter += 1
-        self._trigger.add_target(targetfunc, self._name_counter)
+        self._trigger.add_target(target_func, self._name_counter)
 
-    def _hive_pretrigger_source(self, targetfunc):
+    def _hive_pretrigger_source(self, target_func):
         self._name_counter += 1
-        self._pre_trigger.add_target(targetfunc, self._name_counter)
+        self._pretrigger.add_target(target_func, self._name_counter)
         
     def _hive_connectable_source(self, target):
         # TODO : nicer error message
@@ -68,7 +68,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
         if HiveBee.implements(self, cls):
             return True
 
-        if cls == Callable:
+        if cls is Callable:
             return True
 
         func, = self.args

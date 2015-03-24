@@ -7,15 +7,15 @@ from .ppin import compare_types
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, datatype, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
-        self.datatype = datatype
+        self.data_type = data_type
         self._bound = bound
         self._run_hive = run_hive
-        self._trig = Pusher(self)
-        self._pretrig = Pusher(self)                
+        self._trigger = Pusher(self)
+        self._pretrigger = Pusher(self)
                 
     @manager.bind
     def bind(self, run_hive):
@@ -27,26 +27,26 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        ret = self.__class__(target, self.datatype, bound=True, run_hive=run_hive)
+        ret = self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
         return ret        
 
     def _hive_trigger_source(self, targetfunc):
-        self._trig.add_target(targetfunc)
+        self._trigger.add_target(targetfunc)
 
     def _hive_pretrigger_source(self, targetfunc):
-        self._pretrig.add_target(targetfunc)
+        self._pretrigger.add_target(targetfunc)
 
 class PullOut(PPOutBase):
     mode = "pull"
 
     def pull(self):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
         else:
             value = self.target()
-        self._trig.push()
+        self._trigger.push()
         return value
 
     def _hive_connectable_source(self, target):
@@ -61,8 +61,8 @@ class PullOut(PPOutBase):
 class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
 
-    def __init__(self, target, datatype, bound=False, run_hive=None):
-        PPOutBase.__init__(self, target, datatype, bound, run_hive)
+    def __init__(self, target, data_type, bound=False, run_hive=None):
+        PPOutBase.__init__(self, target, data_type, bound, run_hive)
         self._targets = []
 
     def __call__(self):
@@ -70,7 +70,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
 
     def push(self):
         # TODO: exception handling hooks
-        self._pretrig.push()
+        self._pretrigger.push()
 
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
@@ -81,7 +81,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         for target in self._targets:
             target(value)
 
-        self._trig.push()
+        self._trigger.push()
 
     def socket(self):
         return self.push
@@ -110,10 +110,10 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
     def __init__(self, target):        
         assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) # TODO: nice error message
         if isinstance(target, Stateful) or isinstance(target, Output):
-            self.datatype = target.datatype
+            self.data_type = target.data_type
 
         else:
-            self.datatype = ()
+            self.data_type = ()
 
         self._hive_cls = get_building_hive()
         self.target = target
@@ -126,10 +126,10 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
             target = target.getinstance(hive_object)
 
         if self.mode == "push":    
-            instance = PushOut(target, self.datatype)
+            instance = PushOut(target, self.data_type)
 
         else:
-            instance = PullOut(target, self.datatype)
+            instance = PullOut(target, self.data_type)
 
         return instance
 

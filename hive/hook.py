@@ -1,5 +1,6 @@
-from .mixins import Bee, ConnectSource, TriggerSource, Exportable
-from . import get_mode, get_building_hive
+from .context_factory import ContextFactory
+from .mixins import Bee, TriggerSource, Exportable
+from . import get_building_hive
 
 
 class Hook(Exportable, Bee):
@@ -11,16 +12,11 @@ class Hook(Exportable, Bee):
 
     def export(self):
         # TODO: somehow log the redirection path
-        t = self._target
-        if isinstance(t, Exportable):
-            t = t.export()
+        target = self._target
+        if isinstance(target, Exportable):
+            target = target.export()
 
-        return t    
+        return target
 
 
-def hook(target):
-    if get_mode() == "immediate":
-        raise ValueError("hive.hook cannot be used in immediate mode")
-
-    else:
-        return Hook(target)
+hook = ContextFactory("hive.hook", deferred_cls=Hook)
