@@ -17,7 +17,7 @@ def generate_beename():
 it_generate_beename = generate_beename()
 
 
-def beekeyfunc(item):
+def bee_sort_key(item):
     b = item[0]
     k = b
     if b.startswith("bee"):
@@ -39,8 +39,8 @@ class HiveMethodWrapper(object):
     def __getattr__(self, attr):
         value = getattr(self._cls, attr)
 
-        if inspect.ismethod(value):
-            return Method(value)
+        if inspect.isfunction(value):
+            return Method(self._cls, value)
 
         else:
             return value
@@ -49,12 +49,12 @@ class HiveMethodWrapper(object):
         raise AttributeError("HiveMethodWrapper of class '%s' is read-only" % self._cls.__name__)
 
 
-class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
         self._hive_object = hive_object
-        self._hive_buildclass_instances = {}
+        self._hive_build_class_instances = {}
         self._hive_bee_instances = {}
         self._attrs = ["_drones"]
         self._drones = []
@@ -65,21 +65,27 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         set_run_hive(self)
 
         try:
-            for builder, bcls in builders:
+            for builder, builder_cls in builders:
                 args = self._hive_object._hive_builder_args
                 kwargs = self._hive_object._hive_builder_kwargs
 
-                if bcls is not None:
-                    assert id(bcls) not in self._hive_buildclass_instances, bcls
-                    buildclass_instance = bcls.__new__(bcls)
-                    self._hive_buildclass_instances[id(bcls)] = buildclass_instance
-                    self._drones.append(buildclass_instance)
-                    bcls.__init__(buildclass_instance, *args, **kwargs)                
+                if builder_cls is not None:
+                    assert builder_cls not in self._hive_build_class_instances, builder_cls
+
+                    # Do not initialise instance yet
+                    build_class_instance = builder_cls.__new__(builder_cls)
+
+                    self._hive_build_class_instances[builder_cls] = build_class_instance
+                    self._drones.append(build_class_instance)
+
+                    build_class_instance.__init__(*args, **kwargs)
         finally:
             set_run_hive(current_run_hive)
-            
-        m = get_mode()
-        bh = get_building_hive()        
+
+        # To restore state later on
+        current_mode = get_mode()
+        current_building_hive = get_building_hive()
+
         set_mode("build")
         set_building_hive(self._hive_object._hive_parent_class)
         set_run_hive(self)
@@ -87,7 +93,7 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         try:            
             bees = []
                         
-            #add ex bees
+            # Add external bees
             hive_externals = self._hive_object._hive_parent_class._hive_ex
 
             for name in dir(hive_externals):
@@ -101,7 +107,7 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
                 bees.append((name, instance))
             
-            #add i bees that are hives, Callable or Stateful
+            #add internal bees that are hives, Callable or Stateful
             hive_internals = self._hive_object._hive_parent_class._hive_i
             for name in hive_internals._attrs:
                 bee = getattr(hive_internals, name)
@@ -122,7 +128,7 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
                 if isinstance(bee, HiveObject) or bee.implements(Callable) or bee.implements(Stateful):
                     bees.append((private_name, instance))
             
-            bees.sort(key=beekeyfunc)
+            bees.sort(key=bee_sort_key)
             
             for name, instance in bees:
                 if isinstance(instance, Stateful):
@@ -134,8 +140,8 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
                 setattr(self, name, instance)
                     
         finally:
-            set_mode(m)
-            set_building_hive(bh)
+            set_mode(current_mode)
+            set_building_hive(current_building_hive)
             set_run_hive(current_run_hive)
 
     def _hive_trigger_source(self, target_func):
@@ -154,7 +160,7 @@ class RunHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
 class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
     _hive_parent_class = None
-    _hive_run_class = None
+    _hive_runtime_class = None
     _hive_bee_name = tuple()
 
     export_only = False
@@ -179,7 +185,7 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         init_plus_args = (None,) + self._hive_builder_args
 
         for builder, builder_cls in self._hive_parent_class._builders:
-            if builder_cls is not None and hasattr(inspect, "getcallargs") and inspect.ismethod(builder_cls.__init__):
+            if builder_cls is not None and hasattr(inspect, "getcallargs") and inspect.isfunction(builder_cls.__init__):
                 try:
                     inspect.getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
 
@@ -202,12 +208,12 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         return self
                 
     @manager.getinstance    
-    def getinstance(self, parenthiveobject): 
+    def getinstance(self, parent_hive_object):
         return self.instantiate()
     
     def instantiate(self):        
         manager.register_hive_object(self)
-        return self._hive_run_class(self, self._hive_parent_class._builders)
+        return self._hive_runtime_class(self, self._hive_parent_class._builders)
     
     @classmethod
     def search_trigger_target(cls):
@@ -274,7 +280,7 @@ class Hive(object):
             cls._hive_build()
 
         hive_object_cls = cls._hive_object_cls
-        self = hive_object_cls.__new__(hive_object_cls, *args, **kwargs)
+        self = hive_object_cls(*args, **kwargs)
 
         if get_mode() == "immediate":
             return self.instantiate()
@@ -359,7 +365,7 @@ class Hive(object):
                 run_hive_class_dict[attr] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
 
         class_dict = {
-            "_hive_run_class": type("{}::run_hive".format(cls.__name__), (RunHive,), run_hive_class_dict),
+            "_hive_runtime_class": type("{}::run_hive".format(cls.__name__), (RuntimeHive,), run_hive_class_dict),
             "_hive_parent_class": cls,
         }
 

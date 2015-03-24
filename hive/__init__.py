@@ -25,10 +25,10 @@ def get_run_hive():
 
 def set_run_hive(run_hive):
     global _run_hive
-    assert run_hive is None or isinstance(run_hive, RunHive), run_hive
+    assert run_hive is None or isinstance(run_hive, RuntimeHive), run_hive
     _run_hive = run_hive
 
-from .hive import hive, Hive, RunHive
+from .hive import hive, Hive, RuntimeHive
 
 #i primitives
 from .triggerfunc import triggerfunc

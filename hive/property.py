@@ -35,14 +35,18 @@ class Property(Stateful, Bindable, Exportable):
 
     def _hive_stateful_getter(self, run_hive):
         cls = self._cls
-        assert id(cls) in run_hive._hive_buildclass_instances, cls
-        instance = run_hive._hive_buildclass_instances[id(cls)]
+
+        assert cls in run_hive._hive_build_class_instances, cls
+        instance = run_hive._hive_build_class_instances[cls]
+
         return getattr(instance, self._attr)
 
     def _hive_stateful_setter(self, run_hive, value):
         cls = self._cls
-        assert id(cls) in run_hive._hive_buildclass_instances, cls
-        instance = run_hive._hive_buildclass_instances[id(cls)]
+
+        assert cls in run_hive._hive_build_class_instances, cls
+        instance = run_hive._hive_build_class_instances[cls]
+
         setattr(instance, self._attr, value)
 
     def export(self):
@@ -50,8 +54,10 @@ class Property(Stateful, Bindable, Exportable):
 
     def bind(self, run_hive):
         cls = self._cls
-        assert id(cls) in run_hive._hive_buildclass_instances, cls
-        instance = run_hive._hive_buildclass_instances[id(cls)]
+
+        assert cls in run_hive._hive_build_class_instances, cls
+        instance = run_hive._hive_build_class_instances[cls]
+
         if self.start_value is not None or not hasattr(instance, self._attr):
             setattr(instance, self._attr, self.start_value)
 

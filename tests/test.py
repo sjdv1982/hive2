@@ -53,7 +53,7 @@ class Dog(object):
 
 
 def build_dog(cls, i, ex, args):
-    i.call = h.triggerfunc(cls.call)        
+    i.call = h.triggerfunc(cls.call)
     i.woof = h.triggerable(cls.woof)
     #h.trigger(i.call, i.woof)
     h.connect(i.call, i.woof)
@@ -70,18 +70,22 @@ def build_dog(cls, i, ex, args):
 
 dog = h.hive("dog", build_dog, Dog)
 
+mydog = dog("Jack")
+
+print(dir(mydog), mydog.woof, mydog.call())
+raise ValueError()
 spot = dog("Spot")
 spike = dog("Spike")
 
 print(3)
 spot.call() #=> CALL Spot WOOF Spot 1
-spot.call() #=> CALL Spot WOOF Spot 2                
+spot.call() #=> CALL Spot WOOF Spot 2
 print( "SPOT WOOFS", spot.woofs) #=> SPOT WOOFS 2
 print(4)
 spot.bark() #=> WOOF Spot 3
 print(5)
 spike.call() #=> CALL Spike WOOF Spike 1
-spike.call() #=> CALL Spike WOOF Spike 2            
+spike.call() #=> CALL Spike WOOF Spike 2
 print(6)
 spike.bark() #=> WOOF Spike 3
 
