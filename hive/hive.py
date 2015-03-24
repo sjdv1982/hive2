@@ -28,7 +28,18 @@ def bee_sort_key(item):
         except ValueError:
             pass
 
-    return k    
+    return k
+
+
+def is_method(func):
+    """Test if value is a callable method
+
+    Python 3 disposes of this notion, so we only need check if it is callable
+    """
+    if hasattr(func, "im_class"):
+        return True
+
+    return inspect.isfunction(func)
 
 
 class HiveMethodWrapper(object):
@@ -39,7 +50,7 @@ class HiveMethodWrapper(object):
     def __getattr__(self, attr):
         value = getattr(self._cls, attr)
 
-        if inspect.isfunction(value):
+        if is_method(value):
             return Method(self._cls, value)
 
         else:

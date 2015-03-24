@@ -70,10 +70,6 @@ def build_dog(cls, i, ex, args):
 
 dog = h.hive("dog", build_dog, Dog)
 
-mydog = dog("Jack")
-
-print(dir(mydog), mydog.woof, mydog.call())
-raise ValueError()
 spot = dog("Spot")
 spike = dog("Spike")
 
