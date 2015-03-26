@@ -1,7 +1,7 @@
 from .hive import HiveMethodWrapper
 from .mixins import Stateful, Exportable, Bindable
 from . import get_mode, get_building_hive
-
+from weakref import WeakSet
 
 def _check_tuple_type(value):
     if isinstance(value, str):
@@ -29,6 +29,7 @@ class Property(Stateful, Bindable, Exportable):
         self._hive_cls = get_building_hive()
         self._cls = cls
         self._attr = attr
+        self._bound = WeakSet()
 
         self.data_type = data_type
         self.start_value = start_value
@@ -53,6 +54,10 @@ class Property(Stateful, Bindable, Exportable):
         return self
 
     def bind(self, run_hive):
+        if run_hive in self._bound:
+            return
+        self._bound.add(run_hive)
+        
         cls = self._cls
 
         assert cls in run_hive._hive_build_class_instances, cls
