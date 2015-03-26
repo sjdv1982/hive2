@@ -1,35 +1,37 @@
 from __future__ import print_function
 
 import time
-import hive as h
+import hive
 
 
-class mainloopclass(object):
+class _Mainloop(object):
 
-    def __init__(self, maxframerate):
-        self._hive = h.get_run_hive()
+    def __init__(self, max_framerate):
+        self._hive = hive.get_run_hive()
+        self.max_framerate = max_framerate
         self._running = False
         self._stop = False
-        self.maxframerate = maxframerate
         self._listeners = []
 
     def run(self):
         if self._running:
             return
 
-        self._time = time.time()
-        currtime = self._time
+        accumulator = 0.0
+        last_time = time.time()
 
         while not self._stop:
-            nexttick = currtime + 1.0/self.maxframerate
+            current_time = time.time()
+            elapsed_time = current_time - last_time
+            last_time = current_time
 
-            self.tick()
+            if elapsed_time > 0.25:
+                elapsed_time = 0.25
 
-            currtime = time.time()
-
-            if currtime < nexttick:
-                time.sleep(nexttick-currtime)
-                currtime = nexttick
+            accumulator += elapsed_time
+            while accumulator > (1 / self.max_framerate):
+                accumulator -= 1 / self.max_framerate
+                self.tick()
 
     def stop(self):
         self._stop = True
@@ -39,15 +41,14 @@ class mainloopclass(object):
 
 
 def build_mainloop(cls, i, ex, args):
-    i.tick = h.triggerfunc()
-    i.stop = h.triggerable(cls.stop)
-    i.run = h.triggerable(cls.run)    
+    i.tick = hive.triggerfunc()
+    i.stop = hive.triggerable(cls.stop)
+    i.run = hive.triggerable(cls.run)
+
+    ex.tick = hive.hook(i.tick)
+    ex.run = hive.entry(i.run)
+    ex.stop = hive.entry(i.stop)
+    ex.max_framerate = hive.property(cls, "max_framerate")
 
 
-    ex.tick = h.hook(i.tick)
-    ex.run = h.entry(i.run)
-    ex.stop = h.entry(i.stop)
-    ex.maxframerate = h.property(cls, "maxframerate")
-
-
-mainloop = h.hive("mainloop", build_mainloop, mainloopclass)
+mainloop = hive.hive("mainloop", build_mainloop, _Mainloop)
