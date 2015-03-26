@@ -6,21 +6,21 @@ from . import manager
 import inspect
 
 
-def generate_beename():
-    # TODO python 3 doesn't support xrange
+def generate_bee_name():
     i = 0
     while True:
         i += 1
         yield "bee {}".format(i)
 
 
-it_generate_beename = generate_beename()
+it_generate_bee_name = generate_bee_name()
 
 
 def bee_sort_key(item):
     b = item[0]
     k = b
     if b.startswith("bee"):
+        print(b)
         try:
             int(b[3:])
             k = "zzzzzzz" + b
@@ -32,9 +32,9 @@ def bee_sort_key(item):
 
 
 def is_method(func):
-    """Test if value is a callable method
+    """Test if value is a callable method.
 
-    Python 3 disposes of this notion, so we only need check if it is callable
+    Python 3 disposes of this notion, so we only need check if it is callable.
     """
     if hasattr(func, "im_class"):
         return True
@@ -43,6 +43,7 @@ def is_method(func):
 
 
 class HiveMethodWrapper(object):
+    """Intercept attribute lookups to return wrapped methods belonging to a given class."""
 
     def __init__(self, cls):
         object.__setattr__(self, "_cls", cls)
@@ -61,6 +62,10 @@ class HiveMethodWrapper(object):
 
 
 class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+    """Unique Hive instance that is created at runtime for a Hive object.
+
+    Lightweight instantiation is supported through caching performed by the HiveObject instance.
+    """
 
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
@@ -170,6 +175,11 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
 
 class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+    """Built Hive class responsible for creating new Hive instances.
+
+    All bees defined with the builder functions are memoized and cached for faster instantiation
+    """
+
     _hive_parent_class = None
     _hive_runtime_class = None
     _hive_bee_name = tuple()
@@ -222,7 +232,8 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
     def getinstance(self, parent_hive_object):
         return self.instantiate()
     
-    def instantiate(self):        
+    def instantiate(self):
+        """Return an instance of the runtime Hive for this Hive object."""
         manager.register_hive_object(self)
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
     
@@ -252,22 +263,22 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
     @classmethod
     def search_trigger_source(cls):
         ex = cls._hive_parent_class._hive_ex
-        triggersources = []
+        trigger_sources = []
 
         for attr in dir(ex):
             bee = getattr(ex, attr)
-            exbee = bee.export()
+            exported_bee = bee.export()
 
-            if isinstance(exbee, TriggerSource):
-                triggersources.append(attr)
+            if isinstance(exported_bee, TriggerSource):
+                trigger_sources.append(attr)
 
-        if len(triggersources) == 0:
+        if len(trigger_sources) == 0:
             raise TypeError("No TriggerSources in %s" % cls)
 
-        elif len(triggersources) > 1:
-            raise TypeError("Multiple TriggerSources in %s: %s" % (cls, triggersources))
+        elif len(trigger_sources) > 1:
+            raise TypeError("Multiple TriggerSources in %s: %s" % (cls, trigger_sources))
 
-        return triggersources[0]
+        return trigger_sources[0]
 
     def get_trigger_source(self):
         attr = self.search_trigger_source()
@@ -277,7 +288,12 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         return self
 
 
-class Hive(object):
+class HiveBuilder(object):
+    """Deferred Builder for constructing Hive classes.
+
+    Perform building once for multiple instances of the same Hive.
+    """
+
     _builders = ()
     _hive_built = False
     _hive_i = None
@@ -298,7 +314,45 @@ class Hive(object):
 
         else:
             return self
-    
+
+    @classmethod
+    def extend(cls, name, builder, builder_cls=None, hive_kwargs=False):
+        if builder_cls is not None:
+            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+
+        builders = cls._builders + ((builder, builder_cls),)
+        class_dict = {
+            "_builders": builders,
+            "_hive_hive_kwargs": hive_kwargs,
+        }
+
+        return type(name, (cls,), class_dict)
+         
+    @classmethod
+    def _hive_build(cls):
+        assert not cls._hive_built
+        cls._hive_build_methods()
+
+        # TODO: auto-remove connections/triggers for which the source/target has been deleted
+        # TODO: sockets and plugins, take options into account for namespacing
+        run_hive_class_dict = {}
+        hive_externals = cls._hive_ex
+
+        for bee_name in dir(hive_externals):
+            bee = getattr(hive_externals, bee_name)
+
+            # If the bee requires a property interface, build a property
+            if isinstance(bee, Stateful):
+                run_hive_class_dict[bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
+
+        class_dict = {
+            "_hive_runtime_class": type("{}::run_hive".format(cls.__name__), (RuntimeHive,), run_hive_class_dict),
+            "_hive_parent_class": cls,
+        }
+
+        cls._hive_object_cls = type(cls.__name__+"{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
+        cls._hive_built = True
+
     @classmethod
     def _hive_build_methods(cls):
         assert not cls._hive_built
@@ -328,7 +382,7 @@ class Hive(object):
             set_mode(current_build_mode)
             set_building_hive(current_build_hive)
             bees = manager.register_bee_pop()
-                
+
         # Find anonymous bees
         anonymous_bees = set(bees)
 
@@ -347,7 +401,7 @@ class Hive(object):
 
             # Find unique name for bee
             while True:
-                bee_name = next(it_generate_beename)
+                bee_name = next(it_generate_bee_name)
                 if not hasattr(hive_internals, bee_name):
                     break
 
@@ -357,44 +411,6 @@ class Hive(object):
         for bee_name in dir(hive_internals):
             bee = getattr(hive_internals, bee_name)
             bee._hive_bee_name = (bee_name,)
-         
-    @classmethod
-    def _hive_build(cls):
-        assert not cls._hive_built
-        cls._hive_build_methods()
-
-        # TODO: auto-remove connections/triggers for which the source/target has been deleted
-        # TODO: sockets and plugins, take options into account for namespacing
-        run_hive_class_dict = {}
-        hive_externals = cls._hive_ex
-
-        for attr in dir(hive_externals):
-            bee = getattr(hive_externals, attr)
-
-            # If the bee requires a property interface, build a property
-            if isinstance(bee, Stateful):
-                run_hive_class_dict[attr] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
-
-        class_dict = {
-            "_hive_runtime_class": type("{}::run_hive".format(cls.__name__), (RuntimeHive,), run_hive_class_dict),
-            "_hive_parent_class": cls,
-        }
-
-        cls._hive_object_cls = type(cls.__name__+"{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
-        cls._hive_built = True 
-     
-    @classmethod
-    def extend(hivebase, name, builder, cls=None, hive_kwargs=False):
-        if cls is not None:
-            assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
-
-        builders = hivebase._builders + ((builder, cls),)
-        class_dict = {
-            "_builders": builders,
-            "_hive_hive_kwargs": hive_kwargs,
-        }
-
-        return type(name, (hivebase,), class_dict)
 
 
 # TODO options for namespacing (old frame/hive distinction)
@@ -402,4 +418,4 @@ def hive(name, builder, cls=None, hive_kwargs=False):
     if cls is not None:
         assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
-    return Hive.extend(name, builder, cls, hive_kwargs)
+    return HiveBuilder.extend(name, builder, cls, hive_kwargs)
