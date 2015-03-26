@@ -7,7 +7,6 @@ import inspect
 
 
 def generate_bee_name():
-    # TODO python 3 doesn't support xrange
     i = 0
     while True:
         i += 1
