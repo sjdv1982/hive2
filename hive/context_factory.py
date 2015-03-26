@@ -2,7 +2,7 @@ from . import get_mode
 
 
 class ContextFactory:
-    """Returns appropriate class instance depending upon execution mode"""
+    """Return appropriate class instance depending upon execution mode"""
 
     def __init__(self, name, immediate_cls=None, deferred_cls=None):
         self.name = name
