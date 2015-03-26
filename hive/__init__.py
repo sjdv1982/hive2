@@ -33,15 +33,17 @@ from .hive import hive, HiveBuilder, RuntimeHive
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
-#from .modifier import modifier # TODO (akin to triggerable, but receives run_hive as self)
-from .property import property
-#from .buffer import buffer # TODO (akin to property, but is stored on the run_hive)
+from .modifier import modifier #(akin to triggerable, but receives run_hive as self)
 from .ppin import pushin, pullin
 from .ppout import pushout, pullout
 
 #connection primitives
 from .connect import connect
 from .trigger import trigger
+
+#i/ex primitives
+from .property import property
+from .attribute import attribute #(akin to property, but is stored on the run_hive)
 
 #ex primitives
 from .entry import entry

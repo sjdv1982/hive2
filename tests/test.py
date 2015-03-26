@@ -52,16 +52,23 @@ class Dog(object):
         self._hive.woofed()
 
 
+def woof2(self):
+    self.woofs2 += 1
+    print("WOOF2", self.name, self.woofs2)
+
 def build_dog(cls, i, ex, args):
     i.call = h.triggerfunc(cls.call)
     i.woof = h.triggerable(cls.woof)
     #h.trigger(i.call, i.woof)
     h.connect(i.call, i.woof)
+    i.woof2 = h.modifier(woof2)
     i.bark = h.triggerfunc()
     h.trigger(i.bark, i.woof)    
     i.woofed = h.triggerfunc()    
 
     ex.woofs = h.property(cls, "woofs")
+    ex.name = h.property(cls, "name")
+    ex.woofs2 = h.attribute(data_type="int",start_value=0)
     ex.woof = h.entry(i.woof)
     ex.woofed = h.hook(i.woofed)
     ex.bark = h.hook(i.bark)
@@ -74,9 +81,11 @@ spot = dog("Spot")
 spike = dog("Spike")
 
 print(3)
+print(spot.name) #=> Spot
 spot.call() #=> CALL Spot WOOF Spot 1
-spot.call() #=> CALL Spot WOOF Spot 2
-print( "SPOT WOOFS", spot.woofs) #=> SPOT WOOFS 2
+h.connect(spot.call, spot._woof2)
+spot.call() #=> CALL Spot WOOF Spot 2 WOOF2 Spot 1
+print( "SPOT WOOFS", spot.woofs, spot.woofs2) #=> SPOT WOOFS 2 1
 print(4)
 spot.bark() #=> WOOF Spot 3
 print(5)
