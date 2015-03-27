@@ -112,8 +112,8 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
             # Add external bees
             hive_externals = self._hive_object._hive_parent_class._hive_ex
 
-            for name in dir(hive_externals):
-                bee = getattr(hive_externals, name)
+            for bee_name in dir(hive_externals):
+                bee = getattr(hive_externals, bee_name)
                 bee = bee.export()
                 # TODO: nice exception reporting
                 instance = bee.getinstance(self._hive_object)
@@ -121,13 +121,13 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
                 if isinstance(instance, Bindable):
                     instance = instance.bind(self)
 
-                bees.append((name, instance))
+                bees.append((bee_name, instance))
             
             # Add internal bees that are hives, Callable or Stateful
-            hive_internals = self._hive_object._hive_parent_class._hive_i
-            for name in hive_internals._attrs:
-                bee = getattr(hive_internals, name)
-                private_name = "_" + name
+            internal_bees = self._hive_object._hive_parent_class._hive_i
+            for bee_name in internal_bees._attrs:
+                bee = getattr(internal_bees, bee_name)
+                private_name = "_" + bee_name
 
                 # Protected attribute starting with _hive
                 assert not hasattr(self, private_name), private_name
@@ -146,14 +146,14 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
             
             bees.sort(key=bee_sort_key)
             
-            for name, instance in bees:
+            for bee_name, instance in bees:
                 if isinstance(instance, Stateful):
                     continue
 
-                instance._hive_bee_name = self._hive_bee_name + (name,)
-                self._hive_bee_instances[name] = instance
-                self._attrs.append(name)
-                setattr(self, name, instance)
+                instance._hive_bee_name = self._hive_bee_name + (bee_name,)
+                self._hive_bee_instances[bee_name] = instance
+                self._attrs.append(bee_name)
+                setattr(self, bee_name, instance)
                     
         finally:
             set_mode(current_mode)
@@ -217,11 +217,12 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         set_mode("build")
 
         try:
-            for attr in dir(self._hive_parent_class._hive_ex):
-                exportable = getattr(self._hive_parent_class._hive_ex, attr)
+            external_bees = self._hive_parent_class._hive_ex
+            for bee_name in dir(external_bees):
+                exportable = getattr(external_bees, bee_name)
                 target = exportable.export()
                 resolve_bee = ResolveBee(target, self)
-                setattr(self, attr, resolve_bee)
+                setattr(self, bee_name, resolve_bee)
 
         finally:
             set_mode(current_build_mode)
@@ -239,22 +240,22 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
     
     @classmethod
     def search_trigger_target(cls):
-        ex = cls._hive_parent_class._hive_ex
-        triggertargets = []
+        external_bees = cls._hive_parent_class._hive_ex
+        trigger_targets = []
 
-        for attr in dir(ex):
-            bee = getattr(ex, attr)
-            exbee = bee.export()
-            if isinstance(exbee, TriggerTarget):
-                triggertargets.append(attr)
+        for bee_name in dir(external_bees):
+            bee = getattr(external_bees, bee_name)
+            exported_bee = bee.export()
+            if isinstance(exported_bee, TriggerTarget):
+                trigger_targets.append(bee_name)
 
-        if len(triggertargets) == 0:
-            raise TypeError("No TriggerTargets in %s" % cls)
+        if not trigger_targets:
+            raise TypeError("No trigger targets in %s" % cls)
 
-        elif len(triggertargets) > 1:
-            raise TypeError("Multiple TriggerTargets in %s: %s" % (cls, triggertargets))
+        elif len(trigger_targets) > 1:
+            raise TypeError("Multiple trigger targets in {}: {}".format(cls, trigger_targets))
 
-        return triggertargets[0]
+        return trigger_targets[0]
 
     def get_trigger_target(self):
         attr = self.search_trigger_target()
@@ -262,17 +263,17 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         
     @classmethod
     def search_trigger_source(cls):
-        ex = cls._hive_parent_class._hive_ex
+        external_bee = cls._hive_parent_class._hive_ex
         trigger_sources = []
 
-        for attr in dir(ex):
-            bee = getattr(ex, attr)
+        for bee_name in dir(external_bee):
+            bee = getattr(external_bee, bee_name)
             exported_bee = bee.export()
 
             if isinstance(exported_bee, TriggerSource):
-                trigger_sources.append(attr)
+                trigger_sources.append(bee_name)
 
-        if len(trigger_sources) == 0:
+        if not trigger_sources:
             raise TypeError("No TriggerSources in %s" % cls)
 
         elif len(trigger_sources) > 1:
@@ -334,7 +335,7 @@ class HiveBuilder(object):
         cls._hive_build_methods()
 
         # TODO: auto-remove connections/triggers for which the source/target has been deleted
-        # TODO: sockets and plugins, take options into account for namespacing
+        # TODO: sockets and plugins, take options into account for namespaces
         run_hive_class_dict = {}
         hive_externals = cls._hive_ex
 
@@ -387,9 +388,9 @@ class HiveBuilder(object):
         anonymous_bees = set(bees)
 
         # Find any anonymous bees which are held on object
-        hive_internals = cls._hive_i
-        for bee_name in dir(hive_internals):
-            bee = getattr(hive_internals, bee_name)
+        internal_bees = cls._hive_i
+        for bee_name in dir(internal_bees):
+            bee = getattr(internal_bees, bee_name)
 
             if bee in anonymous_bees:
                 anonymous_bees.remove(bee)
@@ -402,18 +403,18 @@ class HiveBuilder(object):
             # Find unique name for bee
             while True:
                 bee_name = next(it_generate_bee_name)
-                if not hasattr(hive_internals, bee_name):
+                if not hasattr(internal_bees, bee_name):
                     break
 
-            setattr(hive_internals, bee_name, bee)
+            setattr(internal_bees, bee_name, bee)
 
         # Write the name of all bees to their instances
-        for bee_name in dir(hive_internals):
-            bee = getattr(hive_internals, bee_name)
+        for bee_name in dir(internal_bees):
+            bee = getattr(internal_bees, bee_name)
             bee._hive_bee_name = (bee_name,)
 
 
-# TODO options for namespacing (old frame/hive distinction)
+# TODO options for namespaces (old frame/hive distinction)
 def hive(name, builder, cls=None, hive_kwargs=False):
     if cls is not None:
         assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
