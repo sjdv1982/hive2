@@ -125,7 +125,7 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
             
             # Add internal bees that are hives, Callable or Stateful
             internal_bees = self._hive_object._hive_parent_class._hive_i
-            for bee_name in internal_bees._attrs:
+            for bee_name in dir(internal_bees):
                 bee = getattr(internal_bees, bee_name)
                 private_name = "_" + bee_name
 
@@ -263,11 +263,11 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
         
     @classmethod
     def search_trigger_source(cls):
-        external_bee = cls._hive_parent_class._hive_ex
+        external_bees = cls._hive_parent_class._hive_ex
         trigger_sources = []
 
-        for bee_name in dir(external_bee):
-            bee = getattr(external_bee, bee_name)
+        for bee_name in dir(external_bees):
+            bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
 
             if isinstance(exported_bee, TriggerSource):
