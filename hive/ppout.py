@@ -7,7 +7,6 @@ from .ppin import compare_types
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
-
     def __init__(self, target, data_type, bound=False, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
@@ -36,7 +35,6 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
 
     def _hive_pretrigger_source(self, targetfunc):
         self._pretrigger.add_target(targetfunc)
-
 
 class PullOut(PPOutBase):
     mode = "pull"
