@@ -1,8 +1,8 @@
 from .mixins import Stateful, Exportable, Bindable
 from .context_factory import ContextFactory
 from . import get_building_hive
-from .property import tuple_type
 from weakref import WeakKeyDictionary
+
 
 class Attribute(Stateful, Bindable, Exportable):
 
@@ -26,8 +26,9 @@ class Attribute(Stateful, Bindable, Exportable):
     def bind(self, run_hive):
         if run_hive in self._values:
             return
+
         self._values[run_hive] = self.start_value
-      
         return self
+
 
 attribute = ContextFactory("hive.attribute", deferred_cls=Attribute)
