@@ -6,7 +6,7 @@ from . import manager
 
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
-    def __init__(self, func, bound=None):
+    def __init__(self, func, bound=False):
         assert callable(func) or isinstance(func, Callable), func
         self._func = func
         self._bound = bound
@@ -16,7 +16,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def trigger(self):
         # TODO: exception handling hooks
-        self._func(self._bound)
+        self._func()
         
     @manager.bind
     def bind(self, run_hive):
@@ -24,8 +24,11 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
             return self
 
         func = self._func
+
+        if isinstance(func, Bindable):
+            func = func.bind(run_hive)
         
-        return self.__class__(func, bound=run_hive)
+        return self.__class__(func, bound=True)
 
     def _hive_trigger_target(self):
         return self.trigger
@@ -65,4 +68,4 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return False
 
 
-modifier = ContextFactory("hive.modifier", deferred_cls=ModifierBee)
+modifier = ContextFactory("hive.modifier", immediate_cls=Modifier, deferred_cls=ModifierBee)
