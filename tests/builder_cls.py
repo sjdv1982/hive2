@@ -29,12 +29,16 @@ def build_dog(cls, i, ex, args):
     i.call = hive.triggerfunc(cls.call)
     i.woof = hive.triggerable(cls.woof)
     hive.connect(i.call, i.woof)
+
     i.bark = hive.triggerfunc()
     hive.trigger(i.bark, i.woof)
+
+    i.woof_only = hive.modifier(cls.woof)
     i.woofed = hive.triggerfunc()
 
     ex.woofs = hive.property(cls, "woofs")
     ex.woof = hive.entry(i.woof)
+    ex.woof_only = hive.entry(i.woof_only)
     ex.woofed = hive.hook(i.woofed)
     ex.bark = hive.hook(i.bark)
     ex.call = hive.hook(i.call)
@@ -51,3 +55,5 @@ spot.bark()
 
 spike.call()
 spike.bark()
+
+spot.woof_only()
