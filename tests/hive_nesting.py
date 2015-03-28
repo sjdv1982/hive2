@@ -69,7 +69,7 @@ def build_house(cls, i, ex, args):
     ex.dog_appeared = hive.entry(i.dog_appeared)
 
 
-DogHive = hive.hive("dog", build_dog, Dog)
+DogHive = hive.hive("Dog", build_dog, Dog)
 HouseHive = hive.hive("House", build_house, House)
 
 house = HouseHive()
