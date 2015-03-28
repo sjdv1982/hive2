@@ -72,7 +72,7 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         self._hive_object = hive_object
         self._hive_build_class_instances = {}
         self._hive_bee_instances = {}
-        self._attrs = ["_drones"]
+        self._bee_names = ["_drones"]
         self._drones = []
 
         manager.register_run_hive(self)
@@ -152,7 +152,7 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
 
                 instance._hive_bee_name = self._hive_bee_name + (bee_name,)
                 self._hive_bee_instances[bee_name] = instance
-                self._attrs.append(bee_name)
+                self._bee_names.append(bee_name)
                 setattr(self, bee_name, instance)
                     
         finally:
@@ -171,7 +171,7 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         return instance._hive_trigger_target()
 
     def __dir__(self):
-        return self._attrs
+        return self._bee_names
 
 
 class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):

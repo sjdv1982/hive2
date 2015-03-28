@@ -6,7 +6,7 @@ class HiveExportables(object):
     def __init__(self, hive_cls):
         assert hive_cls is not None
         self._hive_cls = hive_cls
-        self._attrs = set()
+        self._bee_names = set()
 
     def __setattr__(self, name, value):
         if name == "parent":
@@ -33,15 +33,15 @@ class HiveExportables(object):
             raise AttributeError("HiveExportables (ex) attribute '%s' must contain a Bee built by '%s' (or one of its"
                                  " base classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
 
-        self._attrs.add(name)
+        self._bee_names.add(name)
         object.__setattr__(self, name, value)
 
     def __delattr__(self, attr):
-        if attr not in self._attrs:
+        if attr not in self._bee_names:
             raise AttributeError
 
-        self._attrs.remove(attr)
+        self._bee_names.remove(attr)
         object.__delattr__(self, attr)
 
     def __dir__(self):
-        return list(self._attrs)    
+        return list(self._bee_names)
