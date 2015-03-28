@@ -1,17 +1,23 @@
 from . import manager
 
 _mode = "immediate"
+_building_hive = None
+_run_hive = None
+
+
 def get_mode():
     return _mode
+
 
 def set_mode(mode):
     global _mode
     assert mode in ("immediate", "build"), mode
     _mode = mode
-        
-_building_hive = None
+
+
 def get_building_hive():
     return _building_hive
+
 
 def set_building_hive(building_hive):
     global _building_hive    
@@ -19,14 +25,15 @@ def set_building_hive(building_hive):
     _building_hive = building_hive
 
 
-_run_hive = None
 def get_run_hive():
     return _run_hive
+
 
 def set_run_hive(run_hive):
     global _run_hive
     assert run_hive is None or isinstance(run_hive, RuntimeHive), run_hive
     _run_hive = run_hive
+
 
 from .hive import hive, HiveBuilder, RuntimeHive
 

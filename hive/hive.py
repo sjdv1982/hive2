@@ -110,10 +110,10 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
             bees = []
                         
             # Add external bees
-            hive_externals = self._hive_object._hive_parent_class._hive_ex
+            external_bees = self._hive_object._hive_parent_class._hive_ex
 
-            for bee_name in dir(hive_externals):
-                bee = getattr(hive_externals, bee_name)
+            for bee_name in dir(external_bees):
+                bee = getattr(external_bees, bee_name)
                 bee = bee.export()
                 # TODO: nice exception reporting
                 instance = bee.getinstance(self._hive_object)
