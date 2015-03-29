@@ -19,7 +19,7 @@ class Dog(object):
 
 
 def build_dog(cls, i, ex, args):
-    i.print_house = hive.modifier(cls.print_house)
+    i.print_house = hive.triggerable(cls.print_house)
     ex.print_house = hive.entry(i.print_house)
     ex.some_socket = hive.socket(cls.set_get_house)
 
