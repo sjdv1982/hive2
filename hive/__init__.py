@@ -28,6 +28,26 @@ def set_run_hive(run_hive):
     assert run_hive is None or isinstance(run_hive, RuntimeHive), run_hive
     _run_hive = run_hive
 
+def _check_tuple_type(value):
+    if isinstance(value, str):
+        return
+
+    assert isinstance(value, tuple), value
+    for entry in value:
+        _check_tuple_type(entry)
+
+
+def tuple_type(value):
+    if value is None:
+        return ()
+
+    if isinstance(value, str):
+        return (value,)
+    
+    _check_tuple_type(value)
+    return value
+
+
 from .hive import hive, HiveBuilder, RuntimeHive
 
 #i primitives

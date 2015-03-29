@@ -1,7 +1,7 @@
 from .mixins import Stateful, Exportable, Bindable
 from .context_factory import ContextFactory
 from . import get_building_hive
-from .property import tuple_type
+from . import tuple_type
 from weakref import WeakKeyDictionary
 
 class Attribute(Stateful, Bindable, Exportable):
