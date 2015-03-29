@@ -1,26 +1,8 @@
 from .hive import HiveMethodWrapper
 from .mixins import Stateful, Exportable, Bindable
+from .tuple_type import tuple_type
 from . import get_mode, get_building_hive
 from weakref import WeakSet
-
-def _check_tuple_type(value):
-    if isinstance(value, str):
-        return
-
-    assert isinstance(value, tuple), value
-    for entry in value:
-        _check_tuple_type(entry)
-
-
-def tuple_type(value):
-    if value is None:
-        return ()
-
-    if isinstance(value, str):
-        return (value,)
-    
-    _check_tuple_type(value)
-    return value
 
 
 class Property(Stateful, Bindable, Exportable):
@@ -56,10 +38,10 @@ class Property(Stateful, Bindable, Exportable):
     def bind(self, run_hive):
         if run_hive in self._bound:
             return
+
         self._bound.add(run_hive)
         
         cls = self._cls
-
         assert cls in run_hive._hive_build_class_instances, cls
         instance = run_hive._hive_build_class_instances[cls]
 

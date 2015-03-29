@@ -7,7 +7,7 @@ from . import manager
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def __init__(self, func, bound=None):
-        assert callable(func) or isinstance(func, Callable), func
+        assert callable(func) and not isinstance(Bee), "Modifier function should be a Python callable"
         self._func = func
         self._bound = bound
 
@@ -23,9 +23,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
         if self._bound:
             return self
 
-        func = self._func
-        
-        return self.__class__(func, bound=run_hive)
+        return self.__class__(self._func, bound=run_hive)
 
     def _hive_trigger_target(self):
         return self.trigger
@@ -65,4 +63,4 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return False
 
 
-modifier = ContextFactory("hive.modifier", deferred_cls=ModifierBee)
+modifier = ContextFactory("hive.modifier", immediate_cls=Modifier, deferred_cls=ModifierBee)
