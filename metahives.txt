@@ -1,0 +1,66 @@
+There are two use cases for metahives:
+
+1. Dynamic hives, builders where the execution depends on the values of the arguments
+You must define a *declarator* that *only* manipulates the args wrapper
+For the normal builders, args is given not as a wrapper, but as a instance that contains the *values* of the parameters
+
+Example:
+
+def declare_splitter(args):
+    args.splits = hive.parameter("int", 1)
+
+def build_splitter(i, ex, args):
+    for n in range(args.splits):        
+        o = hive.output(...)
+        attr = "split" + str(n+1)
+        setattr(ex, attr, o) #ex.split1, ex.split2, ...
+        
+splitter = hive.dynahive("splitter", build_splitter, declare_splitter)
+
+
+2. True metahives. They have meta-builders that can define bees and that build meta-arguments
+Once the metahive has been called, its normal builders are invoked, receiving the value of the meta-arguments
+In addition, the normal builders can define bees and build args, just like in a normal hive
+
+Example:
+
+def meta_build_buffer(i, ex, meta_args):
+    meta_args.type = hive.parameter("type")
+    i.trig = hive.triggerfunc()
+    ex.trig = hive.entry(i.trig)
+    
+def build_buffer(meta_args, i, ex, args):
+   args.startvalue = hive.parameter(meta_args.type)
+   i.buf = hive.property(meta_args.type, args.startvalue)
+   i.inp = hive.pushin(i.buf)
+   i.outp = hive.pushout(i.buf)
+   trigger(i.trig, i.outp)
+   ex.input = hive.antenna(i.inp)
+   ex.output = hive.output(i.outp)
+
+buffer = hive.metahive("buffer", build_buffer, meta_build_buffer)
+   
+Meta-builders and declarators cannot wrap a cls. The normal builders of dynahives and metahives can, 
+if a cls argument has been specified in the dynahive/metahive call
+ 
+Syntax:
+- Dynamic hives are used in the same way as normal hives
+- True meta-hives are used with a double-call syntax: b = buffer("int")(10). 
+In the future, it could be possible to support a single-call as syntactic sugar: b = buffer("int", 10)
+
+Implementation:
+- hive.metahive and hive.dynahive are syntactic sugar around HiveBuilder.extend, just like hive.hive
+- Internally in the HiveBuilder, declarators and meta-builders are invoked at the same time when the 
+builders for a normal hive would be evoked, i.e. once per class. The args/meta_args wrapper is stored. 
+In case of metahives, the i and ex wrappers are stored as rump wrappers
+- In case of dynahives, the first call on the hive class already generates a HiveObject. However, a special builder 
+memoization is invoked for the normal builders of dynahives: a builder is invoked whenever the hive is 
+constructed with a *new value* of the arguments (i.e. a combination of construction parameters that has 
+not been seen before).
+The builder is then called with those values as args.
+- In case of metahives, the first call on the hive class generates a new primitive; a second call on this primitive generates a 
+HiveObject. A special primitivization memoization is invoked for the first call.
+The primitivization is performed for each *new value* of the meta_args. The builders are then called with those 
+values as meta_args; a deepcopy of the rump wrappers is passed to the builder as well.
+
+
