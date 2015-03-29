@@ -2,9 +2,8 @@ from .mixins import ConnectSource, ConnectSourceBase, ConnectSourceDerived, Conn
 from .classes import HiveBee
 from . import get_mode
 from . import manager
+from .hive import connect_hives
 
-def connect_hive_hive(source, target):
-    raise NotImplementedError
 
 def build_connection(source, target):
     # TODO: register connection, or insert a listener function in between
@@ -12,19 +11,19 @@ def build_connection(source, target):
     hive_source = isinstance(source, ConnectSourceDerived)
     hive_target = isinstance(target, ConnectTargetDerived)
     if hive_source and hive_target:
-        connect_hive_hive(source, target)
+        source, target = connect_hives(source, target)
     else: 
         if hive_source:
             source = source._hive_search_connect_source(target)
         elif hive_target:
             target = target._hive_search_connect_target(source)
                     
-        #will raise an Exception if incompatible:
-        source._hive_connectable_source(target)
-        target._hive_connectable_target(source)
-            
-        target._hive_connect_target(source)
-        source._hive_connect_source(target)
+    #will raise an Exception if incompatible:
+    source._hive_connectable_source(target)
+    target._hive_connectable_target(source)
+        
+    target._hive_connect_target(source)
+    source._hive_connect_source(target)
 
 
 class Connection(Bindable):

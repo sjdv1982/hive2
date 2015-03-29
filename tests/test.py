@@ -149,15 +149,18 @@ k2 = kennel()
 print(10)
 k._fifi.call() #=> CALL Fifi; WOOF Fifi 1; WOOF Brutus 1
 
-#h.connect(k._brutus.woofed, k._fifi.woof)
 h.connect(k._brutus.woofed, k._fifi)
-#or: h.trigger(k.brutus.woofed, k.fifi.woof)
-#or: h.trigger(k.brutus.woofed, k.fifi)
+#or: h.connect(k._brutus.woofed, k._fifi.woof)
+#or: h.trigger(k._brutus.woofed, k._fifi.woof)
+#or: h.trigger(k._brutus.woofed, k._fifi)
 ###or:
 #try:
-#    h.trigger(k.brutus, k.fifi) #TypeError: ambiguity between woofed and call
+#    h.trigger(k._brutus, k._fifi) #TypeError: ambiguity between woofed and call
 #except:
 #    traceback.print_exc()    
+###or:
+#h.connect(k._brutus, k._fifi.woof) #TypeError: ambiguity between bark, call and woofed
+#h.connect(k._brutus, k._fifi) #TypeError: ambiguity between bark-woof, call-woof and woofed-woof
 
 print(11)
 k._fifi.call() #=> CALL Fifi; WOOF Fifi 2; WOOF Brutus 2; WOOF Fifi 3
