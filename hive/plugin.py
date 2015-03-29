@@ -27,9 +27,10 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
     def _hive_connectable_source(self, target):
         # TODO : nicer error message
         assert isinstance(target, Socket), target
+        self._policy.pre_donated()
 
     def _hive_connect_source(self, target):
-        pass
+        self._policy.on_donated()
 
     @manager.bind
     def bind(self, run_hive):

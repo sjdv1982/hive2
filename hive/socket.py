@@ -52,10 +52,12 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
     def _hive_connectable_target(self, source):
         # TODO : nicer error message
         assert isinstance(source, Plugin)
+        self._policy.pre_filled()
 
     def _hive_connect_target(self, source):
         plugin = source.plugin()
         self._func(plugin)
+        self._policy.on_filled()
     
 
 class HiveSocketBee(Socket, ConnectTarget, Exportable):
