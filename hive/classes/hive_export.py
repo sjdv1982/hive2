@@ -1,5 +1,5 @@
 from ..mixins import Exportable
-
+from . import _special_names
 
 class HiveExportables(object):
 
@@ -9,9 +9,9 @@ class HiveExportables(object):
         self._attrs = set()
 
     def __setattr__(self, name, value):
-        if name == "parent":
-            raise AttributeError("HiveExportables (ex) special attribute 'parent' cannot be assigned to"
-                                 % value.__class__)
+        if name in _special_names:
+            raise AttributeError("HiveExportables (ex) special attribute '%s' cannot be assigned to"
+                                 % name)
 
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)

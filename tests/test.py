@@ -136,8 +136,9 @@ h2.dog_comes() #=> A dog comes
 def build_kennel(i, ex, args):
     i.brutus = dog("Brutus")
     i.fifi = dog("Fifi")
-    h.trigger(i.fifi.call, i.brutus.woof)
+    #h.trigger(i.fifi.call, i.brutus.woof)
     #h.trigger(i.fifi.call, i.brutus)
+    h.connect(i.fifi.call, i.brutus)
     
 #underscore (_) names for brutus and fifi, since they are not in ex
 
@@ -148,7 +149,8 @@ k2 = kennel()
 print(10)
 k._fifi.call() #=> CALL Fifi; WOOF Fifi 1; WOOF Brutus 1
 
-h.connect(k._brutus.woofed, k._fifi.woof)
+#h.connect(k._brutus.woofed, k._fifi.woof)
+h.connect(k._brutus.woofed, k._fifi)
 #or: h.trigger(k.brutus.woofed, k.fifi.woof)
 #or: h.trigger(k.brutus.woofed, k.fifi)
 ###or:

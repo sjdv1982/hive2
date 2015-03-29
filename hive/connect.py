@@ -1,19 +1,30 @@
-from .mixins import ConnectSource, ConnectTarget, Bee, Bindable
+from .mixins import ConnectSource, ConnectSourceBase, ConnectSourceDerived, ConnectTarget, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable
 from .classes import HiveBee
 from . import get_mode
 from . import manager
-from .hive import HiveObject
 
+def connect_hive_hive(source, target):
+    raise NotImplementedError
 
 def build_connection(source, target):
     # TODO: register connection, or insert a listener function in between
     
-    #will raise an Exception if incompatible:
-    source._hive_connectable_source(target)
-    target._hive_connectable_target(source)
-        
-    target._hive_connect_target(source)
-    source._hive_connect_source(target)
+    hive_source = isinstance(source, ConnectSourceDerived)
+    hive_target = isinstance(target, ConnectTargetDerived)
+    if hive_source and hive_target:
+        connect_hive_hive(source, target)
+    else: 
+        if hive_source:
+            source = source._hive_search_connect_source(target)
+        elif hive_target:
+            target = target._hive_search_connect_target(source)
+                    
+        #will raise an Exception if incompatible:
+        source._hive_connectable_source(target)
+        target._hive_connectable_target(source)
+            
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
 
 
 class Connection(Bindable):
@@ -43,16 +54,8 @@ class ConnectionBee(HiveBee):
     @manager.getinstance
     def getinstance(self, hive_object):
         source, target = self.args
-        if isinstance(source, HiveObject):
-            #source = source.get_trigger_source()
-            raise NotImplementedError
-
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
-
-        if isinstance(target, HiveObject):
-            #target = target.get_trigger_target()            
-            raise NotImplementedError
 
         if isinstance(target, Bee):    
             target = target.getinstance(hive_object)
@@ -67,12 +70,12 @@ class ConnectionBee(HiveBee):
 def connect(source, target):
 
     if isinstance(source, Bee):
-        assert source.implements(ConnectSource), source
-        assert target.implements(ConnectTarget), target
+        assert source.implements(ConnectSourceBase), source
+        assert target.implements(ConnectTargetBase), target
 
     else:
-        assert isinstance(source, ConnectSource), source
-        assert isinstance(target, ConnectTarget), target
+        assert isinstance(source, ConnectSourceBase), source
+        assert isinstance(target, ConnectTargetBase), target
 
     if get_mode() == "immediate":
         build_connection(source, target)

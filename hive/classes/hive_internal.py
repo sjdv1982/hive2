@@ -1,5 +1,5 @@
 from ..mixins import Bee, Exportable
-
+from . import _special_names
 
 class HiveInternals(object):
 
@@ -9,8 +9,8 @@ class HiveInternals(object):
         self._attrs = []
 
     def __setattr__(self, name, value):
-        if name == "parent":
-            raise AttributeError("HiveInternals (i) special attribute 'parent' cannot be assigned to" % value.__class__)
+        if name in _special_names:
+            raise AttributeError("HiveInternals (i) special attribute '%s' cannot be assigned to" % name)
 
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)
