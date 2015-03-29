@@ -13,10 +13,15 @@ def method(func):
     @wraps(func)
     def wrapper(self):
         try:
-            return _memoize_results[func]
+            func_results = _memoize_results[func]
+        except KeyError:
+            func_results = _memoize_results[func] = WeakKeyDictionary()
+
+        try:
+            return func_results[self]
 
         except KeyError:
-            _memoize_results[func] = func(self)
-            return _memoize_results[func]
+            result = func_results[self] = func(self)
+            return result
 
     return wrapper
