@@ -1,4 +1,5 @@
-from .mixins import ConnectSource, ConnectSourceBase, ConnectSourceDerived, ConnectTarget, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable
+from .mixins import ConnectSource, ConnectSourceBase, ConnectSourceDerived, ConnectTarget, ConnectTargetBase, \
+    ConnectTargetDerived, Bee, Bindable, Exportable
 from .classes import HiveBee
 from . import get_mode
 from . import manager
@@ -55,6 +56,13 @@ class ConnectionBee(HiveBee):
     @manager.getinstance
     def getinstance(self, hive_object):
         source, target = self.args
+
+        if isinstance(source, Exportable):
+            source = source.export()
+
+        if isinstance(target, Exportable):
+            target = target.export()
+
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
