@@ -61,7 +61,7 @@ class HiveMethodWrapper(object):
         raise AttributeError("HiveMethodWrapper of class '%s' is read-only" % self._cls.__name__)
 
 
-class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
     """Unique Hive instance that is created at runtime for a Hive object.
 
     Lightweight instantiation is supported through caching performed by the HiveObject instance.
@@ -170,11 +170,20 @@ class RuntimeHive(ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
         instance = self._hive_bee_instances[attr]
         return instance._hive_trigger_target()
 
+    def _hive_search_connect_source(self, target):
+        return self._hive_object._hive_search_connect_source(target)
+
+    def _hive_search_connect_target(self, source):
+        return self._hive_object._hive_search_connect_target(source)
+      
+    def implements(self, cls):
+        return isinstance(self, cls)
+      
     def __dir__(self):
         return self._bee_names
 
 
-class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, TriggerTarget):
+class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
     """Built Hive class responsible for creating new Hive instances.
 
     All bees defined with the builder functions are memoized and cached for faster instantiation
@@ -284,6 +293,14 @@ class HiveObject(Exportable, ConnectSource, ConnectTarget, TriggerSource, Trigge
     def get_trigger_source(self):
         attr = self.search_trigger_source()
         return getattr(self, attr)    
+
+    @classmethod
+    def _hive_search_connect_source(cls, target):
+        raise NotImplementedError
+
+    @classmethod
+    def _hive_search_connect_target(cls, source):
+        raise NotImplementedError
     
     def export(self):
         return self
