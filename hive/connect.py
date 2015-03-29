@@ -3,12 +3,13 @@ from .classes import HiveBee
 from . import get_mode
 from . import manager
 
+
 def connect_hive_hive(source, target):
     raise NotImplementedError
 
+
 def build_connection(source, target):
     # TODO: register connection, or insert a listener function in between
-    
     hive_source = isinstance(source, ConnectSourceDerived)
     hive_target = isinstance(target, ConnectTargetDerived)
     if hive_source and hive_target:
