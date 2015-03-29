@@ -120,12 +120,9 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
             target = target.getinstance(hive_object)
 
         if self.mode == "push":    
-            ret = PushIn(target, self.data_type)
+            return PushIn(target, self.data_type)
 
-        else:
-            ret = PullIn(target, self.data_type)
-
-        return ret
+        return PullIn(target, self.data_type)
 
     def implements(self, cls):
         if isinstance(self, cls):

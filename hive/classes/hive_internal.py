@@ -6,7 +6,7 @@ class HiveInternals(object):
     def __init__(self, hive_cls):
         assert hive_cls is not None
         self._hive_cls = hive_cls
-        self._attrs = []
+        self._bee_names = set()
 
     def __setattr__(self, name, value):
         if name in _special_names:
@@ -15,6 +15,7 @@ class HiveInternals(object):
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)
 
+        # Mechanism for deletion of attributes
         if value is None:
             if hasattr(self, name):
                 self.__delattr__(name)
@@ -36,17 +37,15 @@ class HiveInternals(object):
             raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
                                  " classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
 
-        if name not in self._attrs:
-            self._attrs.append(name)
-
+        self._bee_names.add(name)
         object.__setattr__(self, name, value)
 
-    def __delattr__(self, attr):
-        if attr not in self._attrs:
+    def __delattr__(self, name):
+        if name not in self._bee_names:
             raise AttributeError
 
-        self._attrs.remove(attr)
-        object.__delattr__(self, attr)
+        self._bee_names.remove(name)
+        object.__delattr__(self, name)
 
     def __dir__(self):
-        return list(self._attrs)
+        return list(self._bee_names)

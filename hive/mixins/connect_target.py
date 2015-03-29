@@ -16,8 +16,8 @@ class ConnectTargetBase(Connectable):
 
 
 class ConnectTarget(ConnectTargetBase):
-
     data_type = ()
+
     def _hive_connectable_target(self, source):
         raise NotImplementedError
 
@@ -27,5 +27,6 @@ class ConnectTarget(ConnectTargetBase):
 
 class ConnectTargetDerived(ConnectTargetBase):    
     _hive_connect_targets = None
+
     def _hive_search_connect_target(self, source):
         raise NotImplementedError    
