@@ -35,7 +35,10 @@ def build_house(cls, i, ex, args):
     ex.dog = i.dog
 
     ex.some_plugin = hive.plugin(cls.get_current_hive)
+    ex.some_other_plugin = hive.plugin(cls.get_current_hive)
+
     hive.connect(ex.some_plugin, ex.dog.some_socket)
+    hive.connect(ex.some_other_plugin, ex.dog.some_socket)
 
     # # method 2
     # i.brutus = DogHive("Brutus")
