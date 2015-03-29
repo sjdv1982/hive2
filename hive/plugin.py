@@ -52,7 +52,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, name = None, data_type = (), exported = False):
+    def __init__(self, target, name=None, data_type=(), exported=False):
         self._hive_cls = get_building_hive()
         self._target = target
         self._exported = exported
@@ -77,7 +77,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
 
         if isinstance(target, Exportable):
             exported = target.export()
-            return self.__class__(exported, self.name, self.data_type, exported = True)
+            return self.__class__(exported, self.name, self.data_type, exported=True)
 
         else:
             return self
