@@ -65,16 +65,16 @@ class ConnectionBee(HiveBee):
     def getinstance(self, hive_object):
         source, target = self.args
 
-        if isinstance(source, Exportable):
-            source = source.export()
-
-        if isinstance(target, Exportable):
-            target = target.export()
-
         if isinstance(source, Bee):
+            if isinstance(source, Exportable):
+                source = source.export()
+
             source = source.getinstance(hive_object)
 
-        if isinstance(target, Bee):    
+        if isinstance(target, Bee):
+            if isinstance(target, Exportable):
+                target = target.export()
+
             target = target.getinstance(hive_object)
 
         if get_mode() == "immediate":            
