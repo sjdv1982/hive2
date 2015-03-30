@@ -22,7 +22,6 @@ def bee_sort_key(item):
     b = item[0]
     k = b
     if b.startswith("bee"):
-        print(b)
         try:
             int(b[3:])
             k = "zzzzzzz" + b
@@ -68,12 +67,17 @@ class Generic(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-
     def __str__(self):
         return str(self.__dict__)
 
 
 def find_connection_candidates(sources, targets, require_types=True):
+    """Finds appropriate connections between ConnectionSources and ConnectionTargets
+
+    :param sources: connection sources
+    :param targets: connection targets
+    :param require_types: require type definitions to be declared
+    """
     candidates = []
 
     for source_candidate, target_candidate in product(sources, targets):
@@ -114,7 +118,7 @@ def connect_hives(source, target):
             continue
 
         source_data_type = tuple_type(exported_bee.data_type)
-        candidate = Generic(ttrib=bee_name, data_type=source_data_type, bee=exported_bee)
+        candidate = Generic(attrib=bee_name, data_type=source_data_type, bee=exported_bee)
         connect_sources.append(candidate)
 
     # Find target hive ConnectSources
@@ -127,7 +131,7 @@ def connect_hives(source, target):
             continue
 
         target_data_type = tuple_type(exported_bee.data_type)
-        candidate = Generic(ttrib=bee_name, data_type=target_data_type, bee=exported_bee)
+        candidate = Generic(attrib=bee_name, data_type=target_data_type, bee=exported_bee)
         connect_targets.append(candidate)
     
     # First try: match candidates with named data_type
@@ -144,7 +148,8 @@ def connect_hives(source, target):
         candidate_names = [(a.attrib, b.attrib) for a, b in candidates]
         # TODO: nicer error message
         raise TypeError("Multiple matches: %s" % candidate_names)
-      
+
+    print(candidates)
     if isinstance(source, RuntimeHive):
         source_candidate = getattr(source, candidates[0][0].attrib)
         target_candidate = getattr(target, candidates[0][1].attrib)

@@ -52,7 +52,6 @@ class Property(Stateful, Bindable, Exportable):
 
 
 def property(cls, attr, data_type=None, start_value=None):
-    print(tuple_type)
     data_type = tuple_type(data_type)
 
     if get_mode() == "immediate":
