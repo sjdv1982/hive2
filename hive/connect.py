@@ -1,16 +1,13 @@
-from .mixins import ConnectSource, ConnectSourceBase, ConnectSourceDerived, ConnectTarget, ConnectTargetBase, \
-    ConnectTargetDerived, Bee, Bindable, Exportable
+from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
+    Exportable
 from .classes import HiveBee
 from . import get_mode
 from . import manager
 from .hive import connect_hives
 
-<<<<<<< HEAD
-=======
 
 def connect_hive_hive(source, target):
     raise NotImplementedError
->>>>>>> 9b75cca077b3f67dfe74353cedbeb1dfcdfadc2e
 
 
 def build_connection(source, target):
@@ -97,7 +94,6 @@ def connect(source, target):
 
     else:
         connection_bee = ConnectionBee(source, target)
-        print("Connect...", source._target, target._target, connection_bee)
         manager.register_bee(connection_bee)
         return connection_bee
 

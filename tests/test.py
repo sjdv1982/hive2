@@ -56,6 +56,7 @@ def woof2(self):
     self.woofs2 += 1
     print("WOOF2", self.name, self.woofs2)
 
+
 def build_dog(cls, i, ex, args):
     i.call = h.triggerfunc(cls.call)
     i.woof = h.triggerable(cls.woof)
