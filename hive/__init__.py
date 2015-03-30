@@ -34,6 +34,7 @@ def set_run_hive(run_hive):
     assert run_hive is None or isinstance(run_hive, RuntimeHive), run_hive
     _run_hive = run_hive
 
+
 def _check_tuple_type(value):
     if isinstance(value, str):
         return
@@ -41,6 +42,7 @@ def _check_tuple_type(value):
     assert isinstance(value, tuple), value
     for entry in value:
         _check_tuple_type(entry)
+
 
 def tuple_type(value):
     if value is None:
@@ -52,15 +54,19 @@ def tuple_type(value):
     _check_tuple_type(value)
     return value
 
-def typematch(data_type1, data_type2):
+
+def types_match(data_type_a, data_type_b):
     # Checks that two data type tuples match by comparing their first N elements,
     #  where N is the length of the shortest data type tuple
     # Returns a TypeError otherwise
-    assert isinstance(data_type1, tuple), data_type1
-    assert isinstance(data_type2, tuple), data_type2
-    for t1, t2 in zip(data_type1, data_type2):
-        if t1 != t2:
-            raise TypeError(t1, t2, data_type1, data_type2)
+    assert isinstance(data_type_a, tuple), data_type_a
+    assert isinstance(data_type_b, tuple), data_type_b
+
+    for type_a, type_b in zip(data_type_a, data_type_b):
+        if type_a != type_b:
+            return False
+
+    return True
 
 from .hive import hive, HiveBuilder, RuntimeHive
 

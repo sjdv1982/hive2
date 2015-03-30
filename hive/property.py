@@ -3,7 +3,7 @@ from .mixins import Stateful, Exportable, Bindable
 from .tuple_type import tuple_type
 from . import get_mode, get_building_hive
 from weakref import WeakSet
-from . import tuple_type
+
 
 class Property(Stateful, Bindable, Exportable):
 
@@ -52,6 +52,7 @@ class Property(Stateful, Bindable, Exportable):
 
 
 def property(cls, attr, data_type=None, start_value=None):
+    print(tuple_type)
     data_type = tuple_type(data_type)
 
     if get_mode() == "immediate":

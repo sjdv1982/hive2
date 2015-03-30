@@ -7,7 +7,7 @@ from . import manager
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def __init__(self, func, bound=None):
-        assert callable(func) and not isinstance(Bee), "Modifier function should be a Python callable"
+        assert callable(func) and not isinstance(func, Bee), "Modifier function should be a Python callable"
         self._func = func
         self._bound = bound
 
