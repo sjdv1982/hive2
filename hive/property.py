@@ -3,7 +3,7 @@ from .mixins import Stateful, Exportable, Bindable
 from .tuple_type import tuple_type
 from . import get_mode, get_building_hive
 from weakref import WeakSet
-from . import tuple_type
+
 
 class Property(Stateful, Bindable, Exportable):
 

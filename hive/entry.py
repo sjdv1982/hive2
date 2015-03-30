@@ -4,6 +4,7 @@ from .context_factory import ContextFactory
 
 
 class Entry(Exportable, Bee):
+    """Exportable proxy for TriggerTarget bees"""
 
     def __init__(self, target):
         assert isinstance(target, TriggerTarget), target

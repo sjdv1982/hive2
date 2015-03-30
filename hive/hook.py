@@ -4,6 +4,7 @@ from . import get_building_hive
 
 
 class Hook(Exportable, Bee):
+    """Exportable proxy for TriggerSource bees"""
 
     def __init__(self, target):
         assert isinstance(target, TriggerSource), target

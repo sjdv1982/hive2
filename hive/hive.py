@@ -1,8 +1,10 @@
 from .mixins import *
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
+from .tuple_type import tuple_type, types_match
 from . import get_mode, set_mode, get_building_hive, set_building_hive, get_run_hive, set_run_hive
-from . import manager, tuple_type, typematch
+from . import manager
 
+from itertools import product
 import inspect
 
 
@@ -20,7 +22,6 @@ def bee_sort_key(item):
     b = item[0]
     k = b
     if b.startswith("bee"):
-        print(b)
         try:
             int(b[3:])
             k = "zzzzzzz" + b
@@ -60,92 +61,106 @@ class HiveMethodWrapper(object):
     def __setattr__(self, attr):
         raise AttributeError("HiveMethodWrapper of class '%s' is read-only" % self._cls.__name__)
 
+
 class Generic(object):
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
     def __str__(self):
         return str(self.__dict__)
+
+
+def find_connection_candidates(sources, targets, require_types=True):
+    """Finds appropriate connections between ConnectionSources and ConnectionTargets
+
+    :param sources: connection sources
+    :param targets: connection targets
+    :param require_types: require type definitions to be declared
+    """
+    candidates = []
+
+    for source_candidate, target_candidate in product(sources, targets):
+        source_data_type = source_candidate.data_type
+        target_data_type = target_candidate.data_type
+
+        if require_types and (not source_data_type or not target_data_type):
+            continue
+
+        if not types_match(source_data_type, target_data_type):
+            continue
+
+        candidates.append((source_candidate, target_candidate))
+
+    return candidates
+
 
 def connect_hives(source, target):    
     assert isinstance(source, RuntimeHive) == isinstance(target, RuntimeHive)
     if isinstance(source, RuntimeHive):
-        hiveobj1 = source._hive_object
-        hiveobj2 = target._hive_object
+        source_hive_object = source._hive_object
+        target_hive_object = target._hive_object
+
     else:
-        hiveobj1 = source
-        hiveobj2 = target
-    ex1 = hiveobj1._hive_parent_class._hive_ex
-    ex2 = hiveobj2._hive_parent_class._hive_ex
-    connect_sources = []    
-    for attr in dir(ex1):
-        bee = getattr(ex1, attr)
+        source_hive_object = source
+        target_hive_object = target
+
+    source_externals = source_hive_object._hive_parent_class._hive_ex
+    target_externals = target_hive_object._hive_parent_class._hive_ex
+
+    # Find source hive ConnectSources
+    connect_sources = []
+    for bee_name in dir(source_externals):
+        bee = getattr(source_externals, bee_name)
         exported_bee = bee.export()
+
         if not exported_bee.implements(ConnectSource): 
             continue
-        data_type1 = tuple_type(exported_bee.data_type)
-        candidate = Generic(
-          attrib = attr, 
-          data_type = data_type1,
-          bee = exported_bee
-        )  
+
+        source_data_type = tuple_type(exported_bee.data_type)
+        candidate = Generic(attrib=bee_name, data_type=source_data_type, bee=exported_bee)
         connect_sources.append(candidate)
-    connect_targets = []        
-    for attr in dir(ex2):
-        bee = getattr(ex2, attr)
+
+    # Find target hive ConnectSources
+    connect_targets = []
+    for bee_name in dir(target_externals):
+        bee = getattr(target_externals, bee_name)
         exported_bee = bee.export()
+
         if not exported_bee.implements(ConnectTarget): 
             continue
-        data_type2 = tuple_type(exported_bee.data_type)
-        candidate = Generic(
-          attrib = attr, 
-          data_type = data_type2,
-          bee = exported_bee
-        )  
+
+        target_data_type = tuple_type(exported_bee.data_type)
+        candidate = Generic(attrib=bee_name, data_type=target_data_type, bee=exported_bee)
         connect_targets.append(candidate)
     
-    candidates = []
-    
     # First try: match candidates with named data_type
-    for candidate1 in connect_sources:
-        data_type1 = candidate1.data_type
-        if not data_type1: 
-            continue
-        for candidate2 in connect_targets:
-            data_type2 = candidate2.data_type
-            if not data_type2: 
-                continue                        
-            try:
-                typematch(data_type1, data_type2)
-            except TypeError:
-                continue
-            candidates.append((candidate1, candidate2))  
-    if len(candidates) == 0:
-        # Second try: match all possible candidates
-        for candidate1 in connect_sources:
-            data_type1 = candidate1.data_type
-            for candidate2 in connect_targets:
-                data_type2 = candidate2.data_type
-                try:
-                    typematch(data_type1, data_type2)
-                except TypeError:
-                    continue
-                candidates.append((candidate1, candidate2))  
+    candidates = find_connection_candidates(connect_sources, connect_targets)
+
+    if not candidates:
+        candidates = find_connection_candidates(connect_sources, connect_targets, require_types=False)
       
-    if len(candidates) == 0:
-        raise TypeError("No matching connections found") #TODO: nicer error message
+    if not candidates:
+        # TODO: nicer error message
+        raise TypeError("No matching connections found")
+
     elif len(candidates) > 1:
-        candnames = [(c1.attrib, c2.attrib) for c1,c2 in candidates]
-        raise TypeError("Multiple matches: %s" % candnames) #TODO: nicer error message
-      
+        candidate_names = [(a.attrib, b.attrib) for a, b in candidates]
+        # TODO: nicer error message
+        raise TypeError("Multiple matches: %s" % candidate_names)
+
+    print(candidates)
     if isinstance(source, RuntimeHive):
-        sourcecand = getattr(source, candidates[0][0].attrib)
-        targetcand = getattr(target, candidates[0][1].attrib)
+        source_candidate = getattr(source, candidates[0][0].attrib)
+        target_candidate = getattr(target, candidates[0][1].attrib)
+
     else:
-        sourcecand = candidates[0][0].bee
-        targetcand = candidates[0][1].bee
+        source_candidate = candidates[0][0].bee
+        target_candidate = candidates[0][1].bee
     
-    return sourcecand, targetcand
-    
+    return source_candidate, target_candidate
+
+
 class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
     """Unique Hive instance that is created at runtime for a Hive object.
 
@@ -246,22 +261,22 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             set_run_hive(current_run_hive)
 
     def _hive_trigger_source(self, target_func):
-        attr = self._hive_object.search_trigger_source()        
-        instance = self._hive_bee_instances[attr]
+        source_name = self._hive_object.search_trigger_source()
+        instance = self._hive_bee_instances[source_name]
         return instance._hive_trigger_source(target_func)
 
     def _hive_trigger_target(self):
-        attr = self._hive_object.search_trigger_target()
-        instance = self._hive_bee_instances[attr]
+        target_name = self._hive_object.search_trigger_target()
+        instance = self._hive_bee_instances[target_name]
         return instance._hive_trigger_target()
 
     def _hive_search_connect_source(self, target):
-        attr = self._hive_object._hive_search_connect_source(target)
-        return getattr(self, attr)
+        source_name = self._hive_object._hive_search_connect_source(target)
+        return getattr(self, source_name)
 
     def _hive_search_connect_target(self, source):
-        attr = self._hive_object._hive_search_connect_target(source)
-        return getattr(self, attr)
+        target_name = self._hive_object._hive_search_connect_target(source)
+        return getattr(self, target_name)
       
     def implements(self, cls):
         return isinstance(self, cls)
@@ -384,25 +399,26 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     @classmethod
     def _hive_search_connect_source(cls, target):
         assert target.implements(ConnectTarget)
-        ex = cls._hive_parent_class._hive_ex
+        external_bees = cls._hive_parent_class._hive_ex
+        target_data_type = tuple_type(target.data_type)
+
         connect_sources = []
-        data_type2 = tuple_type(target.data_type)
-        for attr in dir(ex):
-            bee = getattr(ex, attr)
+        for bee_name in dir(external_bees):
+            bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
-            if not exported_bee.implements(ConnectSource): 
+            if not exported_bee.implements(ConnectSource):
                 continue
-            data_type1 = tuple_type(exported_bee.data_type)
-            try:
-                typematch(data_type1, data_type2)
-            except TypeError:
+
+            source_data_type = tuple_type(exported_bee.data_type)
+            if not types_match(source_data_type, target_data_type):
                 pass
-            connect_sources.append(attr)
-        
-        if len(connect_sources) == 0:
+
+            connect_sources.append(bee_name)
+
+        if not connect_sources:
             raise TypeError("No matching connections found") #TODO: nicer error message
 
-        elif len(connect_sources) > 1:            
+        elif len(connect_sources) > 1:
             raise TypeError("Multiple matches: %s" % connect_sources) #TODO: nicer error message
 
         return connect_sources[0]
@@ -410,22 +426,23 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     @classmethod
     def _hive_search_connect_target(cls, source):
         assert source.implements(ConnectSource)
-        ex = cls._hive_parent_class._hive_ex
+        external_bees = cls._hive_parent_class._hive_ex
+        source_data_type = tuple_type(source.data_type)
+
         connect_targets = []
-        data_type1 = tuple_type(source.data_type)
-        for attr in dir(ex):
-            bee = getattr(ex, attr)
+        for bee_name in dir(external_bees):
+            bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
             if not exported_bee.implements(ConnectTarget): 
                 continue
-            data_type2 = tuple_type(exported_bee.data_type)
-            try:
-                typematch(data_type1, data_type2)
-            except TypeError:
+
+            target_data_type = tuple_type(exported_bee.data_type)
+            if not types_match(source_data_type, target_data_type):
                 pass
-            connect_targets.append(attr)
+
+            connect_targets.append(bee_name)
         
-        if len(connect_targets) == 0:
+        if not connect_targets:
             raise TypeError("No matching connections found") #TODO: nicer error message
 
         elif len(connect_targets) > 1:            
