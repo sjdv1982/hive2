@@ -19,10 +19,10 @@ def build_connection(source, target):
         source, target = connect_hives(source, target)
     else: 
         if hive_source:
-            source = source._hive_search_connect_source(target)
+            source = source._find_connect_source(target)
 
         elif hive_target:
-            target = target._hive_search_connect_target(source)
+            target = target._find_connect_target(source)
                     
     #will raise an Exception if incompatible:
     source._hive_connectable_source(target)

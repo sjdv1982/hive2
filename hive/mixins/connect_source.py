@@ -28,5 +28,5 @@ class ConnectSource(ConnectSourceBase):
 class ConnectSourceDerived(ConnectSourceBase):    
     _hive_connect_sources = None
 
-    def _hive_search_connect_source(self, target):
+    def _find_connect_source(self, target):
         raise NotImplementedError

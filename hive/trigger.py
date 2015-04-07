@@ -46,13 +46,13 @@ class TriggerBee(HiveBee):
         source, target, pretrigger = self.args
 
         if isinstance(source, HiveObject):
-            source = source.get_trigger_source()
+            source = source._get_trigger_source()
 
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
         if isinstance(target, HiveObject):
-            target = target.get_trigger_target()
+            target = target._get_trigger_target()
 
         if isinstance(target, Bee):    
             target = target.getinstance(hive_object)

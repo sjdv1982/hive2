@@ -261,21 +261,21 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             set_run_hive(current_run_hive)
 
     def _hive_trigger_source(self, target_func):
-        source_name = self._hive_object.search_trigger_source()
+        source_name = self._hive_object._find_trigger_source()
         instance = self._hive_bee_instances[source_name]
         return instance._hive_trigger_source(target_func)
 
     def _hive_trigger_target(self):
-        target_name = self._hive_object.search_trigger_target()
+        target_name = self._hive_object._find_trigger_target()
         instance = self._hive_bee_instances[target_name]
         return instance._hive_trigger_target()
 
-    def _hive_search_connect_source(self, target):
-        source_name = self._hive_object._hive_search_connect_source(target)
+    def _find_connect_source(self, target):
+        source_name = self._hive_object._find_connect_source(target)
         return getattr(self, source_name)
 
-    def _hive_search_connect_target(self, source):
-        target_name = self._hive_object._hive_search_connect_target(source)
+    def _find_connect_target(self, source):
+        target_name = self._hive_object._find_connect_target(source)
         return getattr(self, target_name)
       
     def implements(self, cls):
@@ -350,7 +350,11 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
     
     @classmethod
-    def search_trigger_target(cls):
+    def _find_trigger_target(cls):
+        """Find name of single external bee that supported TriggerTarget interface.
+
+        Raise TypeError if such a condition cannot be met
+        """
         external_bees = cls._hive_parent_class._hive_ex
         trigger_targets = []
 
@@ -368,12 +372,17 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         return trigger_targets[0]
 
-    def get_trigger_target(self):
-        attr = self.search_trigger_target()
-        return getattr(self, attr)
+    def _get_trigger_target(self):
+        """Return single external bee that supported TriggerTarget interface"""
+        trigger_name = self._find_trigger_target()
+        return getattr(self, trigger_name)
         
     @classmethod
-    def search_trigger_source(cls):
+    def _find_trigger_source(cls):
+        """Find name of single external bee that supported TriggerSource interface.
+
+        Raise TypeError if such a condition cannot be met
+        """
         external_bees = cls._hive_parent_class._hive_ex
         trigger_sources = []
 
@@ -392,12 +401,13 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         return trigger_sources[0]
 
-    def get_trigger_source(self):
-        attr = self.search_trigger_source()
+    def _get_trigger_source(self):
+        """Return single external bee that supported TriggerSource interface"""
+        attr = self._find_trigger_source()
         return getattr(self, attr)    
 
     @classmethod
-    def _hive_search_connect_source(cls, target):
+    def _find_connect_source(cls, target):
         assert target.implements(ConnectTarget)
         external_bees = cls._hive_parent_class._hive_ex
         target_data_type = tuple_type(target.data_type)
@@ -424,7 +434,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return connect_sources[0]
             
     @classmethod
-    def _hive_search_connect_target(cls, source):
+    def _find_connect_target(cls, source):
         assert source.implements(ConnectSource)
         external_bees = cls._hive_parent_class._hive_ex
         source_data_type = tuple_type(source.data_type)
