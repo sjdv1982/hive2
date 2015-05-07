@@ -1,17 +1,29 @@
-_cache = {}
+from weakref import WeakKeyDictionary
 
 
-def memoize(func):
-    func_cache = _cache[func] = {}
+class Memoizer:
 
-    def wrapper(self, *args):
-        key = self, args
+    def __init__(self):
+        self._cache = WeakKeyDictionary()
 
-        try:
-            return func_cache[key]
+    def __call__(self, func):
+        func_instance_cache = self._cache[func] = WeakKeyDictionary()
 
-        except KeyError:
-            result = func_cache[key] = func(self, *args)
-            return result
+        def wrapper(self, *args):
+            try:
+                results_cache = func_instance_cache[self]
 
-    return wrapper
+            except KeyError:
+                results_cache = func_instance_cache[self] = {}
+
+            try:
+                return results_cache[args]
+
+            except KeyError:
+                result = results_cache[args] = func(self, *args)
+                return result
+
+        return wrapper
+
+
+memoize = Memoizer()
