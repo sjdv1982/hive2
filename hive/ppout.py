@@ -1,8 +1,7 @@
-from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callable
-from .mixins import ConnectSource, ConnectTarget, TriggerSource, TriggerTarget, Socket, Plugin
+from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callable, ConnectSource, ConnectTarget, \
+    TriggerSource, TriggerTarget, Socket, Plugin
 from .classes import HiveBee, Pusher
-from . import get_mode, get_building_hive
-from . import manager
+from .manager import get_mode, get_building_hive, memoize
 from .ppin import compare_types
 
 
@@ -17,7 +16,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
                 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         self._run_hive = run_hive
         if self._bound:
@@ -35,6 +34,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
 
     def _hive_pretrigger_source(self, targetfunc):
         self._pretrigger.add_target(targetfunc)
+
 
 class PullOut(PPOutBase):
     mode = "pull"
@@ -118,7 +118,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         self._hive_cls = get_building_hive()
         self.target = target
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self.target
 

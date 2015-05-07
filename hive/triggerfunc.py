@@ -1,7 +1,6 @@
 from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable
 from .classes import HiveBee, Pusher
-from .context_factory import ContextFactory
-from . import manager
+from .manager import ContextFactory, memoize
 
 
 class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
@@ -39,7 +38,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         target_func = target._hive_trigger_target()
         self._trigger.add_target(target_func)
         
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound:
             return self
@@ -56,7 +55,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
     def __init__(self, func=None):
         HiveBee.__init__(self, None, func)
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         func, = self.args
         if isinstance(func, Bee): 

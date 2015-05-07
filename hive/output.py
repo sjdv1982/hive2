@@ -1,6 +1,5 @@
 from .mixins import Output, Exportable
-from .context_factory import ContextFactory
-from . import get_building_hive
+from .manager import ContextFactory, get_building_hive
 
 
 class HiveOutput(Output, Exportable):

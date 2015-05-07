@@ -1,9 +1,7 @@
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from .context_factory import ContextFactory
+from hive.manager.factory import ContextFactory
 from .socket_policies import SingleRequired
-from . import memoize
-from . import manager
-from . import get_building_hive
+from .manager import memoize, get_building_hive
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
@@ -21,7 +19,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         if bound:
             self._policy = policy_cls()
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound: 
             return self
@@ -33,7 +31,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         else:
             return self
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self
@@ -71,7 +69,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self.data_type = data_type
         self.policy_cls = policy_cls
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self._target
         if isinstance(target, Bee): 
@@ -79,7 +77,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
         return HiveSocket(target, self.identifier, self.data_type, self.policy_cls)
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self

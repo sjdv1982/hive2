@@ -1,6 +1,5 @@
 from ..mixins import Bindable, Callable, Exportable
-from .. import get_building_hive
-from .. import manager
+from ..manager import get_building_hive, memoize
 
 import functools
 
@@ -12,7 +11,7 @@ class Method(Bindable, Callable, Exportable):
         self._func = func
         self._hive_cls = get_building_hive()
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         cls = self._builder_cls
         instance = run_hive._hive_build_class_instances[cls]

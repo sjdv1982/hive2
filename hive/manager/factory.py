@@ -1,4 +1,4 @@
-from . import get_mode
+from .contexts import get_mode
 
 
 class ContextFactory:

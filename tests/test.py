@@ -39,7 +39,7 @@ hpang() # => PONG
 class Dog(object):
 
     def __init__(self, name):
-        self._hive = h.get_run_hive()
+        self._hive = h.manager.get_run_hive()
         self.name = name
         self.woofs = 0
 
@@ -54,7 +54,7 @@ class Dog(object):
 
 def woof2(self):
     self.woofs2 += 1
-    print("WOOF2", self.name, self.woofs2)
+    print("\n\nWOOF2", self.name, self.woofs2)
 
 
 def build_dog(cls, i, ex, args):
@@ -69,7 +69,7 @@ def build_dog(cls, i, ex, args):
 
     ex.woofs = h.property(cls, "woofs")
     ex.name = h.property(cls, "name")
-    ex.woofs2 = h.attribute(data_type="int",start_value=0)
+    ex.woofs2 = h.attribute(data_type="int", start_value=0)
     ex.woof = h.entry(i.woof)
     ex.woofed = h.hook(i.woofed)
     ex.bark = h.hook(i.bark)
@@ -86,7 +86,7 @@ print(spot.name) #=> Spot
 spot.call() #=> CALL Spot WOOF Spot 1
 h.connect(spot.call, spot._woof2)
 spot.call() #=> CALL Spot WOOF Spot 2 WOOF2 Spot 1
-print( "SPOT WOOFS", spot.woofs, spot.woofs2) #=> SPOT WOOFS 2 1
+print("SPOT WOOFS", spot.woofs, spot.woofs2) #=> SPOT WOOFS 2 1
 print(4)
 spot.bark() #=> WOOF Spot 3
 print(5)

@@ -1,9 +1,6 @@
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
-from .context_factory import ContextFactory
 from .plugin_policies import SingleRequired
-from . import manager
-from . import memoize
-from . import get_building_hive
+from .manager import get_building_hive, memoize, ContextFactory
 
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
@@ -32,7 +29,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
     def _hive_connect_source(self, target):
         self._policy.on_donated()
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound:
             return self
@@ -44,7 +41,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         else:
             return self
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self
@@ -71,7 +68,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self.data_type = data_type
         self.policy_cls = policy_cls
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self._target
         if isinstance(target, Bee):
@@ -79,7 +76,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
 
         return HivePlugin(target, self.identifier, self.data_type, self.policy_cls)
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self

@@ -1,6 +1,5 @@
 from .mixins import Antenna, Exportable
-from . import get_building_hive
-from .context_factory import ContextFactory
+from .manager import get_building_hive, ContextFactory
 
 
 class HiveAntenna(Antenna, Exportable):

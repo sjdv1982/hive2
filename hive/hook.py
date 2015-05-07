@@ -1,6 +1,5 @@
-from .context_factory import ContextFactory
 from .mixins import Bee, TriggerSource, Exportable
-from . import get_building_hive
+from .manager import get_building_hive, ContextFactory
 
 
 class Hook(Exportable, Bee):
