@@ -296,8 +296,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         #check calling signature of builderclass.__init__
         init_plus_args = (None,) + self._hive_builder_args
 
+        # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
-            if builder_cls is not None and hasattr(inspect, "getcallargs") and inspect.isfunction(builder_cls.__init__):
+            if builder_cls is not None and inspect.isfunction(builder_cls.__init__):
                 try:
                     inspect.getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
 
@@ -508,23 +509,24 @@ class HiveBuilder(object):
 
         with hive_mode_as("build"), building_hive_as(cls), bee_register_context() as registered_bees:
 
-            cls._hive_i = HiveInternals(cls)
-            cls._hive_ex = HiveExportables(cls)
-            cls._hive_args = HiveArgs(cls)
+            cls._hive_i = internals = HiveInternals(cls)
+            cls._hive_ex = externals = HiveExportables(cls)
+            cls._hive_args = args = HiveArgs(cls)
 
+            # Invoke builder functions to build wrappers
             for builder, builder_cls in cls._builders:
                 if builder_cls is not None:
                     wrapper = HiveMethodWrapper(builder_cls)
-                    builder(wrapper, cls._hive_i, cls._hive_ex, cls._hive_args)
+                    builder(wrapper, internals, externals, args)
 
                 else:
-                    builder(cls._hive_i, cls._hive_ex, cls._hive_args)
+                    builder(internals, externals, args)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
 
         # Find any anonymous bees which are held on object
-        internal_bees = cls._hive_i
+        internal_bees = internals
         for bee_name in dir(internal_bees):
             bee = getattr(internal_bees, bee_name)
 
