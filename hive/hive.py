@@ -445,19 +445,17 @@ class HiveBuilder(object):
     """
 
     _builders = ()
-    _hive_built = False
     _hive_i = None
     _hive_ex = None
     _hive_args = None    
     _hive_hive_kwargs = False
     _hive_object_cls = None
 
-    def __new__(cls, *args, **kwargs):        
-        if not cls._hive_built:
+    def __new__(cls, *args, **kwargs):
+        if cls._hive_object_cls is None:
             cls._hive_build()
 
-        hive_object_cls = cls._hive_object_cls
-        self = hive_object_cls(*args, **kwargs)
+        self = cls._hive_object_cls(*args, **kwargs)
 
         if get_mode() == "immediate":
             return self.instantiate()
@@ -467,6 +465,7 @@ class HiveBuilder(object):
 
     @classmethod
     def extend(cls, name, builder, builder_cls=None, hive_kwargs=False):
+        """Extend HiveObject with an additional builder (and builder class)"""
         if builder_cls is not None:
             assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
@@ -480,7 +479,7 @@ class HiveBuilder(object):
          
     @classmethod
     def _hive_build(cls):
-        assert not cls._hive_built
+        assert cls._hive_object_cls is None, "Hive already built!"
         cls._hive_build_methods()
 
         # TODO: auto-remove connections/triggers for which the source/target has been deleted
@@ -501,14 +500,14 @@ class HiveBuilder(object):
         }
 
         cls._hive_object_cls = type(cls.__name__+"{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
-        cls._hive_built = True
 
     @classmethod
     def _hive_build_methods(cls):
-        assert not cls._hive_built
+        assert cls._hive_i is None, "Hive internals already built!"
+        assert cls._hive_ex is None, "Hive externals already built!"
+        assert cls._hive_args is None, "Hive arguments already built!"
 
         with hive_mode_as("build"), building_hive_as(cls), bee_register_context() as registered_bees:
-
             cls._hive_i = internals = HiveInternals(cls)
             cls._hive_ex = externals = HiveExportables(cls)
             cls._hive_args = args = HiveArgs(cls)
