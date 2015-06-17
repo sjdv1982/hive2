@@ -1,5 +1,5 @@
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from hive.manager.factory import ContextFactory
+from .manager.factory import ContextFactory
 from .socket_policies import SingleRequired
 from .manager import memoize, get_building_hive
 

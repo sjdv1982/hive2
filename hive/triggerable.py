@@ -1,6 +1,6 @@
 from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 from .classes import HiveBee
-from hive.manager import ContextFactory, memoize
+from .manager import ContextFactory, memoize
 
 
 class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
