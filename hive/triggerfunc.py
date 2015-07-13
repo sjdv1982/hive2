@@ -4,6 +4,7 @@ from .manager import ContextFactory, memoize
 
 
 class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
+    """Callable interface to HIVE (pre)trigger"""
 
     def __init__(self, func=None, bound=False):
         assert callable(func) or func is None or isinstance(func, Callable), func
