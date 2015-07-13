@@ -6,6 +6,7 @@ from weakref import WeakSet
 
 
 class Property(Stateful, Bindable, Exportable):
+    """Interface to bind class attributes"""
 
     def __init__(self, cls, attr, data_type, start_value):
         self._hive_cls = get_building_hive()

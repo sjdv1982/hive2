@@ -266,7 +266,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
 
 class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
-    """Built Hive class responsible for creating new Hive instances.
+    """Built Hive base-class responsible for creating new Hive instances.
 
     All bees defined with the builder functions are memoized and cached for faster instantiation
     """
