@@ -20,9 +20,12 @@ def set_mode(mode):
 @contextmanager
 def hive_mode_as(mode):
     previous_mode = get_mode()
-    set_mode(mode)
-    yield
-    set_mode(previous_mode)
+    try:
+        set_mode(mode)
+        yield
+
+    finally:
+        set_mode(previous_mode)
 
 
 def get_building_hive():
