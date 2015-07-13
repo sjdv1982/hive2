@@ -19,9 +19,13 @@ def tuple_type(value):
 
 
 def types_match(data_type_a, data_type_b):
-    # Checks that two data type tuples match by comparing their first N elements,
-    #  where N is the length of the shortest data type tuple
-    # Returns a TypeError otherwise
+    """Checks that two data type tuples match by comparing their first N elements,
+    where N is the length of the shortest data type tuple
+    Returns a TypeError otherwise
+
+    :param data_type_a: tuple type of first item
+    :param data_type_b: tuple type of second item
+    """
     assert isinstance(data_type_a, tuple), data_type_a
     assert isinstance(data_type_b, tuple), data_type_b
 
