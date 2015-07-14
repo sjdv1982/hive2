@@ -1,7 +1,6 @@
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
 from .classes import HiveBee, Pusher
-from . import get_mode, get_building_hive
-from . import manager
+from .manager import get_mode, get_building_hive, memoize
 
 
 def compare_types(b1, b2):
@@ -11,7 +10,7 @@ def compare_types(b1, b2):
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-    def __init__(self, target, data_type, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=None, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
@@ -27,7 +26,7 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
     def _hive_pretrigger_source(self, targetfunc):
         self._pretrigger.add_target(targetfunc)
                 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         self._run_hive = run_hive
         if self._bound:
@@ -37,7 +36,8 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
+        return self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
+
 
 class PushIn(PPInBase):
     mode = "push"
@@ -112,7 +112,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         self._hive_cls = get_building_hive()
         self.target = target
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self.target
 

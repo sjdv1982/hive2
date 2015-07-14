@@ -1,7 +1,6 @@
 from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 from .classes import HiveBee
-from .context_factory import ContextFactory
-from . import manager
+from .manager import ContextFactory, memoize
 
 
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
@@ -18,7 +17,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
         # TODO: exception handling hooks
         self._func(self._bound)
         
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound:
             return self
@@ -41,7 +40,7 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         func, = self.args
         if isinstance(func, Bee): 

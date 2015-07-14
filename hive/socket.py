@@ -1,14 +1,12 @@
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from .context_factory import ContextFactory
+from .manager.factory import ContextFactory
 from .socket_policies import SingleRequired
-from . import memoize
-from . import manager
-from . import get_building_hive
+from .manager import memoize, get_building_hive
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=False, exported=False):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -21,19 +19,19 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         if bound:
             self._policy = policy_cls()
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound: 
             return self
 
         if isinstance(self._func, Bindable):
             func = self._func.bind(run_hive)
-            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, bound=True)
+            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, bound=run_hive)
 
         else:
             return self
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self
@@ -71,7 +69,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self.data_type = data_type
         self.policy_cls = policy_cls
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self._target
         if isinstance(target, Bee): 
@@ -79,7 +77,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
         return HiveSocket(target, self.identifier, self.data_type, self.policy_cls)
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self

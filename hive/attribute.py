@@ -1,7 +1,7 @@
-from .mixins import Stateful, Exportable, Bindable
-from .context_factory import ContextFactory
-from . import get_building_hive
 from weakref import WeakKeyDictionary
+
+from .mixins import Stateful, Exportable, Bindable
+from .manager import ContextFactory, get_building_hive
 
 
 class Attribute(Stateful, Bindable, Exportable):
@@ -11,6 +11,7 @@ class Attribute(Stateful, Bindable, Exportable):
 
         self.data_type = data_type
         self.start_value = start_value
+
         self._values = WeakKeyDictionary()
 
     def _hive_stateful_getter(self, run_hive):

@@ -1,6 +1,5 @@
-from .mixins import Bee, ConnectTarget, TriggerTarget, Exportable
-from . import get_building_hive
-from .context_factory import ContextFactory
+from .mixins import Bee, TriggerTarget, Exportable
+from .manager import get_building_hive, ContextFactory
 
 
 class Entry(Exportable, Bee):

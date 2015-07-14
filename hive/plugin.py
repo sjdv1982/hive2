@@ -1,14 +1,11 @@
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
-from .context_factory import ContextFactory
 from .plugin_policies import SingleRequired
-from . import manager
-from . import memoize
-from . import get_building_hive
+from .manager import get_building_hive, memoize, ContextFactory
 
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=False, exported=False):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -32,19 +29,19 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
     def _hive_connect_source(self, target):
         self._policy.on_donated()
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         if self._bound:
             return self
 
         if isinstance(self._func, Bindable):
             func = self._func.bind(run_hive)
-            return self.__class__(func, self.identifier, self.data_type, policy_cls=self.policy_cls, bound=True)
+            return self.__class__(func, self.identifier, self.data_type, policy_cls=self.policy_cls, bound=run_hive)
 
         else:
             return self
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self
@@ -71,7 +68,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self.data_type = data_type
         self.policy_cls = policy_cls
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self._target
         if isinstance(target, Bee):
@@ -79,7 +76,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
 
         return HivePlugin(target, self.identifier, self.data_type, self.policy_cls)
 
-    @memoize.method
+    @memoize
     def export(self):
         if self._exported:
             return self

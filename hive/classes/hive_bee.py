@@ -1,4 +1,4 @@
-from .. import get_building_hive
+from ..manager import get_building_hive, memoize
 from ..mixins import Bee
 from .. import manager
 
@@ -16,7 +16,7 @@ class HiveBee(Bee):
         self.args = args
         self.kwargs = kwargs
 
-    @manager.getinstance    
+    @memoize
     def getinstance(self, hive_object):
         assert callable(self.cls), self.cls
         return self.cls(*self.args, **self.kwargs)

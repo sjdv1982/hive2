@@ -1,7 +1,6 @@
 from .mixins import TriggerSource, TriggerTarget, Bee, Bindable
 from .classes import HiveBee
-from . import get_mode
-from . import manager
+from .manager import get_mode, memoize, register_bee
 from .hive import HiveObject
 
 
@@ -23,7 +22,7 @@ class Trigger(Bindable):
         self.target = target
         self.pretrigger = pretrigger
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         source = self.source
         if isinstance(source, Bindable):
@@ -41,18 +40,18 @@ class TriggerBee(HiveBee):
     def __init__(self, source, target, pretrigger):
         HiveBee.__init__(self, None, source, target, pretrigger)
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         source, target, pretrigger = self.args
 
         if isinstance(source, HiveObject):
-            source = source.get_trigger_source()
+            source = source._get_trigger_source()
 
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
         if isinstance(target, HiveObject):
-            target = target.get_trigger_target()
+            target = target._get_trigger_target()
 
         if isinstance(target, Bee):    
             target = target.getinstance(hive_object)
@@ -78,7 +77,7 @@ def _trigger(source, target, pretrigger):
 
     else:
         trigger_bee = TriggerBee(source, target, pretrigger)
-        manager.register_bee(trigger_bee)
+        register_bee(trigger_bee)
         return trigger_bee
 
 

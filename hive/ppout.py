@@ -1,13 +1,12 @@
-from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callable
-from .mixins import ConnectSource, ConnectTarget, TriggerSource, TriggerTarget, Socket, Plugin
+from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callable, ConnectSource, ConnectTarget, \
+    TriggerSource, TriggerTarget, Socket, Plugin
 from .classes import HiveBee, Pusher
-from . import get_mode, get_building_hive
-from . import manager
+from .manager import get_mode, get_building_hive, memoize
 from .ppin import compare_types
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, data_type, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=None, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
@@ -17,7 +16,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
                 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         self._run_hive = run_hive
         if self._bound:
@@ -27,7 +26,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        ret = self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
+        ret = self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
         return ret        
 
     def _hive_trigger_source(self, targetfunc):
@@ -35,6 +34,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
 
     def _hive_pretrigger_source(self, targetfunc):
         self._pretrigger.add_target(targetfunc)
+
 
 class PullOut(PPOutBase):
     mode = "pull"
@@ -61,7 +61,7 @@ class PullOut(PPOutBase):
 class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
 
-    def __init__(self, target, data_type, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=None, run_hive=None):
         PPOutBase.__init__(self, target, data_type, bound, run_hive)
         self._targets = []
 
@@ -118,7 +118,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         self._hive_cls = get_building_hive()
         self.target = target
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         target = self.target
 

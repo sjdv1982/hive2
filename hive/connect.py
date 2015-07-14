@@ -1,8 +1,7 @@
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
     Exportable
 from .classes import HiveBee
-from . import get_mode
-from . import manager
+from .manager import get_mode, memoize, register_bee
 from .hive import connect_hives
 
 
@@ -19,10 +18,10 @@ def build_connection(source, target):
         source, target = connect_hives(source, target)
     else: 
         if hive_source:
-            source = source._hive_search_connect_source(target)
+            source = source._hive_find_connect_source(target)
 
         elif hive_target:
-            target = target._hive_search_connect_target(source)
+            target = target._hive_find_connect_target(source)
                     
     #will raise an Exception if incompatible:
     source._hive_connectable_source(target)
@@ -38,7 +37,7 @@ class Connection(Bindable):
         self.source = source
         self.target = target
 
-    @manager.bind
+    @memoize
     def bind(self, run_hive):
         source = self.source
         if isinstance(source, Bindable):
@@ -56,7 +55,7 @@ class ConnectionBee(HiveBee):
     def __init__(self, source, target):
         HiveBee.__init__(self, None, source, target)
 
-    @manager.getinstance
+    @memoize
     def getinstance(self, hive_object):
         source, target = self.args
 
@@ -94,6 +93,6 @@ def connect(source, target):
 
     else:
         connection_bee = ConnectionBee(source, target)
-        manager.register_bee(connection_bee)
+        register_bee(connection_bee)
         return connection_bee
 
