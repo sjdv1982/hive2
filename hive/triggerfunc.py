@@ -6,7 +6,7 @@ from .manager import ContextFactory, memoize
 class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
     """Callable interface to HIVE (pre)trigger"""
 
-    def __init__(self, func=None, bound=False):
+    def __init__(self, func=None, bound=None):
         assert callable(func) or func is None or isinstance(func, Callable), func
         self._bound = bound
         self._func = func
@@ -48,7 +48,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         if isinstance(func, Bindable):
             func = func.bind(run_hive)
 
-        return self.__class__(func, bound=True)
+        return self.__class__(func, bound=run_hive)
 
 
 class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):

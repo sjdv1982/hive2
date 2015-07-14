@@ -5,7 +5,7 @@ from .manager import ContextFactory, memoize
 
 class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
 
-    def __init__(self, func, bound=False):
+    def __init__(self, func, bound=None):
         assert callable(func) or isinstance(func, Callable), func
         self._func = func
         self._bound = bound
@@ -27,7 +27,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         if isinstance(func, Bindable):
             func = func.bind(run_hive)
 
-        return self.__class__(func, bound=True)
+        return self.__class__(func, bound=run_hive)
 
     def _hive_trigger_target(self):
         return self.trigger

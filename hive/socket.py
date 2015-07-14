@@ -6,7 +6,7 @@ from .manager import memoize, get_building_hive
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=False, exported=False):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -26,7 +26,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
         if isinstance(self._func, Bindable):
             func = self._func.bind(run_hive)
-            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, bound=True)
+            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, bound=run_hive)
 
         else:
             return self

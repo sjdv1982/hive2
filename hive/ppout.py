@@ -6,7 +6,7 @@ from .ppin import compare_types
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, data_type, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=None, run_hive=None):
         assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
@@ -26,7 +26,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        ret = self.__class__(target, self.data_type, bound=True, run_hive=run_hive)
+        ret = self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
         return ret        
 
     def _hive_trigger_source(self, targetfunc):
@@ -61,7 +61,7 @@ class PullOut(PPOutBase):
 class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
 
-    def __init__(self, target, data_type, bound=False, run_hive=None):
+    def __init__(self, target, data_type, bound=None, run_hive=None):
         PPOutBase.__init__(self, target, data_type, bound, run_hive)
         self._targets = []
 
