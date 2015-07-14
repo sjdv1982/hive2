@@ -28,5 +28,5 @@ class ConnectTarget(ConnectTargetBase):
 class ConnectTargetDerived(ConnectTargetBase):    
     _hive_connect_targets = None
 
-    def _find_connect_target(self, source):
+    def _hive_find_connect_target(self, source):
         raise NotImplementedError    
