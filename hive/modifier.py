@@ -6,7 +6,8 @@ from .manager import ContextFactory, memoize
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def __init__(self, func, bound=None):
-        assert callable(func) and not isinstance(func, Bee), "Modifier function should be a Python callable"
+        assert callable(func) and not isinstance(func, Bee), \
+            "Modifier function should be a Python callable, got {}".format(func)
         self._func = func
         self._bound = bound
 
@@ -27,7 +28,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
     def _hive_trigger_target(self):
         return self.trigger
     
-    def _hive_connectable_target(self, source):
+    def _hive_is_connectable_target(self, source):
         # TODO : nicer error message
         assert isinstance(source, TriggerSource)
 

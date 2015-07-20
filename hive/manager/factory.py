@@ -19,6 +19,6 @@ class ContextFactory:
             cls = self.deferred_cls
 
         if cls is None:
-            raise TypeError("%s cannot be used in %s mode" % (self.name, mode))
+            raise TypeError("{} cannot be used in {} mode".format(self.name, mode))
 
         return cls(*args, **kwargs)

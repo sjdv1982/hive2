@@ -14,8 +14,10 @@ def build_connection(source, target):
     hive_source = isinstance(source, ConnectSourceDerived)
     hive_target = isinstance(target, ConnectTargetDerived)
 
+    # Find appropriate bees to connect within respective hives
     if hive_source and hive_target:
         source, target = connect_hives(source, target)
+
     else: 
         if hive_source:
             source = source._hive_find_connect_source(target)
@@ -23,9 +25,9 @@ def build_connection(source, target):
         elif hive_target:
             target = target._hive_find_connect_target(source)
                     
-    #will raise an Exception if incompatible:
-    source._hive_connectable_source(target)
-    target._hive_connectable_target(source)
+    # will raise an Exception if incompatible:
+    source._hive_is_connectable_source(target)
+    target._hive_is_connectable_target(source)
         
     target._hive_connect_target(source)
     source._hive_connect_source(target)

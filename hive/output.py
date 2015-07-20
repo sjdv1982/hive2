@@ -1,5 +1,5 @@
 from .mixins import Output, Exportable
-from .manager import ContextFactory, get_building_hive
+from .manager import ContextFactory, get_building_hive, memoize
 
 
 class HiveOutput(Output, Exportable):
@@ -9,6 +9,7 @@ class HiveOutput(Output, Exportable):
         self._hive_cls = get_building_hive()
         self._target = target
 
+    @memoize
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target

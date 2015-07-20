@@ -4,6 +4,10 @@ Defines policies for socket fulfillment
 """
 
 
+class SocketPolicyError(Exception):
+    pass
+
+
 class SocketPolicy:
 
     def __init__(self):
@@ -15,26 +19,28 @@ class SocketPolicy:
     def on_filled(self):
         self._counter += 1
 
-    @property
-    def is_satisfied(self):
-        return True
+    is_satisfied = True
 
 
-class SingleRequired(SocketPolicy):
-
-    @property
-    def is_satisfied(self):
-        return self._counter > 0
+class _SingleSocketPolicy(SocketPolicy):
 
     def pre_filled(self):
-        assert not self._counter, "Socket already filled"
+        if self._counter:
+            raise SocketPolicyError("Socket already filled, requires single plugin")
 
 
-class SingleOptional(SocketPolicy):
+class SingleRequired(_SingleSocketPolicy):
 
     @property
     def is_satisfied(self):
-        return True
+        return self._counter == 1
+
+
+class SingleOptional(_SingleSocketPolicy):
+
+    @property
+    def is_satisfied(self):
+        return 0 <= self._counter <= 1
 
 
 class MultipleRequired(SocketPolicy):
@@ -45,8 +51,5 @@ class MultipleRequired(SocketPolicy):
 
 
 class MultipleOptional(SocketPolicy):
-
-    @property
-    def is_satisfied(self):
-        return True
+    pass
 

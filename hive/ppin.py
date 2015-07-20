@@ -33,6 +33,7 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
             return self
 
         target = self.target
+
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
@@ -54,7 +55,7 @@ class PushIn(PPInBase):
 
         self._trigger.push()
 
-    def _hive_connectable_target(self, source):
+    def _hive_is_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
         assert source.mode == "push" # TODO : nicer error message
         compare_types(source, self)
@@ -83,7 +84,7 @@ class PullIn(PPInBase, TriggerTarget):
 
         self._trigger.push()
 
-    def _hive_connectable_target(self, source):
+    def _hive_is_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
         assert source.mode == "pull" # TODO : nicer error message
         compare_types(source, self)
@@ -143,7 +144,7 @@ class PullInBee(PPInBee, TriggerTarget):
     mode = "pull"
 
 
-def pushin(target):
+def push_in(target):
     assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PushIn(target)
@@ -152,7 +153,7 @@ def pushin(target):
         return PushInBee(target)
 
 
-def pullin(target):
+def pull_in(target):
     assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PullIn(target)

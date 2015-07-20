@@ -18,7 +18,7 @@ class ConnectSourceBase(Connectable):
 class ConnectSource(ConnectSourceBase):
     data_type = ()
 
-    def _hive_connectable_source(self, target):
+    def _hive_is_connectable_source(self, target):
         raise NotImplementedError
 
     def _hive_connect_source(self, target):

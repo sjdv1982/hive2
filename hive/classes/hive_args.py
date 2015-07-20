@@ -1,4 +1,5 @@
 class HiveArgument(object):
+
     def __init__(self, name, hive_args):
         self._hive_args = hive_args
         self.name = name

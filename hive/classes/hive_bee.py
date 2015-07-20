@@ -1,6 +1,5 @@
 from ..manager import get_building_hive, memoize
 from ..mixins import Bee
-from .. import manager
 
 
 class HiveBee(Bee):

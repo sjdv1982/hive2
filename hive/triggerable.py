@@ -32,7 +32,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
     def _hive_trigger_target(self):
         return self.trigger
     
-    def _hive_connectable_target(self, source):
+    def _hive_is_connectable_target(self, source):
         # TODO : nicer error message
         assert isinstance(source, TriggerSource)
 

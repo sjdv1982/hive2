@@ -1,7 +1,7 @@
 from .hive import HiveMethodWrapper
 from .mixins import Stateful, Exportable, Bindable
 from .tuple_type import tuple_type
-from .manager import get_mode, get_building_hive
+from .manager import get_mode, get_building_hive, memoize
 from weakref import WeakSet
 
 
@@ -36,10 +36,8 @@ class Property(Stateful, Bindable, Exportable):
     def export(self):
         return self
 
+    @memoize
     def bind(self, run_hive):
-        if run_hive in self._bound:
-            return
-
         self._bound.add(run_hive)
         
         cls = self._cls
@@ -52,7 +50,7 @@ class Property(Stateful, Bindable, Exportable):
         return self
 
 
-def property(cls, attr, data_type=None, start_value=None):
+def property(cls, attr, data_type=(), start_value=None):
     data_type = tuple_type(data_type)
 
     if get_mode() == "immediate":

@@ -1,11 +1,11 @@
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
-from .plugin_policies import SingleRequired
+from .plugin_policies import SingleRequired, PluginPolicyError
 from .manager import get_building_hive, memoize, ContextFactory
 
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
+    def __init__(self, func, identifier=None, data_type=(), policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -18,13 +18,20 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         if bound:
             self._policy = policy_cls()
 
+    def __repr__(self):
+        return "<HivePlugin::{}>".format(self._func)
+
     def plugin(self):
         return self._func
         
-    def _hive_connectable_source(self, target):
-        # TODO : nicer error message
-        assert isinstance(target, Socket), target
-        self._policy.pre_donated()
+    def _hive_is_connectable_source(self, target):
+        if not isinstance(target, Socket):
+            raise ValueError("Plugin target must be a subclass of Socket")
+
+        try:
+            self._policy.pre_donated()
+        except PluginPolicyError as err:
+            raise PluginPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, target, self))
 
     def _hive_connect_source(self, target):
         self._policy.on_donated()
@@ -59,7 +66,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, exported=False):
+    def __init__(self, target, identifier=None, data_type=(), policy_cls=SingleRequired, exported=False):
         self._hive_cls = get_building_hive()
         self._target = target
         self._exported = exported

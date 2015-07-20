@@ -49,7 +49,7 @@ class PullOut(PPOutBase):
         self._trigger.push()
         return value
 
-    def _hive_connectable_source(self, target):
+    def _hive_is_connectable_source(self, target):
         assert isinstance(target, Antenna) # TODO : nicer error message
         assert target.mode == "pull" # TODO : nicer error message
         compare_types(self, target)
@@ -86,7 +86,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     def socket(self):
         return self.push
     
-    def _hive_connectable_source(self, target):
+    def _hive_is_connectable_source(self, target):
         assert isinstance(target, Antenna), target # TODO : nicer error message
         assert target.mode == "push" # TODO : nicer error message
         compare_types(target, self)
@@ -94,7 +94,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     def _hive_connect_source(self, target): #Socket
         self._targets.append(target.push)
             
-    def _hive_connectable_target(self, source):
+    def _hive_is_connectable_target(self, source):
         assert isinstance(source, Plugin), source # TODO : nicer error message
 
     def _hive_connect_target(self, source):
@@ -152,7 +152,7 @@ class PullOutBee(PPOutBee):
     mode = "pull"
 
 
-def pushout(target):
+def push_out(target):
     # TODO: nice error message
     assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 
@@ -163,7 +163,7 @@ def pushout(target):
         return PushOutBee(target)
 
 
-def pullout(target):
+def pull_out(target):
     # TODO: nice error message
     assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 

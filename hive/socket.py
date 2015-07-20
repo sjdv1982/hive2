@@ -1,12 +1,12 @@
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
 from .manager.factory import ContextFactory
-from .socket_policies import SingleRequired
+from .socket_policies import SingleRequired, SocketPolicyError
 from .manager import memoize, get_building_hive
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
+    def __init__(self, func, identifier=None, data_type=(), policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -18,6 +18,9 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
         if bound:
             self._policy = policy_cls()
+
+    def __repr__(self):
+        return "<HiveSocket::{}>".format(self._func)
 
     @memoize
     def bind(self, run_hive):
@@ -47,10 +50,15 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         else:
             return self
     
-    def _hive_connectable_target(self, source):
-        # TODO : nicer error message
-        assert isinstance(source, Plugin)
-        self._policy.pre_filled()
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, Plugin):
+            raise ValueError("Socket source must be a subclass of Plugin")
+
+        try:
+            self._policy.pre_filled()
+
+        except SocketPolicyError as err:
+            raise SocketPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, self, source))
 
     def _hive_connect_target(self, source):
         plugin = source.plugin()
@@ -60,7 +68,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
 class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, exported=False):
+    def __init__(self, target, identifier=None, data_type=(), policy_cls=SingleRequired, exported=False):
         self._hive_cls = get_building_hive()
         self._target = target
         self._exported = exported
@@ -87,7 +95,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         if isinstance(target, Exportable):
             exported = target.export()
 
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls,  exported=True)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, exported=True)
 
         else:
             return self

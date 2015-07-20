@@ -31,7 +31,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         self._name_counter += 1
         self._pretrigger.add_target(target_func, self._name_counter)
         
-    def _hive_connectable_source(self, target):
+    def _hive_is_connectable_source(self, target):
         # TODO : nicer error message
         assert isinstance(target, TriggerTarget)
 

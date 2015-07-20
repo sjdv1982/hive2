@@ -29,6 +29,7 @@ def hive_mode_as(mode):
 
 
 def get_building_hive():
+    """Return the current hive being built"""
     return _building_hive
 
 
