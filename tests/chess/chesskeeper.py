@@ -395,7 +395,7 @@ def build_chesskeeper(cls, i, ex, args):
   
   
   prop_move = h.property(cls, "prop_move", "str") # TODO: make buffer
-  i.make_move = h.pushin(prop_move)
+  i.make_move = h.push_in(prop_move)
   i.trig_make_move = h.triggerable(cls.trig_make_move) # TODO: make modifier
   h.trigger(i.make_move, i.trig_make_move)
    

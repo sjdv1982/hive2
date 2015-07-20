@@ -30,6 +30,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
         try:
             self._policy.pre_donated()
+
         except PluginPolicyError as err:
             raise PluginPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, target, self))
 

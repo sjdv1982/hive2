@@ -84,7 +84,7 @@ def find_connection_candidates(sources, targets, require_types=True):
         source_data_type = source_candidate.data_type
         target_data_type = target_candidate.data_type
 
-        if require_types and (not source_data_type or not target_data_type):
+        if require_types and not (source_data_type and target_data_type):
             continue
 
         if not types_match(source_data_type, target_data_type):
@@ -95,9 +95,13 @@ def find_connection_candidates(sources, targets, require_types=True):
     return candidates
 
 
-def connect_hives(source, target):    
-    assert isinstance(source, RuntimeHive) == isinstance(target, RuntimeHive)
-    if isinstance(source, RuntimeHive):
+def connect_hives(source, target):
+    source_is_runtime = isinstance(source, RuntimeHive)
+
+    if source_is_runtime != isinstance(target, RuntimeHive):
+        raise ValueError("Both hives must be either Hive runtimes or Hive objects")
+
+    if source_is_runtime:
         source_hive_object = source._hive_object
         target_hive_object = target._hive_object
 
@@ -141,23 +145,26 @@ def connect_hives(source, target):
         candidates = find_connection_candidates(connect_sources, connect_targets, require_types=False)
       
     if not candidates:
-        # TODO: nicer error message
-        raise TypeError("No matching connections found")
+        raise ValueError("No matching connections found")
 
     elif len(candidates) > 1:
         candidate_names = [(a.attrib, b.attrib) for a, b in candidates]
         # TODO: nicer error message
-        raise TypeError("Multiple matches: %s" % candidate_names)
+        raise TypeError("Multiple matches: {}".format(candidate_names))
 
-    if isinstance(source, RuntimeHive):
-        source_candidate = getattr(source, candidates[0][0].attrib)
-        target_candidate = getattr(target, candidates[0][1].attrib)
+    source_candidate, target_candidate = candidates[0]
+
+    if source_is_runtime:
+        source_name = getattr(source, source_candidate.attrib)
+        target_name = getattr(target, target_candidate.attrib)
+
+        return source_name, target_name
 
     else:
-        source_candidate = candidates[0][0].bee
-        target_candidate = candidates[0][1].bee
-    
-    return source_candidate, target_candidate
+        source_bee = source_candidate.bee
+        target_bee = target_candidate.bee
+
+        return source_bee, target_bee
 
 
 class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
@@ -499,7 +506,7 @@ class HiveBuilder(object):
             "_hive_parent_class": cls,
         }
 
-        cls._hive_object_cls = type(cls.__name__+"{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
+        cls._hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
 
     @classmethod
     def _hive_build_methods(cls):

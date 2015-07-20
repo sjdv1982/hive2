@@ -39,7 +39,7 @@ hpang() # => PONG
 class Dog(object):
 
     def __init__(self, name):
-        self._hive = h.manager.get_run_hive()
+        self._hive = h.get_run_hive()
         self.name = name
         self.woofs = 0
 

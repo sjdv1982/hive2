@@ -1,6 +1,7 @@
 from ..mixins import Bee, Exportable
 from . import _special_names
 
+
 class HiveInternals(object):
 
     def __init__(self, hive_cls):
