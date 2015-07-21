@@ -17,7 +17,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         self.policy_cls = policy_cls
 
         if bound:
-            self._policy = policy_cls()
+            self.policy = policy_cls()
 
     def __repr__(self):
         return "<HiveSocket::{}>".format(self._func)
@@ -55,7 +55,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
             raise ValueError("Socket source must be a subclass of Plugin")
 
         try:
-            self._policy.pre_filled()
+            self.policy.pre_filled()
 
         except SocketPolicyError as err:
             raise SocketPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, self, source))
@@ -63,7 +63,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
     def _hive_connect_target(self, source):
         plugin = source.plugin()
         self._func(plugin)
-        self._policy.on_filled()
+        self.policy.on_filled()
     
 
 class HiveSocketBee(Socket, ConnectTarget, Exportable):

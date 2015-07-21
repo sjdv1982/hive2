@@ -20,7 +20,9 @@ from .attribute import attribute
 from .entry import entry
 from .hook import hook
 from .socket import socket
+from . import socket_policies
 from .plugin import plugin
+from . import plugin_policies
 from .antenna import antenna
 from .output import output
 

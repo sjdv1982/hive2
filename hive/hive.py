@@ -114,7 +114,7 @@ def connect_hives(source, target):
 
     # Find source hive ConnectSources
     connect_sources = []
-    for bee_name in dir(source_externals):
+    for bee_name in source_externals:
         bee = getattr(source_externals, bee_name)
         exported_bee = bee.export()
 
@@ -127,7 +127,7 @@ def connect_hives(source, target):
 
     # Find target hive ConnectSources
     connect_targets = []
-    for bee_name in dir(target_externals):
+    for bee_name in target_externals:
         bee = getattr(target_externals, bee_name)
         exported_bee = bee.export()
 
@@ -198,12 +198,13 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     build_class_instance.__init__(*args, **kwargs)
 
             building_hive = hive_object._hive_parent_class
+
             with building_hive_as(building_hive), hive_mode_as("build"):
                 # Add external bees
                 bees = []
                 external_bees = building_hive._hive_ex
 
-                for bee_name in dir(external_bees):
+                for bee_name in external_bees:
                     bee = getattr(external_bees, bee_name)
                     exported_bee = bee.export()
 
@@ -217,7 +218,8 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                 # Add internal bees that are hives, Callable or Stateful
                 internal_bees = building_hive._hive_i
-                for bee_name in dir(internal_bees):
+
+                for bee_name in internal_bees:
                     bee = getattr(internal_bees, bee_name)
                     private_name = "_" + bee_name
 
@@ -236,7 +238,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     if isinstance(bee, HiveObject) or bee.implements(Callable) or bee.implements(Stateful):
                         bees.append((private_name, instance))
 
-                bees.sort(key=bee_sort_key)
+                #bees.sort(key=bee_sort_key)
 
                 for bee_name, instance in bees:
                     if isinstance(instance, Stateful):
@@ -267,7 +269,10 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
       
     def implements(self, cls):
         return isinstance(self, cls)
-      
+
+    def __iter__(self):
+        return iter(self._bee_names)
+
     def __dir__(self):
         return self._bee_names
 
@@ -289,7 +294,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         self._hive_cls = get_building_hive()
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
-        
+
+        self.use_auto_connect = kwargs.pop("auto_connect", False)
+
         # Args to make parameter dict for bee.parameter
         self._hive_param_args = args #for now
         self._hive_param_kwargs = kwargs #for now
@@ -314,14 +321,14 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         with hive_mode_as("build"):
             external_bees = self._hive_parent_class._hive_ex
-            for bee_name in dir(external_bees):
+            for bee_name in external_bees:
                 exportable = getattr(external_bees, bee_name)
                 target = exportable.export()
                 resolve_bee = ResolveBee(target, self)
                 setattr(self, bee_name, resolve_bee)
 
         return self
-                
+
     @memoize
     def getinstance(self, parent_hive_object):
         return self.instantiate()
@@ -367,7 +374,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         external_bees = cls._hive_parent_class._hive_ex
         trigger_sources = []
 
-        for bee_name in dir(external_bees):
+        for bee_name in external_bees:
             bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
 
@@ -394,7 +401,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         target_data_type = tuple_type(target.data_type)
 
         connect_sources = []
-        for bee_name in dir(external_bees):
+        for bee_name in external_bees:
             bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
             if not exported_bee.implements(ConnectSource):
@@ -421,7 +428,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         source_data_type = tuple_type(source.data_type)
 
         connect_targets = []
-        for bee_name in dir(external_bees):
+        for bee_name in external_bees:
             bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
             if not exported_bee.implements(ConnectTarget): 
@@ -440,7 +447,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             raise TypeError("Multiple matches: %s" % connect_targets) #TODO: nicer error message
 
         return connect_targets[0]
-      
+
     def export(self):
         return self
 
@@ -494,7 +501,7 @@ class HiveBuilder(object):
         run_hive_class_dict = {}
         hive_externals = cls._hive_ex
 
-        for bee_name in dir(hive_externals):
+        for bee_name in hive_externals:
             bee = getattr(hive_externals, bee_name)
 
             # If the bee requires a property interface, build a property
@@ -528,13 +535,51 @@ class HiveBuilder(object):
                 else:
                     builder(internals, externals, args)
 
+            # Find plugins
+            plugins = set()
+            for bee_name in externals:
+                bee = getattr(externals, bee_name)
+
+                if bee.implements(Plugin):
+                    plugins.add(bee)
+
+            for bee_name in internals:
+                bee = getattr(internals, bee_name)
+
+                if not isinstance(bee, HiveObject):
+                    continue
+
+                if not bee.use_auto_connect:
+                    continue
+
+                for child_bee_name in bee._hive_parent_class._hive_ex:
+                    child_bee = getattr(bee, child_bee_name)
+
+                    if not child_bee.implements(Socket):
+                        continue
+
+                    identifier = child_bee.identifier
+                    if not identifier:
+                        continue
+
+                    data_type = child_bee.data_type
+
+                    for plugin in plugins:
+                        if plugin.identifier != identifier:
+                            continue
+
+                        if not types_match(data_type, plugin.data_type, allow_none=True):
+                            continue
+
+                        from .connect import connect
+                        connect(plugin, child_bee)
+
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
 
         # Find any anonymous bees which are held on object
-        internal_bees = internals
-        for bee_name in dir(internal_bees):
-            bee = getattr(internal_bees, bee_name)
+        for bee_name in internals:
+            bee = getattr(internals, bee_name)
 
             if bee in anonymous_bees:
                 anonymous_bees.remove(bee)
@@ -547,14 +592,18 @@ class HiveBuilder(object):
             # Find unique name for bee
             while True:
                 bee_name = next(it_generate_bee_name)
-                if not hasattr(internal_bees, bee_name):
+                if not hasattr(internals, bee_name):
                     break
 
-            setattr(internal_bees, bee_name, bee)
+            setattr(internals, bee_name, bee)
 
         # Write the name of all bees to their instances
-        for bee_name in dir(internal_bees):
-            bee = getattr(internal_bees, bee_name)
+        for bee_name in internals:
+            bee = getattr(internals, bee_name)
+            bee._hive_bee_name = (bee_name,)
+
+        for bee_name in externals:
+            bee = getattr(externals, bee_name)
             bee._hive_bee_name = (bee_name,)
 
 

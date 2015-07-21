@@ -1,12 +1,13 @@
 from ..mixins import Exportable
 from . import _special_names
 
+
 class HiveExportables(object):
 
     def __init__(self, hive_cls):
         assert hive_cls is not None
         self._hive_cls = hive_cls
-        self._bee_names = set()
+        self._bee_names = []
 
     def __setattr__(self, name, value):
         if name in _special_names:
@@ -33,7 +34,9 @@ class HiveExportables(object):
             raise AttributeError("HiveExportables (ex) attribute '%s' must contain a Bee built by '%s' (or one of its"
                                  " base classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
 
-        self._bee_names.add(name)
+        if name not in self._bee_names:
+            self._bee_names.append(name)
+
         object.__setattr__(self, name, value)
 
     def __delattr__(self, attr):
@@ -44,4 +47,7 @@ class HiveExportables(object):
         object.__delattr__(self, attr)
 
     def __dir__(self):
-        return list(self._bee_names)
+        return self._bee_names
+
+    def __iter__(self):
+        return iter(self._bee_names)

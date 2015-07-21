@@ -16,7 +16,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         self.policy_cls = policy_cls
 
         if bound:
-            self._policy = policy_cls()
+            self.policy = policy_cls()
 
     def __repr__(self):
         return "<HivePlugin::{}>".format(self._func)
@@ -29,13 +29,13 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
             raise ValueError("Plugin target must be a subclass of Socket")
 
         try:
-            self._policy.pre_donated()
+            self.policy.pre_donated()
 
         except PluginPolicyError as err:
             raise PluginPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, target, self))
 
     def _hive_connect_source(self, target):
-        self._policy.on_donated()
+        self.policy.on_donated()
 
     @memoize
     def bind(self, run_hive):
