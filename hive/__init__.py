@@ -14,7 +14,7 @@ from .trigger import trigger
 
 #i/ex primitives
 from .property import property
-from .attribute import attribute #(akin to property, but is stored on the run_hive)
+from .attribute import attribute
 
 #ex primitives
 from .entry import entry
@@ -23,6 +23,7 @@ from .socket import socket
 from .plugin import plugin
 from .antenna import antenna
 from .output import output
+
 # TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
 # TODO: supplier, required etc. for sockets/plugins
 # TODO: autosocket default policy (for parent and for children) on args object

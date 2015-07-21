@@ -2,7 +2,7 @@ from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callab
     TriggerSource, TriggerTarget, Socket, Plugin
 from .classes import HiveBee, Pusher
 from .manager import get_mode, get_building_hive, memoize
-from .ppin import compare_types
+from .tuple_type import types_match
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
@@ -52,7 +52,9 @@ class PullOut(PPOutBase):
     def _hive_is_connectable_source(self, target):
         assert isinstance(target, Antenna) # TODO : nicer error message
         assert target.mode == "pull" # TODO : nicer error message
-        compare_types(self, target)
+
+        if not types_match(target.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
 
     def _hive_connect_source(self, target):
         pass
@@ -89,7 +91,9 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     def _hive_is_connectable_source(self, target):
         assert isinstance(target, Antenna), target # TODO : nicer error message
         assert target.mode == "push" # TODO : nicer error message
-        compare_types(target, self)
+
+        if not types_match(target.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
     
     def _hive_connect_source(self, target): #Socket
         self._targets.append(target.push)

@@ -5,8 +5,9 @@ from .manager import ContextFactory, get_building_hive, memoize
 
 
 class Attribute(Stateful, Bindable, Exportable):
+    """Akin to property, but is not stored on the run_hive"""
 
-    def __init__(self, data_type=(), start_value=None):
+    def __init__(self, data_type=None, start_value=None):
         self._hive_cls = get_building_hive()
 
         self.data_type = data_type

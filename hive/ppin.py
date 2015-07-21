@@ -1,12 +1,7 @@
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
 from .classes import HiveBee, Pusher
 from .manager import get_mode, get_building_hive, memoize
-
-
-def compare_types(b1, b2):
-    for t1, t2 in zip(b1.data_type, b2.data_type):
-        if t1 != t2:
-            raise TypeError((b1.data_type, b2.data_type)) # TODO: nice error message
+from .tuple_type import types_match
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
@@ -58,7 +53,9 @@ class PushIn(PPInBase):
     def _hive_is_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
         assert source.mode == "push" # TODO : nicer error message
-        compare_types(source, self)
+
+        if not types_match(source.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
         pass        
@@ -87,7 +84,9 @@ class PullIn(PPInBase, TriggerTarget):
     def _hive_is_connectable_target(self, source):
         assert isinstance(source, Output) # TODO : nicer error message
         assert source.mode == "pull" # TODO : nicer error message
-        compare_types(source, self)
+
+        if not types_match(source.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
         if self._pull_callback is not None:

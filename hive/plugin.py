@@ -5,7 +5,7 @@ from .manager import get_building_hive, memoize, ContextFactory
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=(), policy_cls=SingleRequired, bound=None, exported=False):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._exported = exported
@@ -67,7 +67,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=(), policy_cls=SingleRequired, exported=False):
+    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, exported=False):
         self._hive_cls = get_building_hive()
         self._target = target
         self._exported = exported

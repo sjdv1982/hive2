@@ -290,17 +290,17 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
         
-        #args to make parameter dict for bee.parameter
+        # Args to make parameter dict for bee.parameter
         self._hive_param_args = args #for now
         self._hive_param_kwargs = kwargs #for now
         
         # TODO: instantiate parameter dict and send it to the resolve manager
 
-        #args to instantiate builderclass instances
+        # Args to instantiate builder-class instances
         self._hive_builder_args = args #for now
         self._hive_builder_kwargs = kwargs #for now
             
-        #check calling signature of builderclass.__init__
+        # Check calling signature of builderclass.__init__
         init_plus_args = (None,) + self._hive_builder_args
 
         # Check build functions are valid

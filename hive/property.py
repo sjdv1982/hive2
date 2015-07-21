@@ -50,7 +50,7 @@ class Property(Stateful, Bindable, Exportable):
         return self
 
 
-def property(cls, attr, data_type=(), start_value=None):
+def property(cls, attr, data_type=None, start_value=None):
     data_type = tuple_type(data_type)
 
     if get_mode() == "immediate":
