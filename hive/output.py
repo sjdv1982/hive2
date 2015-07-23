@@ -9,6 +9,9 @@ class HiveOutput(Output, Exportable):
         self._hive_cls = get_building_hive()
         self._target = target
 
+    def __repr__(self):
+        return "<Output: {}::{}>".format(self._hive_cls, self._target)
+
     @memoize
     def export(self):
         # TODO: somehow log the redirection path

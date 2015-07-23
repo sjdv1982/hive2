@@ -1,4 +1,4 @@
-_special_names = ("parent", "implements") #TODO: auto? export?
+SPECIAL_NAMES = ("parent", "implements") #TODO: auto? export?
 
 from .hive_bee import HiveBee
 from .pusher import Pusher

@@ -5,12 +5,12 @@ from .manager import get_building_hive, memoize, ContextFactory
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, bound=None, exported=False):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False, bound=None):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
-        self._exported = exported
         self._func = func
 
+        self.auto_connect = auto_connect
         self.identifier = identifier
         self.data_type = data_type
         self.policy_cls = policy_cls
@@ -19,7 +19,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
             self.policy = policy_cls()
 
     def __repr__(self):
-        return "<HivePlugin::{}>".format(self._func)
+        return "<HivePlugin: {}>".format(self._func)
 
     def plugin(self):
         return self._func
@@ -44,22 +44,19 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
         if isinstance(self._func, Bindable):
             func = self._func.bind(run_hive)
-            return self.__class__(func, self.identifier, self.data_type, policy_cls=self.policy_cls, bound=run_hive)
+            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.auto_connect, run_hive)
 
         else:
             return self
 
     @memoize
     def export(self):
-        if self._exported:
-            return self
-        
         # TODO: somehow log the redirection path
         func = self._func
         if isinstance(func, Exportable):
             exported = func.export()
             return self.__class__(exported, self.identifier, self.data_type, policy_cls=self.policy_cls,
-                                  bound=self._bound, exported=True)
+                                  bound=self._bound)
 
         else:
             return self
@@ -67,14 +64,17 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, exported=False):
+    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False):
         self._hive_cls = get_building_hive()
         self._target = target
-        self._exported = exported
 
+        self.auto_connect = auto_connect
         self.identifier = identifier
         self.data_type = data_type
         self.policy_cls = policy_cls
+
+    def __repr__(self):
+        return "<HivePluginBee {})>".format(self._target)
 
     @memoize
     def getinstance(self, hive_object):
@@ -82,19 +82,15 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
-        return HivePlugin(target, self.identifier, self.data_type, self.policy_cls)
+        return HivePlugin(target, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
 
     @memoize
     def export(self):
-        if self._exported:
-            return self
-          
         # TODO: somehow log the redirection path
         target = self._target
         if isinstance(target, Exportable):
             exported = target.export()
-
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, exported=True)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
 
         else:
             return self

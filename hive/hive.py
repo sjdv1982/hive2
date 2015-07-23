@@ -59,7 +59,7 @@ class HiveMethodWrapper(object):
             return value
 
     def __setattr__(self, attr):
-        raise AttributeError("HiveMethodWrapper of class '%s' is read-only" % self._cls.__name__)
+        raise AttributeError("HiveMethodWrapper of class '{}' is read-only".format(self._cls.__name__))
 
 
 class Generic(object):
@@ -295,7 +295,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
 
-        self.use_auto_connect = kwargs.pop("auto_connect", False)
+        self.auto_connect = kwargs.pop("auto_connect", False)
 
         # Args to make parameter dict for bee.parameter
         self._hive_param_args = args #for now
@@ -536,12 +536,19 @@ class HiveBuilder(object):
                     builder(internals, externals, args)
 
             # Find plugins
-            plugins = set()
+            from .connect import connect
+
+            auto_plugins = set()
+            auto_sockets = set()
+
             for bee_name in externals:
                 bee = getattr(externals, bee_name)
 
-                if bee.implements(Plugin):
-                    plugins.add(bee)
+                if bee.implements(Plugin) and bee.auto_connect:
+                    auto_plugins.add(bee)
+
+                if bee.implements(Socket) and bee.auto_connect:
+                    auto_sockets.add(bee)
 
             for bee_name in internals:
                 bee = getattr(internals, bee_name)
@@ -549,13 +556,19 @@ class HiveBuilder(object):
                 if not isinstance(bee, HiveObject):
                     continue
 
-                if not bee.use_auto_connect:
+                if not bee.auto_connect:
                     continue
 
                 for child_bee_name in bee._hive_parent_class._hive_ex:
                     child_bee = getattr(bee, child_bee_name)
 
-                    if not child_bee.implements(Socket):
+                    is_socket = child_bee.implements(Socket)
+                    is_plugin = child_bee.implements(Plugin)
+
+                    if not (is_socket or is_plugin):
+                        continue
+
+                    if not child_bee.auto_connect:
                         continue
 
                     identifier = child_bee.identifier
@@ -564,15 +577,25 @@ class HiveBuilder(object):
 
                     data_type = child_bee.data_type
 
-                    for plugin in plugins:
-                        if plugin.identifier != identifier:
-                            continue
+                    if is_socket:
+                        for plugin in auto_plugins:
+                            if plugin.identifier != identifier:
+                                continue
 
-                        if not types_match(data_type, plugin.data_type, allow_none=True):
-                            continue
+                            if not types_match(data_type, plugin.data_type, allow_none=True):
+                                continue
 
-                        from .connect import connect
-                        connect(plugin, child_bee)
+                            connect(plugin, child_bee)
+
+                    else:
+                        for socket in auto_sockets:
+                            if socket.identifier != identifier:
+                                continue
+
+                            if not types_match(data_type, socket.data_type, allow_none=True):
+                                continue
+
+                            connect(child_bee, socket)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)

@@ -11,6 +11,9 @@ class ResolveBee(Bee):
     def __getattr__(self, attr):
         return getattr(self._bee, attr)
 
+    def __repr__(self):
+        return "<ResolveBee {}, {}>".format(self._own_hive_object, self._bee)
+
     def getinstance(self, hive_object):
         hive_instance = self._own_hive_object.getinstance(hive_object)
         result = self._bee.getinstance(hive_instance._hive_object)

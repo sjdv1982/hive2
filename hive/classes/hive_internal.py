@@ -1,5 +1,5 @@
 from ..mixins import Bee, Exportable
-from . import _special_names
+from . import SPECIAL_NAMES
 
 
 class HiveInternals(object):
@@ -10,7 +10,7 @@ class HiveInternals(object):
         self._bee_names = []
 
     def __setattr__(self, name, value):
-        if name in _special_names:
+        if name in SPECIAL_NAMES:
             raise AttributeError("HiveInternals (i) special attribute '%s' cannot be assigned to" % name)
 
         if name.startswith("_"): 

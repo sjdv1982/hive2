@@ -39,6 +39,9 @@ class Connection(Bindable):
         self.source = source
         self.target = target
 
+    def __repr__(self):
+        return "<Connection {} ~> {}>".format(self.source.repr(), self.target)
+
     @memoize
     def bind(self, run_hive):
         source = self.source
@@ -56,6 +59,9 @@ class ConnectionBee(HiveBee):
 
     def __init__(self, source, target):
         HiveBee.__init__(self, None, source, target)
+
+    def __repr__(self):
+        return "<ConnectionBee\n\t{}\n\t{}>".format(*self.args)
 
     @memoize
     def getinstance(self, hive_object):
