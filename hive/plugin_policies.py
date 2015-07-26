@@ -3,6 +3,7 @@
 Defines policies for plugin donation
 """
 
+
 class PluginPolicyError(Exception):
     pass
 

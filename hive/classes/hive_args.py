@@ -33,3 +33,9 @@ class HiveArgs(object):
             self._args[name] = HiveArgument(name, self)
 
         return self._args[name]
+
+    def __dir__(self):
+        return self._args.keys()
+
+    def __iter__(self):
+        return iter(self._args.keys())

@@ -1,6 +1,9 @@
 from contextlib import contextmanager
 
 
+hive_modes = {'immediate', 'build', 'declare'}
+
+
 _mode = "immediate"
 _building_hive = None
 _run_hive = None
@@ -13,7 +16,7 @@ def get_mode():
 
 def set_mode(mode):
     global _mode
-    assert mode in ("immediate", "build"), mode
+    assert mode in hive_modes, mode
     _mode = mode
 
 

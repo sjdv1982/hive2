@@ -4,10 +4,11 @@ from .contexts import get_mode
 class ContextFactory:
     """Return appropriate class instance depending upon execution mode"""
 
-    def __init__(self, name, immediate_cls=None, deferred_cls=None):
+    def __init__(self, name, immediate_cls=None, deferred_cls=None, declare_cls=None):
         self.name = name
         self.immediate_cls = immediate_cls
         self.deferred_cls = deferred_cls
+        self.declare_cls = None
 
     def __call__(self, *args, **kwargs):
         mode = get_mode()

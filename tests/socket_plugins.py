@@ -33,14 +33,29 @@ def build_house(cls, i, ex, args):
     ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("a", "b"), data_type=("float",),
                                  policy_cls=hive.plugin_policies.MultipleOptional,
                                  auto_connect=True)
+
     # Auto connect
     i.brutus = DogHive(auto_connect=True)
     ex.brutus = hive.hook(i.brutus)
 
     # Manual connect
     i.fido = DogHive()
+
     ex.fido = hive.hook(i.brutus)
     hive.connect(ex.some_plugin, i.fido.some_socket)
+
+
+class SCATest:
+
+    pass
+
+
+def build_sca(cls, i, ex, args):
+    pass
+
+
+
+SCAHive = hive.hive("SCAHive", build_sca, SCATest)
 
 
 DogHive = hive.hive("DogHive", build_dog, Dog)

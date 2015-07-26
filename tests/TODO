@@ -1,5 +1,5 @@
-antenna/outputs with push/pull
-simple sockets/plugins, hive.attribute 
+antenna/outputs with push/pull # DONE
+simple sockets/plugins, hive.attribute # DONE
 metahives that delay the building etc.
 argument parameters
 autosocket/autoplugin and namespace merges

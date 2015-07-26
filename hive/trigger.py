@@ -73,7 +73,7 @@ def _trigger(source, target, pretrigger):
         assert isinstance(target, TriggerTarget), target
 
     if get_mode() == "immediate":
-        build_trigger(source, target,pretrigger)
+        build_trigger(source, target, pretrigger)
 
     else:
         trigger_bee = TriggerBee(source, target, pretrigger)

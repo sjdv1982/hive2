@@ -149,8 +149,7 @@ def connect_hives(source, target):
 
     elif len(candidates) > 1:
         candidate_names = [(a.attrib, b.attrib) for a, b in candidates]
-        # TODO: nicer error message
-        raise TypeError("Multiple matches: {}".format(candidate_names))
+        raise TypeError("Multiple matches found between {} and {}: {}".format(source, target, candidate_names))
 
     source_candidate, target_candidate = candidates[0]
 
@@ -200,7 +199,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             building_hive = hive_object._hive_parent_class
 
             with building_hive_as(building_hive), hive_mode_as("build"):
-                # Add external bees
+                # Add external bees to runtime hive
                 bees = []
                 external_bees = building_hive._hive_ex
 
@@ -216,14 +215,14 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     bees.append((bee_name, instance))
 
-                # Add internal bees that are hives, Callable or Stateful
+                # Add internal bees (that are hives, Callable or Stateful) to runtime hive
                 internal_bees = building_hive._hive_i
 
                 for bee_name in internal_bees:
                     bee = getattr(internal_bees, bee_name)
                     private_name = "_" + bee_name
 
-                    # Protected attribute starting with _hive
+                    # Some runtime hive attributes are protected
                     assert not hasattr(self, private_name), private_name
 
                     # TODO: nice exception reporting
@@ -295,6 +294,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
 
+        # Automatically import parent sockets and plugins
         self.auto_connect = kwargs.pop("auto_connect", False)
 
         # Args to make parameter dict for bee.parameter
@@ -367,7 +367,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         
     @classmethod
     def _hive_find_trigger_source(cls):
-        """Find name of single external bee that supported TriggerSource interface.
+        """Find and return name of single external bee that supported TriggerSource interface.
 
         Raise TypeError if such a condition cannot be met
         """
@@ -396,6 +396,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
     @classmethod
     def _hive_find_connect_source(cls, target):
+        """Find and return the name of a suitable connect source within this hive
+
+        :param target: target to connect to
+        """
         assert target.implements(ConnectTarget)
         external_bees = cls._hive_parent_class._hive_ex
         target_data_type = tuple_type(target.data_type)
@@ -423,6 +427,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             
     @classmethod
     def _hive_find_connect_target(cls, source):
+        """Find and return the name of a suitable connect target within this hive
+
+        :param source: source to connect to
+        """
         assert source.implements(ConnectSource)
         external_bees = cls._hive_parent_class._hive_ex
         source_data_type = tuple_type(source.data_type)
@@ -479,7 +487,13 @@ class HiveBuilder(object):
 
     @classmethod
     def extend(cls, name, builder, builder_cls=None, hive_kwargs=False):
-        """Extend HiveObject with an additional builder (and builder class)"""
+        """Extend HiveObject with an additional builder (and builder class)
+
+        :param name: name of new hive class
+        :param builder: function used to build hive
+        :param builder_cls: optional Python class to bind to hive
+        :param hive_kwargs: TODO
+        """
         if builder_cls is not None:
             assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
@@ -490,6 +504,17 @@ class HiveBuilder(object):
         }
 
         return type(name, (cls,), class_dict)
+
+    @classmethod
+    def extended(cls, name, hive_kwargs=False):
+        """Decorator to define a new hive with an additional builder function
+
+        See extend for parameter definitions
+        """
+        def wrapper(builder):
+            return cls.extend(name, builder, hive_kwargs=hive_kwargs)
+
+        return wrapper
          
     @classmethod
     def _hive_build(cls):
@@ -535,12 +560,12 @@ class HiveBuilder(object):
                 else:
                     builder(internals, externals, args)
 
-            # Find plugins
             from .connect import connect
 
             auto_plugins = set()
             auto_sockets = set()
 
+            # Find plugins and sockets
             for bee_name in externals:
                 bee = getattr(externals, bee_name)
 
@@ -550,6 +575,7 @@ class HiveBuilder(object):
                 if bee.implements(Socket) and bee.auto_connect:
                     auto_sockets.add(bee)
 
+            # Automatically connect plugins and sockets
             for bee_name in internals:
                 bee = getattr(internals, bee_name)
 

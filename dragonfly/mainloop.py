@@ -9,8 +9,8 @@ class _Mainloop(object):
     def __init__(self, max_framerate):
         self._hive = hive.get_run_hive()
         self.max_framerate = max_framerate
+
         self._running = False
-        self._stop = False
         self._listeners = []
 
     def run(self):
@@ -20,7 +20,7 @@ class _Mainloop(object):
         accumulator = 0.0
         last_time = time.time()
 
-        while not self._stop:
+        while self._running:
             current_time = time.time()
             elapsed_time = current_time - last_time
             last_time = current_time
@@ -34,7 +34,7 @@ class _Mainloop(object):
                 self.tick()
 
     def stop(self):
-        self._stop = True
+        self._running = False
 
     def tick(self):
         self._hive.tick()
@@ -51,4 +51,4 @@ def build_mainloop(cls, i, ex, args):
     ex.max_framerate = hive.property(cls, "max_framerate")
 
 
-mainloop = hive.hive("mainloop", build_mainloop, _Mainloop)
+Mainloop = hive.hive("mainloop", build_mainloop, _Mainloop)

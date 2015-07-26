@@ -7,7 +7,7 @@ class HiveExportables(object):
     def __init__(self, hive_cls):
         assert hive_cls is not None
         self._hive_cls = hive_cls
-        self._bee_names = []
+        self._bee_names = set()
 
     def __setattr__(self, name, value):
         if name in SPECIAL_NAMES:
@@ -34,8 +34,7 @@ class HiveExportables(object):
             raise AttributeError("HiveExportables (ex) attribute '%s' must contain a Bee built by '%s' (or one of its"
                                  " base classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
 
-        if name not in self._bee_names:
-            self._bee_names.append(name)
+        self._bee_names.add(name)
 
         object.__setattr__(self, name, value)
 
