@@ -96,4 +96,4 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
             return self
 
 
-socket = ContextFactory("hive.socket", immediate_cls=HiveSocket, deferred_cls=HiveSocketBee)
+socket = ContextFactory("hive.socket", immediate_mode_cls=HiveSocket, build_mode_cls=HiveSocketBee)

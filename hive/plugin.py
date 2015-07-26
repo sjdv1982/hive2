@@ -96,4 +96,4 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
             return self
 
 
-plugin = ContextFactory("hive.plugin", immediate_cls=HivePlugin, deferred_cls=HivePluginBee)
+plugin = ContextFactory("hive.plugin", immediate_mode_cls=HivePlugin, build_mode_cls=HivePluginBee)

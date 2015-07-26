@@ -63,4 +63,4 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return False
 
 
-modifier = ContextFactory("hive.modifier", immediate_cls=Modifier, deferred_cls=ModifierBee)
+modifier = ContextFactory("hive.modifier", immediate_mode_cls=Modifier, build_mode_cls=ModifierBee)

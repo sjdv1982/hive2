@@ -67,4 +67,4 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
         return False
 
 
-triggerable = ContextFactory("hive.triggerable", immediate_cls=Triggerable, deferred_cls=TriggerableBee)
+triggerable = ContextFactory("hive.triggerable", immediate_mode_cls=Triggerable, build_mode_cls=TriggerableBee)

@@ -31,4 +31,4 @@ class Attribute(Stateful, Bindable, Exportable):
         return self
 
 
-attribute = ContextFactory("hive.attribute", deferred_cls=Attribute)
+attribute = ContextFactory("hive.attribute", build_mode_cls=Attribute)

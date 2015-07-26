@@ -26,6 +26,9 @@ from . import plugin_policies
 from .antenna import antenna
 from .output import output
 
+#args primitives
+from .parameter import parameter
+
 # TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
 # TODO: supplier, required etc. for sockets/plugins
 # TODO: autosocket default policy (for parent and for children) on args object

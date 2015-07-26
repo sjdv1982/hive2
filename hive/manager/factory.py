@@ -1,25 +1,26 @@
-from .contexts import get_mode
+from .contexts import get_mode, hive_modes
 
 
 class ContextFactory:
     """Return appropriate class instance depending upon execution mode"""
 
-    def __init__(self, name, immediate_cls=None, deferred_cls=None, declare_cls=None):
+    def __init__(self, name, **kwargs):
         self.name = name
-        self.immediate_cls = immediate_cls
-        self.deferred_cls = deferred_cls
-        self.declare_cls = None
+
+        self.context_dict = ctx = {}
+
+        for mode_name, cls in kwargs.items():
+            mode = mode_name.replace("_mode_cls", "")
+            assert mode in hive_modes, "Invalid argument for class context factory: {}".format(mode)
+            ctx[mode] = cls
 
     def __call__(self, *args, **kwargs):
         mode = get_mode()
 
-        if mode == "immediate":
-            cls = self.immediate_cls
+        try:
+            cls = self.context_dict[mode]
 
-        else:
-            cls = self.deferred_cls
-
-        if cls is None:
+        except KeyError:
             raise TypeError("{} cannot be used in {} mode".format(self.name, mode))
 
         return cls(*args, **kwargs)

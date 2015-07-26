@@ -82,4 +82,4 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
         return False
 
 
-triggerfunc = ContextFactory("hive.triggerfunc", immediate_cls=TriggerFunc, deferred_cls=TriggerFuncBee)
+triggerfunc = ContextFactory("hive.triggerfunc", immediate_mode_cls=TriggerFunc, build_mode_cls=TriggerFuncBee)

@@ -19,4 +19,4 @@ class Entry(Exportable, Bee):
         return target
 
 
-entry = ContextFactory("hive.entry", deferred_cls=Entry)
+entry = ContextFactory("hive.entry", build_mode_cls=Entry)

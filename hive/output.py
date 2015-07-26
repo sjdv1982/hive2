@@ -22,4 +22,4 @@ class HiveOutput(Output, Exportable):
         return target
 
 
-output = ContextFactory("hive.output", immediate_cls=None, deferred_cls=HiveOutput)
+output = ContextFactory("hive.output", build_mode_cls=HiveOutput)

@@ -467,6 +467,8 @@ class HiveBuilder(object):
     """
 
     _builders = ()
+    _declarators = ()
+
     _hive_i = None
     _hive_ex = None
     _hive_args = None    
@@ -486,36 +488,34 @@ class HiveBuilder(object):
             return self
 
     @classmethod
-    def extend(cls, name, builder, builder_cls=None, hive_kwargs=False):
+    def extend(cls, name, builder, builder_cls=None, declarator=None, hive_kwargs=False):
         """Extend HiveObject with an additional builder (and builder class)
 
         :param name: name of new hive class
-        :param builder: function used to build hive
+        :param builder: optional function used to build hive
         :param builder_cls: optional Python class to bind to hive
+        :param declarator: optional declarator to establish parameters
         :param hive_kwargs: TODO
         """
         if builder_cls is not None:
             assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
         builders = cls._builders + ((builder, builder_cls),)
+
+        if declarator is not None:
+            declarators = cls._declarators + (declarator,)
+
+        else:
+            declarators = cls._declarators
+
         class_dict = {
             "_builders": builders,
+            "_declarators": declarators,
             "_hive_hive_kwargs": hive_kwargs,
         }
 
         return type(name, (cls,), class_dict)
 
-    @classmethod
-    def extended(cls, name, hive_kwargs=False):
-        """Decorator to define a new hive with an additional builder function
-
-        See extend for parameter definitions
-        """
-        def wrapper(builder):
-            return cls.extend(name, builder, hive_kwargs=hive_kwargs)
-
-        return wrapper
-         
     @classmethod
     def _hive_build(cls):
         assert cls._hive_object_cls is None, "Hive already built!"
@@ -546,82 +546,87 @@ class HiveBuilder(object):
         assert cls._hive_ex is None, "Hive externals already built!"
         assert cls._hive_args is None, "Hive arguments already built!"
 
-        with hive_mode_as("build"), building_hive_as(cls), bee_register_context() as registered_bees:
-            cls._hive_i = internals = HiveInternals(cls)
-            cls._hive_ex = externals = HiveExportables(cls)
-            cls._hive_args = args = HiveArgs(cls)
+        cls._hive_i = internals = HiveInternals(cls)
+        cls._hive_ex = externals = HiveExportables(cls)
+        cls._hive_args = args = HiveArgs(cls)
 
-            # Invoke builder functions to build wrappers
-            for builder, builder_cls in cls._builders:
-                if builder_cls is not None:
-                    wrapper = HiveMethodWrapper(builder_cls)
-                    builder(wrapper, internals, externals, args)
+        with building_hive_as(cls):
+            # Call declarators
+            with hive_mode_as("declare"):
+                pass
 
-                else:
-                    builder(internals, externals, args)
-
-            from .connect import connect
-
-            auto_plugins = set()
-            auto_sockets = set()
-
-            # Find plugins and sockets
-            for bee_name in externals:
-                bee = getattr(externals, bee_name)
-
-                if bee.implements(Plugin) and bee.auto_connect:
-                    auto_plugins.add(bee)
-
-                if bee.implements(Socket) and bee.auto_connect:
-                    auto_sockets.add(bee)
-
-            # Automatically connect plugins and sockets
-            for bee_name in internals:
-                bee = getattr(internals, bee_name)
-
-                if not isinstance(bee, HiveObject):
-                    continue
-
-                if not bee.auto_connect:
-                    continue
-
-                for child_bee_name in bee._hive_parent_class._hive_ex:
-                    child_bee = getattr(bee, child_bee_name)
-
-                    is_socket = child_bee.implements(Socket)
-                    is_plugin = child_bee.implements(Plugin)
-
-                    if not (is_socket or is_plugin):
-                        continue
-
-                    if not child_bee.auto_connect:
-                        continue
-
-                    identifier = child_bee.identifier
-                    if not identifier:
-                        continue
-
-                    data_type = child_bee.data_type
-
-                    if is_socket:
-                        for plugin in auto_plugins:
-                            if plugin.identifier != identifier:
-                                continue
-
-                            if not types_match(data_type, plugin.data_type, allow_none=True):
-                                continue
-
-                            connect(plugin, child_bee)
+            with hive_mode_as("build"), building_hive_as(cls), bee_register_context() as registered_bees:
+                # Invoke builder functions to build wrappers
+                for builder, builder_cls in cls._builders:
+                    if builder_cls is not None:
+                        wrapper = HiveMethodWrapper(builder_cls)
+                        builder(wrapper, internals, externals, args)
 
                     else:
-                        for socket in auto_sockets:
-                            if socket.identifier != identifier:
-                                continue
+                        builder(internals, externals, args)
 
-                            if not types_match(data_type, socket.data_type, allow_none=True):
-                                continue
+                from .connect import connect
 
-                            connect(child_bee, socket)
+                auto_plugins = set()
+                auto_sockets = set()
+
+                # Find plugins and sockets
+                for bee_name in externals:
+                    bee = getattr(externals, bee_name)
+
+                    if bee.implements(Plugin) and bee.auto_connect:
+                        auto_plugins.add(bee)
+
+                    if bee.implements(Socket) and bee.auto_connect:
+                        auto_sockets.add(bee)
+
+                # Automatically connect plugins and sockets
+                for bee_name in internals:
+                    bee = getattr(internals, bee_name)
+
+                    if not isinstance(bee, HiveObject):
+                        continue
+
+                    if not bee.auto_connect:
+                        continue
+
+                    for child_bee_name in bee._hive_parent_class._hive_ex:
+                        child_bee = getattr(bee, child_bee_name)
+
+                        is_socket = child_bee.implements(Socket)
+                        is_plugin = child_bee.implements(Plugin)
+
+                        if not (is_socket or is_plugin):
+                            continue
+
+                        if not child_bee.auto_connect:
+                            continue
+
+                        identifier = child_bee.identifier
+                        if not identifier:
+                            continue
+
+                        data_type = child_bee.data_type
+
+                        if is_socket:
+                            for plugin in auto_plugins:
+                                if plugin.identifier != identifier:
+                                    continue
+
+                                if not types_match(data_type, plugin.data_type, allow_none=True):
+                                    continue
+
+                                connect(plugin, child_bee)
+
+                        else:
+                            for socket in auto_sockets:
+                                if socket.identifier != identifier:
+                                    continue
+
+                                if not types_match(data_type, socket.data_type, allow_none=True):
+                                    continue
+
+                                connect(child_bee, socket)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
@@ -657,8 +662,8 @@ class HiveBuilder(object):
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder, cls=None, hive_kwargs=False):
+def hive(name, builder, cls=None, declarator=None, hive_kwargs=False):
     if cls is not None:
         assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
-    return HiveBuilder.extend(name, builder, cls, hive_kwargs)
+    return HiveBuilder.extend(name, builder, cls, declarator, hive_kwargs)

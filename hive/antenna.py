@@ -19,4 +19,4 @@ class HiveAntenna(Antenna, Exportable):
         return target
 
 
-antenna = ContextFactory("hive.antenna", deferred_cls=HiveAntenna)
+antenna = ContextFactory("hive.antenna", build_mode_cls=HiveAntenna)
