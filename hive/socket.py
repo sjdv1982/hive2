@@ -2,6 +2,7 @@ from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bi
 from .manager.factory import ContextFactory
 from .socket_policies import SingleRequired, SocketPolicyError
 from .manager import memoize, get_building_hive
+from .tuple_type import tuple_type
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
@@ -13,7 +14,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
         self.auto_connect = auto_connect
         self.identifier = identifier
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
 
         if bound:
@@ -69,7 +70,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
         self.auto_connect = auto_connect
         self.identifier = identifier
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
 
     def __repr__(self):

@@ -1,11 +1,12 @@
 from .mixins import Parameter
 from .manager import ContextFactory
+from .tuple_type import tuple_type
 
 
 class HiveParameter(Parameter):
 
     def __init__(self, data_type=None, start_value=None):
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.start_value = start_value
 
     def __repr__(self):

@@ -14,7 +14,7 @@ class Property(Stateful, Bindable, Exportable):
         self._attr = attr
         self._bound = WeakSet()
 
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.start_value = start_value
 
     def _hive_stateful_getter(self, run_hive):
@@ -51,8 +51,6 @@ class Property(Stateful, Bindable, Exportable):
 
 
 def property(cls, attr, data_type=None, start_value=None):
-    data_type = tuple_type(data_type)
-
     if get_mode() == "immediate":
         raise ValueError("hive.property cannot be used in immediate mode")
 

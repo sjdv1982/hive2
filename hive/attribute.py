@@ -2,6 +2,7 @@ from weakref import WeakKeyDictionary
 
 from .mixins import Stateful, Exportable, Bindable
 from .manager import ContextFactory, get_building_hive, memoize
+from .tuple_type import tuple_type
 
 
 class Attribute(Stateful, Bindable, Exportable):
@@ -10,7 +11,7 @@ class Attribute(Stateful, Bindable, Exportable):
     def __init__(self, data_type=None, start_value=None):
         self._hive_object_cls = get_building_hive()
 
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.start_value = start_value
 
         self._values = WeakKeyDictionary()

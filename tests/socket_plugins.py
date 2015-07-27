@@ -21,7 +21,7 @@ class Dog(object):
 def build_dog(cls, i, ex, args):
     i.print_house = hive.triggerable(cls.print_house)
     ex.print_house = hive.entry(i.print_house)
-    ex.some_socket = hive.socket(cls.set_get_house, identifier=("a", "b"), data_type=("float",), auto_connect=True)
+    ex.some_socket = hive.socket(cls.set_get_house, identifier=("a", "b"), data_type="float", auto_connect=True)
 
 
 class House(object):
@@ -30,7 +30,7 @@ class House(object):
 
 
 def build_house(cls, i, ex, args):
-    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("a", "b"), data_type=("float",),
+    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("a", "b"), data_type="float",
                                  policy_cls=hive.plugin_policies.MultipleOptional,
                                  auto_connect=True)
 
@@ -43,19 +43,6 @@ def build_house(cls, i, ex, args):
 
     ex.fido = hive.hook(i.brutus)
     hive.connect(ex.some_plugin, i.fido.some_socket)
-
-
-class SCATest:
-
-    pass
-
-
-def build_sca(cls, i, ex, args):
-    pass
-
-
-
-SCAHive = hive.hive("SCAHive", build_sca, SCATest)
 
 
 DogHive = hive.hive("DogHive", build_dog, Dog)

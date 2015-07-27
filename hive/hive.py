@@ -121,8 +121,7 @@ def connect_hives(source, target):
         if not exported_bee.implements(ConnectSource): 
             continue
 
-        source_data_type = tuple_type(exported_bee.data_type)
-        candidate = Generic(attrib=bee_name, data_type=source_data_type, bee=exported_bee)
+        candidate = Generic(attrib=bee_name, data_type=exported_bee.data_type, bee=exported_bee)
         connect_sources.append(candidate)
 
     # Find target hive ConnectSources
@@ -134,8 +133,7 @@ def connect_hives(source, target):
         if not exported_bee.implements(ConnectTarget): 
             continue
 
-        target_data_type = tuple_type(exported_bee.data_type)
-        candidate = Generic(attrib=bee_name, data_type=target_data_type, bee=exported_bee)
+        candidate = Generic(attrib=bee_name, data_type=exported_bee.data_type, bee=exported_bee)
         connect_targets.append(candidate)
     
     # First try: match candidates with named data_type

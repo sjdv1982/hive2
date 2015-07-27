@@ -1,6 +1,7 @@
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
 from .plugin_policies import SingleRequired, PluginPolicyError
 from .manager import get_building_hive, memoize, ContextFactory
+from .tuple_type import tuple_type
 
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
@@ -12,7 +13,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
         self.auto_connect = auto_connect
         self.identifier = identifier
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
 
         if bound:
@@ -70,7 +71,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
 
         self.auto_connect = auto_connect
         self.identifier = identifier
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
 
     def __repr__(self):

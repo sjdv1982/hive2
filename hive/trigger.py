@@ -63,7 +63,7 @@ class TriggerBee(HiveBee):
             return Trigger(source, target, pretrigger)
 
 
-def _trigger(source, target, pretrigger):
+def trigger(source, target, pretrigger=False):
     if isinstance(source, Bee):
         assert source.implements(TriggerSource), source
         assert target.implements(TriggerTarget), target
@@ -79,7 +79,3 @@ def _trigger(source, target, pretrigger):
         trigger_bee = TriggerBee(source, target, pretrigger)
         register_bee(trigger_bee)
         return trigger_bee
-
-
-def trigger(source, target, pretrigger=False):
-    return _trigger(source, target, pretrigger)
