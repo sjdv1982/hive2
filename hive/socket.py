@@ -20,7 +20,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
             self.policy = policy_cls()
 
     def __repr__(self):
-        return "<HiveSocket: {}>".format(self._func)
+        return "<Socket: {}>".format(self._func)
 
     @memoize
     def bind(self, run_hive):
@@ -73,7 +73,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self.policy_cls = policy_cls
 
     def __repr__(self):
-        return "<HiveSocketBee: {}>".format(self._target)
+        return "<Socket: {}>".format(self._target)
 
     @memoize
     def getinstance(self, hive_object):

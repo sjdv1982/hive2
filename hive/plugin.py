@@ -19,7 +19,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
             self.policy = policy_cls()
 
     def __repr__(self):
-        return "<HivePlugin: {}>".format(self._func)
+        return "<Plugin: {}>".format(self._func)
 
     def plugin(self):
         return self._func
@@ -74,7 +74,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self.policy_cls = policy_cls
 
     def __repr__(self):
-        return "<HivePluginBee {})>".format(self._target)
+        return "<Plugin: {}>".format(self._target)
 
     @memoize
     def getinstance(self, hive_object):

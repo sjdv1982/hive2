@@ -1,2 +1,2 @@
-from .mainloop import mainloop
-from .commandline import commandline
+from .mainloop import Mainloop
+from .commandline import Commandline

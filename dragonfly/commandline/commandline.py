@@ -61,4 +61,4 @@ def build_commandline(cls, i, ex, args):
     ex.stop = h.entry(i.stop)
     ex.listen = h.socket(cls.add_listener)
     
-commandline = h.hive("commandline", build_commandline, commandlineclass)
+Commandline = h.hive("commandline", build_commandline, commandlineclass)

@@ -8,6 +8,9 @@ class HiveParameter(Parameter):
         self.data_type = data_type
         self.start_value = start_value
 
+    def __repr__(self):
+        return "<Parameter: {}>".format(self.start_value)
+
     def resolve(self, kwargs):
         return kwargs.get(self._hive_parameter_name, self.start_value)
 

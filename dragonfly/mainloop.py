@@ -10,13 +10,10 @@ class _Mainloop(object):
         self._hive = hive.get_run_hive()
         self.max_framerate = max_framerate
 
-        self._running = False
+        self._running = True
         self._listeners = []
 
     def run(self):
-        if self._running:
-            return
-
         accumulator = 0.0
         last_time = time.time()
 

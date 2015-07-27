@@ -19,7 +19,7 @@ mainloop = dragonfly.mainloop(1000) #maximum 1000 frames/sec
 #h.connect(mainloop, pandarender)
 h.trigger(mainloop, pandarender)
 
-commandline = dragonfly.commandline()
+commandline = dragonfly.Commandline()
 h.trigger(mainloop, commandline.flush)
 
 c.do_make_move("e2-e4")

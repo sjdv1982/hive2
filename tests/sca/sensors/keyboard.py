@@ -2,6 +2,7 @@ import hive
 
 
 def build_keyboard(i, ex, args):
+
     def poll(h):
         result = input("Enter a key for {}".format(h.name))
         h.is_positive = result == h.key

@@ -10,6 +10,9 @@ class Hook(Exportable, Bee):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
+    def __repr__(self):
+        return "<Hook"
+
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target

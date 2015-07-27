@@ -14,6 +14,9 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
     def __call__(self):
         self.trigger()
 
+    def __repr__(self):
+        return "<Modifier: {}>".format(self._func)
+
     def trigger(self):
         # TODO: exception handling hooks
         self._func(self._bound)
@@ -40,6 +43,9 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
 
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
+
+    def __repr__(self):
+        return "<Modifier: {}>".format(self.args[0])
 
     @memoize
     def getinstance(self, hive_object):
