@@ -54,3 +54,7 @@ class HiveExportables(object):
 
     def __iter__(self):
         return iter(self._bee_names)
+
+    def __repr__(self):
+        member_pairs = ("{} = {}".format(k, getattr(self, k)) for k in self._bee_names)
+        return "<HiveExportables (ex)>\n\t{}".format("\n\t".join(member_pairs))

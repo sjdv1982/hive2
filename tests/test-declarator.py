@@ -15,9 +15,14 @@ def build_dog(i, ex, args):
         setattr(i, "mod_{}".format(ix), mod)
         setattr(ex, "bark_{}".format(ix), hive.entry(mod))
 
+    print(i)
+    print(ex)
+    print(args)
+
 
 def declarator_dog(args):
     args.puppies = hive.parameter(("int",), 1)
+    print(args)
 
 
 DogHive = hive.hive("Dog", build_dog, declarator=declarator_dog)

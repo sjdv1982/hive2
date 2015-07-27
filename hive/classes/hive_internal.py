@@ -31,11 +31,11 @@ class HiveInternals(object):
                             % name)
 
         if value._hive_object_cls is None:
-            raise AttributeError("HiveInternals (ex) attribute '%s' must contain a Bee built by '%s' (or one of its b"
+            raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its b"
                                  "ase classes), but the Bee was not built by any hive" % (name, self._hive_object_cls.__name__))
 
         if value._hive_object_cls is not self._hive_object_cls:
-            raise AttributeError("HiveInternals (ex) attribute '%s' cannot contain a Bee built by a different hive" %
+            raise AttributeError("HiveInternals (i) attribute '%s' cannot contain a Bee built by a different hive" %
                                  name)
 
         self._bee_names.add(name)
@@ -55,3 +55,7 @@ class HiveInternals(object):
 
     def __iter__(self):
         return iter(self._bee_names)
+
+    def __repr__(self):
+        member_pairs = ("{} = {}".format(k, getattr(self, k)) for k in self._bee_names)
+        return "<HiveInternals (i)>\n\t{}".format("\n\t".join(member_pairs))

@@ -26,6 +26,10 @@ class FrozenHiveArgs(object):
     def __iter__(self):
         return iter(self._args.keys())
 
+    def __repr__(self):
+        member_pairs = ("{} = {}".format(k, v) for k, v in self._args.items())
+        return "<FrozenHiveArgs (args)>\n\t{}".format("\n\t".join(member_pairs))
+
 
 class HiveArgs(object):
 
@@ -59,7 +63,7 @@ class HiveArgs(object):
         if name not in self._args:
             raise AttributeError("HiveArgs (args) attribute has no attribute '%s'" % name)
 
-        self._bee_names.remove(name)
+        self._args.pop(name)
         object.__delattr__(self, name)
 
     def __dir__(self):
@@ -67,6 +71,10 @@ class HiveArgs(object):
 
     def __iter__(self):
         return iter(self._args.keys())
+
+    def __repr__(self):
+        member_pairs = ("{} = {}".format(k, v) for k, v in self._args.items())
+        return "<HiveArgs (args)>\n\t{}".format("\n\t".join(member_pairs))
 
     def freeze(self, kwargs):
         args = {k: v.resolve(kwargs) for k, v in self._args.items()}
