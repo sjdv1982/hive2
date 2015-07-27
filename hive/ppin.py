@@ -5,8 +5,12 @@ from .tuple_type import types_match
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
+
     def __init__(self, target, data_type, bound=None, run_hive=None):
-        assert isinstance(target, Stateful) or target.implements(Callable), target
+        # Once bound, hive Method object is resolved to a function, not bee
+        if not bound:
+            assert isinstance(target, Stateful) or isinstance(target, Callable), target
+
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
@@ -144,7 +148,7 @@ class PullInBee(PPInBee, TriggerTarget):
 
 
 def push_in(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Antenna) or isinstance(target, Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PushIn(target)
 
@@ -153,7 +157,7 @@ def push_in(target):
 
 
 def pull_in(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
+    assert isinstance(target, Stateful) or isinstance(target, Antenna) or isinstance(target, Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PullIn(target)
 

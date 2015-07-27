@@ -7,7 +7,8 @@ from .tuple_type import types_match
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
     def __init__(self, target, data_type, bound=None, run_hive=None):
-        assert isinstance(target, Stateful) or target.implements(Callable), target
+        if not bound:
+            assert isinstance(target, Stateful) or target.implements(Callable), target
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
@@ -44,8 +45,10 @@ class PullOut(PPOutBase):
         self._pretrigger.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
+
         else:
             value = self.target()
+
         self._trigger.push()
         return value
 
@@ -158,21 +161,25 @@ class PullOutBee(PPOutBee):
 
 def push_out(target):
     # TODO: nice error message
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 
     if get_mode() == "immediate":
+        assert is_valid_bee or callable(target)
         return PushOut(target)
 
     else:
+        assert is_valid_bee, target
         return PushOutBee(target)
 
 
 def pull_out(target):
     # TODO: nice error message
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 
     if get_mode() == "immediate":
+        assert is_valid_bee or callable(target), target
         return PullOut(target)
 
     else:
+        assert is_valid_bee, target
         return PullOutBee(target)
