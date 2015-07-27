@@ -418,10 +418,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             connect_sources.append(bee_name)
 
         if not connect_sources:
-            raise TypeError("No matching connections found") #TODO: nicer error message
+            raise TypeError("No matching connection sources found for {}".format(target))
 
         elif len(connect_sources) > 1:
-            raise TypeError("Multiple matches: %s" % connect_sources) #TODO: nicer error message
+            raise TypeError("Multiple connection sources found for {}: {}".format(target, connect_sources))
 
         return connect_sources[0]
             
@@ -449,10 +449,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             connect_targets.append(bee_name)
         
         if not connect_targets:
-            raise TypeError("No matching connections found") #TODO: nicer error message
+            raise TypeError("No matching connections found for {}".format(source))
 
         elif len(connect_targets) > 1:            
-            raise TypeError("Multiple matches: %s" % connect_targets) #TODO: nicer error message
+            raise TypeError("Multiple connection targets found for {}: {}".format(source, connect_targets))
 
         return connect_targets[0]
 

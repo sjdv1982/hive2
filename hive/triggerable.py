@@ -33,8 +33,8 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         return self.trigger
     
     def _hive_is_connectable_target(self, source):
-        # TODO : nicer error message
-        assert isinstance(source, TriggerSource)
+        if not isinstance(TriggerSource):
+            raise TypeError("Source does not implement TriggerSource: {}".format(source))
 
     def _hive_connect_target(self, source):
         pass

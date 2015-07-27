@@ -53,8 +53,11 @@ class PullOut(PPOutBase):
         return value
 
     def _hive_is_connectable_source(self, target):
-        assert isinstance(target, Antenna) # TODO : nicer error message
-        assert target.mode == "pull" # TODO : nicer error message
+        if not isinstance(target, Antenna):
+            raise TypeError("Target {} does not implement Antenna".format(target))
+
+        if target.mode != "pull":
+            raise TypeError("Target {} is not configured for pull mode".format(target))
 
         if not types_match(target.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
@@ -92,17 +95,21 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         return self.push
     
     def _hive_is_connectable_source(self, target):
-        assert isinstance(target, Antenna), target # TODO : nicer error message
-        assert target.mode == "push" # TODO : nicer error message
+        if not isinstance(target, Antenna):
+            raise TypeError("Target {} does not implement Antenna".format(target))
+
+        if target.mode != "push":
+            raise TypeError("Target {} is not configured for push mode".format(target))
 
         if not types_match(target.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
     
-    def _hive_connect_source(self, target): #Socket
+    def _hive_connect_source(self, target):
         self._targets.append(target.push)
             
     def _hive_is_connectable_target(self, source):
-        assert isinstance(source, Plugin), source # TODO : nicer error message
+        if not isinstance(source, Plugin):
+            raise TypeError("Source does not implement Plugin: {}".format(source))
 
     def _hive_connect_target(self, source):
         self._targets.append(source.plugin)

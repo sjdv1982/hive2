@@ -18,7 +18,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         self._name_counter = 0
 
     def __call__(self, *args, **kwargs):
-        # TODO: exception handling hooks
+        #TODO: exception handling hooks
         self._pretrigger.push()
         if self._func is not None:
             self._func(*args, **kwargs)
@@ -34,8 +34,8 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         self._pretrigger.add_target(target_func, self._name_counter)
         
     def _hive_is_connectable_source(self, target):
-        # TODO : nicer error message
-        assert isinstance(target, TriggerTarget)
+        if not isinstance(target, TriggerTarget):
+            raise TypeError("Target {} does not implement TriggerTarget".format(target))
 
     def _hive_connect_source(self, target):
         target_func = target._hive_trigger_target()

@@ -55,11 +55,14 @@ class PushIn(PPInBase):
         self._trigger.push()
 
     def _hive_is_connectable_target(self, source):
-        assert isinstance(source, Output) # TODO : nicer error message
-        assert source.mode == "push" # TODO : nicer error message
+        if not isinstance(source, Output):
+            raise TypeError("Source {} does not implement Output".format(source))
+
+        if source.mode != "push":
+            raise TypeError("Source {} is not configured for push mode".format(source))
 
         if not types_match(source.data_type, self.data_type, allow_none=True):
-            raise TypeError("Data types do not match")
+            raise TypeError("Data types do not match: {}, {}".format(source.data_type, self.data_type))
 
     def _hive_connect_target(self, source):
         pass        
@@ -86,15 +89,18 @@ class PullIn(PPInBase, TriggerTarget):
         self._trigger.push()
 
     def _hive_is_connectable_target(self, source):
-        assert isinstance(source, Output) # TODO : nicer error message
-        assert source.mode == "pull" # TODO : nicer error message
+        if not isinstance(source, Output):
+            raise TypeError("Source {} does not implement Output".format(source))
+
+        if source.mode != "pull":
+            raise TypeError("Source {} is not configured for pull mode".format(source))
 
         if not types_match(source.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
         if self._pull_callback is not None:
-            raise TypeError("PullIn cannot accept more than one connection") # TODO: nicer error message, with names
+            raise TypeError("pull_in cannot accept more than one connection: {}".format(source))
 
         self._pull_callback = source.pull
     
@@ -148,7 +154,6 @@ class PullInBee(PPInBee, TriggerTarget):
 
 
 def push_in(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or isinstance(target, Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PushIn(target)
 
@@ -157,7 +162,6 @@ def push_in(target):
 
 
 def pull_in(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or isinstance(target, Callable) # TODO: nice error message
     if get_mode() == "immediate":
         return PullIn(target)
 

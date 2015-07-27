@@ -32,8 +32,8 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
         return self.trigger
     
     def _hive_is_connectable_target(self, source):
-        # TODO : nicer error message
-        assert isinstance(source, TriggerSource)
+        if not isinstance(source, TriggerSource):
+            raise TypeError("Connect target {} is not a TriggerSource".format(source))
 
     def _hive_connect_target(self, source):
         pass

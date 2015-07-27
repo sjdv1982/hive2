@@ -30,7 +30,6 @@ from .output import output
 from .parameter import parameter
 
 # TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
-# TODO: supplier, required etc. for sockets/plugins
 # TODO: autosocket default policy (for parent and for children) on args object
 #    - if there are named sockets, a policy towards the parent MUST be defined
 #    - a policy towards the children is optional     
