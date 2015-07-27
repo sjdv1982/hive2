@@ -4,9 +4,9 @@ from . import SPECIAL_NAMES
 
 class HiveInternals(object):
 
-    def __init__(self, hive_cls):
-        assert hive_cls is not None
-        self._hive_object_cls = hive_cls
+    def __init__(self, hive_object_cls):
+        assert hive_object_cls is not None
+        self._hive_object_cls = hive_object_cls
         self._bee_names = set()
 
     def __setattr__(self, name, value):
@@ -31,20 +31,21 @@ class HiveInternals(object):
                             % name)
 
         if value._hive_object_cls is None:
-            raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), but the Bee was not built by any hive" % (name, self._hive_object_cls.__name__))
+            raise AttributeError("HiveInternals (ex) attribute '%s' must contain a Bee built by '%s' (or one of its b"
+                                 "ase classes), but the Bee was not built by any hive" % (name, self._hive_object_cls.__name__))
 
-        if not issubclass(value._hive_object_cls, self._hive_object_cls):
-            raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), not '%s'" % (name, self._hive_object_cls.__name__, value._hive_object_cls.__name__))
+        if value._hive_object_cls is not self._hive_object_cls:
+            raise AttributeError("HiveInternals (ex) attribute '%s' cannot contain a Bee built by a different hive" %
+                                 name)
 
         self._bee_names.add(name)
+        value._hive_bee_name = name
 
         object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
         if name not in self._bee_names:
-            raise AttributeError
+            raise AttributeError("HiveInternals (ex) has no attribute '%s" % name)
 
         self._bee_names.remove(name)
         object.__delattr__(self, name)

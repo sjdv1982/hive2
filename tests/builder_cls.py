@@ -33,7 +33,7 @@ def build_dog(cls, i, ex, args):
     i.bark = hive.triggerfunc()
     hive.trigger(i.bark, i.woof)
 
-    i.woof_only = hive.modifier(cls.woof)
+    i.woof_only = hive.triggerable(cls.woof)
     i.woofed = hive.triggerfunc()
 
     ex.woofs = hive.property(cls, "woofs")
@@ -46,8 +46,23 @@ def build_dog(cls, i, ex, args):
 
 DogHive = hive.hive("dog", build_dog, Dog)
 
+def build_puppy(i, ex, args):
+    i.wowo = hive.modifier(lambda x:x)
+    ex.wowo = hive.entry(i.wowo)
+    ex.wo2 = ex.bark
+
+
+PuppyHive = DogHive.extend("Puppy", build_puppy)
+
+
 # Create runtime hive instances
 spot = DogHive("Spot")
+pup = PuppyHive("Puppy")
+
+pup.wo2()
+pup.wo2()
+pup.wo2()
+
 spike = DogHive("Spike")
 
 spot.call()

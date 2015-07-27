@@ -1,11 +1,19 @@
 class Bee(object):
     _hive_object_cls = None
+    _hive_bee_name = None
 
     def implements(self, cls):
         return isinstance(self, cls)
 
     def getinstance(self, hive_object):
         return self
+
+
+class Parameter(object):
+    _hive_parameter_name = None
+
+    def resolve(self, kwargs):
+        raise NotImplementedError
 
 
 class Connectable(object):
