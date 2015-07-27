@@ -119,7 +119,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         else:
             self.data_type = ()
 
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self.target = target
 
     @memoize

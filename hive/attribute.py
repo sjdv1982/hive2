@@ -8,7 +8,7 @@ class Attribute(Stateful, Bindable, Exportable):
     """Akin to property, but is not stored on the run_hive"""
 
     def __init__(self, data_type=None, start_value=None):
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
 
         self.data_type = data_type
         self.start_value = start_value

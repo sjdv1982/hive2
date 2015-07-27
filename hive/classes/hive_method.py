@@ -8,7 +8,7 @@ class Method(Bindable, Callable, Exportable):
     def __init__(self, builder_cls, func):
         self._builder_cls = builder_cls
         self._func = func
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
 
     def __repr__(self):
         return "<Method {}>".format(self._func.__qualname__)

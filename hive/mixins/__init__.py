@@ -1,5 +1,5 @@
 class Bee(object):
-    _hive_cls = None
+    _hive_object_cls = None
 
     def implements(self, cls):
         return isinstance(self, cls)

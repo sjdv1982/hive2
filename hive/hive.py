@@ -109,8 +109,8 @@ def connect_hives(source, target):
         source_hive_object = source
         target_hive_object = target
 
-    source_externals = source_hive_object._hive_parent_class._hive_ex
-    target_externals = target_hive_object._hive_parent_class._hive_ex
+    source_externals = source_hive_object._hive_ex
+    target_externals = target_hive_object._hive_ex
 
     # Find source hive ConnectSources
     connect_sources = []
@@ -196,12 +196,10 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     build_class_instance.__init__(*args, **kwargs)
 
-            building_hive = hive_object._hive_parent_class
-
-            with building_hive_as(building_hive), hive_mode_as("build"):
+            with building_hive_as(hive_object), hive_mode_as("build"):
                 # Add external bees to runtime hive
                 bees = []
-                external_bees = building_hive._hive_ex
+                external_bees = hive_object._hive_ex
 
                 for bee_name in external_bees:
                     bee = getattr(external_bees, bee_name)
@@ -216,7 +214,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     bees.append((bee_name, instance))
 
                 # Add internal bees (that are hives, Callable or Stateful) to runtime hive
-                internal_bees = building_hive._hive_i
+                internal_bees = hive_object._hive_i
 
                 for bee_name in internal_bees:
                     bee = getattr(internal_bees, bee_name)
@@ -286,11 +284,14 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     _hive_runtime_class = None
     _hive_bee_name = tuple()
 
+    _hive_i = None
+    _hive_ex = None
+
     export_only = False
 
     def __new__(cls, *args, **kwargs):
         self = object.__new__(cls)
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
 
@@ -320,7 +321,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                     raise TypeError("{}.{}".format(builder_cls.__name__, err.args[0]))
 
         with hive_mode_as("build"):
-            external_bees = self._hive_parent_class._hive_ex
+            external_bees = self.__class__._hive_ex
             for bee_name in external_bees:
                 exportable = getattr(external_bees, bee_name)
                 target = exportable.export()
@@ -329,235 +330,21 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         return self
 
-    @memoize
-    def getinstance(self, parent_hive_object):
-        return self.instantiate()
-    
-    def instantiate(self):
-        """Return an instance of the runtime Hive for this Hive object."""
-        return self._hive_runtime_class(self, self._hive_parent_class._builders)
-    
-    @classmethod
-    def _hive_find_trigger_target(cls):
-        """Find name of single external bee that supported TriggerTarget interface.
+    @staticmethod
+    def from_parent_cls(parent_cls):
+        assert isinstance(parent_cls, HiveBuilder)
 
-        Raise TypeError if such a condition cannot be met
-        """
-        external_bees = cls._hive_parent_class._hive_ex
-        trigger_targets = []
-
-        for bee_name in dir(external_bees):
-            bee = getattr(external_bees, bee_name)
-            exported_bee = bee.export()
-            if isinstance(exported_bee, TriggerTarget):
-                trigger_targets.append(bee_name)
-
-        if not trigger_targets:
-            raise TypeError("No trigger targets in %s" % cls)
-
-        elif len(trigger_targets) > 1:
-            raise TypeError("Multiple trigger targets in {}: {}".format(cls, trigger_targets))
-
-        return trigger_targets[0]
-
-    def _get_trigger_target(self):
-        """Return single external bee that supported TriggerTarget interface"""
-        trigger_name = self._hive_find_trigger_target()
-        return getattr(self, trigger_name)
-        
-    @classmethod
-    def _hive_find_trigger_source(cls):
-        """Find and return name of single external bee that supported TriggerSource interface.
-
-        Raise TypeError if such a condition cannot be met
-        """
-        external_bees = cls._hive_parent_class._hive_ex
-        trigger_sources = []
-
-        for bee_name in external_bees:
-            bee = getattr(external_bees, bee_name)
-            exported_bee = bee.export()
-
-            if isinstance(exported_bee, TriggerSource):
-                trigger_sources.append(bee_name)
-
-        if not trigger_sources:
-            raise TypeError("No TriggerSources in %s" % cls)
-
-        elif len(trigger_sources) > 1:
-            raise TypeError("Multiple TriggerSources in %s: %s" % (cls, trigger_sources))
-
-        return trigger_sources[0]
-
-    def _get_trigger_source(self):
-        """Return single external bee that supported TriggerSource interface"""
-        attr = self._hive_find_trigger_source()
-        return getattr(self, attr)    
-
-    @classmethod
-    def _hive_find_connect_source(cls, target):
-        """Find and return the name of a suitable connect source within this hive
-
-        :param target: target to connect to
-        """
-        assert target.implements(ConnectTarget)
-        external_bees = cls._hive_parent_class._hive_ex
-        target_data_type = tuple_type(target.data_type)
-
-        connect_sources = []
-        for bee_name in external_bees:
-            bee = getattr(external_bees, bee_name)
-            exported_bee = bee.export()
-            if not exported_bee.implements(ConnectSource):
-                continue
-
-            source_data_type = tuple_type(exported_bee.data_type)
-            if not types_match(source_data_type, target_data_type):
-                pass
-
-            connect_sources.append(bee_name)
-
-        if not connect_sources:
-            raise TypeError("No matching connections found") #TODO: nicer error message
-
-        elif len(connect_sources) > 1:
-            raise TypeError("Multiple matches: %s" % connect_sources) #TODO: nicer error message
-
-        return connect_sources[0]
-            
-    @classmethod
-    def _hive_find_connect_target(cls, source):
-        """Find and return the name of a suitable connect target within this hive
-
-        :param source: source to connect to
-        """
-        assert source.implements(ConnectSource)
-        external_bees = cls._hive_parent_class._hive_ex
-        source_data_type = tuple_type(source.data_type)
-
-        connect_targets = []
-        for bee_name in external_bees:
-            bee = getattr(external_bees, bee_name)
-            exported_bee = bee.export()
-            if not exported_bee.implements(ConnectTarget): 
-                continue
-
-            target_data_type = tuple_type(exported_bee.data_type)
-            if not types_match(source_data_type, target_data_type):
-                pass
-
-            connect_targets.append(bee_name)
-        
-        if not connect_targets:
-            raise TypeError("No matching connections found") #TODO: nicer error message
-
-        elif len(connect_targets) > 1:            
-            raise TypeError("Multiple matches: %s" % connect_targets) #TODO: nicer error message
-
-        return connect_targets[0]
-
-    def export(self):
-        return self
-
-
-class HiveBuilder(object):
-    """Deferred Builder for constructing Hive classes.
-
-    Perform building once for multiple instances of the same Hive.
-    """
-
-    _builders = ()
-    _declarators = ()
-
-    _hive_i = None
-    _hive_ex = None
-    _hive_args = None    
-    _hive_hive_kwargs = False
-    _hive_object_cls = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._hive_object_cls is None:
-            cls._hive_build()
-
-        self = cls._hive_object_cls(*args, **kwargs)
-
-        if get_mode() == "immediate":
-            return self.instantiate()
-
-        else:
-            return self
-
-    @classmethod
-    def extend(cls, name, builder, builder_cls=None, declarator=None, hive_kwargs=False):
-        """Extend HiveObject with an additional builder (and builder class)
-
-        :param name: name of new hive class
-        :param builder: optional function used to build hive
-        :param builder_cls: optional Python class to bind to hive
-        :param declarator: optional declarator to establish parameters
-        :param hive_kwargs: TODO
-        """
-        if builder_cls is not None:
-            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
-
-        builders = cls._builders + ((builder, builder_cls),)
-
-        if declarator is not None:
-            declarators = cls._declarators + (declarator,)
-
-        else:
-            declarators = cls._declarators
-
-        class_dict = {
-            "_builders": builders,
-            "_declarators": declarators,
-            "_hive_hive_kwargs": hive_kwargs,
-        }
-
-        return type(name, (cls,), class_dict)
-
-    @classmethod
-    def _hive_build(cls):
-        assert cls._hive_object_cls is None, "Hive already built!"
-        cls._hive_build_methods()
-
-        # TODO: auto-remove connections/triggers for which the source/target has been deleted
-        # TODO: sockets and plugins, take options into account for namespaces
-        run_hive_class_dict = {}
-        hive_externals = cls._hive_ex
-
-        for bee_name in hive_externals:
-            bee = getattr(hive_externals, bee_name)
-
-            # If the bee requires a property interface, build a property
-            if isinstance(bee, Stateful):
-                run_hive_class_dict[bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
-
-        class_dict = {
-            "_hive_runtime_class": type("{}::run_hive".format(cls.__name__), (RuntimeHive,), run_hive_class_dict),
-            "_hive_parent_class": cls,
-        }
-
-        cls._hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), class_dict)
-
-    @classmethod
-    def _hive_build_methods(cls):
-        assert cls._hive_i is None, "Hive internals already built!"
-        assert cls._hive_ex is None, "Hive externals already built!"
-        assert cls._hive_args is None, "Hive arguments already built!"
+        cls = type("{}::hive_object".format(parent_cls.__name__), (HiveObject,), {"_hive_parent_class": parent_cls})
 
         cls._hive_i = internals = HiveInternals(cls)
         cls._hive_ex = externals = HiveExportables(cls)
-        cls._hive_args = args = HiveArgs(cls)
+
+        args = parent_cls._hive_args
 
         with building_hive_as(cls):
-            # Call declarators
-            with hive_mode_as("declare"):
-                pass
-
-            with hive_mode_as("build"), building_hive_as(cls), bee_register_context() as registered_bees:
+            with hive_mode_as("build"), building_hive_as(parent_cls), bee_register_context() as registered_bees:
                 # Invoke builder functions to build wrappers
-                for builder, builder_cls in cls._builders:
+                for builder, builder_cls in parent_cls._builders:
                     if builder_cls is not None:
                         wrapper = HiveMethodWrapper(builder_cls)
                         builder(wrapper, internals, externals, args)
@@ -590,7 +377,7 @@ class HiveBuilder(object):
                     if not bee.auto_connect:
                         continue
 
-                    for child_bee_name in bee._hive_parent_class._hive_ex:
+                    for child_bee_name in bee._hive_ex:
                         child_bee = getattr(bee, child_bee_name)
 
                         is_socket = child_bee.implements(Socket)
@@ -659,6 +446,214 @@ class HiveBuilder(object):
         for bee_name in externals:
             bee = getattr(externals, bee_name)
             bee._hive_bee_name = (bee_name,)
+
+    @memoize
+    def getinstance(self, parent_hive_object):
+        return self.instantiate()
+    
+    def instantiate(self):
+        """Return an instance of the runtime Hive for this Hive object."""
+        return self._hive_runtime_class(self, self._hive_parent_class._builders)
+    
+    @classmethod
+    def _hive_find_trigger_target(cls):
+        """Find name of single external bee that supported TriggerTarget interface.
+
+        Raise TypeError if such a condition cannot be met
+        """
+        external_bees = cls._hive_ex
+        trigger_targets = []
+
+        for bee_name in dir(external_bees):
+            bee = getattr(external_bees, bee_name)
+            exported_bee = bee.export()
+            if isinstance(exported_bee, TriggerTarget):
+                trigger_targets.append(bee_name)
+
+        if not trigger_targets:
+            raise TypeError("No trigger targets in %s" % cls)
+
+        elif len(trigger_targets) > 1:
+            raise TypeError("Multiple trigger targets in {}: {}".format(cls, trigger_targets))
+
+        return trigger_targets[0]
+
+    def _get_trigger_target(self):
+        """Return single external bee that supported TriggerTarget interface"""
+        trigger_name = self._hive_find_trigger_target()
+        return getattr(self, trigger_name)
+        
+    @classmethod
+    def _hive_find_trigger_source(cls):
+        """Find and return name of single external bee that supported TriggerSource interface.
+
+        Raise TypeError if such a condition cannot be met
+        """
+        external_bees = cls._hive_ex
+        trigger_sources = []
+
+        for bee_name in external_bees:
+            bee = getattr(external_bees, bee_name)
+            exported_bee = bee.export()
+
+            if isinstance(exported_bee, TriggerSource):
+                trigger_sources.append(bee_name)
+
+        if not trigger_sources:
+            raise TypeError("No TriggerSources in %s" % cls)
+
+        elif len(trigger_sources) > 1:
+            raise TypeError("Multiple TriggerSources in %s: %s" % (cls, trigger_sources))
+
+        return trigger_sources[0]
+
+    def _get_trigger_source(self):
+        """Return single external bee that supported TriggerSource interface"""
+        attr = self._hive_find_trigger_source()
+        return getattr(self, attr)    
+
+    @classmethod
+    def _hive_find_connect_source(cls, target):
+        """Find and return the name of a suitable connect source within this hive
+
+        :param target: target to connect to
+        """
+        assert target.implements(ConnectTarget)
+        external_bees = cls._hive_ex
+        target_data_type = tuple_type(target.data_type)
+
+        connect_sources = []
+        for bee_name in external_bees:
+            bee = getattr(external_bees, bee_name)
+            exported_bee = bee.export()
+            if not exported_bee.implements(ConnectSource):
+                continue
+
+            source_data_type = tuple_type(exported_bee.data_type)
+            if not types_match(source_data_type, target_data_type):
+                pass
+
+            connect_sources.append(bee_name)
+
+        if not connect_sources:
+            raise TypeError("No matching connections found") #TODO: nicer error message
+
+        elif len(connect_sources) > 1:
+            raise TypeError("Multiple matches: %s" % connect_sources) #TODO: nicer error message
+
+        return connect_sources[0]
+            
+    @classmethod
+    def _hive_find_connect_target(cls, source):
+        """Find and return the name of a suitable connect target within this hive
+
+        :param source: source to connect to
+        """
+        assert source.implements(ConnectSource)
+        external_bees = cls._hive_ex
+        source_data_type = tuple_type(source.data_type)
+
+        connect_targets = []
+        for bee_name in external_bees:
+            bee = getattr(external_bees, bee_name)
+            exported_bee = bee.export()
+            if not exported_bee.implements(ConnectTarget): 
+                continue
+
+            target_data_type = tuple_type(exported_bee.data_type)
+            if not types_match(source_data_type, target_data_type):
+                pass
+
+            connect_targets.append(bee_name)
+        
+        if not connect_targets:
+            raise TypeError("No matching connections found") #TODO: nicer error message
+
+        elif len(connect_targets) > 1:            
+            raise TypeError("Multiple matches: %s" % connect_targets) #TODO: nicer error message
+
+        return connect_targets[0]
+
+    def export(self):
+        return self
+
+
+class HiveBuilder(object):
+    """Deferred Builder for constructing Hive classes.
+
+    Perform building once for multiple instances of the same Hive.
+    """
+
+    _builders = ()
+    _declarators = ()
+
+    _hive_args = None
+
+    _hive_hive_kwargs = False
+    _hive_object_classes = {}
+
+    def __new__(cls, *args, **kwargs):
+        hive_object_cls = cls._hive_get_hive_object_cls(kwargs)
+
+        self = hive_object_cls(*args, **kwargs)
+
+        if get_mode() == "immediate":
+            return self.instantiate()
+
+        else:
+            return self
+
+    @classmethod
+    def extend(cls, name, builder, builder_cls=None, declarator=None, hive_kwargs=False):
+        """Extend HiveObject with an additional builder (and builder class)
+
+        :param name: name of new hive class
+        :param builder: optional function used to build hive
+        :param builder_cls: optional Python class to bind to hive
+        :param declarator: optional declarator to establish parameters
+        :param hive_kwargs: TODO
+        """
+        if builder_cls is not None:
+            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+
+        builders = cls._builders + ((builder, builder_cls),)
+
+        if declarator is not None:
+            declarators = cls._declarators + (declarator,)
+
+        else:
+            declarators = cls._declarators
+
+        class_dict = {
+            "_builders": builders,
+            "_declarators": declarators,
+            "_hive_hive_kwargs": hive_kwargs,
+        }
+
+        return type(name, (cls,), class_dict)
+
+    @classmethod
+    def _hive_get_hive_object_cls(cls, kwargs):
+        if cls._hive_args is None:
+            cls._hive_args = args = HiveArgs(cls)
+
+            # Execute declarators
+            with hive_mode_as("declare"):
+                for declarator in cls._declarators:
+                    declarator(args)
+
+        # Map keyword arguments to parameters
+        parameter_values = tuple((k, kwargs[k]) for k in cls._hive_args)
+
+        # If a new combination of parameters is provided
+        try:
+            hive_object_cls = cls._hive_object_classes[parameter_values]
+
+        except KeyError:
+            hive_object_cls = HiveObject.from_parent_class(cls)
+            cls._hive_object_classes[parameter_values] = hive_object_cls
+
+        return hive_object_cls
 
 
 # TODO options for namespaces (old frame/hive distinction)

@@ -64,7 +64,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
     def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False):
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self._target = target
 
         self.auto_connect = auto_connect

@@ -9,7 +9,7 @@ class HiveArgs(object):
 
     def __init__(self, hive_cls):
         self._args = {}
-        self._hive_cls = hive_cls
+        self._hive_object_cls = hive_cls
 
     def __setattr__(self, name, value):
         if name == "parent":

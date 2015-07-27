@@ -9,7 +9,7 @@ class Property(Stateful, Bindable, Exportable):
     """Interface to bind class attributes"""
 
     def __init__(self, cls, attr, data_type, start_value):
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self._cls = cls
         self._attr = attr
         self._bound = WeakSet()

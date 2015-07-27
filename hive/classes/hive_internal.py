@@ -6,7 +6,7 @@ class HiveInternals(object):
 
     def __init__(self, hive_cls):
         assert hive_cls is not None
-        self._hive_cls = hive_cls
+        self._hive_object_cls = hive_cls
         self._bee_names = set()
 
     def __setattr__(self, name, value):
@@ -30,13 +30,13 @@ class HiveInternals(object):
             raise TypeError("HiveInternals (i) attribute '%s' must not be Exportable; Exportables must be added to ex"
                             % name)
 
-        if value._hive_cls is None:
+        if value._hive_object_cls is None:
             raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), but the Bee was not built by any hive" % (name, self._hive_cls.__name__))
+                                 " classes), but the Bee was not built by any hive" % (name, self._hive_object_cls.__name__))
 
-        if not issubclass(value._hive_cls, self._hive_cls):
+        if not issubclass(value._hive_object_cls, self._hive_object_cls):
             raise AttributeError("HiveInternals (i) attribute '%s' must contain a Bee built by '%s' (or one of its base"
-                                 " classes), not '%s'" % (name, self._hive_cls.__name__, value._hive_cls.__name__))
+                                 " classes), not '%s'" % (name, self._hive_object_cls.__name__, value._hive_object_cls.__name__))
 
         self._bee_names.add(name)
 
