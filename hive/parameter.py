@@ -12,8 +12,11 @@ class HiveParameter(Parameter):
     def __repr__(self):
         return "<Parameter: {}>".format(self.start_value)
 
-    def resolve(self, kwargs):
-        return kwargs.get(self._hive_parameter_name, self.start_value)
+    def resolve(self, value):
+        if value is None:
+            return self.start_value
+
+        return value
 
 
 parameter = ContextFactory("hive.parameter", declare_mode_cls=HiveParameter)

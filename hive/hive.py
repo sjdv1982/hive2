@@ -3,6 +3,7 @@ from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize
 from .tuple_type import tuple_type, types_match
+from .six import next
 
 from itertools import product
 import inspect
@@ -297,10 +298,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Automatically import parent sockets and plugins
         self.auto_connect = kwargs.pop("auto_connect", False)
 
-        # Forget parameters from kwargs
-        for param_name in cls._hive_args_frozen:
-            kwargs.pop(param_name)
-
         # Args to instantiate builder-class instances
         self._hive_builder_args = args #for now
         self._hive_builder_kwargs = kwargs #for now
@@ -472,7 +469,7 @@ class HiveBuilder(object):
     _hive_object_classes = {}
 
     def __new__(cls, *args, **kwargs):
-        hive_object_cls = cls._hive_get_hive_object_cls(kwargs)
+        args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
 
         self = hive_object_cls(*args, **kwargs)
 
@@ -514,7 +511,7 @@ class HiveBuilder(object):
         return type(name, (cls,), class_dict)
 
     @classmethod
-    def _hive_build(cls, kwargs):
+    def _hive_build(cls, parameter_values):
         """Build a HiveObject for this Hive, with appropriate Args instance
 
         :param kwargs: Parameter keyword arguments
@@ -522,21 +519,21 @@ class HiveBuilder(object):
         hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), {"_hive_parent_class": cls})
 
         # Get frozen args
-        args = cls._hive_args.freeze(kwargs)
+        frozen_args_wrapper = cls._hive_args.freeze(parameter_values)
 
         hive_object_cls._hive_i = internals = HiveInternals(hive_object_cls)
         hive_object_cls._hive_ex = externals = HiveExportables(hive_object_cls)
-        hive_object_cls._hive_args_frozen = args
+        hive_object_cls._hive_args_frozen = frozen_args_wrapper
 
         with hive_mode_as("build"), building_hive_as(hive_object_cls), bee_register_context() as registered_bees:
             # Invoke builder functions to build wrappers
             for builder, builder_cls in cls._builders:
                 if builder_cls is not None:
                     wrapper = HiveMethodWrapper(builder_cls)
-                    builder(wrapper, internals, externals, args)
+                    builder(wrapper, internals, externals, frozen_args_wrapper)
 
                 else:
-                    builder(internals, externals, args)
+                    builder(internals, externals, frozen_args_wrapper)
 
             from .connect import connect
 
@@ -643,27 +640,31 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
-    def _hive_get_hive_object_cls(cls, kwargs):
+    def _hive_get_hive_object_cls(cls, args, kwargs):
+        """Find appropriate HiveObject for argument values
+
+        Extract parameters from arguments and return remainder
+        """
         if cls._hive_args is None:
-            cls._hive_args = args = HiveArgs(cls)
+            cls._hive_args = args_wrapper = HiveArgs(cls)
 
             # Execute declarators
             with hive_mode_as("declare"):
                 for declarator in cls._declarators:
-                    declarator(args)
+                    declarator(args_wrapper)
 
-        # Map keyword arguments to parameters
-        parameter_values = tuple((k, kwargs.get(k)) for k in cls._hive_args)
+        # Map keyword arguments to parameters, return remaining arguments
+        args, kwargs, parameter_values = cls._hive_args.extract_parameter_values(args, kwargs)
 
         # If a new combination of parameters is provided
         try:
             hive_object_cls = cls._hive_object_classes[parameter_values]
 
         except KeyError:
-            hive_object_cls = cls._hive_build(kwargs)
+            hive_object_cls = cls._hive_build(parameter_values)
             cls._hive_object_classes[parameter_values] = hive_object_cls
 
-        return hive_object_cls
+        return args, kwargs, hive_object_cls
 
 
 # TODO options for namespaces (old frame/hive distinction)

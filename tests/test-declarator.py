@@ -9,10 +9,18 @@ sys.path.append(current_directory + "/" + "..")
 import hive
 
 
-def build_dog(i, ex, args):
+class Dog:
+
+    def __init__(self, name):
+        self.name = name
+
+
+def build_dog(cls, i, ex, args):
     print("Invoked Builder")
+    ex.name = hive.property(cls, "name")
+
     for ix in range(args.puppies):
-        mod = hive.modifier(lambda h, ix=ix: print("Puppy {} barked".format(ix)))
+        mod = hive.modifier(lambda h: print("Puppy {} barked".format(h.name)))
         setattr(i, "mod_{}".format(ix), mod)
         setattr(ex, "bark_{}".format(ix), hive.entry(mod))
 
@@ -22,14 +30,12 @@ def declarator_dog(args):
     args.puppies = hive.parameter(("int",), 1)
 
 
-DogHive = hive.hive("Dog", build_dog, declarator=declarator_dog)
+DogHive = hive.hive("Dog", build_dog, Dog, declarator=declarator_dog)
 
 
-d = DogHive(puppies=2)
+d = DogHive(2, "Jack")
 d.bark_0()
 d.bark_1()
 
-d = DogHive(puppies=1)
+d = DogHive(1, "Jill")
 d.bark_0()
-
-print(dir(d))
