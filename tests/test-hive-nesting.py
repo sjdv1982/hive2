@@ -42,7 +42,7 @@ def build_dog(cls, i, ex, args):
     i.bark = hive.triggerfunc()
     hive.trigger(i.bark, i.woof)
 
-    i.woof_only = hive.modifier(cls.woof)
+    i.woof_only = hive.triggerable(cls.woof)
     i.woofed = hive.triggerfunc()
 
     ex.woofs = hive.property(cls, "woofs")
@@ -54,16 +54,16 @@ def build_dog(cls, i, ex, args):
 
 
 def build_house(cls, i, ex, args):
-    i.brutus = DogHive("Brutus")
+    i.brutus_ = DogHive("Brutus")
     i.fifi = DogHive("Fifi")
 
     i.dog_appeared = hive.triggerable(cls.dog_appeared)
-    hive.trigger(i.brutus.call, i.dog_appeared)
+    hive.trigger(i.brutus_.call, i.dog_appeared)
 
     i.mail_arrived = hive.triggerfunc(cls.mail_arrived)
     hive.trigger(i.mail_arrived, i.fifi.woof)
 
-    ex.brutus = i.brutus
+    ex.brutus = i.brutus_
     ex.fifi = i.fifi
     ex.mail_arrived = hive.hook(i.mail_arrived)
     ex.dog_appeared = hive.entry(i.dog_appeared)
@@ -77,7 +77,9 @@ house.mail_arrived()
 house.brutus.call()
 house.fifi.bark()
 house.dog_appeared()
-
+import gui.utils as utils
+from pprint import pprint
+pprint(dict(utils.get_ui_info(house, False)['inputs']))
 
 # def build_kennel(i, ex, args):
 #     i.brutus = dog("Brutus")

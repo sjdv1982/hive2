@@ -1,5 +1,5 @@
 from .manager import get_building_hive, get_mode, get_run_hive
-from .hive import hive, HiveBuilder, RuntimeHive
+from .hive import hive, HiveBuilder, RuntimeHive, HiveObject
 
 #i primitives
 from .triggerfunc import triggerfunc

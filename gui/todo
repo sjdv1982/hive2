@@ -1,0 +1,4 @@
+Parse all hives (just check if inherits from HiveBuilder)
+Parse all bees (just check if inherits from Bee)
+Parse all parameters (just check if inherits from Parameter)
+
