@@ -2,7 +2,7 @@ from weakref import WeakKeyDictionary
 from functools import wraps
 
 
-class Memoizer:
+class Memoizer(object):
 
     def __init__(self):
         self._cache = WeakKeyDictionary()

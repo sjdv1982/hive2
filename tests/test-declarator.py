@@ -9,7 +9,7 @@ sys.path.append(current_directory + "/" + "..")
 import hive
 
 
-class Dog:
+class Dog(object):
 
     def __init__(self, name):
         self.name = name

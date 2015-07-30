@@ -247,7 +247,7 @@ class World(DirectObject):
 #position and color
 
 
-class Piece:
+class Piece(object):
 
     def __init__(self, square, color):
         self.obj = loader.loadModel(self.model)

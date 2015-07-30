@@ -1,7 +1,7 @@
 from .contexts import get_mode, hive_modes
 
 
-class ContextFactory:
+class ContextFactory(object):
     """Return appropriate class instance depending upon execution mode"""
 
     def __init__(self, name, **kwargs):
