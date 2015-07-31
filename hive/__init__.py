@@ -7,6 +7,7 @@ from .triggerable import triggerable
 from .modifier import modifier #(akin to triggerable, but receives run_hive as self)
 from .ppin import push_in, pull_in
 from .ppout import push_out, pull_out
+from .variable import variable
 
 #connection primitives
 from .connect import connect
