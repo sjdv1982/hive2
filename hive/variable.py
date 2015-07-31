@@ -1,11 +1,11 @@
 from weakref import WeakKeyDictionary
 
-from .mixins import Stateful, Bindable
+from .mixins import Stateful, Bindable, Bee
 from .manager import ContextFactory, get_building_hive, memoize
 from .tuple_type import tuple_type
 
 
-class Variable(Stateful, Bindable):
+class Variable(Stateful, Bindable, Bee):
     """A non-exportable Attribute type"""
 
     def __init__(self, data_type=None, start_value=None):
