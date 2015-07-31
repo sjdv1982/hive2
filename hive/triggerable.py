@@ -60,10 +60,10 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
         if HiveBee.implements(self, cls):
             return True
 
-        func, = self.args
-        if isinstance(func, Bee):
-            return func.implements(cls)
+        # func, = self.args
 
+        # if isinstance(func, Bee):
+        #     return func.implements(cls)
         return False
 
 
