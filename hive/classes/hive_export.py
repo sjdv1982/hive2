@@ -49,6 +49,9 @@ class HiveExportables(object):
         self._bee_names.remove(attr)
         object.__delattr__(self, attr)
 
+    def __bool__(self):
+        return bool(self._bee_names)
+
     def __dir__(self):
         return self._bee_names
 

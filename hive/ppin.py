@@ -6,10 +6,12 @@ from .tuple_type import types_match
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
-    def __init__(self, target, data_type, bound=None, run_hive=None):
+    def __init__(self, target, data_type=None, bound=None, run_hive=None):
         # Once bound, hive Method object is resolved to a function, not bee
-        if not bound:
-            assert isinstance(target, Stateful) or isinstance(target, Callable), target
+        assert isinstance(target, Stateful) or isinstance(target, Callable) or callable(target), target
+
+        if isinstance(target, Stateful):
+            data_type = target.data_type
 
         self._stateful = isinstance(target, Stateful)
         self.target = target
@@ -112,8 +114,9 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
     mode = None
 
     def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
-        if isinstance(target, Stateful) or isinstance(target, Antenna):
+        assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nice error message
+
+        if isinstance(target, Stateful):
             self.data_type = target.data_type
 
         else:

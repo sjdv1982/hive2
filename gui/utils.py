@@ -50,4 +50,30 @@ def get_ui_info(run_hive, allow_derived=False):
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
 
-    return dict(inputs=inputs, outputs=outputs, )
+    frozen_args_wrapper = hive_object._hive_args_frozen
+    builder_args_wrapper = hive_object._hive_parent_class._hive_args
+    args = {k: {'value': getattr(frozen_args_wrapper, k),
+                'data_type': getattr(builder_args_wrapper, k).data_type} for k in frozen_args_wrapper}
+
+    return dict(inputs=inputs, outputs=outputs, args=args)
+
+
+_type_map = dict(str=str, int=int, float=float, bool=bool)
+
+
+def eval_value(value, data_type):
+    base_type = eval(data_type)[0]
+    return _type_map[base_type](value)
+
+
+def import_from_path(path):
+    split_path = path.split(".")
+    *module_parts, _ = split_path
+    module_name = ".".join(module_parts)
+
+    module = __import__(module_name)
+
+    for part in split_path[1:]:
+        module = getattr(module, part)
+
+    return module

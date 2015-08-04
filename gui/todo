@@ -2,3 +2,13 @@ Parse all hives (just check if inherits from HiveBuilder)
 Parse all bees (just check if inherits from Bee)
 Parse all parameters (just check if inherits from Parameter)
 
+
+Don't bother inspecting UI on loading, just wipe and re-load
+When adding nodes, operator will setup data first then add GUI representation
+When copying nodes, GUI will notice was copied and configure
+
+Control flow:
+Generic node manager -> Blender node manager
+
+on_copy: Blender node manager gets new node via generic node manager copy(), matches two together:
+    Don't use specific_node_manager.create_node() for generic_node_manager.copy(), instead use specific_node_manager.copy()

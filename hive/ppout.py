@@ -54,6 +54,7 @@ class PullOut(PPOutBase):
         return value
 
     def _hive_is_connectable_source(self, target):
+        # TODO what if already connected
         if not isinstance(target, Antenna):
             raise TypeError("Target {} does not implement Antenna".format(target))
 

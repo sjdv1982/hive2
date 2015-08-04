@@ -57,14 +57,7 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
         if cls is Callable:
             return True
 
-        if HiveBee.implements(self, cls):
-            return True
-
-        # func, = self.args
-
-        # if isinstance(func, Bee):
-        #     return func.implements(cls)
-        return False
+        return HiveBee.implements(self, cls)
 
 
 triggerable = ContextFactory("hive.triggerable", immediate_mode_cls=Triggerable, build_mode_cls=TriggerableBee)

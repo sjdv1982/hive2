@@ -1,0 +1,37 @@
+Type BeeInstanceParameter {
+  String identifier
+  String data_type
+  String value
+}
+
+
+Type Bee {
+  String identifier
+  Integer unique_identifier
+  String import_path
+  BeeInstanceParameterArray args
+
+  Coordinate2D position = Coordinate2D(0, 0)
+}
+
+
+Type BeeConnection {
+  Integer from_bee
+  String output_name
+
+  Integer to_bee
+  String input_name
+}
+
+
+Type Parameter {
+  String identifier
+  String class_name
+}
+
+
+Type Hivemap {
+  BeeArray bees = []
+  ParameterArray args = []
+  BeeConnectionArray connections = []
+}

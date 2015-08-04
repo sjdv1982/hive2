@@ -1,5 +1,5 @@
 from ..mixins import Parameter
-from ..six import next
+from .. _compatability import next
 
 
 class FrozenHiveArgs(object):
@@ -20,6 +20,9 @@ class FrozenHiveArgs(object):
 
         else:
             raise AttributeError("FrozenHiveArgs (args) cannot be assigned to")
+
+    def __bool__(self):
+        return bool(self._args)
 
     def __dir__(self):
         return self._args.keys()
@@ -75,6 +78,9 @@ class HiveArgs(object):
         self._args.pop(name)
         self._arg_names.remove(name)
         object.__delattr__(self, name)
+
+    def __bool__(self):
+        return bool(self._args)
 
     def __dir__(self):
         return self._arg_names
