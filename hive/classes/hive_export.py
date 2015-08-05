@@ -38,7 +38,7 @@ class HiveExportables(object):
                                  name)
 
         self._bee_names.add(name)
-        value._hive_bee_name = name
+        value._hive_bee_name = (name,)
 
         object.__setattr__(self, name, value)
 
@@ -48,6 +48,9 @@ class HiveExportables(object):
 
         self._bee_names.remove(attr)
         object.__delattr__(self, attr)
+
+    def __bool__(self):
+        return bool(self._bee_names)
 
     def __dir__(self):
         return self._bee_names

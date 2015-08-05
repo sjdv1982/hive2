@@ -50,6 +50,9 @@ class HiveInternals(object):
         self._bee_names.remove(name)
         object.__delattr__(self, name)
 
+    def __bool__(self):
+        return bool(self._bee_names)
+
     def __dir__(self):
         return self._bee_names
 

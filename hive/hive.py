@@ -3,10 +3,12 @@ from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize
 from .tuple_type import tuple_type, types_match
-from .six import next
 
 from itertools import product
 import inspect
+
+
+from ._compatability import next
 
 
 def generate_bee_name():
@@ -263,8 +265,8 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
         target_name = self._hive_object._hive_find_connect_target(source)
         return getattr(self, target_name)
       
-    def implements(self, cls):
-        return isinstance(self, cls)
+    # def implements(self, cls):
+    #     return isinstance(self, cls)
 
     def __iter__(self):
         return iter(self._bee_names)
@@ -640,18 +642,22 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
+    def _hive_build_args_wrapper(cls):
+        cls._hive_args = args_wrapper = HiveArgs(cls)
+
+        # Execute declarators
+        with hive_mode_as("declare"):
+            for declarator in cls._declarators:
+                declarator(args_wrapper)
+
+    @classmethod
     def _hive_get_hive_object_cls(cls, args, kwargs):
         """Find appropriate HiveObject for argument values
 
         Extract parameters from arguments and return remainder
         """
         if cls._hive_args is None:
-            cls._hive_args = args_wrapper = HiveArgs(cls)
-
-            # Execute declarators
-            with hive_mode_as("declare"):
-                for declarator in cls._declarators:
-                    declarator(args_wrapper)
+            cls._hive_build_args_wrapper()
 
         # Map keyword arguments to parameters, return remaining arguments
         args, kwargs, parameter_values = cls._hive_args.extract_parameter_values(args, kwargs)

@@ -45,14 +45,18 @@ class Socket(Bee):
     pass
 
 
-class Antenna(Bee):
+class IO(Bee):
+    pass
+
+
+class Antenna(IO):
     mode = None #must be push or pull
 
     def push(self): #only needs to be defined if mode is "push"
         raise NotImplementedError 
 
 
-class Output(Bee):
+class Output(IO):
     mode = None #must be push or pull
 
     def pull(self): #only needs to be defined if mode is "pull"

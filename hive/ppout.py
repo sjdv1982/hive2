@@ -9,6 +9,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
     def __init__(self, target, data_type, bound=None, run_hive=None):
         if not bound:
             assert isinstance(target, Stateful) or target.implements(Callable), target
+
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
@@ -30,11 +31,11 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         ret = self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
         return ret        
 
-    def _hive_trigger_source(self, targetfunc):
-        self._trigger.add_target(targetfunc)
+    def _hive_trigger_source(self, func):
+        self._trigger.add_target(func)
 
-    def _hive_pretrigger_source(self, targetfunc):
-        self._pretrigger.add_target(targetfunc)
+    def _hive_pretrigger_source(self, func):
+        self._pretrigger.add_target(func)
 
 
 class PullOut(PPOutBase):
@@ -53,6 +54,7 @@ class PullOut(PPOutBase):
         return value
 
     def _hive_is_connectable_source(self, target):
+        # TODO what if already connected
         if not isinstance(target, Antenna):
             raise TypeError("Target {} does not implement Antenna".format(target))
 
