@@ -20,7 +20,6 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        self._run_hive = run_hive
         if self._bound:
             return self
 
@@ -28,8 +27,7 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        ret = self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
-        return ret        
+        return self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
 
     def _hive_trigger_source(self, func):
         self._trigger.add_target(func)
