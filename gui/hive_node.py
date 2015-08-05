@@ -54,10 +54,5 @@ class HiveNode:
 
         self.position = (0.0, 0.0)
 
-    def copy(self, name):
-        # TODO it's possible that if we don't touch the hive, no copy is needed!
-        new_hive = self.hive._hive_object.instantiate()
-        return self.__class__(new_hive, self.hive_path, name)
-
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

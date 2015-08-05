@@ -17,7 +17,7 @@ class Clipboard:
         node_names = set()
 
         for node in nodes:
-            # TODO, if bee not hive
+            # TODO, if bee is not hive
             args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
                     for name, info in node.info['args'].items()]
 

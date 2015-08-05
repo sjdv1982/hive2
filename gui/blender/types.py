@@ -180,7 +180,6 @@ class NODE_OT_AddHiveNode(types.Operator):
     bl_idname = "hive.add_node"
     bl_label = "Add Hive Node"
 
-    # TODO use list with custom prop type
     import_path = props.StringProperty(default="dragonfly.std.Buffer", name="Import path")
 
     @classmethod
