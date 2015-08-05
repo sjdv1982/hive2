@@ -1,6 +1,8 @@
 from gui.utils import get_ui_info
 from hive.tuple_type import types_match
 
+from contextlib import contextmanager
+
 
 class NodeIOPin:
 
@@ -30,18 +32,19 @@ class NodeIOPin:
         assert other_pin in self.targets
         self.targets.remove(other_pin)
 
+    def __repr__(self):
+        return "<{} pin {}.{}>".format(self.io_type, self.node.name, self.name)
+
 
 class HiveNode:
 
-    def __init__(self, hive, hive_path, unique_id):
+    def __init__(self, hive, hive_path, name):
         self.hive = hive
         self.hive_class_name = hive._hive_object._hive_parent_class.__name__
         self.hive_path = hive_path
 
         self.info = get_ui_info(hive)
-
-        self.name = self.hive_class_name
-        self.unique_id = unique_id
+        self.name = name
 
         self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input") for name, info in
                        self.info['inputs'].items()}
@@ -49,12 +52,12 @@ class HiveNode:
         self.outputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "output") for name, info in
                         self.info['outputs'].items()}
 
-        self.position = [0.0, 0.0]
+        self.position = (0.0, 0.0)
 
-    def copy(self, unique_id):
+    def copy(self, name):
         # TODO it's possible that if we don't touch the hive, no copy is needed!
         new_hive = self.hive._hive_object.instantiate()
-        return self.__class__(new_hive, self.hive_path, unique_id)
+        return self.__class__(new_hive, self.hive_path, name)
 
     def __repr__(self):
-        return "<HiveNode ({}): {}>".format(self.unique_id, self.name)
+        return "<HiveNode ({})>".format(self.name)

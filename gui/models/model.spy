@@ -7,7 +7,6 @@ Type BeeInstanceParameter {
 
 Type Bee {
   String identifier
-  Integer unique_identifier
   String import_path
   BeeInstanceParameterArray args
 
@@ -16,10 +15,10 @@ Type Bee {
 
 
 Type BeeConnection {
-  Integer from_bee
+  String from_bee
   String output_name
 
-  Integer to_bee
+  String to_bee
   String input_name
 }
 

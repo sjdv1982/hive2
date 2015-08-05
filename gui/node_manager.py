@@ -4,18 +4,21 @@ from .clipboard import Clipboard
 from .utils import import_from_path
 
 
+def get_unique_name(existing_names, base_name):
+    i = 0
+    while True:
+        name = "{}_{}".format(base_name, i)
+        i += 1
+        if name not in existing_names:
+            return name
+
+
 class NodeManager:
 
     def __init__(self, gui_node_manager):
         self.nodes = {}
         self.clipboard = Clipboard(self)
         self.gui_node_manager = gui_node_manager
-
-        self._available_node_id = 0
-
-    def get_unique_node_id(self):
-        self._available_node_id += 1
-        return self._available_node_id
 
     def create_connection(self, output, input):
         output.connect(input)
@@ -34,20 +37,18 @@ class NodeManager:
         if params is None:
             params = {}
 
-        unique_id = self.get_unique_node_id()
-
         hive_cls = import_from_path(import_path)
         hive = hive_cls(**params)
+        name = get_unique_name(self.nodes, hive_cls.__name__)
 
-        node = HiveNode(hive, import_path, unique_id=unique_id)
-        self.nodes[unique_id] = node
+        node = HiveNode(hive, import_path, name)
+        self.nodes[name] = node
 
         self.gui_node_manager.create_node(node)
 
         return node
 
     def delete_node(self, node):
-        print("NM: DELETE ", node)
         # Remove connections
         for input in node.inputs.values():
             for output in input.targets.copy():
@@ -58,21 +59,35 @@ class NodeManager:
                 self.delete_connection(output, input)
 
         self.gui_node_manager.delete_node(node)
-        self.nodes.pop(node.unique_id)
+        self.nodes.pop(node.name)
 
     def rename_node(self, node, name):
+        if self.nodes.get(name, node) is not node:
+            raise ValueError("Can't rename {} to {}".format(node, name))
+
+        # Change key
+        self.nodes.pop(node.name)
+        self.nodes[name] = node
+
+        # Update name
         node.name = name
+
         self.gui_node_manager.rename_node(node, name)
 
     def set_position(self, node, position):
         node.position = position
+
         self.gui_node_manager.set_position(node, position)
 
     def on_pasted_pre_connect(self, nodes):
         self.gui_node_manager.on_pasted_pre_connect(nodes)
 
     def export(self):
-        pass
+        return self.clipboard.export(self.nodes.values())
 
-    def load(self, data):
-        pass
+    def load(self, hivemap):
+        # Clear nodes first
+        for node in self.nodes.values():
+            self.delete_node(node)
+
+        self.clipboard.load(hivemap)

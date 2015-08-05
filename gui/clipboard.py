@@ -8,27 +8,27 @@ from .utils import import_from_path, eval_value
 class Clipboard:
 
     def __init__(self, node_manager):
-        self._hivemap = None
+        self._data = None
         self._node_manager = node_manager
 
     def export(self, nodes):
         hivemap = model.Hivemap()
 
-        node_ids = set()
+        node_names = set()
 
         for node in nodes:
             # TODO, if bee not hive
             args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
                     for name, info in node.info['args'].items()]
 
-            spyder_bee = model.Bee(node.name, node.unique_id, node.hive_path, args, node.position)
+            spyder_bee = model.Bee(node.name, node.hive_path, args, node.position)
             hivemap.bees.append(spyder_bee)
 
             # Keep track of copied nodes
-            node_ids.add(node.unique_id)
+            node_names.add(node.name)
 
         for node in nodes:
-            node_id = node.unique_id
+            node_name = node.name
 
             for pin_name, pin in node.outputs.items():
                 if not pin.targets:
@@ -37,20 +37,20 @@ class Clipboard:
                 pin_name = pin.name
 
                 for target in pin.targets:
-                    target_node_id = target.node.unique_id
+                    target_node_name = target.node.name
 
                     # Omit connections that aren't in the copied nodes
-                    if target_node_id not in node_ids:
+                    if target_node_name not in node_names:
                         continue
 
-                    spyder_connection = model.BeeConnection(node_id, pin_name,
-                                                            target_node_id, target.name)
+                    spyder_connection = model.BeeConnection(node_name, pin_name,
+                                                            target_node_name, target.name)
                     hivemap.connections.append(spyder_connection)
 
-        return hivemap
+        return str(hivemap)
 
-    def load(self, hivemap):
-        if hivemap is None:
+    def load(self, data):
+        if data is None:
             return []
 
         # Create nodes
@@ -58,18 +58,30 @@ class Clipboard:
         node_id_mapping = {}
         nodes = set()
 
+        if not isinstance(data, str):
+            raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
+
+        hivemap = model.Hivemap(data)
+
         for bee in hivemap.bees:
             import_path = bee.import_path
 
             params = {p.identifier: eval_value(p.value, p.data_type) for p in bee.args}
 
             node = self._node_manager.create_node(import_path, params)
-            self._node_manager.rename_node(node, bee.identifier)
+
+            try:
+                print("PRENAME", node, bee.identifier)
+                self._node_manager.rename_node(node, bee.identifier)
+
+            except ValueError:
+                print("Failed to rename")
+                pass
+
             self._node_manager.set_position(node, (bee.position.x, bee.position.y))
 
-            original_unique_id = bee.unique_identifier
             # Map original copied ID to new allocated ID
-            node_id_mapping[original_unique_id] = node.unique_id
+            node_id_mapping[bee.identifier] = node.name
 
             nodes.add(node)
 
@@ -90,10 +102,10 @@ class Clipboard:
         return nodes
 
     def copy(self, nodes):
-        self._hivemap = self.export(nodes)
+        self._data = self.export(nodes)
 
     def paste(self, position):
-        nodes = self.load(self._hivemap)
+        nodes = self.load(self._data)
 
         # Find midpoint
         average_x = 0.0

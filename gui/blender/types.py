@@ -6,12 +6,16 @@ from ..utils import import_from_path
 
 blend_manager = None
 LOCATION_DIVISOR = 100
+INVALID_NODE_NAME = "<invalid>"
 
 
 class HiveNodeTree(types.NodeTree):
     bl_idname = 'HiveNodeTree'
     bl_label = 'Custom Node Tree'
     bl_icon = 'NODETREE'
+
+    previous_name = props.StringProperty()
+    unique_id = props.IntProperty(-1)
 
 
 class HiveNodeCategory(NodeCategory):
@@ -22,10 +26,10 @@ class HiveNodeCategory(NodeCategory):
 
 
 class BlenderHiveNode(types.Node):
-    bl_idname = 'Hive Node'
-    bl_label = 'Hive Node'
+    bl_idname = "HiveNode"
+    bl_label = bl_idname
 
-    unique_id = props.IntProperty(default=-1)
+    unique_id = props.IntProperty(-1)
 
     def init(self, context):
         pass
@@ -53,9 +57,6 @@ class BlenderHiveNode(types.Node):
 
     def draw_buttons_ext(self, context, layout):
         pass
-
-    def draw_label(self):
-        return "I am a custom node"
 
     def update(self):
         self.gui_node_manager.gui_on_updated(self)
@@ -155,11 +156,11 @@ class NODE_OT_ConfigHiveNode(types.Operator):
 def add_hive_node(context, import_path, params=None):
     node_tree = context.space_data.edit_tree
 
-    gui_node_manager = blend_manager.gui_node_managers[node_tree]
+    gui_node_manager = blend_manager.gui_node_managers[node_tree.unique_id]
     node_manager = gui_node_manager.node_manager
 
     node = node_manager.create_node(import_path, params)
-    gui_node = gui_node_manager.node_to_gui_node[node]
+    gui_node = gui_node_manager.get_gui_node_from_node(node)
 
     # Select this node
     for gui_node_ in node_tree.nodes:
@@ -252,8 +253,44 @@ class NODE_OT_GrabHiveNode(types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class NODE_OT_SynchroniseTextBlocks(types.Operator):
+    bl_idname = "hive.synchronise_text_blocks"
+    bl_label = "Reload From Text Block"
+
+    node_id = props.IntProperty()
+
+    mouse_x = props.FloatProperty()
+    mouse_y = props.FloatProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        node_tree = context.space_data.edit_tree
+        blend_manager.reload_node_tree_from_source(node_tree)
+
+        return {'FINISHED'}
+
+
+class HiveNodeTreeToolsMenu(types.Menu):
+    """Tools menu for HIVE operations"""
+    bl_label = "Hive Options"
+    bl_idname = "NODE_MT_hive_menu"
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column()
+        col.operator("hive.synchronise_text_blocks", icon="FILE_REFRESH")
+
+
+def draw_hive_menu(self, context):
+    self.layout.menu("NODE_MT_hive_menu")
+
+
 _classes = (HiveNodeTree, BlenderHiveNode, BlenderHiveSocket, NODE_OT_AddHiveNode, NODE_OT_GrabHiveNode,
-            HIVE_UL_arguments, NODE_OT_ConfigHiveNode)
+            HIVE_UL_arguments, NODE_OT_ConfigHiveNode, NODE_OT_SynchroniseTextBlocks, HiveNodeTreeToolsMenu)
 
 
 def register():
@@ -263,7 +300,11 @@ def register():
     for cls in _classes:
         utils.register_class(cls)
 
+    types.NODE_HT_header.append(draw_hive_menu)
+
 
 def unregister():
     for cls in _classes:
         utils.unregister_class(cls)
+
+    types.NODE_HT_header.remove(draw_hive_menu)
