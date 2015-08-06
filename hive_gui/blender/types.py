@@ -12,7 +12,7 @@ INVALID_NODE_NAME = "<invalid>"
 class HiveNodeTree(types.NodeTree):
     bl_idname = 'HiveNodeTree'
     bl_label = 'Custom Node Tree'
-    bl_icon = 'NODETREE'
+    bl_icon = 'GAME'
 
     previous_name = props.StringProperty()
     unique_id = props.IntProperty(-1)
@@ -285,7 +285,8 @@ class HiveNodeTreeToolsMenu(types.Menu):
 
 
 def draw_hive_menu(self, context):
-    self.layout.menu("NODE_MT_hive_menu")
+    if isinstance(context.space_data.edit_tree, HiveNodeTree):
+        self.layout.menu("NODE_MT_hive_menu")
 
 
 _classes = (HiveNodeTree, BlenderHiveNode, BlenderHiveSocket, NODE_OT_AddHiveNode, NODE_OT_GrabHiveNode,

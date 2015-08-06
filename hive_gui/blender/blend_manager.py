@@ -7,8 +7,10 @@ from .node_menu_manager import node_menu_manager, HiveNodeMenu
 
 from ..node_manager import NodeManager
 
+from ..finder import get_hives, recurse
+hives = get_hives()
 
-hives = {"test": {"sca": {"actuators": ["Debug"], "sensors": ["Keyboard", "Always"], "controllers": ["AND", "NAND"]}}}
+recurse("test.sca", hives)
 
 
 class BlendManager:
@@ -17,16 +19,13 @@ class BlendManager:
         self.gui_node_managers = {}
         self._available_unique_id = 0
 
-        self.init_node_menu()
-        # TODO fix when deleting node trees
+        root_menu = node_menu_manager.create_menu("Hives")
+        self.init_node_menu(hives, root_menu)
 
-    # TODO, make this dynamic
-    def init_node_menu(self, hive_dict=None, menu=None):
-        if hive_dict is None:
-            hive_dict = hives
-            menu = node_menu_manager.create_menu("Hives")
+        # TODO fix deleting node trees
 
-        if isinstance(hive_dict, list):
+    def init_node_menu(self, hive_dict, menu):
+        if isinstance(hive_dict, (list, set)):
             menu.children.append(hive_dict)
             return
 

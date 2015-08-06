@@ -1,0 +1,21 @@
+Parse all hives (just check if inherits from HiveBuilder)
+Parse all bees (just check if inherits from Bee)
+Parse all parameters (just check if inherits from Parameter)
+
+Control flow: Generic node manager -> Blender node manager
+
+[x]Don't bother inspecting UI on loading, just wipe and re-load
+[x]When adding nodes, operator will setup data first then add GUI representation
+[x]When copying nodes, GUI will notice was copied and configure #{Instead, we trash and reload}#
+
+Support bees with hives:
+    How to connect hives with bees (in GUI and out)
+    -> Restructure hive / bee distinction?
+        -> Use optional from_socket to_socket in model.BeeConnection?
+        -> Account for fact that bee != hivebee, maybe add another layer / more generic setup?
+
+
+Blender:
+    Editable docstrings, synchronised with nodetree text files
+
+Support writing docstring using clipboard? - Rename clipboard to HiveMapManager

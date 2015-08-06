@@ -1,6 +1,8 @@
 import hive
 from hive.mixins import *
 
+from .models import model
+
 from collections import OrderedDict
 
 
@@ -68,12 +70,49 @@ def eval_value(value, data_type):
 
 def import_from_path(path):
     split_path = path.split(".")
-    *module_parts, _ = split_path
-    module_name = ".".join(module_parts)
+    *module_parts, class_name = split_path
+    import_path = ".".join(module_parts)
+    sub_module_name = module_parts[-1]
 
-    module = __import__(module_name)
+    module = __import__(import_path, fromlist=[sub_module_name])
+    return getattr(module, class_name)
 
-    for part in split_path[1:]:
-        module = getattr(module, part)
 
-    return module
+def builder_from_hivemap(data):
+    """Create Hive builder from hivemap string
+
+    :param data: string representation of hivemap
+    """
+    hivemap = model.Hivemap(data)
+
+    def builder(i, ex, args):
+        hive_bees = {}
+
+        for bee in hivemap.bees:
+            params = {p.identifier: eval_value(p.value, p.data_type) for p in bee.args}
+            bee_cls = import_from_path(bee.import_path)
+            hive_bee = bee_cls(**params)
+
+            setattr(ex, bee.identifier, hive_bee)
+            hive_bees[bee.identifier] = hive_bee
+
+        for connection in hivemap.connections:
+            from_bee = hive_bees[connection.from_bee]
+            from_output = getattr(from_bee, connection.output_name)
+
+            to_bee = hive_bees[connection.to_bee]
+            to_input = getattr(to_bee, connection.input_name)
+
+            hive.connect(from_output, to_input)
+
+    return builder
+
+
+def class_from_hivemap(name, data):
+    """Build Hive class from hivemap string
+
+    :param name: name of hive class
+    :param data: string representation of hivemap
+    """
+    builder = builder_from_hivemap(data)
+    return hive.hive(name, builder)

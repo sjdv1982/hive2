@@ -1,7 +1,5 @@
-from gui.utils import get_ui_info
+from .utils import get_ui_info
 from hive.tuple_type import types_match
-
-from contextlib import contextmanager
 
 
 class NodeIOPin:

@@ -492,7 +492,7 @@ class HiveBuilder(object):
         :param hive_kwargs: TODO
         """
         if builder_cls is not None:
-            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class SomeHive(object): ..."
 
         builders = cls._builders + ((builder, builder_cls),)
 
