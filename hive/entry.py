@@ -6,7 +6,9 @@ class Entry(Exportable, Bee):
     """Exportable proxy for TriggerTarget bees"""
 
     def __init__(self, target):
-        assert isinstance(target, TriggerTarget), target
+        assert isinstance(target, Bee), target
+        assert target.implements(TriggerTarget)
+
         self._hive_object_cls = get_building_hive()
         self._target = target
 
@@ -16,7 +18,7 @@ class Entry(Exportable, Bee):
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target
-        if isinstance(target, Exportable):
+        if target.implements(Exportable):
             target = target.export()
 
         return target

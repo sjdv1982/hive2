@@ -265,8 +265,8 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
         target_name = self._hive_object._hive_find_connect_target(source)
         return getattr(self, target_name)
       
-    # def implements(self, cls):
-    #     return isinstance(self, cls)
+    def implements(self, cls):
+        return isinstance(self, cls)
 
     def __iter__(self):
         return iter(self._bee_names)

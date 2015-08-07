@@ -6,7 +6,8 @@ class Hook(Exportable, Bee):
     """Exportable proxy for TriggerSource bees"""
 
     def __init__(self, target):
-        assert isinstance(target, TriggerSource), target
+        assert isinstance(target, Bee), target
+        assert target.implements(TriggerSource)
         self._hive_object_cls = get_building_hive()
         self._target = target
 
@@ -16,7 +17,8 @@ class Hook(Exportable, Bee):
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target
-        if isinstance(target, Exportable):
+
+        if target.implements(Exportable):
             target = target.export()
 
         return target

@@ -1,4 +1,4 @@
-from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable
+from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable, Exportable
 from .classes import HiveBee, Pusher
 from .manager import ContextFactory, memoize
 
@@ -74,6 +74,9 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
 
         if cls is Callable:
             return True
+
+        if cls is Exportable:
+            return False
 
         func, = self.args
         if isinstance(func, Bee):

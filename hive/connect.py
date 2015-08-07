@@ -90,7 +90,6 @@ def connect(source, target):
 
     if isinstance(source, Bee):
         assert source.implements(ConnectSourceBase), source
-        assert isinstance(target, Bee), target
         assert target.implements(ConnectTargetBase), target
 
     else:
