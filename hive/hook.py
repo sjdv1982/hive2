@@ -12,7 +12,7 @@ class Hook(Exportable, Bee):
         self._target = target
 
     def __repr__(self):
-        return "<Hook"
+        return "<Hook {}>".format(self._target)
 
     def export(self):
         # TODO: somehow log the redirection path

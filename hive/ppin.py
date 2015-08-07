@@ -29,7 +29,6 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        self._run_hive = run_hive
         if self._bound:
             return self
 
