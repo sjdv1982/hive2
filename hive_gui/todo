@@ -13,9 +13,3 @@ Support bees with hives:
     -> Restructure hive / bee distinction?
         -> Use optional from_socket to_socket in model.BeeConnection?
         -> Account for fact that bee != hivebee, maybe add another layer / more generic setup?
-
-
-Blender:
-    Editable docstrings, synchronised with nodetree text files
-
-Support writing docstring using clipboard? - Rename clipboard to HiveMapManager

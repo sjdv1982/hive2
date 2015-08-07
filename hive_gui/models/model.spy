@@ -34,4 +34,5 @@ Type Hivemap {
   BeeArray bees = []
   ParameterArray args = []
   BeeConnectionArray connections = []
+  String docstring = ""
 }

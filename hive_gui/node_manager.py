@@ -1,7 +1,6 @@
-from hive.tuple_type import types_match
 from .hive_node import HiveNode
-from .clipboard import Clipboard
-from .utils import import_from_path
+from .models import model
+from .utils import import_from_path, eval_value
 
 
 def get_unique_name(existing_names, base_name):
@@ -16,9 +15,11 @@ def get_unique_name(existing_names, base_name):
 class NodeManager:
 
     def __init__(self, gui_node_manager):
-        self.nodes = {}
-        self.clipboard = Clipboard(self)
+        self.docstring = ""
         self.gui_node_manager = gui_node_manager
+        self.nodes = {}
+
+        self._clipboard = None
 
     def create_connection(self, output, input):
         output.connect(input)
@@ -83,11 +84,140 @@ class NodeManager:
         self.gui_node_manager.on_pasted_pre_connect(nodes)
 
     def export(self):
-        return self.clipboard.export(self.nodes.values())
+        hivemap = self._export(self.nodes.values())
+        hivemap.docstring = self.docstring
 
-    def load(self, hivemap):
+        return str(hivemap)
+
+    def load(self, data):
         # Clear nodes first
-        for node in self.nodes.values():
+        for node in list(self.nodes.values()):
             self.delete_node(node)
 
-        self.clipboard.load(hivemap)
+        # Validate type
+        if not isinstance(data, str):
+            raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
+
+        # Read hivemap
+        hivemap = model.Hivemap(data)
+        self.docstring = hivemap.docstring
+
+        self._load(hivemap)
+
+    def copy(self, nodes):
+        """Copy nodes to clipboard
+
+        :param nodes: nodes to copy
+        """
+        self._clipboard = self._export(nodes)
+
+    def paste(self, position):
+        """Paste nodes from clipboard
+
+        :param position: position of target center of mass of nodes
+        """
+        nodes = self._load(self._clipboard)
+
+        # Find midpoint
+        average_x = 0.0
+        average_y = 0.0
+
+        for node in nodes:
+            average_x += node.position[0]
+            average_y += node.position[1]
+
+        average_x /= len(nodes)
+        average_y /= len(nodes)
+
+        # Displacement to the center
+        offset_x = position[0] - average_x
+        offset_y = position[1] - average_y
+
+        # Move nodes to mouse position
+        for node in nodes:
+            position = node.position[0] + offset_x, node.position[1] + offset_y
+            self.set_position(node, position)
+
+    def _export(self, nodes):
+        hivemap = model.Hivemap()
+
+        node_names = set()
+
+        for node in nodes:
+            # TODO, if bee is not hive
+            args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
+                    for name, info in node.info['args'].items()]
+
+            spyder_bee = model.Bee(node.name, node.hive_path, args, node.position)
+            hivemap.bees.append(spyder_bee)
+
+            # Keep track of copied nodes
+            node_names.add(node.name)
+
+        for node in nodes:
+            node_name = node.name
+
+            for pin_name, pin in node.outputs.items():
+                if not pin.targets:
+                    continue
+
+                pin_name = pin.name
+
+                for target in pin.targets:
+                    target_node_name = target.node.name
+
+                    # Omit connections that aren't in the copied nodes
+                    if target_node_name not in node_names:
+                        continue
+
+                    spyder_connection = model.BeeConnection(node_name, pin_name,
+                                                            target_node_name, target.name)
+                    hivemap.connections.append(spyder_connection)
+
+        return hivemap
+
+    def _load(self, hivemap):
+        if hivemap is None:
+            return []
+
+        # Create nodes
+        # Mapping from original ID to new ID
+        node_id_mapping = {}
+        nodes = set()
+
+        for bee in hivemap.bees:
+            import_path = bee.import_path
+
+            params = {p.identifier: eval_value(p.value, p.data_type) for p in bee.args}
+
+            node = self.create_node(import_path, params)
+
+            try:
+                self.rename_node(node, bee.identifier)
+
+            except ValueError:
+                print("Failed to rename")
+                pass
+
+            self.set_position(node, (bee.position.x, bee.position.y))
+
+            # Map original copied ID to new allocated ID
+            node_id_mapping[bee.identifier] = node.name
+
+            nodes.add(node)
+
+        self.on_pasted_pre_connect(nodes)
+
+        for connection in hivemap.connections:
+            from_id = node_id_mapping[connection.from_bee]
+            to_id = node_id_mapping[connection.to_bee]
+
+            from_node = self.nodes[from_id]
+            to_node = self.nodes[to_id]
+
+            from_pin = from_node.outputs[connection.output_name]
+            to_pin = to_node.inputs[connection.input_name]
+
+            self.create_connection(from_pin, to_pin)
+
+        return nodes
