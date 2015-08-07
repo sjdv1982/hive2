@@ -22,7 +22,7 @@ def get_ui_info(run_hive, allow_derived=False):
         connect_target_type = ConnectTarget
         connect_source_type = ConnectSource
 
-    for bee_name in external_bees:
+    for bee_name in sorted(external_bees):
         bee = getattr(external_bees, bee_name)
 
         # Find IO pins

@@ -105,10 +105,11 @@ utils.register_class(ArgumentGroup)
 
 
 class HIVE_UL_arguments(types.UIList):
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         data_type = item.data_type
 
-        layout.label(text=item.name)
+        layout.label(text=item.name.replace("_", " ").title())
         prop_row = layout.row()
         prop_row.prop(item, "value_{}".format(data_type), text="")
 

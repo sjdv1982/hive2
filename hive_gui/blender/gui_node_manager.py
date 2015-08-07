@@ -1,13 +1,12 @@
 from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME, INVALID_NODE_ID
 from .socket_manager import socket_class_manager
 
-from ..sockets import get_colour, get_socket_type_for_mode
-
 from ..gui_node_manager import IGUINodeManager
+from ..sockets import get_colour, get_socket_type_for_mode
 
 from contextlib import contextmanager
 from collections import namedtuple
-from logging import getLogger, INFO, basicConfig
+from logging import getLogger
 
 from bpy import context
 from functools import wraps
@@ -136,7 +135,6 @@ class BlenderGUINodeManager(IGUINodeManager):
         self.unique_id_to_node[node_id] = node
 
         self._logger.info("GUI created node: {}.{}".format(self.node_tree.name, name))
-        print("GUI created node: {}, {}".format(name, gui_node.name))
 
     def delete_node(self, node):
         node_id = self.node_to_unique_id.pop(node)
@@ -168,8 +166,8 @@ class BlenderGUINodeManager(IGUINodeManager):
 
         to_remove = []
         for link in self.node_tree.links:
-            self._logger.info("See link {}, {}".format(link.from_node, link.to_node))
             if link.from_node.unique_id in node_ids or link.to_node.unique_id in node_ids:
+                self._logger.info("On_pasted_pre_connect remove link {}->{}".format(link.from_node, link.to_node))
                 to_remove.append(link)
 
         for link in to_remove:
