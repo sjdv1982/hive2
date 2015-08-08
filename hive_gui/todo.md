@@ -1,11 +1,11 @@
 Control flow: Generic node manager -> Blender node manager
 
 # Blender GUI
-* Don't bother inspecting UI on loading, just wipe and re-load
-* When adding nodes, operator will setup data first then add GUI representation
-* When copying nodes, GUI will notice was copied and configure #{Instead, we trash and reload}
-* How to fix edit undo?
-* Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()
+- [x] Don't bother inspecting UI on loading, just wipe and re-load
+- [x] When adding nodes, operator will setup data first then add GUI representation
+- [x] When copying nodes, GUI will notice was copied and configure #{Instead, we trash and reload}
+- [ ] How to fix edit undo?
+- [ ] Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()
 
 # General GUI
 * Node Finder
