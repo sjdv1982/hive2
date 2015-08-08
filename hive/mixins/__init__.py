@@ -65,5 +65,5 @@ class Output(IO):
 from .stateful import Stateful
 from .connect_source import ConnectSourceBase, ConnectSource, ConnectSourceDerived
 from .connect_target import ConnectTargetBase, ConnectTarget, ConnectTargetDerived
-from .trigger_source import TriggerSource
-from .trigger_target import TriggerTarget
+from .trigger_source import TriggerSourceBase, TriggerSource, TriggerSourceDerived
+from .trigger_target import TriggerTargetBase, TriggerTarget, TriggerTargetDerived

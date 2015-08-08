@@ -1,10 +1,6 @@
-from .mixins import TriggerSource, TriggerTarget, Bee, Bindable
+from .mixins import TriggerSourceBase, TriggerTargetBase, Bee, Bindable, TriggerTargetDerived, TriggerSourceDerived
 from .classes import HiveBee
 from .manager import get_mode, memoize, register_bee
-from .hive import HiveObject
-
-
-# TODO copy connect code for hives for trigger
 
 
 def build_trigger(source, target, pre):
@@ -47,13 +43,13 @@ class TriggerBee(HiveBee):
     def getinstance(self, hive_object):
         source, target, pretrigger = self.args
 
-        if isinstance(source, HiveObject):
+        if isinstance(source, TriggerTargetDerived):
             source = source._hive_get_trigger_source()
 
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
-        if isinstance(target, HiveObject):
+        if isinstance(target, TriggerTargetDerived):
             target = target._hive_get_trigger_target()
 
         if isinstance(target, Bee):    
@@ -68,12 +64,12 @@ class TriggerBee(HiveBee):
 
 def trigger(source, target, pretrigger=False):
     if isinstance(source, Bee):
-        assert source.implements(TriggerSource), source
-        assert target.implements(TriggerTarget), target
+        assert source.implements(TriggerSourceBase), source
+        assert target.implements(TriggerTargetBase), target
 
     else:
-        assert isinstance(source, TriggerSource), source
-        assert isinstance(target, TriggerTarget), target
+        assert isinstance(source, TriggerSourceBase), source
+        assert isinstance(target, TriggerTargetBase), target
 
     if get_mode() == "immediate":
         build_trigger(source, target, pretrigger)
