@@ -25,8 +25,10 @@ class ConnectSource(ConnectSourceBase):
         raise NotImplementedError
 
 
-class ConnectSourceDerived(ConnectSourceBase):    
-    _hive_connect_sources = None
+class ConnectSourceDerived(ConnectSourceBase):
 
-    def _hive_find_connect_source(self, target):
+    def _hive_find_connect_sources(self):
+        raise NotImplementedError
+
+    def _hive_get_connect_source(self, target):
         raise NotImplementedError

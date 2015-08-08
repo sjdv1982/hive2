@@ -1,4 +1,4 @@
-from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable
+from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable, Exportable
 from .classes import HiveBee, Pusher
 from .manager import ContextFactory, memoize
 
@@ -53,7 +53,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         return self.__class__(func, bound=run_hive)
 
 
-class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
+class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
 
     data_type = ("trigger",)
 
@@ -69,10 +69,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
         return TriggerFunc(func)
 
     def implements(self, cls):
-        if HiveBee.implements(self, cls):
-            return True
-
-        if cls is Callable:
+        if Bee.implements(self, cls):
             return True
 
         func, = self.args

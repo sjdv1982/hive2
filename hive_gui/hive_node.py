@@ -1,7 +1,7 @@
-from gui.utils import get_ui_info
-from hive.tuple_type import types_match
+from .utils import get_ui_info
 
-from contextlib import contextmanager
+from hive.tuple_type import types_match
+from collections import OrderedDict
 
 
 class NodeIOPin:
@@ -46,11 +46,11 @@ class HiveNode:
         self.info = get_ui_info(hive)
         self.name = name
 
-        self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input") for name, info in
-                       self.info['inputs'].items()}
+        self.inputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "input"))
+                                   for name, info in self.info['inputs'].items()])
 
-        self.outputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "output") for name, info in
-                        self.info['outputs'].items()}
+        self.outputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "output"))
+                                    for name, info in self.info['outputs'].items()])
 
         self.position = (0.0, 0.0)
 

@@ -1,19 +1,21 @@
-from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME
+from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME, INVALID_NODE_ID
 from .socket_manager import socket_class_manager
 
-from ..sockets import get_colour, get_socket_type_for_mode
-
 from ..gui_node_manager import IGUINodeManager
+from ..sockets import get_colour, get_socket_type_for_mode
 
 from contextlib import contextmanager
 from collections import namedtuple
-from logging import getLogger, INFO, basicConfig
+from logging import getLogger
 
 from bpy import context
 from functools import wraps
 
 PendingOperation = namedtuple("PendingOperation", "type data")
 default_operation = PendingOperation(None, None)
+
+import logging
+logging.basicConfig(format='%(asctime)s %(name)-5s %(levelname)-3s %(message)s', level="INFO")
 
 
 def wrapper(func, logger):
@@ -28,32 +30,22 @@ def wrapper(func, logger):
 
 class BlenderGUINodeManager(IGUINodeManager):
 
-    def __init__(self, node_tree):
+    def __init__(self, blend_manager, node_tree):
         self.node_tree = node_tree
         self.node_manager = None
+        self.blend_manager = blend_manager
 
         self.node_to_unique_id = {}
         self.unique_id_to_gui_node = {}
         self.unique_id_to_node = {}
-
-        self._unique_node_id = 0
 
         self._internal_operations = [default_operation]
         self._updated_nodes = set()
         self._copied_nodes = set()
         self._pending_paste = False
 
-        #basicConfig(filename="D:/blendernodes.log", filemode="w")
         self._logger = getLogger("{}::{}".format(self.__class__.__name__, id(self)))
-        self._logger.setLevel(INFO)
-
-        for funcname in self.__class__.__dict__.keys():
-            if funcname.startswith("__"):
-                continue
-
-            func = getattr(self, funcname)
-            if callable(func):
-                setattr(self, funcname, wrapper(func, self._logger))
+        self._logger.info("HI")
 
     @property
     def internal_operation(self):
@@ -76,6 +68,10 @@ class BlenderGUINodeManager(IGUINodeManager):
     def get_gui_node_from_node(self, node):
         node_id = self.node_to_unique_id[node]
         return self.unique_id_to_gui_node[node_id]
+
+    def gui_get_parameter_values(self, gui_node):
+        node = self.unique_id_to_node[gui_node.unique_id]
+        return node.info['args']
 
     def create_connection(self, output, input):
         if self.internal_operation.type == "create_connection":
@@ -100,8 +96,13 @@ class BlenderGUINodeManager(IGUINodeManager):
             self._logger.info("Ignoring delete_connection request from node manager")
             return
 
-        output_gui_node = self.get_gui_node_from_node(output.node)
-        input_gui_node = self.get_gui_node_from_node(input.node)
+        try:
+            output_gui_node = self.get_gui_node_from_node(output.node)
+            input_gui_node = self.get_gui_node_from_node(input.node)
+
+        except KeyError:
+            self._logger.error("Couldn't find all nodes for connection: {}->{}".format(output.node, input.node))
+            return
 
         output_socket = output_gui_node.outputs[output.name]
         input_socket = input_gui_node.inputs[input.name]
@@ -130,17 +131,14 @@ class BlenderGUINodeManager(IGUINodeManager):
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
             gui_node.outputs.new(socket_cls.bl_idname, pin_name)
 
-        node_id = self._unique_node_id
-        self._unique_node_id += 1
-
+        node_id = repr(gui_node.as_pointer())
         gui_node.unique_id = node_id
 
         self.node_to_unique_id[node] = node_id
         self.unique_id_to_gui_node[node_id] = gui_node
         self.unique_id_to_node[node_id] = node
 
-        self._logger.info("GUI created node: {}".format(name))
-        print("GUI created node: {}, {}".format(name, gui_node.name))
+        self._logger.info("GUI created node: {}.{}".format(self.node_tree.name, name))
 
     def delete_node(self, node):
         node_id = self.node_to_unique_id.pop(node)
@@ -151,7 +149,13 @@ class BlenderGUINodeManager(IGUINodeManager):
 
         if self.internal_operation.type != "node_freed":
             self._logger.info("GUI deleted node: {}".format(node.name))
-            self.node_tree.nodes.remove(gui_node)
+
+            try:
+                self.node_tree.nodes.remove(gui_node)
+
+            except RuntimeError:
+                self._logger.error("Couldn't find Blender GUI node to delete: {}".format(node))
+                return
 
     def rename_node(self, node, name):
         gui_node = self.get_gui_node_from_node(node)
@@ -166,8 +170,8 @@ class BlenderGUINodeManager(IGUINodeManager):
 
         to_remove = []
         for link in self.node_tree.links:
-            self._logger.info("See link {}, {}".format(link.from_node, link.to_node))
             if link.from_node.unique_id in node_ids or link.to_node.unique_id in node_ids:
+                self._logger.info("On_pasted_pre_connect remove link {}->{}".format(link.from_node, link.to_node))
                 to_remove.append(link)
 
         for link in to_remove:
@@ -222,7 +226,7 @@ class BlenderGUINodeManager(IGUINodeManager):
 
             if is_duplicate or pasting_from_clipboard:
                 new_gui_node.label = INVALID_NODE_NAME
-                new_gui_node.unique_id = -1
+                new_gui_node.unique_id = INVALID_NODE_ID
 
                 # Ensure no links are left (Blender nasty auto-connect)
                 to_remove = []
@@ -231,6 +235,7 @@ class BlenderGUINodeManager(IGUINodeManager):
                     if link.from_node.name == new_gui_node_name or link.to_node.name == new_gui_node_name:
                         to_remove.append(link)
 
+                # Remove links
                 for link in to_remove:
                     self.node_tree.links.remove(link)
 
@@ -247,14 +252,14 @@ class BlenderGUINodeManager(IGUINodeManager):
 
         if not pasting_from_clipboard:
             print("COPY", copied_nodes)
-            self.node_manager.clipboard.copy(copied_nodes)
+            self.node_manager.copy(copied_nodes)
 
         else:
             print("Pasting from clipboard, source nodes won't be there")
 
     def gui_post_pasted(self):
         position = context.space_data.cursor_location / LOCATION_DIVISOR
-        self.node_manager.clipboard.paste(position)
+        self.node_manager.paste(position)
         print("PASTE")
 
     def gui_post_updated(self, updated_nodes):
@@ -300,11 +305,23 @@ class BlenderGUINodeManager(IGUINodeManager):
                                           .format(node.name, from_pin.name, to_pin.node.name, to_pin.name))
                         self.node_manager.delete_connection(from_pin, to_pin)
 
-                self._logger.info("POST DELETE")
-
     def update(self):
-        for node, unique_id in self.node_to_unique_id.items():
-            gui_node = self.unique_id_to_gui_node[unique_id]
+        unique_id_to_node = self.unique_id_to_node
+
+        # Update undetectable changes, and delete untracked nodes
+        to_delete = []
+
+        for gui_node in self.node_tree.nodes:
+            unique_id = gui_node.unique_id
+
+            try:
+                node = unique_id_to_node[unique_id]
+
+            # Not registered, delete node!
+            except KeyError:
+                self._logger.info("{} isn't tracked: deleting ...".format(gui_node))
+                to_delete.append(gui_node)
+                continue
 
             # Update label
             if node.name != gui_node.label:
@@ -320,6 +337,9 @@ class BlenderGUINodeManager(IGUINodeManager):
 
             with self.internal_operation_from("set_position"):
                 self.node_manager.set_position(node, node_position)
+
+        for gui_node in to_delete:
+            self.node_tree.nodes.remove(gui_node)
 
         if self._copied_nodes:
             self.gui_post_copied(self._copied_nodes)

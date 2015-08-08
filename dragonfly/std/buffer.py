@@ -8,23 +8,23 @@ def declare_buffer(args):
 
 
 def build_buffer(i, ex, args):
-    i.in_value = hive.variable(args.data_type, args.start_value)
+    ex.value = hive.attribute(args.data_type, args.start_value)
 
     if args.mode == "push":
-        i.input = hive.push_in(i.in_value)
+        i.input = hive.push_in(ex.value)
         ex.input = hive.antenna(i.input)
 
-        i.output = hive.push_out(i.in_value)
+        i.output = hive.push_out(ex.value)
         ex.output = hive.output(i.output)
 
         i.trigger = hive.triggerable(i.output)
         ex.trigger = hive.entry(i.trigger)
 
     elif args.mode == "pull":
-        i.input = hive.pull_in(i.in_value)
+        i.input = hive.pull_in(ex.value)
         ex.input = hive.antenna(i.input)
 
-        i.output = hive.pull_out(i.in_value)
+        i.output = hive.pull_out(ex.value)
         ex.output = hive.output(i.output)
 
         i.trigger = hive.triggerable(i.input)

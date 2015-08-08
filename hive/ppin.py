@@ -29,7 +29,6 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        self._run_hive = run_hive
         if self._bound:
             return self
 
@@ -138,7 +137,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         return PullIn(target, self.data_type)
 
     def implements(self, cls):
-        if isinstance(self, cls):
+        if Bee.implements(self, cls):
             return True
 
         target = self.target

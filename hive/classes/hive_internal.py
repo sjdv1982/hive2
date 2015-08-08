@@ -39,7 +39,7 @@ class HiveInternals(object):
                                  name)
 
         self._bee_names.add(name)
-        value._hive_bee_name = name
+        value._hive_bee_name = (name,)
 
         object.__setattr__(self, name, value)
 

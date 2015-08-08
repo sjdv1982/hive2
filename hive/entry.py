@@ -6,7 +6,9 @@ class Entry(Exportable, Bee):
     """Exportable proxy for TriggerTarget bees"""
 
     def __init__(self, target):
-        assert isinstance(target, TriggerTarget), target
+        assert isinstance(target, Bee), target
+        assert target.implements(TriggerTarget)
+
         self._hive_object_cls = get_building_hive()
         self._target = target
 

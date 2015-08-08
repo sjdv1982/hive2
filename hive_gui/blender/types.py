@@ -1,21 +1,25 @@
 from bpy import types, utils, props, ops
 from nodeitems_utils import NodeCategory
 
+from .text_area import BlenderTextArea
+
 from ..sockets import colours, SocketTypes
 from ..utils import import_from_path
 
 blend_manager = None
+
 LOCATION_DIVISOR = 100
 INVALID_NODE_NAME = "<invalid>"
+INVALID_NODE_ID = INVALID_NODE_TREE_ID = "<none>"
 
 
 class HiveNodeTree(types.NodeTree):
     bl_idname = 'HiveNodeTree'
     bl_label = 'Custom Node Tree'
-    bl_icon = 'NODETREE'
+    bl_icon = 'GAME'
 
     previous_name = props.StringProperty()
-    unique_id = props.IntProperty(-1)
+    unique_id = props.StringProperty(INVALID_NODE_TREE_ID)
 
 
 class HiveNodeCategory(NodeCategory):
@@ -29,7 +33,7 @@ class BlenderHiveNode(types.Node):
     bl_idname = "HiveNode"
     bl_label = bl_idname
 
-    unique_id = props.IntProperty(-1)
+    unique_id = props.StringProperty(INVALID_NODE_ID)
 
     def init(self, context):
         pass
@@ -40,7 +44,7 @@ class BlenderHiveNode(types.Node):
 
     @property
     def gui_node_manager(self):
-        return blend_manager.get_node_tree_manager_for_node(self)
+        return blend_manager.get_gui_manager_for_node(self)
 
     @property
     def node_tree(self):
@@ -53,7 +57,15 @@ class BlenderHiveNode(types.Node):
         self.gui_node_manager.gui_on_freed(self)
 
     def draw_buttons(self, context, layout):
-        pass
+        parameters = self.gui_node_manager.gui_get_parameter_values(self)
+
+        for name, data in parameters.items():
+            value = data['value']
+
+            row = layout.row()
+            row.label(name)
+
+            row.label(repr(value))
 
     def draw_buttons_ext(self, context, layout):
         pass
@@ -101,10 +113,11 @@ utils.register_class(ArgumentGroup)
 
 
 class HIVE_UL_arguments(types.UIList):
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         data_type = item.data_type
 
-        layout.label(text=item.name)
+        layout.label(text=item.name.replace("_", " ").title())
         prop_row = layout.row()
         prop_row.prop(item, "value_{}".format(data_type), text="")
 
@@ -156,7 +169,7 @@ class NODE_OT_ConfigHiveNode(types.Operator):
 def add_hive_node(context, import_path, params=None):
     node_tree = context.space_data.edit_tree
 
-    gui_node_manager = blend_manager.gui_node_managers[node_tree.unique_id]
+    gui_node_manager = blend_manager.get_gui_manager_for_node_tree(node_tree)
     node_manager = gui_node_manager.node_manager
 
     node = node_manager.create_node(import_path, params)
@@ -227,7 +240,7 @@ class NODE_OT_GrabHiveNode(types.Operator):
 
     def modal(self, context, event):
         node_tree = context.space_data.edit_tree
-        gui_node_manager = blend_manager.gui_node_managers[node_tree]
+        gui_node_manager = blend_manager.get_gui_manager_for_node_tree(node_tree)
         node_manager = gui_node_manager.node_manager
 
         # Get nodes
@@ -272,6 +285,34 @@ class NODE_OT_SynchroniseTextBlocks(types.Operator):
         return {'FINISHED'}
 
 
+class NODE_OT_ShowDocstring(types.Operator):
+    bl_idname = "hive.edit_docstring"
+    bl_label = "Edit Docstring"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        node_tree = context.space_data.edit_tree
+
+        gui_node_manager = blend_manager.get_gui_manager_for_node_tree(node_tree)
+        node_manager = gui_node_manager.node_manager
+
+        set_docstring = lambda t: setattr(node_manager, 'docstring', t)
+        get_docstring = lambda: node_manager.docstring
+
+        text_area = BlenderTextArea(node_tree.name)
+
+        text_area.on_write = set_docstring
+        text_area.on_read = get_docstring
+        text_area.write_on_edit = True
+
+        blend_manager.text_area_manager.active_area = text_area
+
+        return {'FINISHED'}
+
+
 class HiveNodeTreeToolsMenu(types.Menu):
     """Tools menu for HIVE operations"""
     bl_label = "Hive Options"
@@ -281,15 +322,18 @@ class HiveNodeTreeToolsMenu(types.Menu):
         layout = self.layout
 
         col = layout.column()
-        col.operator("hive.synchronise_text_blocks", icon="FILE_REFRESH")
+        col.operator("hive.synchronise_text_blocks", icon='FILE_REFRESH')
+        col.operator("hive.edit_docstring", icon='INFO')
 
 
 def draw_hive_menu(self, context):
-    self.layout.menu("NODE_MT_hive_menu")
+    if isinstance(context.space_data.edit_tree, HiveNodeTree):
+        self.layout.menu("NODE_MT_hive_menu")
 
 
 _classes = (HiveNodeTree, BlenderHiveNode, BlenderHiveSocket, NODE_OT_AddHiveNode, NODE_OT_GrabHiveNode,
-            HIVE_UL_arguments, NODE_OT_ConfigHiveNode, NODE_OT_SynchroniseTextBlocks, HiveNodeTreeToolsMenu)
+            HIVE_UL_arguments, NODE_OT_ConfigHiveNode, NODE_OT_SynchroniseTextBlocks, HiveNodeTreeToolsMenu,
+            NODE_OT_ShowDocstring)
 
 
 def register():

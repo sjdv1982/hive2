@@ -7,10 +7,20 @@ This method must return a callable or raise an informative HiveConnectError
 from . import Connectable
 
 
-class TriggerSource(Connectable):
+class TriggerSourceBase(Connectable):
+    pass
 
-    def _hive_trigger_source(self, targetfunc):
+
+class TriggerSource(TriggerSourceBase):
+
+    def _hive_trigger_source(self):
         raise NotImplementedError
 
-    def _hive_pretrigger_source(self, targetfunc):
+    def _hive_pretrigger_source(self):
+        raise NotImplementedError
+
+
+class TriggerSourceDerived(TriggerSourceBase):
+
+    def _hive_get_trigger_sarget(self):
         raise NotImplementedError

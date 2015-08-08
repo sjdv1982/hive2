@@ -11,6 +11,7 @@ Type Bee {
   BeeInstanceParameterArray args
 
   Coordinate2D position = Coordinate2D(0, 0)
+  *String doc_string
 }
 
 
@@ -33,4 +34,5 @@ Type Hivemap {
   BeeArray bees = []
   ParameterArray args = []
   BeeConnectionArray connections = []
+  String docstring = ""
 }
