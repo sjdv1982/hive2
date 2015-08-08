@@ -4,6 +4,9 @@ from .manager import get_mode, memoize, register_bee
 from .hive import HiveObject
 
 
+# TODO copy connect code for hives for trigger
+
+
 def build_trigger(source, target, pre):
     # TODO: register connection, or insert a listener function in between
     target_func = target._hive_trigger_target()
@@ -45,13 +48,13 @@ class TriggerBee(HiveBee):
         source, target, pretrigger = self.args
 
         if isinstance(source, HiveObject):
-            source = source._get_trigger_source()
+            source = source._hive_get_trigger_source()
 
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
         if isinstance(target, HiveObject):
-            target = target._get_trigger_target()
+            target = target._hive_get_trigger_target()
 
         if isinstance(target, Bee):    
             target = target.getinstance(hive_object)
