@@ -18,7 +18,7 @@ class Hook(Exportable, Bee):
         # TODO: somehow log the redirection path
         target = self._target
 
-        if target.implements(Exportable):
+        if isinstance(target, Exportable):
             target = target.export()
 
         return target

@@ -137,7 +137,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         return PullIn(target, self.data_type)
 
     def implements(self, cls):
-        if isinstance(self, cls):
+        if Bee.implements(self, cls):
             return True
 
         target = self.target

@@ -39,7 +39,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
         pass
 
 
-class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
+class ModifierBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
 
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
@@ -56,9 +56,6 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return Modifier(func)
 
     def implements(self, cls):
-        if cls is Callable:
-            return True
-
         if HiveBee.implements(self, cls):
             return True
 

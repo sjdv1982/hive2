@@ -148,7 +148,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         return instance
 
     def implements(self, cls):
-        if isinstance(self, cls):
+        if Bee.implements(self, cls):
             return True
 
         target = self.target

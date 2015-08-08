@@ -1,11 +1,12 @@
-from .mixins import Output, Exportable
+from .mixins import Output, Exportable, Bee
 from .manager import ContextFactory, get_building_hive, memoize
 
 
 class HiveOutput(Output, Exportable):
 
     def __init__(self, target):
-        assert isinstance(target, Output), target
+        assert isinstance(target, Bee), target
+        assert target.implements(Output)
         self._hive_object_cls = get_building_hive()
         self._target = target
 

@@ -17,12 +17,12 @@ class Parameter(object):
 
 
 class Connectable(object):
-    #Connectables don't need to be Bees!
+    # Connectables don't need to be Bees!
     pass
 
 
 class Bindable(object):
-    #Connectables don't need to be Bees!
+    # Connectables don't need to be Bees!
     pass
 
 

@@ -53,7 +53,7 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         return self.__class__(func, bound=run_hive)
 
 
-class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
+class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
 
     data_type = ("trigger",)
 
@@ -69,14 +69,8 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource):
         return TriggerFunc(func)
 
     def implements(self, cls):
-        if HiveBee.implements(self, cls):
+        if Bee.implements(self, cls):
             return True
-
-        if cls is Callable:
-            return True
-
-        if cls is Exportable:
-            return False
 
         func, = self.args
         if isinstance(func, Bee):

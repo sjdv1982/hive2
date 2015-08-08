@@ -40,7 +40,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         pass
 
 
-class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
+class TriggerableBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
 
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
@@ -52,12 +52,6 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
             func = func.getinstance(hive_object)
 
         return Triggerable(func)
-
-    def implements(self, cls):
-        if cls is Callable:
-            return True
-
-        return HiveBee.implements(self, cls)
 
 
 triggerable = ContextFactory("hive.triggerable", immediate_mode_cls=Triggerable, build_mode_cls=TriggerableBee)
