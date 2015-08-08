@@ -1,7 +1,3 @@
-Support drone-like use of parent namespace
+* Support drone-like use of parent namespace (plugins exposed to siblings)
 
-Fix distinction between implements and isinstance...
-    Can we tier mixins to make resolvebees delegate to child for export-based checks? E.g when exported, do you support XXX?
-    e.g modifierbee.callable? why is that there - Use implements for post export() / post getinstance?
-
-Fix internal external issues with modifiers. cant access i wrapper
+* Fix internal/external workflow issues with modifiers. (Cant access i wrapper for stateful)
