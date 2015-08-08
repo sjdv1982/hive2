@@ -140,7 +140,6 @@ class ConnectionBee(HiveBee):
 
 
 def connect(source, target):
-
     if isinstance(source, Bee):
         assert source.implements(ConnectSourceBase), source
         assert target.implements(ConnectTargetBase), target
