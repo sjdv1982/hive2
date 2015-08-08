@@ -16,3 +16,19 @@ Support bees with hives:
 
 
 How to fix edit undo?
+
+How to support meta-hives / declarators in GUI?
+
+Use hive.antenna, entry, hook, output to define IO interface
+
+Add ability to inspect built-in node -> if nested hives, recurse to greater and greater depths - open their hivemaps,
+                                or generate hivemap, but don't guarantee utility (maybe read only?)
+
+Default all bees internal where possible?
+
+Support internal hivemaps as bees:
+    If updated show warning - need to update
+        If operator pressed, find connected nodes, remember and disconnect them.
+        Recreate node & attempt to recreate connections
+
+Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()

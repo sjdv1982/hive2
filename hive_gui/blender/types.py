@@ -57,7 +57,15 @@ class BlenderHiveNode(types.Node):
         self.gui_node_manager.gui_on_freed(self)
 
     def draw_buttons(self, context, layout):
-        pass
+        parameters = self.gui_node_manager.gui_get_parameter_values(self)
+
+        for name, data in parameters.items():
+            value = data['value']
+
+            row = layout.row()
+            row.label(name)
+
+            row.label(repr(value))
 
     def draw_buttons_ext(self, context, layout):
         pass

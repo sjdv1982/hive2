@@ -1,6 +1,6 @@
 class Bee(object):
     _hive_object_cls = None
-    _hive_bee_name = None
+    _hive_bee_name = ()
 
     def implements(self, cls):
         return isinstance(self, cls)

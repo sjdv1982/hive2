@@ -550,10 +550,6 @@ class HiveBuilder(object):
 
             setattr(internals, bee_name, bee)
 
-        # Find deleted connections
-        for bee_name in internals:
-            bee = getattr(internals, bee_name)
-
         # TODO: auto-remove connections/triggers for which the source/target has been deleted
         # TODO: sockets and plugins, take options into account for namespaces
 

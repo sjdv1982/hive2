@@ -38,8 +38,18 @@ class NodeManager:
         if params is None:
             params = {}
 
-        hive_cls = import_from_path(import_path)
-        hive = hive_cls(**params)
+        try:
+            hive_cls = import_from_path(import_path)
+
+        except (ImportError, AttributeError):
+            raise ValueError("Invalid import path: {}".format(import_path))
+
+        try:
+            hive = hive_cls(**params)
+
+        except Exception as err:
+            raise RuntimeError("Unable to insantiate Hive cls {}: {}".format(hive_cls, err))
+
         name = get_unique_name(self.nodes, hive_cls.__name__)
 
         node = HiveNode(hive, import_path, name)
@@ -190,7 +200,12 @@ class NodeManager:
 
             params = {p.identifier: eval_value(p.value, p.data_type) for p in bee.args}
 
-            node = self.create_node(import_path, params)
+            try:
+                node = self.create_node(import_path, params)
+
+            except (ValueError, RuntimeError) as err:
+                print("Unable to create node {}: {}".format(bee.identifier, err))
+                continue
 
             try:
                 self.rename_node(node, bee.identifier)
@@ -209,8 +224,14 @@ class NodeManager:
         self.on_pasted_pre_connect(nodes)
 
         for connection in hivemap.connections:
-            from_id = node_id_mapping[connection.from_bee]
-            to_id = node_id_mapping[connection.to_bee]
+            try:
+                from_id = node_id_mapping[connection.from_bee]
+                to_id = node_id_mapping[connection.to_bee]
+
+            except KeyError:
+                print("Unable to create connection {}, {}".format(connection.from_bee,
+                                                                  connection.to_bee))
+                continue
 
             from_node = self.nodes[from_id]
             to_node = self.nodes[to_id]

@@ -69,6 +69,10 @@ class BlenderGUINodeManager(IGUINodeManager):
         node_id = self.node_to_unique_id[node]
         return self.unique_id_to_gui_node[node_id]
 
+    def gui_get_parameter_values(self, gui_node):
+        node = self.unique_id_to_node[gui_node.unique_id]
+        return node.info['args']
+
     def create_connection(self, output, input):
         if self.internal_operation.type == "create_connection":
             self._logger.info("Ignoring create_connection request from node manager")
