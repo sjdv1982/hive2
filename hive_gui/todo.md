@@ -1,5 +1,10 @@
 Control flow: Generic node manager -> Blender node manager
 
+# Debugger
+- [ ] Step by step display of node sockets involved in operation
+- [ ] Preview data (maybe show when types mismatch) - debug stack in corner
+- [ ] Use config options - write to file, socket (port etc)
+
 # Blender GUI
 - [x] Don't bother inspecting UI on loading, just wipe and re-load
 - [x] When adding nodes, operator will setup data first then add GUI representation

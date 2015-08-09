@@ -76,13 +76,13 @@ class BlenderHiveNode(types.Node):
 
 # Custom socket type
 class BlenderHiveSocket(types.NodeSocket):
-    colour = (1.0, 0.4, 0.216, 0.5)
+    default_colour = (1.0, 0.4, 0.216, 0.5)
 
     def draw(self, context, layout, node, text):
         layout.label(text)
 
     def draw_color(self, context, node):
-        return self.__class__.colour
+        return self.node.gui_node_manager.gui_get_socket_colour(self)
 
 
 enum_data_types = [("str", "str", "String"), ("bool", "bool", "Bool"), ("int", "int", "Int"),

@@ -39,6 +39,8 @@ class BlenderGUINodeManager(IGUINodeManager):
         self.unique_id_to_gui_node = {}
         self.unique_id_to_node = {}
 
+        self.socket_colours = {}
+
         self._internal_operations = [default_operation]
         self._updated_nodes = set()
         self._copied_nodes = set()
@@ -122,14 +124,16 @@ class BlenderGUINodeManager(IGUINodeManager):
             socket_colour = get_colour(pin.data_type)
             socket_type = get_socket_type_for_mode(pin.mode)
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            gui_node.inputs.new(socket_cls.bl_idname, pin_name)
+            socket = gui_node.inputs.new(socket_cls.bl_idname, pin_name)
+            socket.colour = socket.default_colour
 
         # Setup outputs
         for pin_name, pin in node.outputs.items():
             socket_colour = get_colour(pin.data_type)
             socket_type = get_socket_type_for_mode(pin.mode)
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            gui_node.outputs.new(socket_cls.bl_idname, pin_name)
+            socket = gui_node.outputs.new(socket_cls.bl_idname, pin_name)
+            socket.colour = socket.default_colour
 
         node_id = repr(gui_node.as_pointer())
         gui_node.unique_id = node_id
@@ -304,6 +308,14 @@ class BlenderGUINodeManager(IGUINodeManager):
                         self._logger.info("Deleting old GUI connection not in HIVE: {}:{}, {}:{}"
                                           .format(node.name, from_pin.name, to_pin.node.name, to_pin.name))
                         self.node_manager.delete_connection(from_pin, to_pin)
+
+    def gui_get_socket_colour(self, socket):
+        try:
+            colour = self.socket_colours[socket.as_pointer()]
+            print(colour, "CUST")
+            return colour
+        except KeyError:
+            return socket.default_colour
 
     def update(self):
         unique_id_to_node = self.unique_id_to_node
