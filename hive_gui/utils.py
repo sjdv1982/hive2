@@ -105,6 +105,7 @@ def builder_from_hivemap(data):
 
             hive.connect(from_output, to_input)
 
+    builder.__doc__ = hivemap.docstring
     return builder
 
 
