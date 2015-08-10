@@ -66,6 +66,13 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
     Lightweight instantiation is supported through caching performed by the HiveObject instance.
     """
 
+    _hive_bee_name = ()
+    _hive_object = None
+    _hive_build_class_instances = None
+    _hive_bee_instances = None
+    _bee_names = None
+    _drones = None
+
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
         self._hive_object = hive_object
@@ -115,7 +122,8 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     private_name = "_" + bee_name
 
                     # Some runtime hive attributes are protected
-                    assert not hasattr(self, private_name), private_name
+                    if not bee.implements(Stateful):
+                        assert not hasattr(self, private_name), private_name
 
                     # TODO: nice exception reporting
                     instance = bee.getinstance(self._hive_object)
@@ -133,6 +141,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     if isinstance(instance, Stateful):
                         continue
 
+                    # Risk that proxies rename instances
                     instance._hive_bee_name = self._hive_bee_name + (bee_name,)
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
@@ -394,8 +403,7 @@ class HiveBuilder(object):
     _declarators = ()
 
     _hive_args = None
-    _hive_hive_kwargs = False
-    _hive_object_classes = {}
+    _hive_object_classes = None
 
     def __new__(cls, *args, **kwargs):
         args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
@@ -409,30 +417,39 @@ class HiveBuilder(object):
             return self
 
     @classmethod
-    def extend(cls, name, builder, builder_cls=None, declarator=None, hive_kwargs=False):
+    def extend(cls, name, builder, builder_cls=None, declarator=None):
         """Extend HiveObject with an additional builder (and builder class)
 
         :param name: name of new hive class
         :param builder: optional function used to build hive
         :param builder_cls: optional Python class to bind to hive
         :param declarator: optional declarator to establish parameters
-        :param hive_kwargs: TODO
         """
         if builder_cls is not None:
             assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class SomeHive(object): ..."
 
+        # Add new builder function
         builders = cls._builders + ((builder, builder_cls),)
 
+        # Add new declarator
         if declarator is not None:
             declarators = cls._declarators + (declarator,)
 
         else:
             declarators = cls._declarators
 
+        # Build docstring
+        docstrings = []
+        for builder, builder_cls in builders:
+            if builder.__doc__ is not None:
+                docstrings.append(builder.__doc__)
+
+        docstring = "\n".join(docstrings)
+
         class_dict = {
+            "__doc__": docstring,
             "_builders": builders,
             "_declarators": declarators,
-            "_hive_hive_kwargs": hive_kwargs,
             "_hive_args": None,
             "_hive_object_classes": {}
         }
@@ -445,7 +462,8 @@ class HiveBuilder(object):
 
         :param kwargs: Parameter keyword arguments
         """
-        hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), {"_hive_parent_class": cls})
+        hive_object_dict = {'__doc__': cls.__doc__, "_hive_parent_class": cls}
+        hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), hive_object_dict)
 
         # Get frozen args
         frozen_args_wrapper = cls._hive_args.freeze(parameter_values)
@@ -554,8 +572,18 @@ class HiveBuilder(object):
         # TODO: sockets and plugins, take options into account for namespaces
 
         # Build runtime hive class
-        run_hive_class_dict = {}
+        run_hive_class_dict = {"__doc__": cls.__doc__}
 
+        # For internal bees
+        for bee_name in internals:
+            bee = getattr(internals, bee_name)
+            private_bee_name = "_{}".format(bee_name)
+
+            # If the bee requires a property interface, build a property
+            if isinstance(bee, Stateful):
+                run_hive_class_dict[private_bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
+
+        # For external bees
         for bee_name in externals:
             bee = getattr(externals, bee_name)
 
@@ -600,8 +628,8 @@ class HiveBuilder(object):
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder, cls=None, declarator=None, hive_kwargs=False):
+def hive(name, builder, cls=None, declarator=None):
     if cls is not None:
         assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
-    return HiveBuilder.extend(name, builder, cls, declarator, hive_kwargs)
+    return HiveBuilder.extend(name, builder, cls, declarator)
