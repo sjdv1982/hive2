@@ -1,2 +1,2 @@
-from .commandline import commandline
+from .commandline import Commandline
 from .keycodes import keycodes

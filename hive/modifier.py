@@ -6,12 +6,16 @@ from .manager import ContextFactory, memoize
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def __init__(self, func, bound=None):
-        assert callable(func) and not isinstance(func, Bee), "Modifier function should be a Python callable"
+        assert callable(func) and not isinstance(func, Bee), \
+            "Modifier function should be a Python callable, got {}".format(func)
         self._func = func
         self._bound = bound
 
     def __call__(self):
         self.trigger()
+
+    def __repr__(self):
+        return "<Modifier: {}>".format(self._func)
 
     def trigger(self):
         # TODO: exception handling hooks
@@ -27,18 +31,21 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
     def _hive_trigger_target(self):
         return self.trigger
     
-    def _hive_connectable_target(self, source):
-        # TODO : nicer error message
-        assert isinstance(source, TriggerSource)
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, TriggerSource):
+            raise TypeError("Connect target {} is not a TriggerSource".format(source))
 
     def _hive_connect_target(self, source):
         pass
 
 
-class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
+class ModifierBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
 
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
+
+    def __repr__(self):
+        return "<Modifier: {}>".format(self.args[0])
 
     @memoize
     def getinstance(self, hive_object):
@@ -49,9 +56,6 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return Modifier(func)
 
     def implements(self, cls):
-        if cls is Callable:
-            return True
-
         if HiveBee.implements(self, cls):
             return True
 
@@ -62,4 +66,4 @@ class ModifierBee(TriggerTarget, ConnectTarget, HiveBee):
         return False
 
 
-modifier = ContextFactory("hive.modifier", immediate_cls=Modifier, deferred_cls=ModifierBee)
+modifier = ContextFactory("hive.modifier", immediate_mode_cls=Modifier, build_mode_cls=ModifierBee)

@@ -1,14 +1,19 @@
-from .mixins import Output, Exportable
-from .manager import ContextFactory, get_building_hive
+from .mixins import Output, Exportable, Bee
+from .manager import ContextFactory, get_building_hive, memoize
 
 
 class HiveOutput(Output, Exportable):
 
     def __init__(self, target):
-        assert isinstance(target, Output), target
-        self._hive_cls = get_building_hive()
+        assert isinstance(target, Bee), target
+        assert target.implements(Output)
+        self._hive_object_cls = get_building_hive()
         self._target = target
 
+    def __repr__(self):
+        return "<Output: {}::{}>".format(self._hive_object_cls, self._target)
+
+    @memoize
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target
@@ -18,4 +23,4 @@ class HiveOutput(Output, Exportable):
         return target
 
 
-output = ContextFactory("hive.output", immediate_cls=None, deferred_cls=HiveOutput)
+output = ContextFactory("hive.output", build_mode_cls=HiveOutput)

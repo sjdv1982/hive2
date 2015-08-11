@@ -6,9 +6,14 @@ class Entry(Exportable, Bee):
     """Exportable proxy for TriggerTarget bees"""
 
     def __init__(self, target):
-        assert isinstance(target, TriggerTarget), target
-        self._hive_cls = get_building_hive()
+        assert isinstance(target, Bee), target
+        assert target.implements(TriggerTarget)
+
+        self._hive_object_cls = get_building_hive()
         self._target = target
+
+    def __repr__(self):
+        return "<Entry {}>".format(self._target)
 
     def export(self):
         # TODO: somehow log the redirection path
@@ -19,4 +24,4 @@ class Entry(Exportable, Bee):
         return target
 
 
-entry = ContextFactory("hive.entry", deferred_cls=Entry)
+entry = ContextFactory("hive.entry", build_mode_cls=Entry)

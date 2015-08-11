@@ -2,12 +2,14 @@ from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callab
     TriggerSource, TriggerTarget, Socket, Plugin
 from .classes import HiveBee, Pusher
 from .manager import get_mode, get_building_hive, memoize
-from .ppin import compare_types
+from .tuple_type import types_match
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
     def __init__(self, target, data_type, bound=None, run_hive=None):
-        assert isinstance(target, Stateful) or target.implements(Callable), target
+        if not bound:
+            assert isinstance(target, Stateful) or target.implements(Callable), target
+
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
@@ -18,7 +20,6 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        self._run_hive = run_hive
         if self._bound:
             return self
 
@@ -26,14 +27,13 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        ret = self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
-        return ret        
+        return self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
 
-    def _hive_trigger_source(self, targetfunc):
-        self._trigger.add_target(targetfunc)
+    def _hive_trigger_source(self, func):
+        self._trigger.add_target(func)
 
-    def _hive_pretrigger_source(self, targetfunc):
-        self._pretrigger.add_target(targetfunc)
+    def _hive_pretrigger_source(self, func):
+        self._pretrigger.add_target(func)
 
 
 class PullOut(PPOutBase):
@@ -44,15 +44,23 @@ class PullOut(PPOutBase):
         self._pretrigger.push()
         if self._stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
+
         else:
             value = self.target()
+
         self._trigger.push()
         return value
 
-    def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna) # TODO : nicer error message
-        assert target.mode == "pull" # TODO : nicer error message
-        compare_types(self, target)
+    def _hive_is_connectable_source(self, target):
+        # TODO what if already connected
+        if not isinstance(target, Antenna):
+            raise TypeError("Target {} does not implement Antenna".format(target))
+
+        if target.mode != "pull":
+            raise TypeError("Target {} is not configured for pull mode".format(target))
+
+        if not types_match(target.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
 
     def _hive_connect_source(self, target):
         pass
@@ -86,16 +94,22 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     def socket(self):
         return self.push
     
-    def _hive_connectable_source(self, target):
-        assert isinstance(target, Antenna), target # TODO : nicer error message
-        assert target.mode == "push" # TODO : nicer error message
-        compare_types(target, self)
+    def _hive_is_connectable_source(self, target):
+        if not isinstance(target, Antenna):
+            raise TypeError("Target {} does not implement Antenna".format(target))
+
+        if target.mode != "push":
+            raise TypeError("Target {} is not configured for push mode".format(target))
+
+        if not types_match(target.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
     
-    def _hive_connect_source(self, target): #Socket
+    def _hive_connect_source(self, target):
         self._targets.append(target.push)
             
-    def _hive_connectable_target(self, source):
-        assert isinstance(source, Plugin), source # TODO : nicer error message
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, Plugin):
+            raise TypeError("Source does not implement Plugin: {}".format(source))
 
     def _hive_connect_target(self, source):
         self._targets.append(source.plugin)
@@ -115,7 +129,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         else:
             self.data_type = ()
 
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self.target = target
 
     @memoize
@@ -134,7 +148,7 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
         return instance
 
     def implements(self, cls):
-        if isinstance(self, cls):
+        if Bee.implements(self, cls):
             return True
 
         target = self.target
@@ -152,23 +166,27 @@ class PullOutBee(PPOutBee):
     mode = "pull"
 
 
-def pushout(target):
+def push_out(target):
     # TODO: nice error message
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 
     if get_mode() == "immediate":
+        assert is_valid_bee or callable(target)
         return PushOut(target)
 
     else:
+        assert is_valid_bee, target
         return PushOutBee(target)
 
 
-def pullout(target):
+def pull_out(target):
     # TODO: nice error message
-    assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
+    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
 
     if get_mode() == "immediate":
+        assert is_valid_bee or callable(target), target
         return PullOut(target)
 
     else:
+        assert is_valid_bee, target
         return PullOutBee(target)

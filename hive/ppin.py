@@ -1,17 +1,18 @@
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
 from .classes import HiveBee, Pusher
 from .manager import get_mode, get_building_hive, memoize
-
-
-def compare_types(b1, b2):
-    for t1, t2 in zip(b1.data_type, b2.data_type):
-        if t1 != t2:
-            raise TypeError((b1.data_type, b2.data_type)) # TODO: nice error message
+from .tuple_type import types_match
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
-    def __init__(self, target, data_type, bound=None, run_hive=None):
-        assert isinstance(target, Stateful) or target.implements(Callable), target
+
+    def __init__(self, target, data_type=None, bound=None, run_hive=None):
+        # Once bound, hive Method object is resolved to a function, not bee
+        assert isinstance(target, Stateful) or isinstance(target, Callable) or callable(target), target
+
+        if isinstance(target, Stateful):
+            data_type = target.data_type
+
         self._stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
@@ -28,11 +29,11 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        self._run_hive = run_hive
         if self._bound:
             return self
 
         target = self.target
+
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
@@ -54,10 +55,15 @@ class PushIn(PPInBase):
 
         self._trigger.push()
 
-    def _hive_connectable_target(self, source):
-        assert isinstance(source, Output) # TODO : nicer error message
-        assert source.mode == "push" # TODO : nicer error message
-        compare_types(source, self)
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, Output):
+            raise TypeError("Source {} does not implement Output".format(source))
+
+        if source.mode != "push":
+            raise TypeError("Source {} is not configured for push mode".format(source))
+
+        if not types_match(source.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match: {}, {}".format(source.data_type, self.data_type))
 
     def _hive_connect_target(self, source):
         pass        
@@ -83,14 +89,19 @@ class PullIn(PPInBase, TriggerTarget):
 
         self._trigger.push()
 
-    def _hive_connectable_target(self, source):
-        assert isinstance(source, Output) # TODO : nicer error message
-        assert source.mode == "pull" # TODO : nicer error message
-        compare_types(source, self)
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, Output):
+            raise TypeError("Source {} does not implement Output".format(source))
+
+        if source.mode != "pull":
+            raise TypeError("Source {} is not configured for pull mode".format(source))
+
+        if not types_match(source.data_type, self.data_type, allow_none=True):
+            raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
         if self._pull_callback is not None:
-            raise TypeError("PullIn cannot accept more than one connection") # TODO: nicer error message, with names
+            raise TypeError("pull_in cannot accept more than one connection: {}".format(source))
 
         self._pull_callback = source.pull
     
@@ -102,14 +113,15 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
     mode = None
 
     def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
-        if isinstance(target, Stateful) or isinstance(target, Antenna):
+        assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nice error message
+
+        if isinstance(target, Stateful):
             self.data_type = target.data_type
 
         else:
-            self.data_type = ()
+            self.data_type = None
 
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self.target = target
 
     @memoize
@@ -125,7 +137,7 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
         return PullIn(target, self.data_type)
 
     def implements(self, cls):
-        if isinstance(self, cls):
+        if Bee.implements(self, cls):
             return True
 
         target = self.target
@@ -143,8 +155,7 @@ class PullInBee(PPInBee, TriggerTarget):
     mode = "pull"
 
 
-def pushin(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
+def push_in(target):
     if get_mode() == "immediate":
         return PushIn(target)
 
@@ -152,8 +163,7 @@ def pushin(target):
         return PushInBee(target)
 
 
-def pullin(target):
-    assert isinstance(target, Stateful) or isinstance(target, Antenna) or target.implements(Callable) # TODO: nice error message
+def pull_in(target):
     if get_mode() == "immediate":
         return PullIn(target)
 

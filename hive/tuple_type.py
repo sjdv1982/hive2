@@ -18,7 +18,7 @@ def tuple_type(value):
     return value
 
 
-def types_match(data_type_a, data_type_b):
+def types_match(data_type_a, data_type_b, allow_none=True):
     """Checks that two data type tuples match by comparing their first N elements,
     where N is the length of the shortest data type tuple
     Returns a TypeError otherwise
@@ -26,11 +26,15 @@ def types_match(data_type_a, data_type_b):
     :param data_type_a: tuple type of first item
     :param data_type_b: tuple type of second item
     """
-    assert isinstance(data_type_a, tuple), data_type_a
-    assert isinstance(data_type_b, tuple), data_type_b
+    if data_type_a is None or data_type_b is None:
+        return allow_none
 
-    for type_a, type_b in zip(data_type_a, data_type_b):
-        if type_a != type_b:
-            return False
+    else:
+        assert isinstance(data_type_a, tuple), data_type_a
+        assert isinstance(data_type_b, tuple), data_type_b
+
+        for type_a, type_b in zip(data_type_a, data_type_b):
+            if type_a != type_b:
+                return False
 
     return True

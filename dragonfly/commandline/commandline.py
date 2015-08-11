@@ -51,7 +51,7 @@ def build_commandline(cls, i, ex, args):
     i.stop = h.triggerable(cls.stop)
     i.flush = h.triggerable(cls.flush)
     prop_command = h.property(cls,"command", "str")
-    i.push_command = h.pushout(prop_command)
+    i.push_command = h.push_out(prop_command)
     
     ex.prop_command = prop_command
     ex.command = h.output(i.push_command)
@@ -61,4 +61,4 @@ def build_commandline(cls, i, ex, args):
     ex.stop = h.entry(i.stop)
     ex.listen = h.socket(cls.add_listener)
     
-commandline = h.hive("commandline", build_commandline, commandlineclass)
+Commandline = h.hive("commandline", build_commandline, commandlineclass)

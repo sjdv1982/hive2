@@ -1,7 +1,6 @@
-from .mixins import TriggerSource, TriggerTarget, Bee, Bindable
+from .mixins import TriggerSourceBase, TriggerTargetBase, Bee, Bindable, TriggerTargetDerived, TriggerSourceDerived
 from .classes import HiveBee
 from .manager import get_mode, memoize, register_bee
-from .hive import HiveObject
 
 
 def build_trigger(source, target, pre):
@@ -44,14 +43,14 @@ class TriggerBee(HiveBee):
     def getinstance(self, hive_object):
         source, target, pretrigger = self.args
 
-        if isinstance(source, HiveObject):
-            source = source._get_trigger_source()
+        if isinstance(source, TriggerTargetDerived):
+            source = source._hive_get_trigger_source()
 
         if isinstance(source, Bee):
             source = source.getinstance(hive_object)
 
-        if isinstance(target, HiveObject):
-            target = target._get_trigger_target()
+        if isinstance(target, TriggerTargetDerived):
+            target = target._hive_get_trigger_target()
 
         if isinstance(target, Bee):    
             target = target.getinstance(hive_object)
@@ -63,23 +62,19 @@ class TriggerBee(HiveBee):
             return Trigger(source, target, pretrigger)
 
 
-def _trigger(source, target, pretrigger):
+def trigger(source, target, pretrigger=False):
     if isinstance(source, Bee):
-        assert source.implements(TriggerSource), source
-        assert target.implements(TriggerTarget), target
+        assert source.implements(TriggerSourceBase), source
+        assert target.implements(TriggerTargetBase), target
 
     else:
-        assert isinstance(source, TriggerSource), source
-        assert isinstance(target, TriggerTarget), target
+        assert isinstance(source, TriggerSourceBase), source
+        assert isinstance(target, TriggerTargetBase), target
 
     if get_mode() == "immediate":
-        build_trigger(source, target,pretrigger)
+        build_trigger(source, target, pretrigger)
 
     else:
         trigger_bee = TriggerBee(source, target, pretrigger)
         register_bee(trigger_bee)
         return trigger_bee
-
-
-def trigger(source, target, pretrigger=False):
-    return _trigger(source, target, pretrigger)

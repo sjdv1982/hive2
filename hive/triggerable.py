@@ -32,15 +32,15 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
     def _hive_trigger_target(self):
         return self.trigger
     
-    def _hive_connectable_target(self, source):
-        # TODO : nicer error message
-        assert isinstance(source, TriggerSource)
+    def _hive_is_connectable_target(self, source):
+        if not isinstance(source, TriggerSource):
+            raise TypeError("Source does not implement TriggerSource: {}".format(source))
 
     def _hive_connect_target(self, source):
         pass
 
 
-class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
+class TriggerableBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
 
     def __init__(self, func):
         HiveBee.__init__(self, None, func)
@@ -53,18 +53,5 @@ class TriggerableBee(TriggerTarget, ConnectTarget, HiveBee):
 
         return Triggerable(func)
 
-    def implements(self, cls):
-        if cls is Callable:
-            return True
 
-        if HiveBee.implements(self, cls):
-            return True
-
-        func, = self.args
-        if isinstance(func, Bee):
-            return func.implements(cls)
-
-        return False
-
-
-triggerable = ContextFactory("hive.triggerable", immediate_cls=Triggerable, deferred_cls=TriggerableBee)
+triggerable = ContextFactory("hive.triggerable", immediate_mode_cls=Triggerable, build_mode_cls=TriggerableBee)

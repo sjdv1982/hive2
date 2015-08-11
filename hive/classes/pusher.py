@@ -4,12 +4,14 @@ class Pusher(object):
         self._parent = parent
         self._targets = []
 
-    def add_target(self, targetfunc, targetname=None):
-        assert callable(targetfunc)
-        assert targetname not in self._targets, (targetname, self._parent)
-        self._targets.append((targetname, targetfunc))
+    def add_target(self, func, name=None):
+        assert callable(func)
+
+        pair = name, func
+        assert pair not in self._targets, (name, self._parent)
+        self._targets.append(pair)
 
     def push(self, *args, **kwargs):
-        for tname, tfunc in self._targets: 
+        for name, func in self._targets:
             # TODO: exception handling
-            tfunc(*args, **kwargs)
+            func(*args, **kwargs)

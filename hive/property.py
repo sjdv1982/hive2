@@ -1,7 +1,7 @@
 from .hive import HiveMethodWrapper
 from .mixins import Stateful, Exportable, Bindable
 from .tuple_type import tuple_type
-from .manager import get_mode, get_building_hive
+from .manager import get_mode, get_building_hive, memoize
 from weakref import WeakSet
 
 
@@ -9,12 +9,12 @@ class Property(Stateful, Bindable, Exportable):
     """Interface to bind class attributes"""
 
     def __init__(self, cls, attr, data_type, start_value):
-        self._hive_cls = get_building_hive()
+        self._hive_object_cls = get_building_hive()
         self._cls = cls
         self._attr = attr
         self._bound = WeakSet()
 
-        self.data_type = data_type
+        self.data_type = tuple_type(data_type)
         self.start_value = start_value
 
     def _hive_stateful_getter(self, run_hive):
@@ -36,10 +36,8 @@ class Property(Stateful, Bindable, Exportable):
     def export(self):
         return self
 
+    @memoize
     def bind(self, run_hive):
-        if run_hive in self._bound:
-            return
-
         self._bound.add(run_hive)
         
         cls = self._cls
@@ -53,8 +51,6 @@ class Property(Stateful, Bindable, Exportable):
 
 
 def property(cls, attr, data_type=None, start_value=None):
-    data_type = tuple_type(data_type)
-
     if get_mode() == "immediate":
         raise ValueError("hive.property cannot be used in immediate mode")
 

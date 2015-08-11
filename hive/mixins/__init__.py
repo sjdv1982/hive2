@@ -1,5 +1,6 @@
 class Bee(object):
-    _hive_cls = None
+    _hive_object_cls = None
+    _hive_bee_name = ()
 
     def implements(self, cls):
         return isinstance(self, cls)
@@ -8,13 +9,20 @@ class Bee(object):
         return self
 
 
+class Parameter(object):
+    _hive_parameter_name = None
+
+    def resolve(self, kwargs):
+        raise NotImplementedError
+
+
 class Connectable(object):
-    #Connectables don't need to be Bees!
+    # Connectables don't need to be Bees!
     pass
 
 
 class Bindable(object):
-    #Connectables don't need to be Bees!
+    # Connectables don't need to be Bees!
     pass
 
 
@@ -37,14 +45,18 @@ class Socket(Bee):
     pass
 
 
-class Antenna(Bee):
+class IO(Bee):
+    pass
+
+
+class Antenna(IO):
     mode = None #must be push or pull
 
     def push(self): #only needs to be defined if mode is "push"
         raise NotImplementedError 
 
 
-class Output(Bee):
+class Output(IO):
     mode = None #must be push or pull
 
     def pull(self): #only needs to be defined if mode is "pull"
@@ -53,5 +65,5 @@ class Output(Bee):
 from .stateful import Stateful
 from .connect_source import ConnectSourceBase, ConnectSource, ConnectSourceDerived
 from .connect_target import ConnectTargetBase, ConnectTarget, ConnectTargetDerived
-from .trigger_source import TriggerSource
-from .trigger_target import TriggerTarget
+from .trigger_source import TriggerSourceBase, TriggerSource, TriggerSourceDerived
+from .trigger_target import TriggerTargetBase, TriggerTarget, TriggerTargetDerived

@@ -4,14 +4,14 @@ Defines policies for plugin donation
 """
 
 
+class PluginPolicyError(Exception):
+    pass
+
+
 class PluginPolicy:
 
     def __init__(self):
         self._counter = 0
-
-    @property
-    def is_satisfied(self):
-        return True
 
     def on_donated(self):
         self._counter += 1
@@ -19,25 +19,28 @@ class PluginPolicy:
     def pre_donated(self):
         pass
 
+    is_satisfied = True
+
 
 class _SinglePluginPolicy(PluginPolicy):
 
     def pre_donated(self):
-        assert not self._counter, "Plugin already donated"
+        if self._counter:
+            raise PluginPolicyError("Plugin already donated")
 
 
 class SingleRequired(_SinglePluginPolicy):
 
     @property
     def is_satisfied(self):
-        return self._counter > 0
+        return self._counter == 1
 
 
 class SingleOptional(_SinglePluginPolicy):
 
     @property
     def is_satisfied(self):
-        return True
+        return 0 <= self._counter <= 1
 
 
 class MultipleRequired(PluginPolicy):
@@ -49,7 +52,5 @@ class MultipleRequired(PluginPolicy):
 
 class MultipleOptional(PluginPolicy):
 
-    @property
-    def is_satisfied(self):
-        return True
+    pass
 
