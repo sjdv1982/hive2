@@ -1,5 +1,6 @@
 from ._compatability import next, is_method
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
+from .connect import connect
 from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize
@@ -58,6 +59,17 @@ class Generic(object):
 
     def __str__(self):
         return str(self.__dict__)
+
+
+class HiveInstantiator(Bindable):
+
+    def __init__(self, hive_object):
+        # TODO, maybe setattr for bee.getinstance(hive_object) in hive ex/i wrappers
+        self._hive_object = hive_object
+
+    @memoize
+    def bind(self, run_hive):
+        return self._hive_object.instantiate()
 
 
 class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
@@ -174,7 +186,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
     def _hive_get_connect_target(self, source):
         target_name = self._hive_object._hive_find_connect_target(source)
         return getattr(self, target_name)
-      
+
     def implements(self, cls):
         return isinstance(self, cls)
 
@@ -199,16 +211,19 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     _hive_ex = None
     _hive_args_frozen = None
 
+    _hive_namespace = None
+    _hive_parent_namespace = None
+
     export_only = False
 
-    def __new__(cls, *args, **kwargs):
-        self = object.__new__(cls)
+    def __init__(self, *args, **kwargs):
+        # HiveObject class for hive that contains this hive (not self.__class__)
         self._hive_object_cls = get_building_hive()
         
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
 
         # Automatically import parent sockets and plugins
-        self.auto_connect = kwargs.pop("auto_connect", False)
+        self._allow_import_namespace = kwargs.pop("import_namespace", False)
 
         # Args to instantiate builder-class instances
         self._hive_builder_args = args #for now
@@ -234,15 +249,102 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                 resolve_bee = ResolveBee(target, self)
                 setattr(self, bee_name, resolve_bee)
 
-        return self
-
     @memoize
     def getinstance(self, parent_hive_object):
+        return HiveInstantiator(self)
+
+    @memoize
+    def bind(self, run_hive):
         return self.instantiate()
-    
+
     def instantiate(self):
         """Return an instance of the runtime Hive for this Hive object."""
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
+
+    def import_namespace(self, parent_namespace):
+        """Import plugins from parent class"""
+        if not self._allow_import_namespace:
+            return
+
+        self._hive_parent_namespace = parent_namespace
+
+        # Self as resolved bee
+        resolved_bee = parent_namespace['resolved_self']
+
+        socket_names = self._hive_namespace['socket_names']
+        plugin_names = self._hive_namespace['plugin_names']
+
+        # Resolve sockets and plugins
+        sockets = self._hive_namespace['sockets'] = {i: getattr(resolved_bee, n) for i, n in socket_names.items()}
+        plugins = self._hive_namespace['plugins'] = {i: getattr(resolved_bee, n) for i, n in plugin_names.items()}
+
+        parent_sockets = parent_namespace['sockets']
+        parent_plugins = parent_namespace['plugins']
+
+        connections = []
+
+        # Connect at this layer
+        for identifier, socket in sockets.items():
+            if not socket.auto_connect:
+                continue
+
+            try:
+                plugin = parent_plugins[identifier]
+            except KeyError:
+                continue
+
+            if not plugin.auto_connect:
+                continue
+
+            connections.append((plugin, socket))
+
+        for identifier, plugin in plugins.items():
+            if not plugin.auto_connect:
+                continue
+
+            try:
+                socket = parent_sockets[identifier]
+            except KeyError:
+                continue
+
+            if not socket.auto_connect:
+                continue
+
+            connections.append((plugin, socket))
+
+        for plugin, socket in connections:
+            if not types_match(socket.data_type, plugin.data_type, allow_none=True):
+                continue
+
+            connect(plugin, socket)
+
+        # Create aggregate namespace
+        all_plugins = parent_plugins.copy()
+        all_plugins.update(plugins)
+
+        all_sockets = parent_sockets.copy()
+        all_sockets.update(sockets)
+
+        for bee_name in self._hive_ex:
+            bee = getattr(self._hive_ex, bee_name)
+
+            if not isinstance(bee, HiveObject):
+                continue
+
+            resolved_child_bee = getattr(resolved_bee, bee_name)
+            imported_namespace = dict(sockets=all_sockets, plugins=all_plugins, resolved_self=resolved_child_bee)
+            bee.import_namespace(imported_namespace)
+
+        for bee_name in self._hive_i:
+            bee = getattr(self._hive_i, bee_name)
+
+            if not isinstance(bee, HiveObject):
+                continue
+
+            resolved_child_bee = getattr(resolved_bee, bee_name)
+            imported_namespace = dict(sockets=all_sockets, plugins=all_plugins, resolved_self=resolved_child_bee)
+
+            bee.import_namespace(imported_namespace)
 
     @staticmethod
     def _hive_can_connect_hive(other):
@@ -392,6 +494,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     def export(self):
         return self
 
+    def __repr__(self):
+        return "[{}({})::{}]".format(self.__class__.__name__, id(self), getattr(self._hive_args_frozen, 'i', None))
+
 
 class HiveBuilder(object):
     """Deferred Builder for constructing Hive classes.
@@ -472,6 +577,8 @@ class HiveBuilder(object):
         hive_object_cls._hive_ex = externals = HiveExportables(hive_object_cls)
         hive_object_cls._hive_args_frozen = frozen_args_wrapper
 
+        is_root = get_building_hive() is None
+
         with hive_mode_as("build"), building_hive_as(hive_object_cls), bee_register_context() as registered_bees:
             # Invoke builder functions to build wrappers
             for builder, builder_cls in cls._builders:
@@ -482,68 +589,48 @@ class HiveBuilder(object):
                 else:
                     builder(internals, externals, frozen_args_wrapper)
 
-            from .connect import connect
+            child_plugins = {}
+            child_sockets = {}
 
-            auto_plugins = set()
-            auto_sockets = set()
+            child_plugin_names = {}
+            child_socket_names = {}
+
+            child_hives = set()
 
             # Find plugins and sockets
             for bee_name in externals:
                 bee = getattr(externals, bee_name)
 
-                if bee.implements(Plugin) and bee.auto_connect:
-                    auto_plugins.add(bee)
+                if bee.implements(Plugin) and bee.identifier is not None:
+                    child_plugins[bee.identifier] = bee
+                    child_plugin_names[bee.identifier] = bee_name
 
-                if bee.implements(Socket) and bee.auto_connect:
-                    auto_sockets.add(bee)
+                elif bee.implements(Socket) and bee.identifier is not None:
+                    child_sockets[bee.identifier] = bee
+                    child_socket_names[bee.identifier] = bee_name
 
-            # Automatically connect plugins and sockets
+                elif isinstance(bee, HiveObject):
+                    child_hives.add(bee)
+
+            # Find internal hives
             for bee_name in internals:
                 bee = getattr(internals, bee_name)
 
-                if not isinstance(bee, HiveObject):
-                    continue
+                if isinstance(bee, HiveObject):
+                    child_hives.add(bee)
 
-                if not bee.auto_connect:
-                    continue
+            # Save namespace of hive
+            hive_object_cls._hive_namespace = dict(plugins=child_plugins,
+                                                   sockets=child_sockets,
+                                                   plugin_names=child_plugin_names,
+                                                   socket_names=child_socket_names)
 
-                for child_bee_name in bee._hive_ex:
-                    child_bee = getattr(bee, child_bee_name)
-
-                    is_socket = child_bee.implements(Socket)
-                    is_plugin = child_bee.implements(Plugin)
-
-                    if not (is_socket or is_plugin):
-                        continue
-
-                    if not child_bee.auto_connect:
-                        continue
-
-                    identifier = child_bee.identifier
-                    if not identifier:
-                        continue
-
-                    data_type = child_bee.data_type
-
-                    if is_socket:
-                        for plugin in auto_plugins:
-                            if plugin.identifier != identifier:
-                                continue
-
-                            if not types_match(data_type, plugin.data_type, allow_none=True):
-                                continue
-
-                            connect(plugin, child_bee)
-
-                    else:
-                        for socket in auto_sockets:
-                            if socket.identifier != identifier:
-                                continue
-
-                            if not types_match(data_type, socket.data_type, allow_none=True):
-                                continue
-
-                            connect(child_bee, socket)
+            # Automatically connect plugins and sockets
+            if is_root:
+                for bee in child_hives:
+                    # Create connections to sockets and plugins
+                    namespace = dict(plugins=child_plugins, sockets=child_sockets, resolved_self=bee)
+                    bee.import_namespace(namespace)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
