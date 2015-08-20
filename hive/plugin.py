@@ -45,10 +45,11 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
         if isinstance(self._func, Bindable):
             func = self._func.bind(run_hive)
-            return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.auto_connect, run_hive)
 
         else:
-            return self
+            func = self._func
+
+        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.auto_connect, run_hive)
 
     @memoize
     def export(self):

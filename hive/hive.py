@@ -61,7 +61,8 @@ class Generic(object):
         return str(self.__dict__)
 
 
-class HiveInstantiator(Bindable):
+class RuntimeHiveInstantiator(Bindable):
+    """Instantiator bee of runtime hives"""
 
     def __init__(self, hive_object):
         # TODO, maybe setattr for bee.getinstance(hive_object) in hive ex/i wrappers
@@ -251,7 +252,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
     @memoize
     def getinstance(self, parent_hive_object):
-        return HiveInstantiator(self)
+        return RuntimeHiveInstantiator(self)
 
     @memoize
     def bind(self, run_hive):
