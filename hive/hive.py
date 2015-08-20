@@ -254,10 +254,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     def getinstance(self, parent_hive_object):
         return RuntimeHiveInstantiator(self)
 
-    @memoize
-    def bind(self, run_hive):
-        return self.instantiate()
-
     def instantiate(self):
         """Return an instance of the runtime Hive for this Hive object."""
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
