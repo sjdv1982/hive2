@@ -26,8 +26,8 @@ class _Mainloop(object):
                 elapsed_time = 0.25
 
             accumulator += elapsed_time
-            while accumulator > (1 / self.max_framerate):
-                accumulator -= 1 / self.max_framerate
+            while accumulator > (1. / self.max_framerate):
+                accumulator -= 1. / self.max_framerate
                 self.tick()
 
     def stop(self):
