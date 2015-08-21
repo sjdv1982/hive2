@@ -4,6 +4,9 @@ from .manager import get_mode, get_building_hive, memoize
 from .tuple_type import types_match
 
 
+import debug
+
+
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
     def __init__(self, target, data_type=None, bound=None, run_hive=None):
@@ -103,7 +106,27 @@ class PullIn(PPInBase, TriggerTarget):
         if self._pull_callback is not None:
             raise TypeError("pull_in cannot accept more than one connection: {}".format(source))
 
-        self._pull_callback = source.pull
+        # If we use debugging
+        if debug.enabled:
+            report = debug.report.report_pull
+            source_name = None
+            target_name = None
+            data_type = self.data_type
+
+            def callback():
+                nonlocal source_name, target_name
+                if source_name is None:
+                    source_name = ".".join(source._hive_bee_name)
+                    target_name = ".".join(self._hive_bee_name)
+
+                value = source.pull()
+                report(source_name, target_name, data_type, value)
+                return value
+
+        else:
+            callback = source.pull
+
+        self._pull_callback = callback
     
     def _hive_trigger_target(self):
         return self.pull

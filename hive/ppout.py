@@ -5,6 +5,9 @@ from .manager import get_mode, get_building_hive, memoize
 from .tuple_type import types_match
 
 
+import debug
+
+
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
     def __init__(self, target, data_type, bound=None, run_hive=None):
         if not bound:
@@ -111,8 +114,27 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         if not isinstance(source, Plugin):
             raise TypeError("Source does not implement Plugin: {}".format(source))
 
-    def _hive_connect_target(self, source):
-        self._targets.append(source.plugin)
+    def _hive_connect_target(self, target):
+        # If we use debugging
+        if debug.enabled:
+            report = debug.report.report_pull
+            source_name = None
+            target_name = None
+            data_type = self.data_type
+
+            def callback(value):
+                nonlocal source_name, target_name
+                if source_name is None:
+                    source_name = ".".join(self._hive_bee_name)
+                    target_name = ".".join(target._hive_bee_name)
+
+                report(source_name, target_name, data_type, value)
+                target.plugin(value)
+
+        else:
+            callback = target.plugin
+
+        self._targets.append(callback)
             
     def _hive_trigger_target(self):
         return self.push
