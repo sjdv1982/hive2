@@ -52,7 +52,6 @@ def recurse(base_import_path, modules):
 
             for name, value in getmembers(module):
                 if isclass(value) and issubclass(value, hive.HiveBuilder):
-
                     hive_set.add(name)
 
         elif os.path.isdir(file_path):

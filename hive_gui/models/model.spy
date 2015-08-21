@@ -1,6 +1,6 @@
 Type BeeInstanceParameter {
   String identifier
-  String data_type
+  StringArray data_type
   String value
 }
 

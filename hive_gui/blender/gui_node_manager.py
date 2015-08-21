@@ -73,7 +73,7 @@ class BlenderGUINodeManager(IGUINodeManager):
 
     def gui_get_parameter_values(self, gui_node):
         node = self.unique_id_to_node[gui_node.unique_id]
-        return node.info['args']
+        return node.post_init_info
 
     def create_connection(self, output, input):
         if self.internal_operation.type == "create_connection":
@@ -312,7 +312,6 @@ class BlenderGUINodeManager(IGUINodeManager):
     def gui_get_socket_colour(self, socket):
         try:
             colour = self.socket_colours[socket.as_pointer()]
-            print(colour, "CUST")
             return colour
         except KeyError:
             return socket.default_colour

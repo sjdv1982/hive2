@@ -1,4 +1,4 @@
-from .utils import get_ui_info
+from .utils import get_io_info, get_post_init_info
 
 from hive.tuple_type import types_match
 from collections import OrderedDict
@@ -43,14 +43,16 @@ class HiveNode:
         self.hive_class_name = hive._hive_object._hive_parent_class.__name__
         self.hive_path = hive_path
 
-        self.info = get_ui_info(hive)
+        self.io_info = get_io_info(hive)
+        self.post_init_info = get_post_init_info(hive)
+
         self.name = name
 
         self.inputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "input"))
-                                   for name, info in self.info['inputs'].items()])
+                                   for name, info in self.io_info['inputs'].items()])
 
         self.outputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "output"))
-                                    for name, info in self.info['outputs'].items()])
+                                    for name, info in self.io_info['outputs'].items()])
 
         self.position = (0.0, 0.0)
 

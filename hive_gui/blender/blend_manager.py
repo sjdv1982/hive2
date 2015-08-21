@@ -44,11 +44,11 @@ class BlendManager:
             self.init_node_menu(child_dict, sub_menu)
 
     def get_gui_manager_for_node_tree(self, node_tree):
-        return self._gui_node_managers[node_tree.unique_id]
+        return self._gui_node_managers[node_tree.as_pointer()]
 
     def get_gui_manager_for_node(self, gui_node):
         """Find the node tree interface for a given blender node"""
-        for unique_id, interface in self._gui_node_managers.items():
+        for interface in self._gui_node_managers.values():
             node_tree = interface.node_tree
 
             for node in node_tree.nodes.values():
@@ -76,7 +76,7 @@ class BlendManager:
         self._gui_node_managers.clear()
 
     def pre_saved(self):
-        for unique_id, gui_manager in self._gui_node_managers.items():
+        for gui_manager in self._gui_node_managers.values():
             node_tree = gui_manager.node_tree
 
             node_manager = gui_manager.node_manager
@@ -107,13 +107,11 @@ class BlendManager:
 
             except KeyError:
                 # Assign unique ID
-                unique_id = node_tree.unique_id = repr(node_tree.as_pointer())
-
                 gui_node_manager = BlenderGUINodeManager(self, node_tree)
                 node_manager = NodeManager(gui_node_manager)
 
                 gui_node_manager.node_manager = node_manager
-                self._gui_node_managers[unique_id] = gui_node_manager
+                self._gui_node_managers[node_tree.as_pointer()] = gui_node_manager
 
                 self.reload_node_tree_from_source(node_tree)
 

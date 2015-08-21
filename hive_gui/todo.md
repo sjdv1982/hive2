@@ -13,7 +13,7 @@ Control flow: Generic node manager -> Blender node manager
 - [ ] Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()
 
 # General GUI
-[x] Add docstring to builder function when building from hivemap
+- [x] Add docstring to builder function when building from hivemap
 
 * Node Finder
     * Parse all hives (just check if inherits from HiveBuilder)

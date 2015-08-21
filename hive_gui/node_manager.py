@@ -155,8 +155,10 @@ class NodeManager:
 
         for node in nodes:
             # TODO, if bee is not hive
+            # TODO sometimes this isn't a tuple, sometimes is
+            # TODO, fix crash when referencing dead pynodes data
             args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
-                    for name, info in node.info['args'].items()]
+                    for name, info in node.post_init_info.items()]
 
             spyder_bee = model.Bee(node.name, node.hive_path, args, node.position)
             hivemap.bees.append(spyder_bee)

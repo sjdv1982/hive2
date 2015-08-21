@@ -4,9 +4,83 @@ from hive.mixins import *
 from .models import model
 
 from collections import OrderedDict
+from inspect import getargspec
 
 
-def get_ui_info(run_hive, allow_derived=False):
+def infer_type(value):
+    for name, cls in _type_map.items():
+        if isinstance(value, cls):
+            return name
+
+    raise ValueError(value)
+
+
+def get_post_init_info(run_hive):
+    hive_object = run_hive._hive_object
+    hive_cls = hive_object._hive_parent_class
+    frozen_args = hive_object._hive_args_frozen
+
+    info = get_pre_init_info(hive_cls)
+
+    init_dict = OrderedDict()
+
+    for name, data in info['parameters'].items():
+        init_dict[name] = dict(value=getattr(frozen_args, name), data_type=data['data_type'])
+
+    for name, value in zip(info['cls_args'], hive_object._hive_builder_args):
+        init_dict[name] = dict(value=value, data_type=infer_type(value))
+
+    kwarg_values = hive_object._hive_builder_kwargs
+    for name in info['cls_args']:
+        if name in init_dict:
+            continue
+
+        value = kwarg_values[name]
+        init_dict[name] = dict(value=value, data_type=infer_type(value))
+
+    return init_dict
+
+
+def get_pre_init_info(hive_cls):
+    # Build args if not built
+    if hive_cls._hive_args is None:
+        print("Building args wrapper: {}".format(hive_cls))
+        hive_cls._hive_build_args_wrapper()
+
+    # Get parameters
+    parameters = OrderedDict()
+
+    builder_args_wrapper = hive_cls._hive_args
+    for name in builder_args_wrapper:
+        parameter = getattr(builder_args_wrapper, name)
+        parameters[name] = dict(data_type=parameter.data_type,
+                                start_value=parameter.start_value)
+
+    # Get arg spec for first builder
+    builder_args = []
+    arg_defaults = {}
+
+    for builder, cls in hive_cls._builders:
+        if cls is None:
+            continue
+
+        spec = getargspec(cls.__init__)
+        defaults = spec.defaults if spec.defaults else []
+
+        # Ignore self
+        builder_args = spec.args[1:]
+
+        # Populate defaults
+        for arg_name, default_value in zip(reversed(builder_args), reversed(defaults)):
+            arg_defaults[arg_name] = default_value
+
+        break
+
+    cls_args = OrderedDict((k, {'optional': k in arg_defaults, 'default': arg_defaults.get(k)}) for k in builder_args)
+    return dict(parameters=parameters, cls_args=cls_args)
+
+
+def get_io_info(run_hive, allow_derived=False):
     """Get UI info for a runtime hive object"""
     hive_object = run_hive._hive_object
     external_bees = hive_object._hive_ex
@@ -52,19 +126,14 @@ def get_ui_info(run_hive, allow_derived=False):
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
 
-    frozen_args_wrapper = hive_object._hive_args_frozen
-    builder_args_wrapper = hive_object._hive_parent_class._hive_args
-    args = {k: {'value': getattr(frozen_args_wrapper, k),
-                'data_type': getattr(builder_args_wrapper, k).data_type} for k in frozen_args_wrapper}
-
-    return dict(inputs=inputs, outputs=outputs, args=args)
+    return dict(inputs=inputs, outputs=outputs)
 
 
 _type_map = dict(str=str, int=int, float=float, bool=bool)
 
 
 def eval_value(value, data_type):
-    base_type = eval(data_type)[0]
+    base_type = data_type[0]
     return _type_map[base_type](value)
 
 
