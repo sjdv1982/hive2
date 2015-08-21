@@ -14,17 +14,17 @@ class OpCodes:
     push, pull, trigger = range(3)
 
 
-def report_push(source_name, target, data_type, value):
-    stack.append((OpCodes.push, source_name, target, data_type, value))
+def report_push(source_name, target_name, data_type, value):
+    stack.append((OpCodes.push, source_name, target_name, data_type, value))
 
 
-def report_pull(source_name, target, data_type, value):
+def report_pull(source_name, target_name, data_type, value):
     # TODO report pre-pull? Because it will back-track
-    stack.append((OpCodes.pull, source_name, target, data_type, value))
+    stack.append((OpCodes.pull, source_name, target_name, data_type, value))
 
 
-def report_trigger(source_name, target):
-    stack.append((OpCodes.trigger, source_name, target))
+def report_trigger(source_name, target_name):
+    stack.append((OpCodes.trigger, source_name, target_name))
 
 
 def _decode_string(view):
@@ -34,7 +34,7 @@ def _decode_string(view):
 
 def _encode_string(value):
     assert len(value) <= 255
-    return pack("B" + "c" * len(value), len(value), value.encode("utf-8"))
+    return pack("B" + "{}s".format(len(value)), len(value), value.encode("utf-8"))
 
 
 _int_size = calcsize("i")
@@ -53,7 +53,7 @@ def _encode_value(type_info, value, permit_type_inference=False):
             return b'f' + pack("f", value)
 
         if data_type == "string":
-            result = b's' + pack("B" + "{}s".format(len(value)), len(value), value.encode("utf-8"))
+            return b's' + pack("B" + "{}s".format(len(value)), len(value), value.encode("utf-8"))
 
     # For types we don't have info for, use repr for string representation, try eval other side
     else:
@@ -73,6 +73,7 @@ def _encode_value(type_info, value, permit_type_inference=False):
             if type_info:
                 return _encode_value(type_info, value, False)
 
+        # Fallback on repr
         value_str = repr(value)
         return b'x' + _uint8_packer.pack(len(value_str)) + pack("{}s".format(len(value_str)), value_str.encode("utf-8"))
 
