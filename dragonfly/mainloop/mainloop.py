@@ -6,7 +6,7 @@ import hive
 
 class _Mainloop(object):
 
-    def __init__(self, max_framerate):
+    def __init__(self, max_framerate=60):
         self._hive = hive.get_run_hive()
         self.max_framerate = max_framerate
 

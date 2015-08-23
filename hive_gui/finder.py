@@ -1,10 +1,40 @@
 import os
 import hive
 
-from inspect import isclass, getmembers
+from inspect import isclass, getmembers, ismodule
 
 
-def recurse(base_import_path, modules):
+def recurse(module, module_dict, is_root=False):
+    module_name = module.__name__
+    *_, tail_name = module_name.split('.')
+
+    if is_root:
+        module_list = module_dict[module_name] = []
+
+    else:
+        module_list = module_dict[tail_name] = []
+
+    for name, member in getmembers(module):
+        if name.startswith('_'):
+            continue
+
+        if ismodule(member):
+            # Only parse top-level members
+            if not hasattr(member, "__path__"):
+                continue
+
+            child_module_dict = {}
+            module_list.append(child_module_dict)
+
+            recurse(member, child_module_dict)
+
+        else:
+
+            if isclass(member) and issubclass(member, hive.HiveBuilder):
+                module_list.append(name)
+
+
+def _recurse(base_import_path, modules):
     """Recursively find hive names from module path
 
     Write to dict the qualified name of the package, with a set of Hive class names
@@ -51,6 +81,9 @@ def recurse(base_import_path, modules):
                 hive_set = sub_modules[package_name] = set()
 
             for name, value in getmembers(module):
+                if name.startswith('_'):
+                    continue
+
                 if isclass(value) and issubclass(value, hive.HiveBuilder):
                     hive_set.add(name)
 
@@ -65,7 +98,9 @@ def get_bee_names():
 # TODO add import hook / callback / list for injecting additional hives
 
 
-def get_hives():
-    modules = {}
-    recurse("dragonfly", modules)
-    return modules
+def get_hives(*modules):
+    module_dict = {}
+    for module in modules:
+        recurse(module, module_dict, is_root=True)
+
+    return module_dict

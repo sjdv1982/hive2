@@ -9,9 +9,11 @@ from .node_menu_manager import node_menu_manager, HiveNodeMenu
 from ..node_manager import NodeManager
 
 from ..finder import get_hives, recurse
-hives = get_hives()
 
-recurse("test.sca", hives)
+import dragonfly
+import test.sca as test_sca
+
+hives = get_hives(test_sca, dragonfly)
 
 
 class BlendManager:
@@ -21,27 +23,32 @@ class BlendManager:
 
         self._gui_node_managers = {}
 
-        root_menu = node_menu_manager.create_menu("Hives")
-        self.init_node_menu(hives, root_menu)
+        menu = node_menu_manager.create_menu("Hives")
+        self.init_node_menu(hives, menu)
 
         # TODO fix deleting node trees
 
-    def init_node_menu(self, hive_dict, menu):
-        if isinstance(hive_dict, (list, set)):
-            menu.children.append(hive_dict)
-            return
-
-        for name, child_dict in hive_dict.items():
-            if menu.full_path:
-                full_path = menu.full_path + "." + name
+    def init_node_menu(self, hive_dict, parent_menu=None):
+        for name, children in hive_dict.items():
+            if parent_menu.full_path:
+                full_path = parent_menu.full_path + "." + name
 
             else:
                 full_path = name
 
+            # E.g dragonfly / sca
             sub_menu = HiveNodeMenu(name, full_path)
-            menu.children.append(sub_menu)
 
-            self.init_node_menu(child_dict, sub_menu)
+            # Add to parent
+            if parent_menu is not None:
+                parent_menu.children.append(sub_menu)
+
+            for child in children:
+                if isinstance(child, dict):
+                    self.init_node_menu(child, sub_menu)
+
+                else:
+                    sub_menu.children.append(child)
 
     def get_gui_manager_for_node_tree(self, node_tree):
         return self._gui_node_managers[node_tree.as_pointer()]

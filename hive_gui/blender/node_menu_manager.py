@@ -7,6 +7,7 @@ blend_manager = None
 class HiveNodeMenu:
 
     def __init__(self, name, full_path=""):
+
         def draw(menu, context):
             layout = menu.layout
             layout.operator_context = 'INVOKE_DEFAULT'
@@ -16,10 +17,14 @@ class HiveNodeMenu:
                     child.draw(layout)
 
                 else:
-                    for child_name in child:
-                        child_path = full_path + "." + child_name
-                        operator = layout.operator("hive.add_node", text=child_name)
-                        operator.import_path = child_path
+                    if full_path:
+                        child_path = full_path + "." + child
+
+                    else:
+                        child_path = child
+
+                    operator = layout.operator("hive.add_node", text=child)
+                    operator.import_path = child_path
 
         # Create menu class
         menu_cls_dict = dict(draw=draw, bl_idname=repr(id(self)), bl_label=name)

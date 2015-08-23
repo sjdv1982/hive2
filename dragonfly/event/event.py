@@ -40,7 +40,7 @@ class EventListener:
 
             elif mode == "match":
                 if event == pattern:
-                    self.callback(event)
+                    self.callback()
 
             elif mode == "trigger":
                 if match_leader(event, pattern) is not None:
