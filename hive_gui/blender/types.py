@@ -184,7 +184,6 @@ class NODE_OT_ConfigHiveNode(types.Operator):
         for name, info in init_info['cls_args'].items():
             argument = self.arguments.add()
             argument.name = name
-            argument.data_type = 'str'
             argument.value_repr = ''
 
         wm = context.window_manager
