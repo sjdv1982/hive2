@@ -8,7 +8,7 @@ from ..utils import import_from_path, get_pre_init_info
 
 blend_manager = None
 
-LOCATION_DIVISOR = 100
+LOCATION_DIVISOR = 1
 INVALID_NODE_NAME = "<invalid>"
 INVALID_NODE_ID = INVALID_NODE_TREE_ID = "<none>"
 
@@ -44,11 +44,7 @@ class BlenderHiveNode(types.Node):
 
     @property
     def gui_node_manager(self):
-        return blend_manager.get_gui_manager_for_node(self)
-
-    @property
-    def node_tree(self):
-        return self.gui_node_manager.node_tree
+        return blend_manager.get_gui_manager_for_node_tree(self.id_data)
 
     def copy(self, node):
         self.gui_node_manager.gui_on_copied(node, self)
@@ -62,8 +58,8 @@ class BlenderHiveNode(types.Node):
         for name, data in parameters.items():
             value = data['value']
 
-            row = layout.row()
-            row.label(name)
+            row = layout.row(align=True)
+            row.label("{}:".format(name))
 
             row.label(repr(value))
 

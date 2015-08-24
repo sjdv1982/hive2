@@ -48,11 +48,12 @@ class HiveNode:
 
         self.name = name
 
-        self.inputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "input"))
-                                   for name, info in self.io_info['inputs'].items()])
+        self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input")
+                       for name, info in self.io_info['inputs'].items()}
 
-        self.outputs = OrderedDict([(name, NodeIOPin(self, name, info['data_type'], info['mode'], "output"))
-                                    for name, info in self.io_info['outputs'].items()])
+        self.outputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "output")
+                        for name, info in self.io_info['outputs'].items()}
+        self.pin_order = self.io_info['pin_order']
 
         self.position = (0.0, 0.0)
 

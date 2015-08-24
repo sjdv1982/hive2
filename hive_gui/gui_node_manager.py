@@ -16,7 +16,7 @@ class IGUINodeManager:
         raise NotImplementedError
 
     def on_pasted_pre_connect(self, nodes):
-        raise NotImplementedError
+        pass
 
     def set_position(self, node, position):
         raise NotImplementedError

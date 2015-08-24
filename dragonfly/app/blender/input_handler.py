@@ -64,10 +64,10 @@ class InputHandler:
                 continue
 
             if status == is_pressed:
-                event = ("MOUSE", "pressed", key_name)
+                event = ("mouse", "pressed", key_name)
 
             elif status == is_released:
-                event = ("MOUSE", "released", key_name)
+                event = ("mouse", "released", key_name)
 
             else:
                 continue

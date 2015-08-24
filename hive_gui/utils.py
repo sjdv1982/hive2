@@ -85,8 +85,10 @@ def get_io_info(run_hive, allow_derived=False):
     hive_object = run_hive._hive_object
     external_bees = hive_object._hive_ex
 
-    inputs = OrderedDict()
-    outputs = OrderedDict()
+    inputs = {}
+    outputs = {}
+
+    pin_order = []
 
     if allow_derived:
         connect_target_type = ConnectTargetBase
@@ -96,7 +98,7 @@ def get_io_info(run_hive, allow_derived=False):
         connect_target_type = ConnectTarget
         connect_source_type = ConnectSource
 
-    for bee_name in sorted(external_bees):
+    for bee_name in external_bees:
         bee = getattr(external_bees, bee_name)
 
         # Find IO pins
@@ -125,8 +127,9 @@ def get_io_info(run_hive, allow_derived=False):
             mode = "push"
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
+        pin_order.append(bee_name)
 
-    return dict(inputs=inputs, outputs=outputs)
+    return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 
 _type_map = dict(str=str, int=int, float=float, bool=bool)

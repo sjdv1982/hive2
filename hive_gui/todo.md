@@ -38,3 +38,5 @@ Control flow: Generic node manager -> Blender node manager
   * If updated show warning - need to update
   * If operator pressed, find connected nodes, remember and disconnect them.
   * Recreate node & attempt to recreate connections
+
+* Show/hide sockets and plugins?

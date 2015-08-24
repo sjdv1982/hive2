@@ -8,12 +8,13 @@ from .node_menu_manager import node_menu_manager, HiveNodeMenu
 
 from ..node_manager import NodeManager
 
-from ..finder import get_hives, recurse
+from ..finder import get_hives
 
 import dragonfly
 import test.sca as test_sca
+import sparta
 
-hives = get_hives(test_sca, dragonfly)
+hives = get_hives(test_sca, dragonfly, sparta)
 
 
 class BlendManager:

@@ -119,21 +119,23 @@ class BlenderGUINodeManager(IGUINodeManager):
         gui_node = self.node_tree.nodes.new(BlenderHiveNode.bl_idname)
         gui_node.label = name = node.name
 
-        # Setup inputs
-        for pin_name, pin in node.inputs.items():
-            socket_colour = get_colour(pin.data_type)
-            socket_type = get_socket_type_for_mode(pin.mode)
-            socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            socket = gui_node.inputs.new(socket_cls.bl_idname, pin_name)
-            socket.colour = socket.default_colour
+        # Setup inputs and outputs
+        for i, pin_name in enumerate(node.pin_order):
+            try:
+                pin = node.inputs[pin_name]
+                io_collection = gui_node.inputs
 
-        # Setup outputs
-        for pin_name, pin in node.outputs.items():
+            except KeyError:
+                pin = node.outputs[pin_name]
+                io_collection = gui_node.outputs
+
             socket_colour = get_colour(pin.data_type)
             socket_type = get_socket_type_for_mode(pin.mode)
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            socket = gui_node.outputs.new(socket_cls.bl_idname, pin_name)
+            socket = io_collection.new(socket_cls.bl_idname, pin_name)
             socket.colour = socket.default_colour
+            socket.link_limit = 99
+            socket.row = (i + 1)
 
         node_id = repr(gui_node.as_pointer())
         gui_node.unique_id = node_id
@@ -186,7 +188,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             return
 
         gui_node = self.get_gui_node_from_node(node)
-        gui_node.location = position[0] * 100, position[1] * 100
+        gui_node.location = position[0] * LOCATION_DIVISOR, position[1] * LOCATION_DIVISOR
 
     def gui_on_freed(self, gui_node):
         try:
