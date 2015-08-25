@@ -220,9 +220,7 @@ class Node(QGraphicsWidget):
 
         self._label.setText(node.name)
 
-        tooltip = None
-        if tooltip is not None:
-            self.setToolTip(tooltip)
+        self.setToolTip(node.docstring)
 
         self._node = node
         self._view = weakref.ref(view)

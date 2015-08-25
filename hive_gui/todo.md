@@ -12,6 +12,13 @@ Control flow: Generic node manager -> Blender node manager
 - [ ] How to fix edit undo?
 - [ ] Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()
 
+# QTGUI
+- [ ] Make connections deletable
+- [x] Add copy / paste
+- [ ] Check out pos/ scene pos discrepancy
+- [ ] Add edit undo
+- [ ] Add select tools, grab etc
+
 # General GUI
 - [x] Add docstring to builder function when building from hivemap
 
@@ -40,3 +47,8 @@ Control flow: Generic node manager -> Blender node manager
   * Recreate node & attempt to recreate connections
 
 * Show/hide sockets and plugins?
+* Unfold / fold input pull attributes?
+* Metahives - avoid rebuilding entire hive!
+
+# Axioms
+  * Node pins aren't renameable

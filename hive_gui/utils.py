@@ -104,6 +104,10 @@ def get_io_info(run_hive, allow_derived=False):
         # Find IO pins
         exported_bee = bee.export()
 
+        # Skip plugins and sockets
+        if isinstance(exported_bee, (Plugin, Socket)):
+            continue
+
         if exported_bee.implements(connect_target_type):
             storage_target = inputs
 

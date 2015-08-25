@@ -4,7 +4,7 @@ from hive.tuple_type import types_match
 from collections import OrderedDict
 
 
-class NodeIOPin:
+class NodeIOPin(object):
 
     def __init__(self, node, name, data_type, mode, io_type):
         self.node = node
@@ -36,7 +36,7 @@ class NodeIOPin:
         return "<{} pin {}.{}>".format(self.io_type, self.node.name, self.name)
 
 
-class HiveNode:
+class HiveNode(object):
 
     def __init__(self, hive, hive_path, name):
         self.hive = hive
@@ -47,6 +47,7 @@ class HiveNode:
         self.post_init_info = get_post_init_info(hive)
 
         self.name = name
+        self.docstring = hive.__doc__ or ""
 
         self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input")
                        for name, info in self.io_info['inputs'].items()}

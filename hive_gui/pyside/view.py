@@ -277,10 +277,16 @@ class NodeView(IGUINodeManager, QGraphicsView):
         pass
 
     def _on_copy_key(self):
-        pass
+        gui_nodes = self._get_selected_gui_nodes()
+        nodes = [n.node for n in gui_nodes]
+        self.node_manager.copy(nodes)
 
     def _on_paste_key(self):
-        pass
+        cursor_pos = QCursor.pos()
+        scene_pos = self.mapToScene(cursor_pos)
+        mouse_pos = scene_pos.x(), scene_pos.y()
+
+        self.node_manager.paste(mouse_pos)
 
     def _on_del_key(self):
         scene = self.scene()
@@ -310,7 +316,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._current_center_point = new_center
 
     def dragMoveEvent(self, event):
-        print("DM")
         event.accept()
 
     def dropEvent(self, event):
@@ -394,7 +399,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
             else:
                 self.zoom -= 0.05
 
-    def _get_selected_nodes(self):
+    def _get_selected_gui_nodes(self):
         from .node import Node
 
         nodes = []

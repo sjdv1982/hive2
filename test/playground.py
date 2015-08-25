@@ -28,9 +28,13 @@ window.hive_tree.load_hives(hives)
 home_page = QWebView()
 
 # Load Help data
-html_file_name = os.path.join(py_gui.__path__[0], "home.html")
+local_dir = py_gui.__path__[0]
+html_file_name = os.path.join(local_dir, "home.html")
+
 with open(html_file_name) as f:
-    home_page.setHtml(f.read())
+    html = f.read().replace("%LOCALDIR%", local_dir)
+
+home_page.setHtml(html)
 
 window.load_home_page(home_page)
 

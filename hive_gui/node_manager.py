@@ -213,7 +213,7 @@ class NodeManager:
                 self.rename_node(node, bee.identifier)
 
             except ValueError:
-                print("Failed to rename")
+                print("Failed to use original name")
                 pass
 
             self.set_position(node, (bee.position.x, bee.position.y))

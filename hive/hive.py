@@ -19,20 +19,6 @@ def generate_bee_name():
 it_generate_bee_name = generate_bee_name()
 
 
-def bee_sort_key(item):
-    b = item[0]
-    k = b
-    if b.startswith("bee"):
-        try:
-            int(b[3:])
-            k = "zzzzzzz" + b
-
-        except ValueError:
-            pass
-
-    return k
-
-
 class HiveMethodWrapper(object):
     """Intercept attribute lookups to return wrapped methods belonging to a given class."""
 
@@ -113,8 +99,8 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             with building_hive_as(hive_object), hive_mode_as("build"):
                 # Add external bees to runtime hive
                 bees = []
-                external_bees = hive_object._hive_ex
 
+                external_bees = hive_object._hive_ex
                 for bee_name in external_bees:
                     bee = getattr(external_bees, bee_name)
                     exported_bee = bee.export()
@@ -129,7 +115,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                 # Add internal bees (that are hives, Callable or Stateful) to runtime hive
                 internal_bees = hive_object._hive_i
-
                 for bee_name in internal_bees:
                     bee = getattr(internal_bees, bee_name)
                     private_name = "_" + bee_name
