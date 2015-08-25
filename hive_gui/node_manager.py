@@ -1,7 +1,7 @@
 from .hive_node import HiveNode
 from .models import model
 from .utils import import_from_path, eval_value
-
+from contextlib import contextmanager
 
 def get_unique_name(existing_names, base_name):
     i = 0
@@ -10,6 +10,59 @@ def get_unique_name(existing_names, base_name):
         i += 1
         if name not in existing_names:
             return name
+
+
+class AtomicOperations:
+
+    def __init__(self, limit=200):
+        self._stack = []
+        self._index = -1
+        self._limit = limit
+
+        self.guard = False
+
+    @contextmanager
+    def guarded(self):
+        self.guard = True
+        yield
+        self.guard = False
+
+    def undo(self):
+        if self._index < 0:
+            return
+
+        last_operation = self._stack[self._index]
+        op, args, reverse_op, reverse_args = last_operation
+
+        with self.guarded():
+            reverse_op(*reverse_args)
+
+        self._index -= 1
+
+    def redo(self):
+        if self._index >= (len(self._stack) - 1):
+            return
+
+        self._index += 1
+
+        operation = self._stack[self._index]
+        op, args, reverse_op, reverse_args = operation
+
+        with self.guarded():
+            op(*args)
+
+    def push_operation(self, op, args, reverse_op, reverse_args):
+        if self.guard:
+            return
+
+        self._stack.append((op, args, reverse_op, reverse_args))
+
+        # Limit length
+        if len(self._stack) > self._limit:
+            self._stack[:] = self._stack[-self._limit:]
+
+        else:
+            self._index += 1
 
 
 class NodeManager:
@@ -21,18 +74,25 @@ class NodeManager:
 
         self._clipboard = None
 
+        self.history = AtomicOperations()
+
     def create_connection(self, output, input):
         output.connect(input)
         input.connect(output)
 
         self.gui_node_manager.create_connection(output, input)
+        self.history.push_operation(self.create_connection, (output, input), self.delete_connection, (output, input))
+
         print("Create connection", output.name, output.node, input.name, input.node)
 
     def delete_connection(self, output, input):
         self.gui_node_manager.delete_connection(output, input)
         print("Delete Connection", output, input)
+
         output.disconnect(input)
         input.disconnect(output)
+
+        self.history.push_operation(self.delete_connection, (output, input), self.create_connection, (output, input))
 
     def create_node(self, import_path, params=None):
         if params is None:
@@ -53,13 +113,20 @@ class NodeManager:
         name = get_unique_name(self.nodes, hive_cls.__name__)
 
         node = HiveNode(hive, import_path, name)
-        self.nodes[name] = node
 
-        self.gui_node_manager.create_node(node)
+        self._add_node(node)
 
         return node
 
+    def _add_node(self, node):
+        print("ADD NODE",node)
+        self.nodes[node.name] = node
+        self.gui_node_manager.create_node(node)
+
+        self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
+
     def delete_node(self, node):
+        print("DELETE NODE")
         # Remove connections
         for input in node.inputs.values():
             for output in input.targets.copy():
@@ -72,23 +139,30 @@ class NodeManager:
         self.gui_node_manager.delete_node(node)
         self.nodes.pop(node.name)
 
+        self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
+
     def rename_node(self, node, name):
         if self.nodes.get(name, node) is not node:
             raise ValueError("Can't rename {} to {}".format(node, name))
 
         # Change key
-        self.nodes.pop(node.name)
+        old_name = node.name
+
+        self.nodes.pop(old_name)
         self.nodes[name] = node
 
         # Update name
         node.name = name
 
         self.gui_node_manager.rename_node(node, name)
+        self.history.push_operation(self.rename_node, (node, name), self.rename_node, (node, old_name))
 
     def set_position(self, node, position):
+        old_position = node.position
         node.position = position
 
         self.gui_node_manager.set_position(node, position)
+        self.history.push_operation(self.set_position, (node, position), self.set_position, (node, old_position))
 
     def on_pasted_pre_connect(self, nodes):
         self.gui_node_manager.on_pasted_pre_connect(nodes)

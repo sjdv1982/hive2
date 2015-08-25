@@ -43,6 +43,7 @@ from ..sockets import get_socket_type_for_mode, get_colour
 
 from collections import OrderedDict
 
+
 class SocketRow(QGraphicsWidget):
 
     def __init__(self, parent_node_ui, pin):
@@ -112,6 +113,8 @@ class SocketRow(QGraphicsWidget):
 
     def _disconnected(self):
         if self._socket.mode == "input":
+            # TODO
+            pass
             if self._socket._connections:
                 self._socket._connections[0].on_deleted()
 
@@ -225,7 +228,6 @@ class Node(QGraphicsWidget):
         self._node = node
         self._view = weakref.ref(view)
 
-        self._lastPos = self.scenePos()
         self._name = node.name
 
         self._build(node)
@@ -294,19 +296,6 @@ class Node(QGraphicsWidget):
         else:
             self._shapePen.setStyle(Qt.NoPen)
 
-            # nodes = []
-            # selected_items = self.scene().selectedItems()
-            # for item in selected_items:
-            #     if isinstance(item, NodeUi):
-            #         nodes.append(item)
-            #
-            # canvas = self.scene()._hqt
-            # if canvas:
-            #     if not nodes:
-            #         canvas().gui_deselects()
-            #     else:
-            #         canvas().gui_selects(nodes)
-
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
             self.onSelected()
@@ -339,16 +328,22 @@ class Node(QGraphicsWidget):
 
         QGraphicsWidget.setPos(self, point)
 
+        # On moved
         for socket_row in self._socket_rows.values():
             socket_row.socket.update_connection_positions()
 
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            drag_position = self.pos()
+            position = drag_position.x(), drag_position.y()
+            self.view.gui_on_moved(self, position)
+
         QGraphicsWidget.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        drag_position = event.scenePos()
-        position = drag_position.x(), drag_position.y()
-        self.view.gui_on_moved(self, position)
+        # On moved
+        for socket_row in self._socket_rows.values():
+            socket_row.socket.update_connection_positions()
 
         QGraphicsWidget.mouseMoveEvent(self, event)
 

@@ -54,7 +54,8 @@ def get_pre_init_info(hive_cls):
     for name in builder_args_wrapper:
         parameter = getattr(builder_args_wrapper, name)
         parameters[name] = dict(data_type=parameter.data_type,
-                                start_value=parameter.start_value)
+                                start_value=parameter.start_value,
+                                options=parameter.options)
 
     # Get arg spec for first builder
     builder_args = []

@@ -59,22 +59,21 @@ class Connection(QtGui.QGraphicsItem):
 
         self._color = start_socket.colorRef()
         self._pen = QtGui.QPen(self._color)
-        self._isTempConnection = False
+        self._is_temp_connection = False
         self._path = QtGui.QPainterPath()
         self._key_points = []
 
         self.set_start_socket(start_socket)
-        self.set_end_socket(end_socket)
 
         if end_socket is None:
             # creating a dummy endHook for temporary connection dragging, 
             #  the "input" and shape/style parameters have no effect
             end_mode = "output" if start_socket.is_input else "input"
-            dummy = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, self._active_style, parent_item=self)
-            self.set_end_socket(dummy)
-            self.end_socket.boundingRect().setSize(QtCore.QSizeF(2.0, 2.0))
-            self._isTempConnection = True
+            end_socket = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, self._active_style, parent_item=self)
+            end_socket.boundingRect().setSize(QtCore.QSizeF(2.0, 2.0))
+            self._is_temp_connection = True
 
+        self.set_end_socket(end_socket)
         self.update_start_pos()
 
         self.setZValue(-1.0)
@@ -188,27 +187,25 @@ class Connection(QtGui.QGraphicsItem):
 
     def set_start_socket(self, socket):
         if self.start_socket:
-            self.start_socket.removeConnection(self)
-            self.start_socket.parentAttributeUi().parentNodeUi().update()
+            self.start_socket.remove_connection(self)
 
         self._start_socket = None
         self._active_style = "dot"
 
         if socket is not None:
             self._start_socket = weakref.ref(socket)
-            #socket.add_connection(self)
+            socket.add_connection(self)
             self._active_style = socket._style
 
     def set_end_socket(self, socket):
         if self.end_socket:
-            self.end_socket.removeConnection(self)
-            self.end_socket.parentAttributeUi().parentNodeUi().update()
+            self.end_socket.remove_connection(self)
 
         self._end_socket = None
 
         if socket is not None:
-            #socket.addConnection(self)
             self._end_socket = weakref.ref(socket)
+            socket.add_connection(self)
 
     def find_closest_socket(self):
         closest_socket = None
@@ -247,16 +244,7 @@ class Connection(QtGui.QGraphicsItem):
         spread = 60.0 / 180.0 * pi
 
         # Find connection index
-        connections = self.start_socket.connections
-
-        for index, connection in enumerate(connections.values()):
-            if connection is self:
-                break
-
-        else:
-            index = 0
-
-        number_connections = len(connections)
+        index, number_connections = self.start_socket.get_index_info(self)
 
         dev = (index - number_connections / 2.0 + 0.5) * min(spread, pi / (number_connections + 2))
         tx = tangent_length * cos(dev)

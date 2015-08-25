@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Hive Node Editor")
 
         menu_bar = self.menuBar()
+
         self.new_action = QAction("&New", menu_bar,
                         shortcut=QKeySequence.New,
                         statusTip="Create a new file", triggered=self.add_node_view)
@@ -45,12 +46,47 @@ class MainWindow(QMainWindow):
                         shortcut=QKeySequence.SaveAs,
                         statusTip="Save as a new file", triggered=self.save_as_file)
 
-        file_menu = menu_bar.addMenu("&File")
+        self.file_menu = QMenu("&File")
 
-        file_menu.addAction(self.new_action)
-        file_menu.addAction(self.load_action)
-        file_menu.addAction(self.save_action)
-        file_menu.addAction(self.save_as_action)
+        self.file_menu.addAction(self.new_action)
+        self.file_menu.addAction(self.load_action)
+        self.file_menu.addAction(self.save_action)
+        self.file_menu.addAction(self.save_as_action)
+
+        self.select_all_action = QAction("Select &All", menu_bar,
+                                   shortcut=QKeySequence.SelectAll,
+                                   statusTip="Select all nodes", triggered=self.select_all_operation)
+
+        self.undo_action = QAction("&Undo", menu_bar,
+                                   shortcut=QKeySequence.Undo,
+                                   statusTip="Undo last operation", triggered=self.undo_operation)
+
+        self.redo_action = QAction("&Redo", menu_bar,
+                                   shortcut=QKeySequence.Redo,
+                                   statusTip="Redo last operation", triggered=self.redo_operation)
+
+        self.copy_action = QAction("&Copy", menu_bar,
+                                   shortcut=QKeySequence.Copy,
+                                   statusTip="Copy selected nodes", triggered=self.copy_operation)
+
+        self.cut_action = QAction("Cu&t", menu_bar,
+                                   shortcut=QKeySequence.Cut,
+                                   statusTip="Cut selected nodes", triggered=self.cut_operation)
+
+        self.paste_action = QAction("&Paste", menu_bar,
+                                   shortcut=QKeySequence.Paste,
+                                   statusTip="Paste selected nodes", triggered=self.paste_operation)
+
+        self.edit_menu = QMenu("&Edit")
+
+        self.edit_menu.addAction(self.select_all_action)
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(self.undo_action)
+        self.edit_menu.addAction(self.redo_action)
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(self.cut_action)
+        self.edit_menu.addAction(self.copy_action)
+        self.edit_menu.addAction(self.paste_action)
 
         self.save_as_action.setVisible(False)
 
@@ -75,6 +111,30 @@ class MainWindow(QMainWindow):
         self.docstring_window.setWidget(self.docstring_editor)
 
         self.home_page = None
+
+    def select_all_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.select_all()
+
+    def undo_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.undo()
+
+    def redo_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.redo()
+
+    def copy_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.copy()
+
+    def cut_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.cut()
+
+    def paste_operation(self):
+        view = self.tab_widget.currentWidget()
+        view.paste()
 
     def load_home_page(self, home_page):
         self.tab_widget.addTab(home_page, "Home", closeable=False)
@@ -117,15 +177,25 @@ class MainWindow(QMainWindow):
         show_save = False
         show_save_as = False
         show_docstring = False
+        show_edit = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
             show_save = widget.file_name is not None
             show_docstring = True
+            show_edit = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
         self.docstring_window.setVisible(show_docstring)
+
+        menu_bar = self.menuBar()
+        menu_bar.clear()
+
+        menu_bar.addMenu(self.file_menu)
+
+        if show_edit:
+            menu_bar.addMenu(self.edit_menu)
 
     def inform_view_of_dropped_worker(self, path):
         view = self.tab_widget.currentWidget()
@@ -164,13 +234,10 @@ class MainWindow(QMainWindow):
 
         view.docstring = self.docstring_editor.toPlainText()
 
-        # Before we attempt to save
-        was_untitled = view.is_untitled
-
         view.save(file_name=file_name)
 
         # Newly saved
-        if was_untitled:
+        if file_name is not None:
             # Rename tab
             name = os.path.basename(file_name)
             index = self.tab_widget.currentIndex()

@@ -1,10 +1,10 @@
 class IGUINodeManager:
 
     def create_connection(self, output, input):
-        pass
+        raise NotImplementedError
 
     def delete_connection(self, output, input):
-        pass
+        raise NotImplementedError
 
     def create_node(self, node):
         raise NotImplementedError

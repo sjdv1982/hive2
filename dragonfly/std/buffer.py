@@ -4,7 +4,7 @@ import hive
 def declare_buffer(args):
     args.data_type = hive.parameter("str", "int")
     args.start_value = hive.parameter("int", 0)
-    args.mode = hive.parameter("str", "push")
+    args.mode = hive.parameter("str", "push", options={'push', 'pull'})
 
 
 def build_buffer(i, ex, args):
@@ -29,9 +29,6 @@ def build_buffer(i, ex, args):
 
         i.trigger = hive.triggerable(i.input)
         ex.trigger = hive.entry(i.trigger)
-
-    else:
-        raise ValueError("Buffer mode must be pull or push, not '{}'".format(args.mode))
 
 
 Buffer = hive.hive("Buffer", build_buffer, declarator=declare_buffer)

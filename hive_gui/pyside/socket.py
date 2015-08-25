@@ -75,7 +75,7 @@ class Socket(QtGui.QGraphicsItem):
         self.setAcceptsHoverEvents(True)
 
         self._dragging_connection = None
-        self.connections = weakref.WeakKeyDictionary()
+        self._connections = []
 
     @property
     def mode(self):
@@ -109,6 +109,24 @@ class Socket(QtGui.QGraphicsItem):
         else:
             self._pen.setStyle(QtCore.Qt.NoPen)
 
+    def add_connection(self, connection):
+        self._connections.append(connection)
+
+    def remove_connection(self, connection):
+        self._connections.remove(connection)
+
+    def find_connection(self, socket):
+        for connection in self._connections:
+            if connection.end_socket is socket:
+                return connection
+
+            if connection.start_socket is socket:
+                return connection
+
+    def get_index_info(self, connection):
+        index = self._connections.index(connection)
+        return index, len(self._connections)
+
     def _tabKey(self):
         pass
 
@@ -118,20 +136,23 @@ class Socket(QtGui.QGraphicsItem):
     def _deleteKey(self):
         pass
 
-    def _plusKey(self):
+    def _on_plus_key(self):
+        for connection in self._connections:
+            print("PLUS")
+            connection.set_selected(True)
         pass
 
-    def _minusKey(self):
+    def _on_minus_key(self):
         pass
 
     def _numKey(self, num):
         pass
 
     def hoverEnterEvent(self, event):
-        pass
+        self.scene().focused_socket = self
 
     def hoverLeaveEvent(self, event):
-        pass
+        self.scene().focused_socket = None
 
     def setMixedColor(self, value=True):
         self.mixed_color = value
@@ -163,44 +184,48 @@ class Socket(QtGui.QGraphicsItem):
         from .connection import Connection
 
         if self.is_output:
-            self._dragging_connection = Connection(self)
-            self._dragging_connection.setActive(False)
-            self._dragging_connection.show()
+            connection = self._dragging_connection = Connection(self)
+            connection.setActive(False)
+            connection.show()
 
     def mouseMoveEvent(self, event):
         if self.is_output:
-            mouse_pos = self._dragging_connection.mapFromScene(event.scenePos())
+            connection = self._dragging_connection
+            mouse_pos = connection.mapFromScene(event.scenePos())
 
-            start_socket = self._dragging_connection.start_socket
+            start_socket = connection.start_socket
 
-            end_socket = self._dragging_connection.end_socket
+            end_socket = connection.end_socket
             end_socket.setPos(mouse_pos)
 
-            self._dragging_connection.set_color(start_socket.color())
+            connection.set_color(start_socket.color())
             # self._handleHover(self._dragging_connection.endHook())
 
             # end_socket = self._dragging_connection.findClosestHook()
-            self._dragging_connection.setActive(False)
-            self._dragging_connection.update_end_pos()
+            connection.setActive(False)
+            connection.update_end_pos()
 
         # QtGui.QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if self.is_output:
-            end_socket = self._dragging_connection.find_closest_socket()
-            if end_socket is not None:
+            connection = self._dragging_connection
+            target_socket = connection.find_closest_socket()
+
+            if target_socket is not None:
                 node = self.parent_socket_row.parent_node_ui
 
-                start_socket = self._dragging_connection.start_socket
-                node.view.gui_create_connection(start_socket, end_socket)
+                start_socket = connection.start_socket
+                node.view.gui_create_connection(start_socket, target_socket)
 
+            connection.on_deleted()
             self._dragging_connection = None
 
         # QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
 
     def update_connection_positions(self):
         """Update connection positions when nodes are moved"""
-        for connection in self.connections.values():
+        for connection in self._connections:
             if connection.start_socket is self:
                 connection.update_start_pos()
 

@@ -79,33 +79,43 @@ class ConfigureNodeDialogue(QDialog):
         for name, data in init_info['parameters'].items():
             data_type = data['data_type'][0]
             start_value = data['start_value']
+            options = data['options']
 
-            if data_type == "str":
-                widget = QLineEdit()
+            if options is not None:
+                widget = QComboBox()
+                for i, option in enumerate(options):
+                    widget.insertItem(i, str(option), option)
 
-                if start_value:
-                    widget.setPlaceholderText(start_value)
+                def value_getter(widget=widget):
+                    return widget.itemData(widget.currentIndex())
 
-                def value_getter(widget=widget, start_value=start_value):
-                    return widget.text() if widget.isModified() else start_value
+            else:
+                if data_type == "str":
+                    widget = QLineEdit()
 
-            elif data_type == "float":
-                widget = QDoubleSpinBox()
-                widget.setValue(start_value)
+                    if start_value:
+                        widget.setPlaceholderText(start_value)
 
-                value_getter = widget.value
+                    def value_getter(widget=widget, start_value=start_value):
+                        return widget.text() if widget.isModified() else start_value
 
-            elif data_type == "bool":
-                widget = QCheckBox()
-                widget.setTristate(start_value)
+                elif data_type == "float":
+                    widget = QDoubleSpinBox()
+                    widget.setValue(start_value)
 
-                value_getter = widget.is_tristate
+                    value_getter = widget.value
 
-            elif data_type == "int":
-                widget = QSpinBox()
-                widget.setValue(start_value)
+                elif data_type == "bool":
+                    widget = QCheckBox()
+                    widget.setTristate(start_value)
 
-                value_getter = widget.value
+                    value_getter = widget.is_tristate
+
+                elif data_type == "int":
+                    widget = QSpinBox()
+                    widget.setValue(start_value)
+
+                    value_getter = widget.value
 
             layout.addRow(QLabel(name), widget)
 
@@ -126,7 +136,6 @@ class ConfigureNodeDialogue(QDialog):
         QDialog.accept(self)
 
         self.params = {name: getter() for name, getter in self.value_getters.items()}
-        print(self.params)
 
 
 class NodeView(IGUINodeManager, QGraphicsView):
@@ -147,12 +156,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setMouseTracking(True)
 
         QShortcut(QKeySequence("Delete"), self, self._on_del_key)
         QShortcut(QKeySequence("Backspace"), self, self._on_backspace_key)
         QShortcut(QKeySequence("Tab"), self, self._on_tab_key)
-        QShortcut(QKeySequence("Ctrl+C"), self, self._on_copy_key)
-        QShortcut(QKeySequence("Ctrl+V"), self, self._on_paste_key)
         QShortcut(QKeySequence("+"), self, self._on_plus_key)
         QShortcut(QKeySequence("-"), self, self._on_minus_key)
 
@@ -167,6 +175,14 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self.file_name = None
         self.docstring = ""
+
+        self._cut_start_position = None
+        self._slice_path = None
+
+        # Visual slice path
+        self._draw_path_item = None
+
+        self._connections = []
 
     @property
     def is_untitled(self):
@@ -232,12 +248,27 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         from .connection import Connection
         connection = Connection(output_socket, input_socket)
-
-        # Add connection
-        output_socket.connections[input_socket] = connection
-        input_socket.connections[output_socket] = connection
-
         connection.update_path()
+
+        self._connections.append(connection)
+
+    def delete_connection(self, output, input):
+        output_node = output.node
+        output_gui_node = self.node_to_qtnode[output_node]
+
+        input_node = input.node
+        input_gui_node = self.node_to_qtnode[input_node]
+
+        output_socket_row = output_gui_node.get_socket_row(output.name)
+        input_socket_row = input_gui_node.get_socket_row(input.name)
+
+        output_socket = output_socket_row.socket
+        input_socket = input_socket_row.socket
+
+        connection = output_socket.find_connection(input_socket)
+        connection.on_deleted()
+
+        self._connections.remove(connection)
 
     def set_position(self, node, position):
         gui_node = self.node_to_qtnode[node]
@@ -261,6 +292,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
         except (ValueError, TypeError):
             pass
 
+    def gui_delete_connection(self, start_socket, end_socket):
+        start_pin = start_socket.parent_socket_row.pin
+        end_pin = end_socket.parent_socket_row.pin
+        self.node_manager.delete_connection(start_pin, end_pin)
+
     def _on_backspace_key(self):
         self._on_del_key()
 
@@ -270,29 +306,62 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def _on_plus_key(self):
         self.zoom_in()
 
+        focused_socket = self.scene().focused_socket
+        if focused_socket is not None:
+            focused_socket._on_plus_key()
+
     def _on_minus_key(self):
         self.zoom_out()
 
+        focused_socket = self.scene().focused_socket
+        if focused_socket is not None:
+            focused_socket._on_minus_key()
+
     def _on_num_key(self, num):
-        pass
+        if num == 6:
+            self.node_manager.history.redo()
 
-    def _on_copy_key(self):
-        gui_nodes = self._get_selected_gui_nodes()
-        nodes = [n.node for n in gui_nodes]
-        self.node_manager.copy(nodes)
-
-    def _on_paste_key(self):
-        cursor_pos = QCursor.pos()
-        scene_pos = self.mapToScene(cursor_pos)
-        mouse_pos = scene_pos.x(), scene_pos.y()
-
-        self.node_manager.paste(mouse_pos)
+        elif num == 4:
+            self.node_manager.history.undo()
 
     def _on_del_key(self):
         scene = self.scene()
 
         for gui_node in scene.selectedItems():
             self.node_manager.delete_node(gui_node.node)
+
+    def select_all(self):
+        from .node import Node
+        nodes = [item for item in self.scene().items() if isinstance(item, Node)]
+        self.gui_set_selected_nodes(nodes)
+
+    def undo(self):
+        self.node_manager.history.undo()
+
+    def redo(self):
+        self.node_manager.history.redo()
+
+    def cut(self):
+        gui_nodes = self.gui_get_selected_nodes()
+        nodes = [n.node for n in gui_nodes]
+        self.node_manager.copy(nodes)
+
+        # Delete nodes
+        for node in nodes:
+            self.node_manager.delete_node(node)
+
+    def copy(self):
+        gui_nodes = self.gui_get_selected_nodes()
+        nodes = [n.node for n in gui_nodes]
+        self.node_manager.copy(nodes)
+
+    def paste(self):
+        cursor_pos = QCursor.pos()
+        origin = self.mapFromGlobal(cursor_pos)
+        scene_pos = self.mapToScene(origin)
+        mouse_pos = scene_pos.x(), scene_pos.y()
+
+        self.node_manager.paste(mouse_pos)
 
     def setScene(self, new_scene):
         QGraphicsView.setScene(self, new_scene)
@@ -343,11 +412,24 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         event.accept()
 
-    def setSelectedItems(self, items):
+    def gui_set_selected_nodes(self, items):
         self.scene().clearSelection()
 
         for item in items:
-            item.set_selected(True)
+            item.setSelected(True)
+
+    def gui_get_selected_nodes(self):
+        from .node import Node
+
+        nodes = []
+
+        selected_items = self.scene().selectedItems()
+
+        for item in selected_items:
+            if isinstance(item, Node):
+                nodes.append(item)
+
+        return nodes
 
     @property
     def center(self):
@@ -364,7 +446,23 @@ class NodeView(IGUINodeManager, QGraphicsView):
             self._last_pan_point = mouseEvent.pos()
             self.setCursor(Qt.ClosedHandCursor)
             self._panning = True
-            NodeView._panning = True
+
+        elif mouseEvent.modifiers() == Qt.ControlModifier:
+            self._cut_start_position = self.mapToScene(mouseEvent.pos())
+
+            # Create visible path
+            if self._draw_path_item is None:
+                self._draw_path_item = self.scene().addPath(QPainterPath())
+                color = QColor(255, 0, 0)
+                pen = QPen(color)
+                self._draw_path_item.setPen(pen)
+                #
+                # for connection in self._connections:
+                #     scene_translation = connection.start_socket.sceneTransform()
+                #     connection_rect = scene_translation.mapRect(connection._rect)
+                #     self.scene().addRect(connection_rect)
+
+            self._draw_path_item.setVisible(True)
 
         else:
             QGraphicsView.mousePressEvent(self, mouseEvent)
@@ -376,6 +474,20 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             self.center += delta
 
+        # If cutting connections
+        elif self._cut_start_position is not None:
+            start_scene_pos = self._cut_start_position
+            current_scene_pos = self.mapToScene(mouseEvent.pos())
+
+            path = QPainterPath()
+            path.moveTo(start_scene_pos)
+
+            path.lineTo(current_scene_pos)
+            self._slice_path = path
+
+            # Set new visual path
+            self._draw_path_item.setPath(path)
+
         else:
             QGraphicsView.mouseMoveEvent(self, mouseEvent)
 
@@ -385,6 +497,31 @@ class NodeView(IGUINodeManager, QGraphicsView):
             self._last_pan_point = QPoint()
             self._panning = False
             NodeView._panning = False
+
+        # Draw cutting tool
+        elif self._slice_path is not None:
+            path = self._slice_path
+            path_rect = path.boundingRect()
+
+            to_remove = []
+            for connection in self._connections:
+                scene_translation = connection.start_socket.sceneTransform()
+                connection_rect = scene_translation.mapRect(connection._rect)
+
+                if path_rect.intersects(connection_rect):
+                    connection_path = scene_translation.map(connection._path)
+
+                    if connection_path.intersects(path):
+                        to_remove.append(connection)
+
+            for connection in to_remove:
+                self.gui_delete_connection(connection.start_socket, connection.end_socket)
+
+            self._slice_path = None
+            self._cut_start_position = None
+
+            # Hide debug path
+            self._draw_path_item.setVisible(False)
 
         else:
             QGraphicsView.mouseReleaseEvent(self, mouseEvent)
@@ -398,19 +535,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             else:
                 self.zoom -= 0.05
-
-    def _get_selected_gui_nodes(self):
-        from .node import Node
-
-        nodes = []
-
-        selected_items = self.scene().selectedItems()
-
-        for item in selected_items:
-            if isinstance(item, Node):
-                nodes.append(item)
-
-        return nodes
 
     @property
     def zoom(self):
