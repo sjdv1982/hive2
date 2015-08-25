@@ -36,15 +36,100 @@ from PySide.QtGui import *
 
 import weakref
 import functools
+import os
 
-
+from ..node_manager import NodeManager
+from ..utils import import_from_path, get_pre_init_info
 from ..gui_node_manager import IGUINodeManager
 
 
+class ConfigureNodeDialogue(QDialog):
+
+    def __init__(self, parent, init_info):
+        QDialog.__init__(self, parent)
+
+        self.init_info = init_info
+
+        buttons_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        buttons_box.accepted.connect(self.accept)
+        buttons_box.rejected.connect(self.reject)
+
+        self.form_group_box = QGroupBox("Form layout")
+        layout = QFormLayout()
+
+        self.value_getters = {}
+
+        layout.addRow(QLabel("Arguments"))
+        for name, data in init_info['cls_args'].items():
+            widget = QLineEdit()
+
+            default = data['default']
+            widget.setPlaceholderText(repr(default))
+
+            layout.addRow(QLabel(name), widget)
+            self.value_getters[name] = widget.text
+
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addRow(line)
+
+        layout.addRow(QLabel("Parameters"))
+        for name, data in init_info['parameters'].items():
+            data_type = data['data_type'][0]
+            start_value = data['start_value']
+
+            if data_type == "str":
+                widget = QLineEdit()
+
+                if start_value:
+                    widget.setPlaceholderText(start_value)
+
+                def value_getter(widget=widget, start_value=start_value):
+                    return widget.text() if widget.isModified() else start_value
+
+            elif data_type == "float":
+                widget = QDoubleSpinBox()
+                widget.setValue(start_value)
+
+                value_getter = widget.value
+
+            elif data_type == "bool":
+                widget = QCheckBox()
+                widget.setTristate(start_value)
+
+                value_getter = widget.is_tristate
+
+            elif data_type == "int":
+                widget = QSpinBox()
+                widget.setValue(start_value)
+
+                value_getter = widget.value
+
+            layout.addRow(QLabel(name), widget)
+
+            self.value_getters[name] = value_getter
+
+        self.form_group_box.setLayout(layout)
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.form_group_box)
+        main_layout.addWidget(buttons_box)
+
+        self.setLayout(main_layout)
+        self.setWindowTitle("Configure Node")
+
+        self.params = None
+
+    def accept(self):
+        QDialog.accept(self)
+
+        self.params = {name: getter() for name, getter in self.value_getters.items()}
+        print(self.params)
+
+
 class NodeView(IGUINodeManager, QGraphicsView):
-    _lastHoveredItem = None
-    _animSpeed = 50.0
-    _animSteps = 50.0
     _panning = False
 
     def __init__(self):
@@ -78,8 +163,45 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.node_to_qtnode = {}
 
         self.pending_create_path = None
-        self.node_manager = None
+        self.node_manager = NodeManager(self)
+
         self.file_name = None
+        self.docstring = ""
+
+    @property
+    def is_untitled(self):
+        return self.file_name is None
+
+    def save(self, file_name=None):
+        if file_name is None:
+            file_name = self.file_name
+
+            if file_name is None:
+                raise ValueError("Untitled hivemap cannot be saved without filename")
+
+        node_manager = self.node_manager
+        node_manager.docstring = self.docstring
+
+        data = node_manager.export()
+        with open(file_name, "w") as f:
+            f.write(data)
+
+        self.file_name = file_name
+
+    def load(self, file_name=None):
+        if file_name is None:
+            file_name = self.file_name
+
+            if file_name is None:
+                raise ValueError("Untitled hivemap cannot be loaded without filename")
+
+        with open(file_name, 'r') as f:
+            data = f.read()
+
+        self.node_manager.load(data)
+        self.docstring = self.node_manager.docstring
+
+        self.file_name = file_name
 
     def create_node(self, node):
         from .node import Node
@@ -193,9 +315,27 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
     def dropEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+        x, y = scene_pos.x(), scene_pos.y()
 
-        node = self.node_manager.create_node(self.pending_create_path)
-        self.node_manager.set_position(node, (scene_pos.x(), scene_pos.y()))
+        import_path = self.pending_create_path
+
+        hive_cls = import_from_path(import_path)
+        init_info = get_pre_init_info(hive_cls)
+
+        # Check if needs params
+        if not (init_info['parameters'] or init_info['cls_args']):
+            params = None
+
+        else:
+            dialogue = ConfigureNodeDialogue(self, init_info)
+            dialogue.setAttribute(Qt.WA_DeleteOnClose)
+            dialogue.exec()
+
+            params = dialogue.params
+
+        node = self.node_manager.create_node(import_path, params=params)
+        self.node_manager.set_position(node, (x, y))
+
         event.accept()
 
     def setSelectedItems(self, items):

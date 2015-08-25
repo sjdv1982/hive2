@@ -23,7 +23,7 @@ class HiveParameter(Parameter):
 
         # Validate option
         if self.options is not None and value not in self.options:
-            raise ValueError("{} is not a permitted value".format(repr(value)))
+            raise ValueError("{} is not a permitted value: {}".format(repr(value), self.options))
 
         return value
 

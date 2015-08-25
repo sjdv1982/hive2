@@ -161,38 +161,40 @@ class Socket(QtGui.QGraphicsItem):
         # QtGui.QGraphicsItem.mousePressEvent(self, event)
 
         from .connection import Connection
-        print("PRES")
+
         if self.is_output:
             self._dragging_connection = Connection(self)
             self._dragging_connection.setActive(False)
             self._dragging_connection.show()
 
     def mouseMoveEvent(self, event):
-        mouse_pos = self._dragging_connection.mapFromScene(event.scenePos())
+        if self.is_output:
+            mouse_pos = self._dragging_connection.mapFromScene(event.scenePos())
 
-        start_socket = self._dragging_connection.start_socket
+            start_socket = self._dragging_connection.start_socket
 
-        end_socket = self._dragging_connection.end_socket
-        end_socket.setPos(mouse_pos)
+            end_socket = self._dragging_connection.end_socket
+            end_socket.setPos(mouse_pos)
 
-        self._dragging_connection.set_color(start_socket.color())
-        # self._handleHover(self._dragging_connection.endHook())
+            self._dragging_connection.set_color(start_socket.color())
+            # self._handleHover(self._dragging_connection.endHook())
 
-        # end_socket = self._dragging_connection.findClosestHook()
-        self._dragging_connection.setActive(False)
-        self._dragging_connection.update_end_pos()
+            # end_socket = self._dragging_connection.findClosestHook()
+            self._dragging_connection.setActive(False)
+            self._dragging_connection.update_end_pos()
 
         # QtGui.QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
-        end_socket = self._dragging_connection.find_closest_socket()
-        if end_socket is not None:
-            node = self.parent_socket_row.parent_node_ui
+        if self.is_output:
+            end_socket = self._dragging_connection.find_closest_socket()
+            if end_socket is not None:
+                node = self.parent_socket_row.parent_node_ui
 
-            start_socket = self._dragging_connection.start_socket
-            node.view.gui_create_connection(start_socket, end_socket)
+                start_socket = self._dragging_connection.start_socket
+                node.view.gui_create_connection(start_socket, end_socket)
 
-        self._dragging_connection = None
+            self._dragging_connection = None
 
         # QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
 
