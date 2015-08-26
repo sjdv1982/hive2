@@ -194,6 +194,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         # Tracked connections
         self._connections = []
         self._moved_gui_nodes = set()
+        self._position_busy = False
 
     def on_enter(self):
         self._docstring_window.setWidget(self._docstring_widget)
@@ -296,9 +297,15 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._connections.remove(connection)
 
     def set_node_position(self, node, position):
-        gui_node = self.node_to_qtnode[node]
+        try:
+            gui_node = self.node_to_qtnode[node]
+        except KeyError:
+            print(self.node_to_qtnode, node)
+            raise
 
+        self._position_busy = True
         gui_node.setPos(*position)
+        self._position_busy = False
 
     def set_node_name(self, node, name):
         gui_node = self.node_to_qtnode[node]
@@ -327,6 +334,10 @@ class NodeView(IGUINodeManager, QGraphicsView):
         socket_row.socket.setVisible(not folded)
 
     def gui_on_moved(self, gui_node):
+        # Don't respond to node_manager set_node_position movements
+        if self._position_busy:
+            return
+
         self._moved_gui_nodes.add(gui_node)
 
     def gui_finished_move(self):
@@ -424,11 +435,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def cut(self):
         gui_nodes = self.gui_get_selected_nodes()
         nodes = [n.node for n in gui_nodes]
-        self.node_manager.copy(nodes)
-
-        # Delete nodes
-        for node in nodes:
-            self.node_manager.delete_node(node)
+        self.node_manager.cut(nodes)
 
     def copy(self):
         gui_nodes = self.gui_get_selected_nodes()

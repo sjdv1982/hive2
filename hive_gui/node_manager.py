@@ -1,7 +1,9 @@
 from .hive_node import HiveNode
 from .models import model
 from .utils import import_from_path, eval_value
+
 from contextlib import contextmanager
+from collections import deque
 
 
 def get_unique_name(existing_names, base_name):
@@ -13,57 +15,129 @@ def get_unique_name(existing_names, base_name):
             return name
 
 
-class AtomicOperations:
+class History:
 
-    def __init__(self, limit=200):
-        self._stack = []
-        self._index = -1
-        self._limit = limit
-
-        self.guard = False
+    def __init__(self):
+        self._history = AtomicOperationHistory()
+        self._guard = False
 
     @contextmanager
     def guarded(self):
-        self.guard = True
+        self._guard = True
         yield
-        self.guard = False
+        self._guard = False
 
     def undo(self):
-        if self._index < 0:
+        with self.guarded():
+            self._history.undo()
+
+    def redo(self):
+        with self.guarded():
+            self._history.redo()
+
+    @contextmanager
+    def composite_operation(self, name):
+        history = AtomicOperationHistory(name=name)
+        self._history, old_history = history, self._history
+        yield
+        self._history = old_history
+
+        old_history.push_history(history)
+
+    def push_operation(self, *args, **kwargs):
+        if self._guard:
             return
 
-        last_operation = self._stack[self._index]
-        op, args, reverse_op, reverse_args = last_operation
+        self._history.push_operation(*args, **kwargs)
 
-        with self.guarded():
-            reverse_op(*reverse_args)
+
+class AtomicOperationHistory:
+
+    def __init__(self, limit=200, name="<main>"):
+        self._operations = []
+        self._index = -1
+        self._limit = limit
+
+        self.name = name
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def cant_redo(self):
+        return self._index >= (len(self._operations) - 1)
+
+    @property
+    def cant_undo(self):
+        return self._index < 0
+
+    def undo(self):
+        if self.cant_undo:
+            return
+
+        last_operation = self._operations[self._index]
+
+        if isinstance(last_operation, self.__class__):
+            while not last_operation.cant_undo:
+                last_operation.undo()
+
+        else:
+            op, args, reverse_op, reverse_args = last_operation
+            try:
+                reverse_op(*reverse_args)
+            except Exception:
+                print(self.name)
+                raise
 
         self._index -= 1
 
     def redo(self):
-        if self._index >= (len(self._stack) - 1):
+        if self.cant_redo:
             return
 
         self._index += 1
 
-        operation = self._stack[self._index]
-        op, args, reverse_op, reverse_args = operation
+        operation = self._operations[self._index]
+        if isinstance(operation, self.__class__):
 
-        with self.guarded():
-            op(*args)
-
-    def push_operation(self, op, args, reverse_op, reverse_args):
-        if self.guard:
-            return
-
-        self._stack.append((op, args, reverse_op, reverse_args))
-
-        # Limit length
-        if len(self._stack) > self._limit:
-            self._stack[:] = self._stack[-self._limit:]
+            while not operation.cant_redo:
+                operation.redo()
 
         else:
-            self._index += 1
+            op, args, reverse_op, reverse_args = operation
+
+            op(*args)
+
+    def push_history(self, history):
+        self._push_operation(history)
+
+    def push_operation(self, op, args, reverse_op, reverse_args):
+        self._push_operation((op, args, reverse_op, reverse_args))
+
+    def _push_operation(self, operation):
+        # If in middle of redo/undo
+        if self._index < len(self._operations) - 1:
+            print("Lost data after", self._index, len(self._operations))
+            self._operations[:] = self._operations[:self._index + 1]
+
+        self._operations.append(operation)
+        self._index += 1
+
+        # Limit length
+        if len(self._operations) > self._limit:
+            shift = len(self._operations) - self._limit
+
+            self._index -= shift
+            if self._index < 0:
+                self._index = 0
+
+            self._operations[:] = self._operations[shift:]
+
+    def __repr__(self):
+        ops = "\n\t".join([str(o) for o in self._operations])
+        ops = "\n\t".join(ops.split("\n"))
+        return "<History ({})>\n\t\t{}".format(self.name, ops)
 
 
 class NodeManager:
@@ -75,7 +149,7 @@ class NodeManager:
 
         self._clipboard = None
 
-        self.history = AtomicOperations()
+        self.history = History()
         self.fold_node_path = "dragonfly.std.Variable"
 
     def create_connection(self, output, input):
@@ -125,22 +199,35 @@ class NodeManager:
         return node
 
     def _add_node(self, node):
-        print("ADD NODE",node)
         self.nodes[node.name] = node
         self.gui_node_manager.create_node(node)
+
+        for pin in node.inputs.values():
+            assert not pin.is_folded, (pin.name, pin.node)
 
         self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
 
     def delete_node(self, node):
         print("DELETE NODE")
         # Remove connections
-        for input in node.inputs.values():
-            for output in input.targets.copy():
-                self.delete_connection(output, input)
+        for input_pin in node.inputs.values():
+            for output_pin in input_pin.targets.copy():
 
-        for output in node.outputs.values():
-            for input in output.targets.copy():
-                self.delete_connection(output, input)
+                # Handle folded nodes
+                is_folded = input_pin.is_folded
+
+                if is_folded:
+                    self.unfold_pin(input_pin)
+
+                self.delete_connection(output_pin, input_pin)
+
+                # Delete folded nodes
+                if is_folded:
+                    self.delete_node(output_pin.node)
+
+        for output_pin in node.outputs.values():
+            for input_pin in output_pin.targets.copy():
+                self.delete_connection(output_pin, input_pin)
 
         self.gui_node_manager.delete_node(node)
         self.nodes.pop(node.name)
@@ -220,6 +307,7 @@ class NodeManager:
             self.create_connection(target_pin, pin)
 
         pin.is_folded = True
+        print("FOLDED", pin.name, pin.node)
 
         self.gui_node_manager.fold_pin(pin)
         self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
@@ -229,6 +317,7 @@ class NodeManager:
         assert pin.targets
 
         pin.is_folded = False
+        print("UNFOLDED", pin.name, pin.node)
 
         self.gui_node_manager.unfold_pin(pin)
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
@@ -243,19 +332,28 @@ class NodeManager:
         return str(hivemap)
 
     def load(self, data):
-        # Clear nodes first
-        for node in list(self.nodes.values()):
-            self.delete_node(node)
+        with self.history.composite_operation("load"):
+            # Clear nodes first
+            for node in list(self.nodes.values()):
+                self.delete_node(node)
 
-        # Validate type
-        if not isinstance(data, str):
-            raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
+            # Validate type
+            if not isinstance(data, str):
+                raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
 
-        # Read hivemap
-        hivemap = model.Hivemap(data)
-        self.docstring = hivemap.docstring
+            # Read hivemap
+            hive_map = model.Hivemap(data)
+            self.docstring = hive_map.docstring
 
-        self._load(hivemap)
+            self._load(hive_map)
+
+    def cut(self, nodes):
+        with self.history.composite_operation("cut"):
+            self.copy(nodes)
+
+            # Delete nodes
+            for node in nodes:
+                self.delete_node(node)
 
     def copy(self, nodes):
         """Copy nodes to clipboard
@@ -269,27 +367,28 @@ class NodeManager:
 
         :param position: position of target center of mass of nodes
         """
-        nodes = self._load(self._clipboard)
+        with self.history.composite_operation("paste"):
+            nodes = self._load(self._clipboard)
 
-        # Find midpoint
-        average_x = 0.0
-        average_y = 0.0
+            # Find midpoint
+            average_x = 0.0
+            average_y = 0.0
 
-        for node in nodes:
-            average_x += node.position[0]
-            average_y += node.position[1]
+            for node in nodes:
+                average_x += node.position[0]
+                average_y += node.position[1]
 
-        average_x /= len(nodes)
-        average_y /= len(nodes)
+            average_x /= len(nodes)
+            average_y /= len(nodes)
 
-        # Displacement to the center
-        offset_x = position[0] - average_x
-        offset_y = position[1] - average_y
+            # Displacement to the center
+            offset_x = position[0] - average_x
+            offset_y = position[1] - average_y
 
-        # Move nodes to mouse position
-        for node in nodes:
-            position = node.position[0] + offset_x, node.position[1] + offset_y
-            self.set_node_position(node, position)
+            # Move nodes to mouse position
+            for node in nodes:
+                position = node.position[0] + offset_x, node.position[1] + offset_y
+                self.set_node_position(node, position)
 
     def _export(self, nodes):
         hivemap = model.Hivemap()
