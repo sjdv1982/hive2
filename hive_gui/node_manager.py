@@ -352,6 +352,7 @@ class NodeManager:
                 print("Unable to create node {}: {}".format(bee.identifier, err))
                 continue
 
+            # Try to use original name
             try:
                 self.set_node_name(node, bee.identifier)
 
@@ -359,6 +360,7 @@ class NodeManager:
                 print("Failed to use original name")
                 pass
 
+            # Set original position
             self.set_node_position(node, (bee.position.x, bee.position.y))
 
             # Map original copied ID to new allocated ID
@@ -367,8 +369,10 @@ class NodeManager:
             nodes.add(node)
             nodes_to_bees[node] = bee
 
+        # Pre connectivity step (Blender hack)
         self.on_pasted_pre_connect(nodes)
 
+        # Recreate connections
         for connection in hivemap.connections:
             try:
                 from_id = id_to_node_name[connection.from_bee]
