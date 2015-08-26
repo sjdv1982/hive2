@@ -211,7 +211,9 @@ class MainWindow(QMainWindow):
 
     def on_dropped_hive_node(self, path):
         view = self.tab_widget.currentWidget()
-        view.pre_drop_hive(path)
+
+        if isinstance(view, NodeView):
+            view.pre_drop_hive(path)
 
     def open_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self.menuBar(), 'Open hivemap', '/home')
