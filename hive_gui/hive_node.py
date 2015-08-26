@@ -18,7 +18,7 @@ class NodeIOPin(object):
 
     def connect(self, other_pin):
         if not types_match(other_pin.data_type, self.data_type, allow_none=True):
-            raise TypeError("Unsupported data types: {}, {}".format(self.data_type, other_pin.data_type))
+            raise TypeError("Incompatible data types: {}, {}".format(self.data_type, other_pin.data_type))
 
         if other_pin.mode != self.mode:
             raise TypeError("Incompatible IO modes: {}, {}".format(self.mode, other_pin.mode))
