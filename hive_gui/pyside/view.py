@@ -183,6 +183,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._draw_path_item = None
 
         self._connections = []
+        self._moved_gui_nodes = set()
 
     @property
     def is_untitled(self):
@@ -279,8 +280,17 @@ class NodeView(IGUINodeManager, QGraphicsView):
         gui_node = self.node_to_qtnode[node]
         gui_node.setName(name)
 
-    def gui_on_moved(self, gui_node, position):
-        self.node_manager.set_position(gui_node.node, position)
+    def gui_on_moved(self, gui_node):
+        self._moved_gui_nodes.add(gui_node)
+
+    def gui_finished_move(self):
+        for gui_node in self._moved_gui_nodes:
+            pos = gui_node.pos()
+            position = pos.x(), pos.y()
+
+            self.node_manager.set_position(gui_node.node, position)
+
+        self._moved_gui_nodes.clear()
 
     def gui_create_connection(self, start_socket, end_socket):
         start_pin = start_socket.parent_socket_row.pin

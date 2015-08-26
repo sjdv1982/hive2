@@ -13,11 +13,11 @@ Control flow: Generic node manager -> Blender node manager
 - [ ] Draw docstring inside nodes using draw_buttons - use RuntimeNode.__doc__? - pass to hive.extend, expose using __doc__ or .help() or .info()
 
 # QTGUI
-- [ ] Make connections deletable
+- [x] Make connections deletable
 - [x] Add copy / paste
-- [ ] Check out pos/ scene pos discrepancy
-- [ ] Add edit undo
-- [ ] Add select tools, grab etc
+- [x] Check out pos/ scene pos discrepancy
+- [x] Add edit undo
+- [x] Add select tools, grab etc
 
 # General GUI
 - [x] Add docstring to builder function when building from hivemap

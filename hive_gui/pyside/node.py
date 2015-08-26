@@ -75,7 +75,7 @@ class SocketRow(QGraphicsWidget):
         # if self._params.label is not None:
             # label = self._params.label
         self._labelText = label
-        self.setValue("")
+        self.set_value("")
         self.setVisible(True)#self._params.visible)
 
     @property
@@ -89,7 +89,7 @@ class SocketRow(QGraphicsWidget):
     def labelColor(self):
         return self._label.brush().color()
 
-    def setValue(self, value):
+    def set_value(self, value):
         text = self._labelText
         if value is not None:
             if False:#self._params.value_on_newline:
@@ -231,6 +231,7 @@ class Node(QGraphicsWidget):
         self._name = node.name
 
         self._build(node)
+        self._busy = False
 
     @property
     def node(self):
@@ -296,12 +297,6 @@ class Node(QGraphicsWidget):
         else:
             self._shapePen.setStyle(Qt.NoPen)
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemSelectedHasChanged:
-            self.onSelected()
-
-        return value
-
     def paint(self, painter, option, widget):
         shape = QPainterPath()
         shape.addRoundedRect(self.rect(), 2, 2)
@@ -328,23 +323,27 @@ class Node(QGraphicsWidget):
 
         QGraphicsWidget.setPos(self, point)
 
-        # On moved
-        for socket_row in self._socket_rows.values():
-            socket_row.socket.update_connection_positions()
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
+            for socket_row in self._socket_rows.values():
+                socket_row.socket.update_connection_positions()
+
+            # Move node
+            if not self._busy:
+                self._busy = True
+                self.view.gui_on_moved(self)
+                self._busy = False
+
+        elif change == QGraphicsItem.ItemSelectedHasChanged:
+            self.onSelected()
+
+        return QGraphicsItem.itemChange(self, change, value)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            drag_position = self.pos()
-            position = drag_position.x(), drag_position.y()
-            self.view.gui_on_moved(self, position)
-
+        self.view.gui_finished_move()
         QGraphicsWidget.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        # On moved
-        for socket_row in self._socket_rows.values():
-            socket_row.socket.update_connection_positions()
-
         QGraphicsWidget.mouseMoveEvent(self, event)
 
     def dragMoveEvent(self, *args, **kwargs):
