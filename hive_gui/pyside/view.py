@@ -527,8 +527,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 color = QColor(255, 0, 0)
                 pen = QPen(color)
                 self._draw_path_item.setPen(pen)
+                self._draw_path_item.setVisible(True)
 
-            self._draw_path_item.setVisible(True)
 
         else:
             QGraphicsView.mousePressEvent(self, mouseEvent)
@@ -587,7 +587,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
             self._cut_start_position = None
 
             # Hide debug path
-            self._draw_path_item.setVisible(False)
+            self._draw_path_item.setPath(QPainterPath())
 
         else:
             QGraphicsView.mouseReleaseEvent(self, mouseEvent)

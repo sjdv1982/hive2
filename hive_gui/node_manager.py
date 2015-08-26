@@ -208,7 +208,6 @@ class NodeManager:
         self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
 
     def delete_node(self, node):
-        print("DELETE NODE")
         # Remove connections
         for input_pin in node.inputs.values():
             for output_pin in input_pin.targets.copy():
