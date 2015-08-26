@@ -529,7 +529,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 self._draw_path_item.setPen(pen)
                 self._draw_path_item.setVisible(True)
 
-
         else:
             QGraphicsView.mousePressEvent(self, mouseEvent)
 

@@ -187,16 +187,19 @@ class MainWindow(QMainWindow):
         show_save_as = False
         show_docstring = False
         show_edit = False
+        show_config = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
             show_save = widget.file_name is not None
             show_docstring = True
             show_edit = True
+            show_config = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
         self.docstring_window.setVisible(show_docstring)
+        self.configuration_window.setVisible(show_config)
 
         menu_bar = self.menuBar()
         menu_bar.clear()
