@@ -12,6 +12,7 @@ class NodeIOPin(object):
         self.data_type = data_type
         self.mode = mode
         self.io_type = io_type
+        self.is_folded = False
 
         self.targets = set()
 
@@ -54,9 +55,11 @@ class HiveNode(object):
 
         self.outputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "output")
                         for name, info in self.io_info['outputs'].items()}
+
         self.pin_order = self.io_info['pin_order']
 
         self.position = (0.0, 0.0)
+        self.folded = False
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

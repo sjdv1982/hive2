@@ -7,7 +7,7 @@ from .tabs import TabViewWidget
 from .view import NodeView
 from .tree import PTree
 from .scene import NodeUiScene
-
+from .configuration import NodeConfigurationPanel
 from ..node_manager import NodeManager
 
 area_classes = {
@@ -99,18 +99,21 @@ class MainWindow(QMainWindow):
         # Left window
         self.selector_window = self.create_subwindow("Hives", "left")
         self.hive_tree = PTree()
-        self.hive_tree.on_selected = self.inform_view_of_dropped_worker
+        self.hive_tree.on_selected = self.on_dropped_hive_node
         self.selector_window.setWidget(self.hive_tree.widget())
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")
         self.docstring_window.setVisible(False)
 
-        # Add text area
-        self.docstring_editor = QTextEdit()
-        self.docstring_window.setWidget(self.docstring_editor)
+        self.configuration_window = self.create_subwindow("Configuration", "right")
+        self.docstring_window.setVisible(False)
 
         self.home_page = None
+
+    def get_current_node_manager(self):
+        view = self.tab_widget.currentWidget()
+        return view.node_manager
 
     def select_all_operation(self):
         view = self.tab_widget.currentWidget()
@@ -140,7 +143,13 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(home_page, "Home", closeable=False)
         self.home_page = home_page
 
-    def on_tab_changed(self, tab_menu):
+    def on_tab_changed(self, tab_menu, previous_index=None):
+        # Exit last open view
+        if previous_index is not None:
+            previous_widget = tab_menu.widget(previous_index)
+            if isinstance(previous_widget, NodeView):
+                previous_widget.on_exit()
+
         # Update UI elements
         self.update_ui_layout()
 
@@ -148,10 +157,10 @@ class MainWindow(QMainWindow):
 
         # Replace docstring
         if isinstance(widget, NodeView):
-            self.docstring_editor.setPlainText(widget.node_manager.docstring)
+            widget.on_enter()
 
     def add_node_view(self, name="<Untitled>"):
-        view = NodeView()
+        view = NodeView(self.configuration_window, self.docstring_window)
 
         index = self.tab_widget.addTab(view, name)
         self.tab_widget.setCurrentIndex(index)
@@ -197,9 +206,9 @@ class MainWindow(QMainWindow):
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
 
-    def inform_view_of_dropped_worker(self, path):
+    def on_dropped_hive_node(self, path):
         view = self.tab_widget.currentWidget()
-        view.pending_create_path = path
+        view.pre_drop_hive(path)
 
     def open_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self.menuBar(), 'Open hivemap', '/home')
@@ -208,9 +217,6 @@ class MainWindow(QMainWindow):
 
         view = self.add_node_view()
         view.load(file_name=file_name)
-
-        # Load docstring
-        self.docstring_editor.setPlainText(view.docstring)
 
         # Rename tab
         name = os.path.basename(file_name)
@@ -231,8 +237,6 @@ class MainWindow(QMainWindow):
     def save_file(self, file_name=None):
         view = self.tab_widget.currentWidget()
         assert isinstance(view, NodeView)
-
-        view.docstring = self.docstring_editor.toPlainText()
 
         view.save(file_name=file_name)
 

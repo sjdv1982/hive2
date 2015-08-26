@@ -21,6 +21,11 @@ Control flow: Generic node manager -> Blender node manager
 
 # General GUI
 - [x] Add docstring to builder function when building from hivemap
+- [ ] Foldable variables (pull in)
+        * If > 1 connection, can't fold
+        * Support hide/show - Infer if connected node is hidden, is folded. (If hide node, notify connections!)
+        * Only cut visible connections
+        * Allow view to populate this in main window? view->set_node_config->... (set options OR set actual form layout) -> More powerful system for config and other things?? window node "context"
 
 * Node Finder
     * Parse all hives (just check if inherits from HiveBuilder)

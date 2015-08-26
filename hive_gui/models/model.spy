@@ -10,8 +10,9 @@ Type Bee {
   String import_path
   BeeInstanceParameterArray args
 
+  #GUI data
   Coordinate2D position = Coordinate2D(0, 0)
-  *String doc_string
+  StringArray folded_pins = []
 }
 
 

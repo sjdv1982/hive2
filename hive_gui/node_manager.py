@@ -3,6 +3,7 @@ from .models import model
 from .utils import import_from_path, eval_value
 from contextlib import contextmanager
 
+
 def get_unique_name(existing_names, base_name):
     i = 0
     while True:
@@ -75,8 +76,13 @@ class NodeManager:
         self._clipboard = None
 
         self.history = AtomicOperations()
+        self.fold_node_path = "dragonfly.std.Variable"
 
     def create_connection(self, output, input):
+        # Check pin isn't folded
+        if input.is_folded:
+            raise ValueError("Cannot connect to a folded pin")
+
         output.connect(input)
         input.connect(output)
 
@@ -141,7 +147,7 @@ class NodeManager:
 
         self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
 
-    def rename_node(self, node, name):
+    def set_node_name(self, node, name):
         if self.nodes.get(name, node) is not node:
             raise ValueError("Can't rename {} to {}".format(node, name))
 
@@ -154,15 +160,78 @@ class NodeManager:
         # Update name
         node.name = name
 
-        self.gui_node_manager.rename_node(node, name)
-        self.history.push_operation(self.rename_node, (node, name), self.rename_node, (node, old_name))
+        self.gui_node_manager.set_node_name(node, name)
+        self.history.push_operation(self.set_node_name, (node, name), self.set_node_name, (node, old_name))
 
-    def set_position(self, node, position):
+    def set_node_position(self, node, position):
         old_position = node.position
         node.position = position
 
-        self.gui_node_manager.set_position(node, position)
-        self.history.push_operation(self.set_position, (node, position), self.set_position, (node, old_position))
+        # Move folded nodes too
+        dx = position[0] - old_position[0]
+        dy = position[1] - old_position[1]
+
+        for pin in node.inputs.values():
+            if pin.is_folded:
+                target_pin = next(iter(pin.targets))
+                other_node = target_pin.node
+                new_position = other_node.position[0] + dx, other_node.position[1] + dy
+                self.set_node_position(other_node, new_position)
+
+        self.gui_node_manager.set_node_position(node, position)
+
+        self.history.push_operation(self.set_node_position, (node, position),
+                                    self.set_node_position, (node, old_position))
+
+    def can_fold_pin(self, pin):
+        if pin.is_folded:
+            return False
+
+        if pin.io_type != "input":
+            return False
+
+        if pin.mode != "pull":
+            return False
+
+        if not pin.targets:
+            return True
+
+        if len(pin.targets) == 1:
+            target_pin = next(iter(pin.targets))
+            target_node = target_pin.node
+
+            # If is not the correct type (variable)
+            if target_node.hive_path != self.fold_node_path:
+                return False
+
+            # This pin is the only connected one
+            if len(target_pin.targets) == 1:
+                return True
+
+        return False
+
+    def fold_pin(self, pin):
+        assert self.can_fold_pin(pin)
+
+        # Create variable
+        if not pin.targets:
+            target_node = self.create_node(self.fold_node_path)
+            target_pin = next(iter(target_node.outputs.values()))
+            self.create_connection(target_pin, pin)
+
+        pin.is_folded = True
+
+        self.gui_node_manager.fold_pin(pin)
+        self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
+
+    def unfold_pin(self, pin):
+        assert pin.is_folded
+        assert pin.targets
+
+        pin.is_folded = False
+
+        self.gui_node_manager.unfold_pin(pin)
+        self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
 
     def on_pasted_pre_connect(self, nodes):
         self.gui_node_manager.on_pasted_pre_connect(nodes)
@@ -220,7 +289,7 @@ class NodeManager:
         # Move nodes to mouse position
         for node in nodes:
             position = node.position[0] + offset_x, node.position[1] + offset_y
-            self.set_position(node, position)
+            self.set_node_position(node, position)
 
     def _export(self, nodes):
         hivemap = model.Hivemap()
@@ -229,12 +298,11 @@ class NodeManager:
 
         for node in nodes:
             # TODO, if bee is not hive
-            # TODO sometimes this isn't a tuple, sometimes is
-            # TODO, fix crash when referencing dead pynodes data
             args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
                     for name, info in node.post_init_info.items()]
+            folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
 
-            spyder_bee = model.Bee(node.name, node.hive_path, args, node.position)
+            spyder_bee = model.Bee(node.name, node.hive_path, args, node.position, folded_pins)
             hivemap.bees.append(spyder_bee)
 
             # Keep track of copied nodes
@@ -268,8 +336,9 @@ class NodeManager:
 
         # Create nodes
         # Mapping from original ID to new ID
-        node_id_mapping = {}
         nodes = set()
+        nodes_to_bees = {}
+        id_to_node_name = {}
 
         for bee in hivemap.bees:
             import_path = bee.import_path
@@ -284,25 +353,26 @@ class NodeManager:
                 continue
 
             try:
-                self.rename_node(node, bee.identifier)
+                self.set_node_name(node, bee.identifier)
 
             except ValueError:
                 print("Failed to use original name")
                 pass
 
-            self.set_position(node, (bee.position.x, bee.position.y))
+            self.set_node_position(node, (bee.position.x, bee.position.y))
 
             # Map original copied ID to new allocated ID
-            node_id_mapping[bee.identifier] = node.name
+            id_to_node_name[bee.identifier] = node.name
 
             nodes.add(node)
+            nodes_to_bees[node] = bee
 
         self.on_pasted_pre_connect(nodes)
 
         for connection in hivemap.connections:
             try:
-                from_id = node_id_mapping[connection.from_bee]
-                to_id = node_id_mapping[connection.to_bee]
+                from_id = id_to_node_name[connection.from_bee]
+                to_id = id_to_node_name[connection.to_bee]
 
             except KeyError:
                 print("Unable to create connection {}, {}".format(connection.from_bee,
@@ -316,5 +386,11 @@ class NodeManager:
             to_pin = to_node.inputs[connection.input_name]
 
             self.create_connection(from_pin, to_pin)
+
+        # Fold folded pins
+        for node, bee in nodes_to_bees.items():
+            for pin_name in bee.folded_pins:
+                pin = node.inputs[pin_name]
+                self.fold_pin(pin)
 
         return nodes

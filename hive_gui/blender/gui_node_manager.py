@@ -163,7 +163,7 @@ class BlenderGUINodeManager(IGUINodeManager):
                 self._logger.error("Couldn't find Blender GUI node to delete: {}".format(node))
                 return
 
-    def rename_node(self, node, name):
+    def set_node_name(self, node, name):
         gui_node = self.get_gui_node_from_node(node)
         gui_node.label = name
 
@@ -183,7 +183,7 @@ class BlenderGUINodeManager(IGUINodeManager):
         for link in to_remove:
             self.node_tree.links.remove(link)
 
-    def set_position(self, node, position):
+    def set_node_position(self, node, position):
         if self.internal_operation.type == "set_position":
             return
 
@@ -339,7 +339,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             # Update label
             if node.name != gui_node.label:
                 try:
-                    self.node_manager.rename_node(node, gui_node.label)
+                    self.node_manager.set_node_name(node, gui_node.label)
 
                 except ValueError:
                     gui_node.label = node.name
@@ -349,7 +349,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             node_position = tuple(gui_node_position / LOCATION_DIVISOR)
 
             with self.internal_operation_from("set_position"):
-                self.node_manager.set_position(node, node_position)
+                self.node_manager.set_node_position(node, node_position)
 
         for gui_node in to_delete:
             self.node_tree.nodes.remove(gui_node)

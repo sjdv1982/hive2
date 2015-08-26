@@ -12,11 +12,17 @@ class IGUINodeManager:
     def delete_node(self, node):
         raise NotImplementedError
 
-    def rename_node(self, node, name):
+    def set_node_name(self, node, name):
         raise NotImplementedError
 
     def on_pasted_pre_connect(self, nodes):
         pass
 
-    def set_position(self, node, position):
+    def set_node_position(self, node, position):
+        raise NotImplementedError
+
+    def fold_pin(self, pin):
+        raise NotImplementedError
+
+    def unfold_pin(self, pin):
         raise NotImplementedError

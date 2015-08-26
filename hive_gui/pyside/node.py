@@ -305,13 +305,6 @@ class Node(QGraphicsWidget):
         painter.setBrush(self._brush)
         painter.drawPath(shape)
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton:
-            pass
-
-        else:
-            QGraphicsWidget.mousePressEvent(self, event)
-
     def setPos(self, *pos):
         if len(pos) == 1:
             point = QPointF(pos[0])
@@ -339,6 +332,19 @@ class Node(QGraphicsWidget):
 
         return QGraphicsItem.itemChange(self, change, value)
 
+    def mouseDoubleClickEvent(self, event):
+        pass
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            pass
+
+        elif event.button() == Qt.LeftButton:
+            self.view.gui_on_selected(self)
+
+        else:
+            QGraphicsWidget.mousePressEvent(self, event)
+
     def mouseReleaseEvent(self, event):
         self.view.gui_finished_move()
         QGraphicsWidget.mouseReleaseEvent(self, event)
@@ -347,9 +353,6 @@ class Node(QGraphicsWidget):
         QGraphicsWidget.mouseMoveEvent(self, event)
 
     def dragMoveEvent(self, *args, **kwargs):
-        pass
-
-    def mouseDoubleClickEvent(self, event):
         pass
 
     def get_socket_row(self, name):

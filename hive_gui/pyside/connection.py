@@ -176,6 +176,10 @@ class Connection(QtGui.QGraphicsItem):
     def update_end_pos(self):
         self.update_path()
 
+    def update_visibility(self):
+        visible = self.start_socket.isVisible() and self.end_socket.isVisible()
+        self.setVisible(visible)
+
     def set_color(self, color):
         if isinstance(color, tuple):
             color = QtGui.QColor(*color)

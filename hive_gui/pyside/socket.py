@@ -223,6 +223,12 @@ class Socket(QtGui.QGraphicsItem):
 
         # QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
 
+    def setVisible(self, flag):
+        QtGui.QGraphicsItem.setVisible(self, flag)
+
+        for connection in self._connections:
+            connection.update_visibility()
+
     def update_connection_positions(self):
         """Update connection positions when nodes are moved"""
         for connection in self._connections:

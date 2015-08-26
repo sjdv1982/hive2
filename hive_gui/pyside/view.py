@@ -38,6 +38,8 @@ import weakref
 import functools
 import os
 
+from .configuration import NodeConfigurationPanel
+
 from ..node_manager import NodeManager
 from ..utils import import_from_path, get_pre_init_info
 from ..gui_node_manager import IGUINodeManager
@@ -141,7 +143,7 @@ class ConfigureNodeDialogue(QDialog):
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
-    def __init__(self):
+    def __init__(self, config_window, docstring_window):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
@@ -170,20 +172,38 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self.node_to_qtnode = {}
 
-        self.pending_create_path = None
-        self.node_manager = NodeManager(self)
+        self._dropped_hive_path = None
 
+        self.node_manager = NodeManager(gui_node_manager=self)
         self.file_name = None
-        self.docstring = ""
 
+        # Set windows
+        self._configuration_window = config_window
+        self._docstring_window = docstring_window
+
+        self._configuration_widget = NodeConfigurationPanel("dragonfly.std.Variable", self.node_manager)
+        self._docstring_widget = QTextEdit()
+
+        # Path editing
         self._cut_start_position = None
         self._slice_path = None
 
         # Visual slice path
         self._draw_path_item = None
 
+        # Tracked connections
         self._connections = []
         self._moved_gui_nodes = set()
+
+    def on_enter(self):
+        self._docstring_window.setWidget(self._docstring_widget)
+        self._configuration_window.setWidget(self._configuration_widget)
+        self._configuration_widget.update()
+
+    def on_exit(self):
+        self._docstring_window.setWidget(QWidget())
+        self._configuration_window.setWidget(QWidget())
+        print("EXIT VIEW")
 
     @property
     def is_untitled(self):
@@ -197,8 +217,10 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 raise ValueError("Untitled hivemap cannot be saved without filename")
 
         node_manager = self.node_manager
-        node_manager.docstring = self.docstring
 
+        node_manager.docstring = self._docstring_widget.toPlainText()
+
+        # Export data
         data = node_manager.export()
         with open(file_name, "w") as f:
             f.write(data)
@@ -215,9 +237,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
         with open(file_name, 'r') as f:
             data = f.read()
 
-        self.node_manager.load(data)
-        self.docstring = self.node_manager.docstring
+        node_manager = self.node_manager
 
+        node_manager.load(data)
+
+        self._docstring_widget.setPlainText(node_manager.docstring)
         self.file_name = file_name
 
     def create_node(self, node):
@@ -271,24 +295,47 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self._connections.remove(connection)
 
-    def set_position(self, node, position):
+    def set_node_position(self, node, position):
         gui_node = self.node_to_qtnode[node]
 
         gui_node.setPos(*position)
 
-    def rename_node(self, node, name):
+    def set_node_name(self, node, name):
         gui_node = self.node_to_qtnode[node]
         gui_node.setName(name)
+
+    def fold_pin(self, pin):
+        self._set_pin_folded(pin, True)
+
+    def unfold_pin(self, pin):
+        self._set_pin_folded(pin, False)
+
+    def _set_pin_folded(self, pin, folded):
+        # Get node
+        node = pin.node
+        gui_node = self.node_to_qtnode[node]
+
+        # Get socket
+        socket_row = gui_node.get_socket_row(pin.name)
+
+        # Get target
+        target_pin = next(iter(pin.targets))
+        target_node = target_pin.node
+        target_gui_node = self.node_to_qtnode[target_node]
+
+        target_gui_node.setVisible(not folded)
+        socket_row.socket.setVisible(not folded)
 
     def gui_on_moved(self, gui_node):
         self._moved_gui_nodes.add(gui_node)
 
     def gui_finished_move(self):
-        for gui_node in self._moved_gui_nodes:
+        """Called after all nodes in view have been moved"""
+        for gui_node in self._moved_gui_nodes.copy():
             pos = gui_node.pos()
             position = pos.x(), pos.y()
 
-            self.node_manager.set_position(gui_node.node, position)
+            self.node_manager.set_node_position(gui_node.node, position)
 
         self._moved_gui_nodes.clear()
 
@@ -306,6 +353,29 @@ class NodeView(IGUINodeManager, QGraphicsView):
         start_pin = start_socket.parent_socket_row.pin
         end_pin = end_socket.parent_socket_row.pin
         self.node_manager.delete_connection(start_pin, end_pin)
+
+    def gui_on_selected(self, gui_node):
+        node = gui_node.node
+        self._configuration_widget.node = node
+
+    def gui_set_selected_nodes(self, items):
+        self.scene().clearSelection()
+
+        for item in items:
+            item.setSelected(True)
+
+    def gui_get_selected_nodes(self):
+        from .node import Node
+
+        nodes = []
+
+        selected_items = self.scene().selectedItems()
+
+        for item in selected_items:
+            if isinstance(item, Node):
+                nodes.append(item)
+
+        return nodes
 
     def _on_backspace_key(self):
         self._on_del_key()
@@ -373,6 +443,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self.node_manager.paste(mouse_pos)
 
+    def pre_drop_hive(self, path):
+        self._dropped_hive_path = path
+
     def setScene(self, new_scene):
         QGraphicsView.setScene(self, new_scene)
 
@@ -401,7 +474,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         scene_pos = self.mapToScene(event.pos())
         x, y = scene_pos.x(), scene_pos.y()
 
-        import_path = self.pending_create_path
+        import_path = self._dropped_hive_path
 
         hive_cls = import_from_path(import_path)
         init_info = get_pre_init_info(hive_cls)
@@ -418,28 +491,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
             params = dialogue.params
 
         node = self.node_manager.create_node(import_path, params=params)
-        self.node_manager.set_position(node, (x, y))
+        self.node_manager.set_node_position(node, (x, y))
 
         event.accept()
-
-    def gui_set_selected_nodes(self, items):
-        self.scene().clearSelection()
-
-        for item in items:
-            item.setSelected(True)
-
-    def gui_get_selected_nodes(self):
-        from .node import Node
-
-        nodes = []
-
-        selected_items = self.scene().selectedItems()
-
-        for item in selected_items:
-            if isinstance(item, Node):
-                nodes.append(item)
-
-        return nodes
 
     @property
     def center(self):
@@ -466,11 +520,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 color = QColor(255, 0, 0)
                 pen = QPen(color)
                 self._draw_path_item.setPen(pen)
-                #
-                # for connection in self._connections:
-                #     scene_translation = connection.start_socket.sceneTransform()
-                #     connection_rect = scene_translation.mapRect(connection._rect)
-                #     self.scene().addRect(connection_rect)
 
             self._draw_path_item.setVisible(True)
 
