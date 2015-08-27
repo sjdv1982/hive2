@@ -103,8 +103,13 @@ class FoldingPanel(QWidget):
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
-                value = create_widget(pin.data_type)
-                layout.addWidget(value)
+                widget, controller = create_widget(pin.data_type)
+                layout.addWidget(widget)
+
+                controller.on_changed = partial(self._node_manager.set_folded_value, pin)
+                controller.value = self._node_manager.get_folded_value(pin)
+
+                widget.controller = controller
 
             else:
                 continue

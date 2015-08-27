@@ -2,9 +2,9 @@ import hive
 import string
 
 
-def declare_all(args):
-    args.count = hive.parameter("int", 1, options=set(range(26)))
-    args.data_type = hive.parameter("str", "bool")
+def declare_all(meta_args):
+    meta_args.count = hive.parameter("int", 1, options=set(range(26)))
+    meta_args.data_type = hive.parameter("str", "bool")
 
 
 def build_all_func(count):
@@ -20,19 +20,19 @@ def func(self):
     return func
 
 
-def build_all(i, ex, args):
+def build_all(i, ex, args, meta_args):
     # On pull
-    func = build_all_func(args.count)
+    func = build_all_func(meta_args.count)
     i.trigger = hive.modifier(func)
 
-    i.result = hive.attribute(args.data_type, False)
+    i.result = hive.attribute(meta_args.data_type, False)
     pull_out = hive.pull_out(i.result)
     ex.output = hive.output(pull_out)
 
     hive.trigger(pull_out, i.trigger, pretrigger=True)
 
-    for index, char in zip(range(args.count), string.ascii_lowercase):
-        variable = hive.attribute(args.data_type, False)
+    for index, char in zip(range(meta_args.count), string.ascii_lowercase):
+        variable = hive.attribute(meta_args.data_type, False)
         setattr(i, char, variable)
 
         pull_in = hive.pull_in(variable)
@@ -41,4 +41,4 @@ def build_all(i, ex, args):
         setattr(ex, char, antenna)
 
 
-All = hive.hive("All", build_all, declarator=declare_all)
+All = hive.dyna_hive("All", build_all, declare_all)

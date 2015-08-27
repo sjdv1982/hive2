@@ -12,8 +12,12 @@ class Bee(object):
 class Parameter(object):
     _hive_parameter_name = None
 
-    def resolve(self, kwargs):
-        raise NotImplementedError
+    start_value = None
+    data_type = None
+    options = None
+
+    class NoValue:
+        pass
 
 
 class Connectable(object):

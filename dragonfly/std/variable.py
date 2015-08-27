@@ -1,8 +1,8 @@
 import hive
 
 
-def declare_variable(args):
-    args.data_type = hive.parameter("str", "int")
+def declare_variable(meta_args):
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def build_variable(i, ex, args, meta_args):

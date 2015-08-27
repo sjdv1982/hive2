@@ -1,12 +1,12 @@
 import hive
 
 
-def declare_filter(args):
-    args.data_type = hive.parameter("str", "int")
+def declare_filter(meta_args):
+    meta_args.data_type = hive.parameter("str", "int")
 
 
-def build_filter(i, ex, args):
-    ex.value = hive.attribute(args.data_type)
+def build_filter(i, ex, args, meta_args):
+    ex.value = hive.attribute(meta_args.data_type)
 
     i.input = hive.pull_in(ex.value)
     ex.input = hive.antenna(i.input)
@@ -21,4 +21,4 @@ def build_filter(i, ex, args):
     ex.trigger = hive.entry(i.trigger)
 
 
-Filter = hive.hive("Filter", build_filter, declarator=declare_filter)
+Filter = hive.dyna_hive("Filter", build_filter, declare_filter)

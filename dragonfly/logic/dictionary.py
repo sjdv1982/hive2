@@ -21,12 +21,12 @@ class DictCls:
         self._hive.do_out()
 
 
-def declare_dictionary(args):
-    args.data_type = hive.parameter("str", "int")
-    args.mode = hive.parameter("str", "get", {"get", "set"})
+def declare_dictionary(meta_args):
+    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.mode = hive.parameter("str", "get", {"get", "set"})
 
 
-def build_dictionary(cls, i, ex, args):
+def build_dictionary(cls, i, ex, args, meta_args):
     ex.dict = hive.property(cls, "dict", "dict")
 
     i.in_dict = hive.pull_in(ex.dict)
@@ -38,15 +38,15 @@ def build_dictionary(cls, i, ex, args):
     i.key = Buffer(data_type="id")
     ex.key = hive.antenna(i.key.input)
 
-    if args.mode == "set":
-        i.in_value = Buffer(data_type=args.data_type)
+    if meta_args.mode == "set":
+        i.in_value = Buffer(data_type=meta_args.data_type)
         ex.in_value = hive.antenna(i.in_value.input)
 
         i.set_value = hive.triggerable(cls.set_value)
         ex.set_value = hive.entry(i.set_value)
 
-    elif args.mode == "get":
-        i.out_value = hive.attribute(args.data_type)
+    elif meta_args.mode == "get":
+        i.out_value = hive.attribute(meta_args.data_type)
         i.out_io = hive.push_out(i.out_value)
         ex.out_value = hive.output(i.out_io)
 
@@ -57,4 +57,4 @@ def build_dictionary(cls, i, ex, args):
         ex.get_value = hive.entry(i.get_value)
 
 
-Dictionary = hive.hive("Dictionary", build_dictionary, DictCls, declarator=declare_dictionary)
+Dictionary = hive.dyna_hive("Dictionary", build_dictionary, declare_dictionary, DictCls)

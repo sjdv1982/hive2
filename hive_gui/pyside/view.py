@@ -34,23 +34,26 @@ from __future__ import print_function, absolute_import
 from PySide.QtCore import *
 from PySide.QtGui import *
 
+import collections
 import weakref
 import functools
 import os
 
 from .panels import FoldingPanel, ConfigurationPanel
+from .utils import create_widget
 
 from ..node_manager import NodeManager
-from ..utils import import_from_path, get_pre_init_info
+from ..utils import import_from_path, get_builder_class_args
 from ..gui_node_manager import IGUINodeManager
+
+import hive
+import inspect
 
 
 class ConfigureNodeDialogue(QDialog):
 
-    def __init__(self, parent, init_info):
+    def __init__(self, parent, args, non_parameter=False):
         QDialog.__init__(self, parent)
-
-        self.init_info = init_info
 
         buttons_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
@@ -58,71 +61,9 @@ class ConfigureNodeDialogue(QDialog):
         buttons_box.rejected.connect(self.reject)
 
         self.form_group_box = QGroupBox("Form layout")
-        layout = QFormLayout()
-
         self.value_getters = {}
 
-        layout.addRow(QLabel("Arguments"))
-        for name, data in init_info['cls_args'].items():
-            widget = QLineEdit()
-
-            default = data['default']
-            widget.setPlaceholderText(repr(default))
-
-            layout.addRow(QLabel(name), widget)
-            self.value_getters[name] = widget.text
-
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        layout.addRow(line)
-
-        layout.addRow(QLabel("Parameters"))
-        for name, data in init_info['parameters'].items():
-            data_type = data['data_type'][0]
-            start_value = data['start_value']
-            options = data['options']
-
-            if options is not None:
-                widget = QComboBox()
-                for i, option in enumerate(options):
-                    widget.insertItem(i, str(option), option)
-
-                def value_getter(widget=widget):
-                    return widget.itemData(widget.currentIndex())
-
-            else:
-                if data_type == "str":
-                    widget = QLineEdit()
-
-                    if start_value:
-                        widget.setPlaceholderText(start_value)
-
-                    def value_getter(widget=widget, start_value=start_value):
-                        return widget.text() if widget.isModified() else start_value
-
-                elif data_type == "float":
-                    widget = QDoubleSpinBox()
-                    widget.setValue(start_value)
-
-                    value_getter = widget.value
-
-                elif data_type == "bool":
-                    widget = QCheckBox()
-                    widget.setCheckState(start_value)
-
-                    value_getter = widget.isChecked
-
-                elif data_type == "int":
-                    widget = QSpinBox()
-                    widget.setValue(start_value)
-
-                    value_getter = widget.value
-
-            layout.addRow(QLabel(name), widget)
-
-            self.value_getters[name] = value_getter
-
+        layout = QFormLayout()
         self.form_group_box.setLayout(layout)
 
         main_layout = QVBoxLayout()
@@ -130,14 +71,53 @@ class ConfigureNodeDialogue(QDialog):
         main_layout.addWidget(buttons_box)
 
         self.setLayout(main_layout)
-        self.setWindowTitle("Configure Node")
 
-        self.params = None
+        if non_parameter:
+            self.display_raw_args(layout, args)
+
+        else:
+            self.display_args(layout, args)
+
+    def display_raw_args(self, layout, args):
+        # Draw builder args
+        for name, default in args.items():
+            widget = QLineEdit()
+
+            if default is not None:
+                widget.setText(repr(default))
+
+            def value_getter(widget=widget):
+                return eval(widget.text)
+
+            layout.addRow(QLabel(name), widget)
+            if name in self.value_getters:
+                self.value_getters[name] = value_getter
+
+    def display_args(self, layout, args):
+        for name in args:
+            param = getattr(args, name)
+
+            options = param.options
+            data_type = param.data_type
+            default = param.start_value
+
+            widget, controller = create_widget(data_type, options)
+
+            if default is not param.NoValue:
+                try:
+                    controller.value = default
+
+                except Exception as err:
+                    print(err)
+
+            layout.addRow(QLabel(name), widget)
+            self.value_getters[name] = controller.getter
 
     def accept(self):
         QDialog.accept(self)
 
-        self.params = {name: getter() for name, getter in self.value_getters.items()}
+        arg_values = {n: v() for n, v in self.value_getters.items()}
+        self.params = arg_values
 
 
 class NodeView(IGUINodeManager, QGraphicsView):
@@ -488,18 +468,41 @@ class NodeView(IGUINodeManager, QGraphicsView):
         import_path = self._dropped_hive_path
 
         hive_cls = import_from_path(import_path)
-        init_info = get_pre_init_info(hive_cls)
+        hive_cls._hive_build_args_wrapper()
 
-        # Check if needs params
-        if not (init_info['parameters'] or init_info['cls_args']):
-            params = None
+        params = {"meta_args": {}, "args": {}, "cls_args": {}}
 
-        else:
-            dialogue = ConfigureNodeDialogue(self, init_info)
+        meta_args_wrapper = hive_cls._hive_meta_args
+        if meta_args_wrapper:
+            dialogue = ConfigureNodeDialogue(self, meta_args_wrapper)
             dialogue.setAttribute(Qt.WA_DeleteOnClose)
+            dialogue.setWindowTitle("Configure Node: Meta Args")
             dialogue.exec()
 
-            params = dialogue.params
+            meta_args = params['meta_args'] = dialogue.params
+
+            _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
+
+        else:
+            hive_object_cls = hive_cls._hive_build(())
+
+        args_wrapper = hive_object_cls._hive_args
+        if args_wrapper:
+            dialogue = ConfigureNodeDialogue(self, args_wrapper)
+            dialogue.setAttribute(Qt.WA_DeleteOnClose)
+            dialogue.setWindowTitle("Configure Node: Args")
+            dialogue.exec()
+
+            params['args'] = dialogue.params
+
+        builder_args = collections.OrderedDict((k, d['default']) for k, d in get_builder_class_args(hive_cls).items())
+        if builder_args:
+            dialogue = ConfigureNodeDialogue(self, builder_args, non_parameter=True)
+            dialogue.setAttribute(Qt.WA_DeleteOnClose)
+            dialogue.setWindowTitle("Configure Node: Class Args")
+            dialogue.exec()
+
+            params['cls_args'] = dialogue.params
 
         node = self.node_manager.create_node(import_path, params=params)
         self.node_manager.set_node_position(node, (x, y))

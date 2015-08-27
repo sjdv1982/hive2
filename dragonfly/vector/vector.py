@@ -3,9 +3,9 @@ import hive
 from math import sqrt
 
 
-def declare_vector(args):
-    args.operation = hive.parameter("str", "dot", {"dot", "cross", "length"})
-    args.dimensions = hive.parameter("int", 3, {2, 3})
+def declare_vector(meta_args):
+    meta_args.operation = hive.parameter("str", "dot", {"dot", "cross", "length"})
+    meta_args.dimensions = hive.parameter("int", 3, {2, 3})
 
 
 def dot2d(self):
@@ -42,31 +42,31 @@ def cross3d(self):
     return x, y, z
 
 
-def build_vector(i, ex, args):
+def build_vector(i, ex, args, meta_args):
     i.a = hive.attribute("vector")
     pull_a = hive.pull_in(i.a)
     ex.a = hive.antenna(pull_a)
 
-    if args.operation in ("dot", "cross"):
+    if meta_args.operation in ("dot", "cross"):
         i.b = hive.attribute("vector")
         pull_b = hive.pull_in(i.b)
         ex.b = hive.antenna(pull_b)
 
-        if args.operation == "dot":
-            if args.dimensions == 2:
+        if meta_args.operation == "dot":
+            if meta_args.dimensions == 2:
                 func = dot2d
 
             else:
                 func = dot3d
 
         else:
-            if args.dimensions != 3:
+            if meta_args.dimensions != 3:
                 raise ValueError("Cross product isn't defined for 2D vectors")
 
             func = cross3d
 
     else:
-        if args.dimensions == 2:
+        if meta_args.dimensions == 2:
             func = length2d
 
         else:
@@ -80,4 +80,4 @@ def build_vector(i, ex, args):
     hive.trigger(pull_result, calculate, pretrigger=True)
 
 
-Vector = hive.hive("Vector", build_vector, declarator=declare_vector)
+Vector = hive.dyna_hive("Vector", build_vector, declare_vector)

@@ -1,7 +1,8 @@
 from .history import History
 from .hive_node import HiveNode
 from .models import model
-from .utils import import_from_path, eval_value
+from .utils import start_value_from_type, create_hive_object_instance, dict_to_parameter_array, parameter_array_to_dict
+
 
 
 def get_unique_name(existing_names, base_name):
@@ -51,22 +52,13 @@ class NodeManager:
         if params is None:
             params = {}
 
-        try:
-            hive_cls = import_from_path(import_path)
+        hive = create_hive_object_instance(import_path, params)
 
-        except (ImportError, AttributeError):
-            raise ValueError("Invalid import path: {}".format(import_path))
+        # Get unique name from hive parent class name
+        hive_class_name = hive._hive_parent_class.__name__
+        name = get_unique_name(self.nodes, hive_class_name)
 
-        try:
-            hive = hive_cls(**params)
-
-        except Exception as err:
-            raise RuntimeError("Unable to insantiate Hive cls {}: {}".format(hive_cls, err))
-
-        name = get_unique_name(self.nodes, hive_cls.__name__)
-
-        node = HiveNode(hive, import_path, name)
-
+        node = HiveNode(hive, import_path, name, params)
         self._add_node(node)
 
         return node
@@ -174,7 +166,9 @@ class NodeManager:
 
         # Create variable
         if not pin.targets:
-            target_node = self.create_node(self.fold_node_path, dict(data_type=pin.data_type))
+            params = dict(meta_args=dict(data_type=pin.data_type),
+                          args=dict(start_value=start_value_from_type(pin.data_type)))
+            target_node = self.create_node(self.fold_node_path, params)
             target_pin = next(iter(target_node.outputs.values()))
             self.create_connection(target_pin, pin)
 
@@ -193,6 +187,18 @@ class NodeManager:
 
         self.gui_node_manager.unfold_pin(pin)
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
+
+    def get_folded_value(self, pin):
+        target_pin = next(iter(pin.targets))
+        folded_node = target_pin.node
+
+        return folded_node.params['args']['start_value']
+
+    def set_folded_value(self, pin, value):
+        target_pin = next(iter(pin.targets))
+        folded_node = target_pin.node
+
+        folded_node.params['args']['start_value'] = value
 
     def on_pasted_pre_connect(self, nodes):
         self.gui_node_manager.on_pasted_pre_connect(nodes)
@@ -267,13 +273,19 @@ class NodeManager:
 
         node_names = set()
 
+        # TODO, if bee is not hive
         for node in nodes:
-            # TODO, if bee is not hive
-            args = [model.BeeInstanceParameter(name, info['data_type'], info['value'])
-                    for name, info in node.post_init_info.items()]
-            folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
+            params = node.params
 
-            spyder_bee = model.Bee(node.name, node.hive_path, args, node.position, folded_pins)
+            # Write to Bee
+            meta_arg_array = dict_to_parameter_array(params['meta_args'])
+            arg_array = dict_to_parameter_array(params['args'])
+            cls_arg_array = dict_to_parameter_array(params['cls_args'])
+
+            folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
+            spyder_bee = model.Bee(node.name, node.hive_path, meta_arg_array, arg_array, cls_arg_array, node.position,
+                                   folded_pins)
+
             hivemap.bees.append(spyder_bee)
 
             # Keep track of copied nodes
@@ -314,7 +326,11 @@ class NodeManager:
         for bee in hivemap.bees:
             import_path = bee.import_path
 
-            params = {p.identifier: eval_value(p.value, p.data_type) for p in bee.args}
+            meta_args = parameter_array_to_dict(bee.meta_args)
+            args = parameter_array_to_dict(bee.args)
+            cls_args = parameter_array_to_dict(bee.cls_args)
+
+            params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
 
             try:
                 node = self.create_node(import_path, params)

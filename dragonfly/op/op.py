@@ -11,27 +11,27 @@ single_arg_operators = {not_,}
 operator_names = set(operators)
 
 
-def declare_operator(args):
-    args.mode = hive.parameter("str", "push", options={"push", "pull"})
-    args.data_type = hive.parameter("str", "int")
+def declare_operator(meta_args):
+    meta_args.mode = hive.parameter("str", "push", options={"push", "pull"})
+    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.operator = hive.parameter("str", "add", options=operator_names)
+
+
+def build_operator(i, ex, args, meta_args):
+    assert meta_args.operator in operators
     args.default_value = hive.parameter("int", 0)
-    args.operator = hive.parameter("str", "add", options=operator_names)
 
-
-def build_operator(i, ex, args):
-    assert args.operator in operators
-
-    op = operators[args.operator]
+    op = operators[meta_args.operator]
     is_single_arg = op in single_arg_operators
 
-    i.a = hive.attribute(args.data_type, args.default_value)
+    i.a = hive.attribute(meta_args.data_type, args.default_value)
 
     if not is_single_arg:
-        i.b = hive.attribute(args.data_type, args.default_value)
+        i.b = hive.attribute(meta_args.data_type, args.default_value)
 
-    i.c = hive.attribute(args.data_type)
+    i.c = hive.attribute(meta_args.data_type)
 
-    if args.mode == "push":
+    if meta_args.mode == "push":
         i.a_in = hive.push_in(i.a)
         ex.a = hive.antenna(i.a_in)
 
@@ -64,7 +64,7 @@ def build_operator(i, ex, args):
         i.calc = hive.modifier(calc)
         hive.trigger(i.c_out, i.calc, pretrigger=True)
 
-    elif args.mode == "pull":
+    elif meta_args.mode == "pull":
         i.a_in = hive.pull_in(i.a)
         ex.a = hive.antenna(i.a_in)
 
@@ -88,8 +88,5 @@ def build_operator(i, ex, args):
         hive.trigger(i.a_in, i.calc)
         hive.trigger(i.c_out, i.a_in, pretrigger=True)
 
-    else:
-        raise ValueError("Invalid mode {}".format(args.mode))
 
-
-Op = hive.hive("Op", build_operator, declarator=declare_operator)
+Op = hive.dyna_hive("Op", build_operator, declare_operator)

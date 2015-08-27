@@ -1,7 +1,6 @@
-from .utils import get_io_info, get_post_init_info
+from .utils import get_io_info
 
 from hive.tuple_type import types_match
-from collections import OrderedDict
 
 
 class NodeIOPin(object):
@@ -39,16 +38,25 @@ class NodeIOPin(object):
 
 class HiveNode(object):
 
-    def __init__(self, hive, hive_path, name):
-        self.hive = hive
-        self.hive_class_name = hive._hive_object._hive_parent_class.__name__
+    def __init__(self, hive_object, hive_path, name, params):
+        """
+        Container for GUI configuration of HiveObject instance
+
+        :param hive_object: HiveObject instance
+        :param hive_path: path to import Hive class
+        :param name: name of GUI node
+        :param params: parameter dictionary containing meta_args, args and cls_args data
+        :return:
+        """
+
+        self.hive_object = hive_object
         self.hive_path = hive_path
 
-        self.io_info = get_io_info(hive)
-        self.post_init_info = get_post_init_info(hive)
+        self.io_info = get_io_info(hive_object)
+        self.params = params
 
         self.name = name
-        self.docstring = hive.__doc__ or ""
+        self.docstring = hive_object.__doc__ or ""
 
         self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input")
                        for name, info in self.io_info['inputs'].items()}
