@@ -6,6 +6,11 @@ from PySide.QtGui import *
 from PySide.QtWebKit import *
 
 import hive_gui.pyside as py_gui
+p = sys.path.copy()
+sys.path.insert(0, py_gui.__path__[0])
+
+import qdarkstyle as qdarkstyle
+sys.path[:] = p
 
 from hive_gui.pyside.main_window import MainWindow
 
@@ -15,6 +20,7 @@ import dragonfly
 
 # Create a Qt application
 app = QApplication(sys.argv)
+app.setStyleSheet(qdarkstyle.load_stylesheet())
 
 hives = get_hives(test_sca, dragonfly)
 
@@ -38,8 +44,6 @@ home_page.setHtml(html)
 
 window.load_home_page(home_page)
 
-
-#TODO support configuration of hives before adding
 
 
 # Enter Qt application main loop

@@ -7,8 +7,7 @@ from .tabs import TabViewWidget
 from .view import NodeView
 from .tree import PTree
 from .scene import NodeUiScene
-from .configuration import NodeConfigurationPanel
-from ..node_manager import NodeManager
+
 
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
@@ -97,17 +96,20 @@ class MainWindow(QMainWindow):
         self.tab_widget.on_changed = self.on_tab_changed
 
         # Left window
-        self.selector_window = self.create_subwindow("Hives", "left")
+        self.tree_window = self.create_subwindow("Hives", "left")
         self.hive_tree = PTree()
         self.hive_tree.on_selected = self.on_dropped_hive_node
-        self.selector_window.setWidget(self.hive_tree.widget())
+        self.tree_window.setWidget(self.hive_tree)
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")
         self.docstring_window.setVisible(False)
 
+        self.folding_window = self.create_subwindow("Folding", "right")
+        self.folding_window.setVisible(False)
+
         self.configuration_window = self.create_subwindow("Configuration", "right")
-        self.docstring_window.setVisible(False)
+        self.configuration_window.setVisible(False)
 
         self.home_page = None
 
@@ -160,7 +162,7 @@ class MainWindow(QMainWindow):
             widget.on_enter()
 
     def add_node_view(self, name="<Untitled>"):
-        view = NodeView(self.configuration_window, self.docstring_window)
+        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window)
 
         index = self.tab_widget.addTab(view, name)
         self.tab_widget.setCurrentIndex(index)
@@ -172,9 +174,15 @@ class MainWindow(QMainWindow):
 
         return view
 
-    def create_subwindow(self, title, position):
+    def create_subwindow(self, title, position, closeable=False):
         area = area_classes[position]
+
         window = QDockWidget(title, self)
+        features = QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable
+        if closeable:
+            features |= QDockWidget.DockWidgetClosable
+        window.setFeatures(features)
+
         child = QWidget()
         window.setWidget(child)
         self.addDockWidget(area, window)
@@ -185,21 +193,30 @@ class MainWindow(QMainWindow):
 
         show_save = False
         show_save_as = False
+
         show_docstring = False
         show_edit = False
+
         show_config = False
+        show_folding = False
+        show_hives = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
             show_save = widget.file_name is not None
-            show_docstring = True
             show_edit = True
+
+            show_docstring = True
             show_config = True
+            show_folding = True
+            show_hives = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
         self.docstring_window.setVisible(show_docstring)
+        self.folding_window.setVisible(show_folding)
         self.configuration_window.setVisible(show_config)
+        self.tree_window.setVisible(show_hives)
 
         menu_bar = self.menuBar()
         menu_bar.clear()

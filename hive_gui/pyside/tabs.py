@@ -14,19 +14,18 @@ class TabViewWidget(QTabWidget):
         self.on_removed = None
         self.on_changed = None
 
-        self._closable_tabs = {}
         self._current_tab_index = None
 
     def addTab(self, widget, label, closeable=True):
-        self._closable_tabs[widget] = closeable
-        return QTabWidget.addTab(self, widget, label)
+        tab = QTabWidget.addTab(self, widget, label)
+
+        if not closeable:
+            self.tabBar().tabButton(tab, QTabBar.RightSide).resize(0, 0)
+
+        return tab
 
     def _close_tab(self, index):
-        widget = self.widget(index)
-        is_closable = self._closable_tabs[widget]
-
-        if is_closable:
-            self.removeTab(index)
+        self.removeTab(index)
 
     def _tab_changed(self, index):
         previous_index = self._current_tab_index

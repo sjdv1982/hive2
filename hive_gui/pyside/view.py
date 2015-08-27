@@ -38,7 +38,7 @@ import weakref
 import functools
 import os
 
-from .configuration import NodeConfigurationPanel
+from .panels import FoldingPanel, ConfigurationPanel
 
 from ..node_manager import NodeManager
 from ..utils import import_from_path, get_pre_init_info
@@ -109,9 +109,9 @@ class ConfigureNodeDialogue(QDialog):
 
                 elif data_type == "bool":
                     widget = QCheckBox()
-                    widget.setTristate(start_value)
+                    widget.setCheckState(start_value)
 
-                    value_getter = widget.is_tristate
+                    value_getter = widget.isChecked
 
                 elif data_type == "int":
                     widget = QSpinBox()
@@ -143,7 +143,7 @@ class ConfigureNodeDialogue(QDialog):
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
-    def __init__(self, config_window, docstring_window):
+    def __init__(self, folding_window, docstring_window, configuration_window):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
@@ -178,11 +178,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.file_name = None
 
         # Set windows
-        self._configuration_window = config_window
+        self._folding_window = folding_window
         self._docstring_window = docstring_window
+        self._configuration_window = configuration_window
 
-        self._configuration_widget = NodeConfigurationPanel("dragonfly.std.Variable", self.node_manager)
+        self._folding_widget = FoldingPanel("dragonfly.std.Variable", self.node_manager)
         self._docstring_widget = QTextEdit()
+        self._configuration_widget = ConfigurationPanel(self.node_manager)
 
         # Path editing
         self._cut_start_position = None
@@ -198,11 +200,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
     def on_enter(self):
         self._docstring_window.setWidget(self._docstring_widget)
+        self._folding_window.setWidget(self._folding_widget)
         self._configuration_window.setWidget(self._configuration_widget)
-        self._configuration_widget.update()
 
     def on_exit(self):
         self._docstring_window.setWidget(QWidget())
+        self._folding_window.setWidget(QWidget())
         self._configuration_window.setWidget(QWidget())
         print("EXIT VIEW")
 
@@ -367,6 +370,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
     def gui_on_selected(self, gui_node):
         node = gui_node.node
+        self._folding_widget.node = node
         self._configuration_widget.node = node
 
     def gui_set_selected_nodes(self, items):

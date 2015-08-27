@@ -4,33 +4,31 @@ from PySide import QtGui, QtCore
 from PySide.QtGui import QTreeWidgetItem
 
 
-class PTree(object):
+class PTree(QtGui.QTreeWidget):
 
     def __init__(self, parent=None, on_selected=None):
-        self._widget = QtGui.QTreeWidget(parent)
-        self._widget.setColumnCount(1)
+        QtGui.QTreeWidget.__init__(self, parent)
+        self.setColumnCount(1)
+
         self._keys = []
         self.all_items = {}
-        self._leafitems_rev = {}
-        self._widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self._widget.itemPressed.connect(self._itemPressed)
-        self._widget.setDragEnabled(True)
+        self._widget_id_to_key = {}
+        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.itemPressed.connect(self._on_item_pressed)
+        self.setDragEnabled(True)
         self.on_selected = on_selected
 
-    def widget(self):
-        return self._widget
-
-    def _itemPressed(self, item, column):
-        if id(item) in self._leafitems_rev:
-            key = self._leafitems_rev[id(item)]
+    def _on_item_pressed(self, item, column):
+        if id(item) in self._widget_id_to_key:
+            key = self._widget_id_to_key[id(item)]
 
             if callable(self.on_selected):
                 path = '.'.join(key)
                 self.on_selected(path)
 
-            self._widget.setDragEnabled(True)
+            self.setDragEnabled(True)
         else:
-            self._widget.setDragEnabled(False)
+            self.setDragEnabled(False)
 
     def load_hives(self, hives, path=()):
         for name, children in hives.items():
@@ -53,7 +51,7 @@ class PTree(object):
             item.setText(0, head)
             self.all_items[head] = item
 
-            self._widget.addTopLevelItem(item)
+            self.addTopLevelItem(item)
             widget = item
 
         else:
@@ -78,8 +76,9 @@ class PTree(object):
             prev = phead
 
         key = tuple(key)
+
         self._keys.append(key)
-        self._leafitems_rev[id(widget)] = key
+        self._widget_id_to_key[id(widget)] = key
 
     def _remove_empty_group(self, group):
         g = len(group)
@@ -89,8 +88,8 @@ class PTree(object):
             if len(group) == 1:
                 group = group[0]
                 w = self.all_items.pop(group)
-                ind = self._widget.indexOfTopLevelItem(w)
-                self._widget.takeTopLevelItem(ind)
+                ind = self.indexOfTopLevelItem(w)
+                self.takeTopLevelItem(ind)
             else:
                 w = self.all_items.pop(group)
                 parent = group[:-1]
@@ -103,11 +102,12 @@ class PTree(object):
         assert key in self._keys
 
         self._keys.remove(key)
-        w = self.all_items.pop(key)
-        self._leafitems_rev.pop(id(w))
+        item = self.all_items.pop(key)
+        self._widget_id_to_key.pop(id(item))
+
         if len(key) == 1:
-            ind = self._widget.indexOfTopLevelItem(w)
-            self._widget.takeTopLevelItem(ind)
+            ind = self.indexOfTopLevelItem(item)
+            self.takeTopLevelItem(ind)
 
         else:
             parent = key[:-1]
@@ -115,11 +115,8 @@ class PTree(object):
                 parent = parent[0]
 
             ww = self.all_items[parent]
-            ww.removeChild(w)
+            ww.removeChild(item)
 
         for n in range(len(key), 0, -1):
             group = key[:n]
             self._remove_empty_group(group)
-
-    def sync(self):
-        pass

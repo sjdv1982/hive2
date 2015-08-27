@@ -3,7 +3,7 @@ import string
 
 
 def declare_trigger(args):
-    args.count = hive.parameter("int", 1, options=set(range(26)))
+    args.count = hive.parameter("int", 1, options={x + 1 for x in range(26)})
 
 
 def build_trigger(i, ex, args):
