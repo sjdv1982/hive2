@@ -1,14 +1,15 @@
 import hive
 
 
-def declare_buffer(args):
-    args.data_type = hive.parameter("str", "int")
-    args.start_value = hive.parameter("int", 0)
-    args.mode = hive.parameter("str", "push", options={'push', 'pull'})
+def declare_buffer(meta_args):
+    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.start_value = hive.parameter("int", 0)
+    meta_args.mode = hive.parameter("str", "push", options={'push', 'pull'})
 
 
-def build_buffer(i, ex, args):
-    ex.value = hive.attribute(args.data_type, args.start_value)
+def build_buffer(i, ex, args, meta_args):
+    args.start_value = hive.parameter(meta_args.data_type)
+    ex.value = hive.attribute(meta_args.data_type, args.start_value)
 
     if args.mode == "push":
         i.input = hive.push_in(ex.value)
@@ -31,4 +32,4 @@ def build_buffer(i, ex, args):
         ex.trigger = hive.entry(i.trigger)
 
 
-Buffer = hive.hive("Buffer", build_buffer, declarator=declare_buffer)
+Buffer = hive.dyna_hive("Buffer", build_buffer, declarator=declare_buffer)

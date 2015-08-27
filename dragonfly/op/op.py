@@ -24,12 +24,12 @@ def build_operator(i, ex, args):
     op = operators[args.operator]
     is_single_arg = op in single_arg_operators
 
-    i.a = hive.variable(args.data_type, args.default_value)
+    i.a = hive.attribute(args.data_type, args.default_value)
 
     if not is_single_arg:
-        i.b = hive.variable(args.data_type, args.default_value)
+        i.b = hive.attribute(args.data_type, args.default_value)
 
-    i.c = hive.variable(args.data_type)
+    i.c = hive.attribute(args.data_type)
 
     if args.mode == "push":
         i.a_in = hive.push_in(i.a)

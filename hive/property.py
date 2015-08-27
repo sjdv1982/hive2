@@ -1,5 +1,5 @@
 from .hive import HiveMethodWrapper
-from .mixins import Stateful, Exportable, Bindable
+from .mixins import Stateful, Exportable, Bindable, Parameter
 from .tuple_type import tuple_type
 from .manager import get_mode, get_building_hive, memoize
 from weakref import WeakSet
@@ -7,6 +7,8 @@ from weakref import WeakSet
 
 class Property(Stateful, Bindable, Exportable):
     """Interface to bind class attributes"""
+
+    export_only = False
 
     def __init__(self, cls, attr, data_type, start_value):
         self._hive_object_cls = get_building_hive()
@@ -41,11 +43,16 @@ class Property(Stateful, Bindable, Exportable):
         self._bound.add(run_hive)
         
         cls = self._cls
-        assert cls in run_hive._hive_build_class_instances, cls
+        assert cls in run_hive._hive_build_class_instances, cls #TODO, DEBUG can remove?
         instance = run_hive._hive_build_class_instances[cls]
 
-        if self.start_value is not None or not hasattr(instance, self._attr):
-            setattr(instance, self._attr, self.start_value)
+        start_value = self.start_value
+        if start_value is not None or not hasattr(instance, self._attr):
+
+            if isinstance(start_value, Parameter):
+                start_value = start_value.get_runtime_value(run_hive)
+
+            setattr(instance, self._attr, start_value)
 
         return self
 

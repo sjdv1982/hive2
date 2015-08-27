@@ -1,5 +1,5 @@
 from .manager import get_building_hive, get_mode, get_run_hive
-from .hive import hive, HiveBuilder, RuntimeHive, HiveObject
+from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, HiveObject
 
 #i primitives
 from .triggerfunc import triggerfunc
@@ -7,7 +7,6 @@ from .triggerable import triggerable
 from .modifier import modifier #(akin to triggerable, but receives run_hive as self)
 from .ppin import push_in, pull_in
 from .ppout import push_out, pull_out
-from .variable import variable
 
 #connection primitives
 from .connect import connect

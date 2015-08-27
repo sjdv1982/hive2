@@ -14,7 +14,7 @@
 #
 #
 # def build_hive2(i, ex, args):
-#     i.variable = hive.variable()
+#     i.variable = hive.attribute()
 #     i.output = hive.pull_out(i.variable)
 #     ex.output = hive.output(i.output)
 #
@@ -23,7 +23,7 @@
 #
 # def build_hive1(i, ex, args):
 #     """Some hive"""
-#     i.inp = hive.variable()
+#     i.inp = hive.attribute()
 #     i.pinp = hive.pull_in(i.inp)
 #     ex.input = hive.antenna(i.pinp)
 #

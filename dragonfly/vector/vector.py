@@ -43,12 +43,12 @@ def cross3d(self):
 
 
 def build_vector(i, ex, args):
-    i.a = hive.variable("vector")
+    i.a = hive.attribute("vector")
     pull_a = hive.pull_in(i.a)
     ex.a = hive.antenna(pull_a)
 
     if args.operation in ("dot", "cross"):
-        i.b = hive.variable("vector")
+        i.b = hive.attribute("vector")
         pull_b = hive.pull_in(i.b)
         ex.b = hive.antenna(pull_b)
 
@@ -72,7 +72,7 @@ def build_vector(i, ex, args):
         else:
             func = length3d
 
-    i.result = hive.variable("vector")
+    i.result = hive.attribute("vector")
     pull_result = hive.pull_out(i.result)
     ex.result = hive.output(pull_result)
 

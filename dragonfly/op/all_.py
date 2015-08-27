@@ -25,14 +25,14 @@ def build_all(i, ex, args):
     func = build_all_func(args.count)
     i.trigger = hive.modifier(func)
 
-    i.result = hive.variable(args.data_type, False)
+    i.result = hive.attribute(args.data_type, False)
     pull_out = hive.pull_out(i.result)
     ex.output = hive.output(pull_out)
 
     hive.trigger(pull_out, i.trigger, pretrigger=True)
 
     for index, char in zip(range(args.count), string.ascii_lowercase):
-        variable = hive.variable(args.data_type, False)
+        variable = hive.attribute(args.data_type, False)
         setattr(i, char, variable)
 
         pull_in = hive.pull_in(variable)

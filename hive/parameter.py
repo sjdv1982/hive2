@@ -1,5 +1,5 @@
 from .mixins import Parameter
-from .manager import ContextFactory
+from .manager import ContextFactory, memoize
 from .tuple_type import tuple_type
 
 
@@ -27,5 +27,9 @@ class HiveParameter(Parameter):
 
         return value
 
+    @memoize
+    def get_runtime_value(self, run_hive):
+        return getattr(run_hive._hive_object._hive_args_frozen, self._hive_parameter_name)
 
-parameter = ContextFactory("hive.parameter", declare_mode_cls=HiveParameter)
+
+parameter = ContextFactory("hive.parameter", declare_mode_cls=HiveParameter, build_mode_cls=HiveParameter)

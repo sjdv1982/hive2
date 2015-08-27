@@ -81,9 +81,11 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
         self._drones = []
 
         with run_hive_as(self):
+            # Build args
+            args = hive_object._hive_builder_args
+            kwargs = hive_object._hive_builder_kwargs
+
             for builder, builder_cls in builders:
-                args = hive_object._hive_builder_args
-                kwargs = hive_object._hive_builder_kwargs
 
                 if builder_cls is not None:
                     assert builder_cls not in self._hive_build_class_instances, builder_cls
@@ -195,7 +197,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
     _hive_i = None
     _hive_ex = None
-    _hive_args_frozen = None
+
+    _hive_args = None
+    _hive_meta_args_frozen = None
 
     _hive_namespace = None
     _hive_parent_namespace = None
@@ -211,6 +215,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Automatically import parent sockets and plugins
         self._allow_import_namespace = kwargs.pop("import_namespace", False)
 
+        # Take out args parameters
+        args, kwargs, arg_values = self._hive_args.extract_from_args(args, kwargs)
+        self._hive_args_frozen = self._hive_args.freeze(arg_values)
+
         # Args to instantiate builder-class instances
         self._hive_builder_args = args #for now
         self._hive_builder_kwargs = kwargs #for now
@@ -221,6 +229,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
             if builder_cls is not None and inspect.isfunction(builder_cls.__init__):
+
                 try:
                     inspect.getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
 
@@ -327,6 +336,11 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             imported_namespace = dict(sockets=all_sockets, plugins=all_plugins, resolved_self=resolved_child_bee)
 
             bee.import_namespace(imported_namespace)
+
+    @classmethod
+    @memoize
+    def _hive_get_meta_primitive(cls):
+        return type("MetaHivePrimitive::{}".format(cls.__name__), (MetaHivePrimitive,), dict(_hive_object_cls=cls))
 
     @staticmethod
     def _hive_can_connect_hive(other):
@@ -477,7 +491,20 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return self
 
     def __repr__(self):
-        return "[{}({})::{}]".format(self.__class__.__name__, id(self), getattr(self._hive_args_frozen, 'i', None))
+        return "[{}({})::{}]".format(self.__class__.__name__, id(self), getattr(self._hive_meta_args_frozen, 'i', None))
+
+
+class MetaHivePrimitive:
+    _hive_object_cls = None
+
+    def __new__(cls, *args, **kwargs):
+        self = cls._hive_object_cls(*args, **kwargs)
+
+        if get_mode() == "immediate":
+            return self.instantiate()
+
+        else:
+            return self
 
 
 class HiveBuilder(object):
@@ -488,12 +515,16 @@ class HiveBuilder(object):
 
     _builders = ()
     _declarators = ()
+    _is_dyna_hive = False
 
-    _hive_args = None
-    _hive_object_classes = None
+    _hive_meta_args = None
 
     def __new__(cls, *args, **kwargs):
         args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
+
+        # If MetaHive and not DynaHive
+        if cls._declarators and not cls._is_dyna_hive:
+            return hive_object_cls._hive_get_meta_primitive()
 
         self = hive_object_cls(*args, **kwargs)
 
@@ -504,47 +535,8 @@ class HiveBuilder(object):
             return self
 
     @classmethod
-    def extend(cls, name, builder, builder_cls=None, declarator=None):
-        """Extend HiveObject with an additional builder (and builder class)
-
-        :param name: name of new hive class
-        :param builder: optional function used to build hive
-        :param builder_cls: optional Python class to bind to hive
-        :param declarator: optional declarator to establish parameters
-        """
-        if builder_cls is not None:
-            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class SomeHive(object): ..."
-
-        # Add new builder function
-        builders = cls._builders + ((builder, builder_cls),)
-
-        # Add new declarator
-        if declarator is not None:
-            declarators = cls._declarators + (declarator,)
-
-        else:
-            declarators = cls._declarators
-
-        # Build docstring
-        docstrings = []
-        for builder, builder_cls in builders:
-            if builder.__doc__ is not None:
-                docstrings.append(builder.__doc__)
-
-        docstring = "\n".join(docstrings)
-
-        class_dict = {
-            "__doc__": docstring,
-            "_builders": builders,
-            "_declarators": declarators,
-            "_hive_args": None,
-            "_hive_object_classes": {}
-        }
-
-        return type(name, (cls,), class_dict)
-
-    @classmethod
-    def _hive_build(cls, parameter_values):
+    @memoize
+    def _hive_build(cls, meta_arg_values):
         """Build a HiveObject for this Hive, with appropriate Args instance
 
         :param kwargs: Parameter keyword arguments
@@ -552,25 +544,33 @@ class HiveBuilder(object):
         hive_object_dict = {'__doc__': cls.__doc__, "_hive_parent_class": cls}
         hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), hive_object_dict)
 
-        # Get frozen args
-        frozen_args_wrapper = cls._hive_args.freeze(parameter_values)
-
         hive_object_cls._hive_i = internals = HiveInternals(hive_object_cls)
         hive_object_cls._hive_ex = externals = HiveExportables(hive_object_cls)
-        hive_object_cls._hive_args_frozen = frozen_args_wrapper
+        hive_object_cls._hive_args = args = HiveArgs(hive_object_cls, "args")
+
+        # Get frozen meta args
+        frozen_meta_args = cls._hive_meta_args.freeze(meta_arg_values)
+        hive_object_cls._hive_meta_args_frozen = frozen_meta_args
 
         is_root = get_building_hive() is None
+        is_meta_hive = bool(cls._declarators)
 
         with hive_mode_as("build"), building_hive_as(hive_object_cls), bee_register_context() as registered_bees:
             # Invoke builder functions to build wrappers
             for builder, builder_cls in cls._builders:
                 if builder_cls is not None:
                     wrapper = HiveMethodWrapper(builder_cls)
-                    builder(wrapper, internals, externals, frozen_args_wrapper)
+                    builder_args = wrapper, internals, externals, args
 
                 else:
-                    builder(internals, externals, frozen_args_wrapper)
+                    builder_args = internals, externals, args
 
+                if is_meta_hive:
+                    builder_args = builder_args + (frozen_meta_args,)
+
+                builder(*builder_args)
+
+            # Importing
             child_plugins = {}
             child_sockets = {}
 
@@ -646,6 +646,7 @@ class HiveBuilder(object):
         # For internal bees
         for bee_name in internals:
             bee = getattr(internals, bee_name)
+
             private_bee_name = "_{}".format(bee_name)
 
             # If the bee requires a property interface, build a property
@@ -666,7 +667,7 @@ class HiveBuilder(object):
 
     @classmethod
     def _hive_build_args_wrapper(cls):
-        cls._hive_args = args_wrapper = HiveArgs(cls)
+        cls._hive_meta_args = args_wrapper = HiveArgs(cls, "meta_args")
 
         # Execute declarators
         with hive_mode_as("declare"):
@@ -677,28 +678,104 @@ class HiveBuilder(object):
     def _hive_get_hive_object_cls(cls, args, kwargs):
         """Find appropriate HiveObject for argument values
 
-        Extract parameters from arguments and return remainder
+        Extract meta args from arguments and return remainder
         """
-        if cls._hive_args is None:
+        if cls._hive_meta_args is None:
             cls._hive_build_args_wrapper()
 
         # Map keyword arguments to parameters, return remaining arguments
-        args, kwargs, parameter_values = cls._hive_args.extract_parameter_values(args, kwargs)
+        args, kwargs, meta_arg_values = cls._hive_meta_args.extract_from_args(args, kwargs)
 
         # If a new combination of parameters is provided
-        try:
-            hive_object_cls = cls._hive_object_classes[parameter_values]
+        return args, kwargs, cls._hive_build(meta_arg_values)
 
-        except KeyError:
-            hive_object_cls = cls._hive_build(parameter_values)
-            cls._hive_object_classes[parameter_values] = hive_object_cls
+    @classmethod
+    def extend(cls, name, builder, builder_cls=None, declarator=None, is_dyna_hive=False):
+        """Extend HiveObject with an additional builder (and builder class)
 
-        return args, kwargs, hive_object_cls
+        :param name: name of new hive class
+        :param builder: optional function used to build hive
+        :param builder_cls: optional Python class to bind to hive
+        :param declarator: optional declarator to establish parameters
+        """
+        if builder_cls is not None:
+            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class SomeHive(object): ..."
+
+        # Add new builder function
+        builders = cls._builders + ((builder, builder_cls),)
+
+        # Add new declarator
+        if declarator is not None:
+            declarators = cls._declarators + (declarator,)
+
+        else:
+            declarators = cls._declarators
+
+        # Build docstring
+        docstring = "\n".join([f.__doc__ for f, c in builders if f.__doc__ is not None])
+
+        if is_dyna_hive:
+            assert declarators, "cannot set is_dyna_hive to True without declarators"
+
+        class_dict = {
+            "__doc__": docstring,
+            "_builders": builders,
+            "_declarators": declarators,
+            "_hive_meta_args": None,
+            "_is_dyna_hive": is_dyna_hive,
+        }
+
+        return type(name, (cls,), class_dict)
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder, cls=None, declarator=None):
+def hive(name, builder, cls=None):
     if cls is not None:
         assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
 
-    return HiveBuilder.extend(name, builder, cls, declarator)
+    return HiveBuilder.extend(name, builder, cls)
+
+
+def dyna_hive(name, builder, declarator, cls=None):
+    if cls is not None:
+        assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+
+    return HiveBuilder.extend(name, builder, cls, declarator=declarator, is_dyna_hive=True)
+
+
+def meta_hive(name, builder, declarator, cls=None):
+    if cls is not None:
+        assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+
+    return HiveBuilder.extend(name, builder, cls, declarator=declarator)
+
+
+
+
+
+
+# Metahive returns a primitive
+# Dynahive is a metahive which instantiates immediately, no args wrapper - but instantiate build class with unused parameters
+# Declare Meta Args
+#   -> Parse meta args
+#       -> Invoke builder
+# If no declarator, is not meta
+
+def build():
+    if meta_args is None:
+        declare_meta_args()
+
+    declared_params = meta_args.parse(args, kwargs)
+    hive_obj = hive_objs[declared_params]
+
+    if hive_obj is None:
+        frozen_meta_args = meta_args.freeze(declared_params)
+
+        if is_meta:
+            args = ...
+            hive_obj = build_hive_obj(cls, i, ex, frozen_meta_args, args)
+        elif is_dyna:
+            hive_obj = build_hive_obj(cls, i, ex, frozen_meta_args)
+        else:
+            hive_obj = build_hive_obj(cls, i, ex, args)
+

@@ -46,7 +46,7 @@ def build_dictionary(cls, i, ex, args):
         ex.set_value = hive.entry(i.set_value)
 
     elif args.mode == "get":
-        i.out_value = hive.variable(args.data_type)
+        i.out_value = hive.attribute(args.data_type)
         i.out_io = hive.push_out(i.out_value)
         ex.out_value = hive.output(i.out_io)
 

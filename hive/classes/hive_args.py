@@ -4,22 +4,20 @@ from .. _compatability import next
 
 class FrozenHiveArgs(object):
 
-    def __init__(self, args):
+    def __init__(self, args, name):
         self.__dict__.update(args)
-        self._args = args
+
+        object.__setattr__(self, "_args", args)
+        object.__setattr__(self, "_name", name)
 
     def __getattr_(self, name):
-        raise AttributeError("FrozenHiveArgs (args) has no attribute '%s'" % name)
+        raise AttributeError("FrozenHiveArgs ({}) has no attribute '{}'".format(self._name, name))
 
     def __delattr_(self, name):
-        raise AttributeError("FrozenHiveArgs (args) cannot be assigned to")
+        raise AttributeError("FrozenHiveArgs ({}) cannot be assigned to".format(self._name))
 
     def __setattr__(self, name, value):
-        if name == "_args":
-            object.__setattr__(self, name, value)
-
-        else:
-            raise AttributeError("FrozenHiveArgs (args) cannot be assigned to")
+        raise AttributeError("FrozenHiveArgs ({}) cannot be assigned to".format(self._name))
 
     def __bool__(self):
         return bool(self._args)
@@ -32,21 +30,22 @@ class FrozenHiveArgs(object):
 
     def __repr__(self):
         member_pairs = ("{} = {}".format(k, v) for k, v in self._args.items())
-        return "<FrozenHiveArgs (args)>\n\t{}".format("\n\t".join(member_pairs))
+        return "<FrozenHiveArgs ({})>\n\t{}".format(self._name, "\n\t".join(member_pairs))
 
 
 class HiveArgs(object):
 
-    def __init__(self, hive_cls):
+    def __init__(self, hive_cls, name):
         self._args = {}
         self._hive_object_cls = hive_cls
+        self._name = name
 
         # Use ordered list for arguments (when resolving)
         self._arg_names = []
 
     def __setattr__(self, name, value):
         if name == "parent":
-            raise AttributeError("HiveArgs (args) special attribute 'parent' cannot be assigned to" % value.__class__)
+            raise AttributeError("HiveArgs ({}) special attribute 'parent' cannot be assigned to".format(self._name))
 
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)
@@ -56,7 +55,8 @@ class HiveArgs(object):
                 self._args.pop(name)
 
         if not isinstance(value, Parameter):
-            raise TypeError("HiveArgs (args) attribute '%s' must be a Parameter, not '%s'" % (name, value.__class__))
+            raise TypeError("HiveArgs ({}) attribute '{}' must be a Parameter, not '{}'"
+                            .format(self._name, name, value.__class__))
 
         value._hive_parameter_name = name
 
@@ -69,11 +69,11 @@ class HiveArgs(object):
         self._arg_names.append(name)
 
     def __getattr__(self, name):
-        raise AttributeError("HiveArgs (args) attribute has no attribute '%s'" % name)
+        raise AttributeError("HiveArgs ({}) attribute has no attribute '{}'".format(self._name, name))
 
     def __delattr__(self, name):
         if name not in self._args:
-            raise AttributeError("HiveArgs (args) attribute has no attribute '%s'" % name)
+            raise AttributeError("HiveArgs ({}) attribute has no attribute '{}'" .format(self._name, name))
 
         self._args.pop(name)
         self._arg_names.remove(name)
@@ -90,7 +90,7 @@ class HiveArgs(object):
 
     def __repr__(self):
         member_pairs = ("{} = {}".format(k, v) for k, v in self._args.items())
-        return "<HiveArgs (args)>\n\t{}".format("\n\t".join(member_pairs))
+        return "<HiveArgs ({})>\n\t{}".format(self._name, "\n\t".join(member_pairs))
 
     def freeze(self, parameter_values):
         """Resolve all parameter values with their parameter objects and return FrozenHiveArgs view
@@ -105,9 +105,9 @@ class HiveArgs(object):
             param_pairs.append((param_name, parameter.resolve(parameter_value)))
 
         resolved_args = dict(param_pairs)
-        return FrozenHiveArgs(resolved_args)
+        return FrozenHiveArgs(resolved_args, self._name)
 
-    def extract_parameter_values(self, args, kwargs):
+    def extract_from_args(self, args, kwargs):
         """Extract parameter values from arguments and keyword arguments provided to the building hive.
 
         Return the new args and kwargs wrappers, and a tuple of all parameter values
@@ -121,25 +121,30 @@ class HiveArgs(object):
         parameter_values = []
 
         use_args = True
-        for param_name in self._arg_names:
-            # If param name in kwargs dict, switch to kwargs
-            if param_name in out_kwargs:
-                use_args = False
 
-                # Pop value from kwargs
-                arg_value = out_kwargs.pop(param_name)
+        try:
+            for param_name in self._arg_names:
+                # If param name in kwargs dict, switch to kwargs
+                if param_name in out_kwargs:
+                    use_args = False
 
-            # If not in kwargs and we're using kwargs, break
-            else:
-                # Provide default None value
-                if not use_args:
-                    arg_value = None
+                    # Pop value from kwargs
+                    arg_value = out_kwargs.pop(param_name)
 
+                # If not in kwargs and we're using kwargs, break
                 else:
-                    # Try and take value from args
-                    arg_value = next(iter_args, None)
+                    # Provide default None value
+                    if not use_args:
+                        arg_value = None
 
-            parameter_values.append(arg_value)
+                    else:
+                        # Try and take value from args
+                        arg_value = next(iter_args)
+
+                parameter_values.append(arg_value)
+
+        except (StopIteration, KeyError):
+            raise ValueError("Not enough args provided to HiveArgs({}).extract_from_args to satisfy signature".format(self._name))
 
         out_args = tuple(iter_args)
         out_parameter_values = tuple(parameter_values)

@@ -6,7 +6,7 @@ def declare_transistor(args):
 
 
 def build_transistor(i, ex, args):
-    i.in_value = hive.variable(args.data_type)
+    i.in_value = hive.attribute(args.data_type)
     i.input = hive.pull_in(i.in_value)
     ex.input = hive.antenna(i.input)
 
