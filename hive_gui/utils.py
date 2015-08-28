@@ -158,6 +158,7 @@ def create_hive_object_instance(import_path, params):
         args = params.get("args", {})
         cls_args = params.get("cls_args", {})
         args.update(cls_args)
+
         return hive_object_cls(**args)
 
     except Exception as err:

@@ -4,7 +4,6 @@ from .models import model
 from .utils import start_value_from_type, create_hive_object_instance, dict_to_parameter_array, parameter_array_to_dict
 
 
-
 def get_unique_name(existing_names, base_name):
     i = 0
     while True:
@@ -14,7 +13,7 @@ def get_unique_name(existing_names, base_name):
             return name
 
 
-class NodeManager:
+class NodeManager(object):
 
     def __init__(self, gui_node_manager):
         self.docstring = ""
@@ -257,25 +256,26 @@ class NodeManager:
         with self.history.composite_operation("paste"):
             nodes = self._load(self._clipboard)
 
-            # Find midpoint
-            average_x = 0.0
-            average_y = 0.0
+            if nodes:
+                # Find midpoint
+                average_x = 0.0
+                average_y = 0.0
 
-            for node in nodes:
-                average_x += node.position[0]
-                average_y += node.position[1]
+                for node in nodes:
+                    average_x += node.position[0]
+                    average_y += node.position[1]
 
-            average_x /= len(nodes)
-            average_y /= len(nodes)
+                average_x /= len(nodes)
+                average_y /= len(nodes)
 
-            # Displacement to the center
-            offset_x = position[0] - average_x
-            offset_y = position[1] - average_y
+                # Displacement to the center
+                offset_x = position[0] - average_x
+                offset_y = position[1] - average_y
 
-            # Move nodes to mouse position
-            for node in nodes:
-                position = node.position[0] + offset_x, node.position[1] + offset_y
-                self.set_node_position(node, position)
+                # Move nodes to mouse position
+                for node in nodes:
+                    position = node.position[0] + offset_x, node.position[1] + offset_y
+                    self.set_node_position(node, position)
 
     def _export(self, nodes):
         hivemap = model.Hivemap()
