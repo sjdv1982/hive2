@@ -15,9 +15,11 @@ class IOPin(object):
         self._shape = get_shape(mode)
         self._io_type = io_type
         self._data_type = data_type
+        self._is_trigger = types_match(("trigger",), data_type, allow_none=False)
         self._mode = mode # "any" for any connection
 
         self.targets = set()
+
         self.is_folded = False
         self._max_connections = -1
 
@@ -57,7 +59,8 @@ class IOPin(object):
         return self._max_connections
 
     def can_connect(self, other_pin):
-        if not types_match(other_pin.data_type, self._data_type, allow_none=True):
+        # Check types match. If trigger, other must be trigger too.
+        if not types_match(other_pin.data_type, self._data_type, allow_none=not self._is_trigger):
             return False
 
         if other_pin.mode != "any" and self._mode != "any":
@@ -84,7 +87,7 @@ class IOPin(object):
 class BeeIOPin(IOPin):
 
     def __init__(self, node, name, data_type, mode, io_type):
-        super().__init__(node, name, data_type=data_type, mode=mode, io_type=io_type)
+        super().__init__(node, name, data_type, mode, io_type)
 
         self._max_connections = 1
 

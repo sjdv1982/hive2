@@ -20,7 +20,10 @@ class WidgetController:
 
     @value.setter
     def value(self, value):
-        self.setter(value)
+        try:
+            self.setter(value)
+        except Exception as err:
+            print("Unable to set value {}: {}".format(value, err))
 
 
 def create_widget(type_name=None, options=None):

@@ -1,5 +1,5 @@
 from .history import History
-from .hive_node import HiveNode, BeeNode
+from .node import HiveNode, BeeNode
 from .models import model
 from .utils import start_value_from_type, create_hive_object_instance, dict_to_parameter_array, parameter_array_to_dict
 
