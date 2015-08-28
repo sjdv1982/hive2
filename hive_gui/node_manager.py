@@ -238,7 +238,16 @@ class NodeManager:
 
         :param nodes: nodes to copy
         """
-        self._clipboard = self._export(nodes)
+        with_folded_nodes = set(nodes)
+
+        # Find nodes that are internally folded
+        for node in nodes:
+            for pin in node.inputs.values():
+                if pin.is_folded:
+                    target = next(iter(pin.targets)).node
+                    with_folded_nodes.add(target)
+
+        self._clipboard = self._export(with_folded_nodes)
 
     def paste(self, position):
         """Paste nodes from clipboard

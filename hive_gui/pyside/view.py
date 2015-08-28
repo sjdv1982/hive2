@@ -581,6 +581,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             to_remove = []
             for connection in self._connections:
+                if not connection.isVisible():
+                    continue
+
                 scene_translation = connection.start_socket.sceneTransform()
                 connection_rect = scene_translation.mapRect(connection._rect)
 

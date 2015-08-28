@@ -77,42 +77,46 @@ class ArgsPanel(QWidget):
             widget.deleteLater()
 
         # Args
-        args = node.params['args']
-        for name, value in args.items():
-            data_type = infer_type(value)
+        has_args = 'args' in node.params
+        if has_args:
+            args = node.params['args']
+            for name, value in args.items():
+                data_type = infer_type(value)
 
-            widget, controller = create_widget(data_type)
-            widget.controller = controller
+                widget, controller = create_widget(data_type)
+                widget.controller = controller
 
-            def on_changed(value, args=args):
-                args[name] = value
+                def on_changed(value, args=args):
+                    args[name] = value
 
-            controller.on_changed = on_changed
-            controller.value = value
+                controller.on_changed = on_changed
+                controller.value = value
 
-            layout.addRow(self.tr(name), widget)
-
-        # Divider
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        layout.addRow(line)
+                layout.addRow(self.tr(name), widget)
 
         # Class Args
-        cls_args = node.params['cls_args']
-        for name, value in cls_args.items():
-            data_type = infer_type(value)
+        if 'cls_args' in node.params:
+            # Divider if required
+            if has_args:
+                line = QFrame()
+                line.setFrameShape(QFrame.HLine)
+                line.setFrameShadow(QFrame.Sunken)
+                layout.addRow(line)
 
-            widget, controller = create_widget(data_type)
-            widget.controller = controller
+            cls_args = node.params['cls_args']
+            for name, value in cls_args.items():
+                data_type = infer_type(value)
 
-            def on_changed(value, cls_args=cls_args):
-                cls_args[name] = value
+                widget, controller = create_widget(data_type)
+                widget.controller = controller
 
-            controller.on_changed = on_changed
-            controller.value = value
+                def on_changed(value, cls_args=cls_args):
+                    cls_args[name] = value
 
-            layout.addRow(self.tr(name), widget)
+                controller.on_changed = on_changed
+                controller.value = value
+
+                layout.addRow(self.tr(name), widget)
 
 
 class FoldingPanel(QWidget):
