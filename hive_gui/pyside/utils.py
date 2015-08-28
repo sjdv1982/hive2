@@ -23,8 +23,7 @@ class WidgetController:
         self.setter(value)
 
 
-def create_widget(data_type, options=None):
-    base_type, *_ = data_type
+def create_widget(type_name, options=None):
 
     if options is not None:
         widget = QComboBox()
@@ -38,7 +37,7 @@ def create_widget(data_type, options=None):
         widget.activated.connect(controller._on_changed)
 
     else:
-        if base_type == "str":
+        if type_name == "str":
             widget = QLineEdit()
 
             getter = widget.text
@@ -47,7 +46,7 @@ def create_widget(data_type, options=None):
             controller = WidgetController(getter, setter)
             widget.textChanged.connect(controller._on_changed)
 
-        elif base_type == "int":
+        elif type_name == "int":
             widget = QSpinBox()
 
             getter = widget.value
@@ -56,7 +55,7 @@ def create_widget(data_type, options=None):
             controller = WidgetController(getter, setter)
             widget.valueChanged.connect(controller._on_changed)
 
-        elif base_type == "float":
+        elif type_name == "float":
             widget = QDoubleSpinBox()
 
             getter = widget.value
@@ -65,7 +64,7 @@ def create_widget(data_type, options=None):
             controller = WidgetController(getter, setter)
             widget.valueChanged.connect(controller._on_changed)
 
-        elif base_type == "bool":
+        elif type_name == "bool":
             widget = QCheckBox()
 
             getter = widget.isChecked

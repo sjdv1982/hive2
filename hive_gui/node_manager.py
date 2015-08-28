@@ -278,9 +278,9 @@ class NodeManager:
             params = node.params
 
             # Write to Bee
-            meta_arg_array = dict_to_parameter_array(params['meta_args'])
-            arg_array = dict_to_parameter_array(params['args'])
-            cls_arg_array = dict_to_parameter_array(params['cls_args'])
+            meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
+            arg_array = dict_to_parameter_array(params.get('args', {}))
+            cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
 
             folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
             spyder_bee = model.Bee(node.name, node.hive_path, meta_arg_array, arg_array, cls_arg_array, node.position,

@@ -3,6 +3,7 @@ from functools import partial
 
 
 from .utils import create_widget
+from ..utils import infer_type
 
 
 class ConfigurationPanel(QWidget):
@@ -45,6 +46,73 @@ class ConfigurationPanel(QWidget):
         widget.setPlaceholderText(node.name)
         widget.textChanged.connect(partial(self._rename_node, node))
         layout.addRow(self.tr("&Name"), widget)
+
+
+class ArgsPanel(QWidget):
+
+    def __init__(self):
+        QWidget.__init__(self)
+
+        self._node = None
+
+        self._layout = QFormLayout()
+        self.setLayout(self._layout)
+
+    @property
+    def node(self):
+        return self._node
+
+    @node.setter
+    def node(self, node):
+        self._node = node
+
+        self.on_node_updated(node)
+
+    def on_node_updated(self, node):
+        layout = self._layout
+
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            widget.deleteLater()
+
+        # Args
+        args = node.params['args']
+        for name, value in args.items():
+            data_type = infer_type(value)
+
+            widget, controller = create_widget(data_type)
+            widget.controller = controller
+
+            def on_changed(value, args=args):
+                args[name] = value
+
+            controller.on_changed = on_changed
+            controller.value = value
+
+            layout.addRow(self.tr(name), widget)
+
+        # Divider
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addRow(line)
+
+        # Class Args
+        cls_args = node.params['cls_args']
+        for name, value in cls_args.items():
+            data_type = infer_type(value)
+
+            widget, controller = create_widget(data_type)
+            widget.controller = controller
+
+            def on_changed(value, cls_args=cls_args):
+                cls_args[name] = value
+
+            controller.on_changed = on_changed
+            controller.value = value
+
+            layout.addRow(self.tr(name), widget)
 
 
 class FoldingPanel(QWidget):
@@ -103,7 +171,8 @@ class FoldingPanel(QWidget):
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
-                widget, controller = create_widget(pin.data_type)
+                # TODO check if we should just naively use x.data_type[0]
+                widget, controller = create_widget(pin.data_type[0])
                 layout.addWidget(widget)
 
                 controller.on_changed = partial(self._node_manager.set_folded_value, pin)

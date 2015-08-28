@@ -111,6 +111,9 @@ class MainWindow(QMainWindow):
         self.configuration_window = self.create_subwindow("Configuration", "right")
         self.configuration_window.setVisible(False)
 
+        self.args_window = self.create_subwindow("Args", "right")
+        self.args_window.setVisible(False)
+
         self.home_page = None
 
     def get_current_node_manager(self):
@@ -162,7 +165,7 @@ class MainWindow(QMainWindow):
             widget.on_enter()
 
     def add_node_view(self, name="<Untitled>"):
-        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window)
+        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window, self.args_window)
 
         index = self.tab_widget.addTab(view, name)
         self.tab_widget.setCurrentIndex(index)
@@ -200,6 +203,7 @@ class MainWindow(QMainWindow):
         show_config = False
         show_folding = False
         show_hives = False
+        show_args = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
@@ -210,6 +214,7 @@ class MainWindow(QMainWindow):
             show_config = True
             show_folding = True
             show_hives = True
+            show_args = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
@@ -217,6 +222,7 @@ class MainWindow(QMainWindow):
         self.folding_window.setVisible(show_folding)
         self.configuration_window.setVisible(show_config)
         self.tree_window.setVisible(show_hives)
+        self.args_window.setVisible(show_args)
 
         menu_bar = self.menuBar()
         menu_bar.clear()

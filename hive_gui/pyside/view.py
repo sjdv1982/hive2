@@ -39,7 +39,7 @@ import weakref
 import functools
 import os
 
-from .panels import FoldingPanel, ConfigurationPanel
+from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .utils import create_widget
 
 from ..node_manager import NodeManager
@@ -101,7 +101,7 @@ class ConfigureNodeDialogue(QDialog):
             data_type = param.data_type
             default = param.start_value
 
-            widget, controller = create_widget(data_type, options)
+            widget, controller = create_widget(data_type[0], options)
 
             if default is not param.NoValue:
                 try:
@@ -123,7 +123,7 @@ class ConfigureNodeDialogue(QDialog):
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
-    def __init__(self, folding_window, docstring_window, configuration_window):
+    def __init__(self, folding_window, docstring_window, configuration_window, args_window):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
@@ -161,10 +161,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._folding_window = folding_window
         self._docstring_window = docstring_window
         self._configuration_window = configuration_window
+        self._args_window = args_window
 
         self._folding_widget = FoldingPanel("dragonfly.std.Variable", self.node_manager)
         self._docstring_widget = QTextEdit()
         self._configuration_widget = ConfigurationPanel(self.node_manager)
+        self._args_widget = ArgsPanel()
 
         # Path editing
         self._cut_start_position = None
@@ -182,12 +184,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._docstring_window.setWidget(self._docstring_widget)
         self._folding_window.setWidget(self._folding_widget)
         self._configuration_window.setWidget(self._configuration_widget)
+        self._args_window.setWidget(self._args_widget)
 
     def on_exit(self):
         self._docstring_window.setWidget(QWidget())
         self._folding_window.setWidget(QWidget())
         self._configuration_window.setWidget(QWidget())
-        print("EXIT VIEW")
+        self._args_window.setWidget(QWidget())
 
     @property
     def is_untitled(self):
@@ -352,6 +355,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         node = gui_node.node
         self._folding_widget.node = node
         self._configuration_widget.node = node
+        self._args_widget.node = node
 
     def gui_set_selected_nodes(self, items):
         self.scene().clearSelection()

@@ -49,6 +49,9 @@ class HiveNode(object):
         :return:
         """
 
+        # Warning - args and cls_args of hive_object might not correspond to params
+        # Altering the params dict from the UI is safe as it won't affect the pinout on the hiveobject
+        # Use the params dict instead of re-scraping the hive_object if reading these values
         self.hive_object = hive_object
         self.hive_path = hive_path
 
