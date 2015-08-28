@@ -170,7 +170,7 @@ def parameter_array_to_dict(array):
 
 
 def dict_to_parameter_array(parameters):
-    return [model.BeeInstanceParameter(name, _get_type_name(value), repr(value))
+    return [model.HiveInstanceParameter(name, _get_type_name(value), repr(value))
             for name, value in parameters.items()]
 
 
@@ -182,27 +182,27 @@ def builder_from_hivemap(data):
     hivemap = model.Hivemap(data)
 
     def builder(i, ex, args):
-        hive_bees = {}
+        hive_instances = {}
 
-        for bee in hivemap.bees:
+        for spyder_hive in hivemap.hives:
             # Get params
-            meta_args = parameter_array_to_dict(bee.meta_args)
-            args = parameter_array_to_dict(bee.args)
-            cls_args = parameter_array_to_dict(bee.cls_args)
+            meta_args = parameter_array_to_dict(spyder_hive.meta_args)
+            args = parameter_array_to_dict(spyder_hive.args)
+            cls_args = parameter_array_to_dict(spyder_hive.cls_args)
 
             params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
 
-            hive_bee = create_hive_object_instance(bee.import_path, params)
+            hive_instance = create_hive_object_instance(spyder_hive.import_path, params)
 
-            setattr(ex, bee.identifier, hive_bee)
-            hive_bees[bee.identifier] = hive_bee
+            setattr(ex, spyder_hive.identifier, hive_instance)
+            hive_instances[spyder_hive.identifier] = hive_instance
 
         for connection in hivemap.connections:
-            from_bee = hive_bees[connection.from_bee]
-            from_output = getattr(from_bee, connection.output_name)
+            from_hive = hive_instances[connection.from_hive]
+            from_output = getattr(from_hive, connection.output_name)
 
-            to_bee = hive_bees[connection.to_bee]
-            to_input = getattr(to_bee, connection.input_name)
+            to_hive = hive_instances[connection.to_hive]
+            to_input = getattr(to_hive, connection.input_name)
 
             hive.connect(from_output, to_input)
 

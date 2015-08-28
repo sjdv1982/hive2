@@ -111,13 +111,6 @@ class SocketRow(QGraphicsWidget):
     def toolTip(self):
         return ""
 
-    def _disconnected(self):
-        if self._socket.mode == "input":
-            # TODO
-            pass
-            if self._socket._connections:
-                self._socket._connections[0].on_deleted()
-
     def setHooksColor(self, io, color, mixedColor=False):
         self._socket.setColor(color)
         self._socket.setMixedColor(mixedColor)

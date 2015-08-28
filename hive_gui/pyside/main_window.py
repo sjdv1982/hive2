@@ -105,14 +105,14 @@ class MainWindow(QMainWindow):
         self.docstring_window = self.create_subwindow("Docstring", "left")
         self.docstring_window.setVisible(False)
 
-        self.folding_window = self.create_subwindow("Folding", "right")
-        self.folding_window.setVisible(False)
-
         self.configuration_window = self.create_subwindow("Configuration", "right")
         self.configuration_window.setVisible(False)
 
         self.args_window = self.create_subwindow("Args", "right")
         self.args_window.setVisible(False)
+
+        self.folding_window = self.create_subwindow("Folding", "right")
+        self.folding_window.setVisible(False)
 
         self.home_page = None
 

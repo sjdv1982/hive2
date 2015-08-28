@@ -96,8 +96,6 @@ def get_bee_names():
     return ()
 
 # TODO add import hook / callback / list for injecting additional hives
-
-
 def get_hives(*modules):
     module_dict = {}
     for module in modules:

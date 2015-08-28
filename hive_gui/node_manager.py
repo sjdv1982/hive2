@@ -97,9 +97,14 @@ class NodeManager(object):
 
         self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
 
-    def set_node_name(self, node, name):
+    def set_node_name(self, node, name, attempt_till_success=False):
         if self.nodes.get(name, node) is not node:
-            raise ValueError("Can't rename {} to {}".format(node, name))
+            # Try till we succeed
+            if attempt_till_success:
+                name = get_unique_name(self.nodes, name)
+
+            else:
+                raise ValueError("Can't rename {} to {}".format(node, name))
 
         # Change key
         old_name = node.name
@@ -167,8 +172,12 @@ class NodeManager(object):
         if not pin.targets:
             params = dict(meta_args=dict(data_type=pin.data_type),
                           args=dict(start_value=start_value_from_type(pin.data_type)))
+
+            # Create variable node, attempt to call it same as pin
             target_node = self.create_node(self.fold_node_path, params)
             target_pin = next(iter(target_node.outputs.values()))
+
+            self.set_node_name(target_node, pin.name)
             self.create_connection(target_pin, pin)
 
         pin.is_folded = True
@@ -186,18 +195,6 @@ class NodeManager(object):
 
         self.gui_node_manager.unfold_pin(pin)
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
-
-    def get_folded_value(self, pin):
-        target_pin = next(iter(pin.targets))
-        folded_node = target_pin.node
-
-        return folded_node.params['args']['start_value']
-
-    def set_folded_value(self, pin, value):
-        target_pin = next(iter(pin.targets))
-        folded_node = target_pin.node
-
-        folded_node.params['args']['start_value'] = value
 
     def on_pasted_pre_connect(self, nodes):
         self.gui_node_manager.on_pasted_pre_connect(nodes)
@@ -282,7 +279,6 @@ class NodeManager(object):
 
         node_names = set()
 
-        # TODO, if bee is not hive
         for node in nodes:
             params = node.params
 
@@ -292,10 +288,10 @@ class NodeManager(object):
             cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
 
             folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
-            spyder_bee = model.Bee(node.name, node.hive_path, meta_arg_array, arg_array, cls_arg_array, node.position,
-                                   folded_pins)
+            spyder_hive = model.Hive(node.name, node.hive_path, meta_arg_array, arg_array, cls_arg_array,
+                                     node.position, folded_pins)
 
-            hivemap.bees.append(spyder_bee)
+            hivemap.hives.append(spyder_hive)
 
             # Keep track of copied nodes
             node_names.add(node.name)
@@ -316,7 +312,7 @@ class NodeManager(object):
                     if target_node_name not in node_names:
                         continue
 
-                    spyder_connection = model.BeeConnection(node_name, pin_name, target_node_name, target.name)
+                    spyder_connection = model.HiveConnection(node_name, pin_name, target_node_name, target.name)
                     hivemap.connections.append(spyder_connection)
 
         return hivemap
@@ -328,15 +324,15 @@ class NodeManager(object):
         # Create nodes
         # Mapping from original ID to new ID
         nodes = set()
-        nodes_to_bees = {}
+        nodes_to_hives = {}
         id_to_node_name = {}
 
-        for bee in hivemap.bees:
-            import_path = bee.import_path
+        for spyder_hive in hivemap.hives:
+            import_path = spyder_hive.import_path
 
-            meta_args = parameter_array_to_dict(bee.meta_args)
-            args = parameter_array_to_dict(bee.args)
-            cls_args = parameter_array_to_dict(bee.cls_args)
+            meta_args = parameter_array_to_dict(spyder_hive.meta_args)
+            args = parameter_array_to_dict(spyder_hive.args)
+            cls_args = parameter_array_to_dict(spyder_hive.cls_args)
 
             params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
 
@@ -344,25 +340,25 @@ class NodeManager(object):
                 node = self.create_node(import_path, params)
 
             except (ValueError, RuntimeError) as err:
-                print("Unable to create node {}: {}".format(bee.identifier, err))
+                print("Unable to create node {}: {}".format(spyder_hive.identifier, err))
                 continue
 
             # Try to use original name
             try:
-                self.set_node_name(node, bee.identifier)
+                self.set_node_name(node, spyder_hive.identifier)
 
             except ValueError:
                 print("Failed to use original name")
                 pass
 
             # Set original position
-            self.set_node_position(node, (bee.position.x, bee.position.y))
+            self.set_node_position(node, (spyder_hive.position.x, spyder_hive.position.y))
 
             # Map original copied ID to new allocated ID
-            id_to_node_name[bee.identifier] = node.name
+            id_to_node_name[spyder_hive.identifier] = node.name
 
             nodes.add(node)
-            nodes_to_bees[node] = bee
+            nodes_to_hives[node] = spyder_hive
 
         # Pre connectivity step (Blender hack)
         self.on_pasted_pre_connect(nodes)
@@ -370,12 +366,12 @@ class NodeManager(object):
         # Recreate connections
         for connection in hivemap.connections:
             try:
-                from_id = id_to_node_name[connection.from_bee]
-                to_id = id_to_node_name[connection.to_bee]
+                from_id = id_to_node_name[connection.from_hive]
+                to_id = id_to_node_name[connection.to_hive]
 
             except KeyError:
-                print("Unable to create connection {}, {}".format(connection.from_bee,
-                                                                  connection.to_bee))
+                print("Unable to create connection {}, {}".format(connection.from_hive,
+                                                                  connection.to_hive))
                 continue
 
             from_node = self.nodes[from_id]
@@ -387,8 +383,8 @@ class NodeManager(object):
             self.create_connection(from_pin, to_pin)
 
         # Fold folded pins
-        for node, bee in nodes_to_bees.items():
-            for pin_name in bee.folded_pins:
+        for node, spyder_hive in nodes_to_hives.items():
+            for pin_name in spyder_hive.folded_pins:
                 pin = node.inputs[pin_name]
                 self.fold_pin(pin)
 

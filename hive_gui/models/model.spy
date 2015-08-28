@@ -1,29 +1,36 @@
-Type BeeInstanceParameter {
+Type HiveInstanceParameter {
   String identifier
   String data_type
   String value
 }
 
 
-Type Bee {
+Type IOBee {
+  String identifier
+  String bee_type
+}
+
+
+Type Hive {
   String identifier
   String import_path
 
-  BeeInstanceParameterArray meta_args = []
-  BeeInstanceParameterArray args = []
-  BeeInstanceParameterArray cls_args = []
+  # Instantiation data
+  HiveInstanceParameterArray meta_args = []
+  HiveInstanceParameterArray args = []
+  HiveInstanceParameterArray cls_args = []
 
-  #GUI data
+  # GUI data
   Coordinate2D position = Coordinate2D(0, 0)
   StringArray folded_pins = []
 }
 
 
-Type BeeConnection {
-  String from_bee
+Type HiveConnection {
+  String from_hive
   String output_name
 
-  String to_bee
+  String to_hive
   String input_name
 }
 
@@ -35,7 +42,7 @@ Type Parameter {
 
 
 Type Hivemap {
-  BeeArray bees = []
-  BeeConnectionArray connections = []
+  HiveArray hives = []
+  HiveConnectionArray connections = []
   String docstring = ""
 }

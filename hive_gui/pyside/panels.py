@@ -175,14 +175,9 @@ class FoldingPanel(QWidget):
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
-                # TODO check if we should just naively use x.data_type[0]
-                widget, controller = create_widget(pin.data_type[0])
+                widget = ArgsPanel()
+                widget.node = next(iter(pin.targets)).node
                 layout.addWidget(widget)
-
-                controller.on_changed = partial(self._node_manager.set_folded_value, pin)
-                controller.value = self._node_manager.get_folded_value(pin)
-
-                widget.controller = controller
 
             else:
                 continue
