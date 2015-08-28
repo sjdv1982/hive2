@@ -8,39 +8,101 @@ from hive.tuple_type import types_match
 class IOPin(object):
 
     def __init__(self, node, name, data_type, mode, io_type):
-        self.node = node
         self.name = name
 
-        self.colour = get_colour(data_type)
-        self.shape = get_shape(mode)
+        self._node = node
+        self._colour = get_colour(data_type)
+        self._shape = get_shape(mode)
+        self._io_type = io_type
+        self._data_type = data_type
+        self._mode = mode # "any" for any connection
 
-        self.io_type = io_type
         self.targets = set()
-
         self.is_folded = False
+        self._max_connections = -1
 
-        self.data_type = data_type
-        self.mode = mode
+        if mode == "pull" and io_type == "input":
+            self._max_connections = 1
 
-    def connect(self, other_pin):
-        if not types_match(other_pin.data_type, self.data_type, allow_none=True):
-            raise TypeError("Incompatible data types: {}, {}".format(self.data_type, other_pin.data_type))
+    @property
+    def data_type(self):
+        return self._data_type
 
-        if other_pin.mode != self.mode:
-            raise TypeError("Incompatible IO modes: {}, {}".format(self.mode, other_pin.mode))
+    @property
+    def node(self):
+        return self._node
+
+    @property
+    def colour(self):
+        return self._colour
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def io_type(self):
+        return self._io_type
+
+    @property
+    def data_type(self):
+        return self._data_type
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @property
+    def max_connections(self):
+        return self._max_connections
+
+    def can_connect(self, other_pin):
+        if not types_match(other_pin.data_type, self._data_type, allow_none=True):
+            return False
+
+        if other_pin.mode != "any" and self._mode != "any":
+            if other_pin.mode != self._mode:
+                return False
 
         # Pull inputs can only have one input
-        if self.mode == "pull" and self.io_type == "input" and self.targets:
-            raise ValueError("Already connected to input")
+        if len(self.targets) == self._max_connections:
+            return False
 
-        self.targets.add(other_pin)
+        return True
 
-    def disconnect(self, other_pin):
-        assert other_pin in self.targets
-        self.targets.remove(other_pin)
+    def connect(self, other):
+        assert other not in self.targets
+        self.targets.add(other)
+
+    def disconnect(self, other):
+        self.targets.remove(other)
 
     def __repr__(self):
-        return "<{} pin {}.{}>".format(self.io_type, self.node.name, self.name)
+        return "<{} pin {}.{}>".format(self._io_type, self._node.name, self.name)
+
+
+class BeeIOPin(IOPin):
+
+    def __init__(self, node, name, data_type, mode, io_type):
+        super().__init__(node, name, data_type=data_type, mode=mode, io_type=io_type)
+
+        self._max_connections = 1
+
+    def mimic_other_pin(self, other):
+        # Update cosmetics for other
+        self._shape = other.shape
+        self._colour = other.colour
+
+    def connect(self, other):
+        super().connect(other)
+
+        self.mimic_other_pin(other)
+
+    def can_connect(self, other_pin):
+        if not super().can_connect(other_pin):
+            return False
+
+        return not isinstance(other_pin, self.__class__)
 
 
 class GUINode(object):
@@ -49,6 +111,7 @@ class GUINode(object):
     position = None
     pin_order = None
     name = None
+    params = {}
     tooltip = ""
 
 
@@ -66,22 +129,49 @@ class BeeNode(GUINode):
         :return:
         """
         self.name = name
-        self.import_path = import_path
+        self.position = (0.0, 0.0)
 
         self.inputs = {}
         self.outputs = {}
         self.pin_order = []
 
-        if io_type == "output":
-            self.inputs["output"] = IOPin(self, "output", data_type, mode, "input")
-            self.pin_order.append("output")
+        # Read only
+        self._import_path = import_path
 
-        elif io_type == "antenna":
-            self.outputs["antenna"] = IOPin(self, "antenna", data_type, mode, "output")
-            self.pin_order.append("antenna")
+        # GUI data used to support interoperability with other nodes
+        self._data_type = data_type
+        self._mode = mode
+
+        # Technically lazy, these aren't meta params, but we're just going to cheat
+        self.params = {'meta_args': {'data_type': data_type, 'mode': mode}}
+
+        if io_type == "output":
+            pin_name = "output"
+            self.inputs[pin_name] = BeeIOPin(self, pin_name, data_type, mode, "input")
+            self.pin_order.append(pin_name)
+
+        elif io_type == "input":
+            pin_name = "input"
+            self.outputs[pin_name] = BeeIOPin(self, pin_name, data_type, mode, "output")
+            self.pin_order.append(pin_name)
 
         else:
             raise ValueError(io_type)
+
+    @property
+    def import_path(self):
+        return self._import_path
+
+    @property
+    def data_type(self):
+        return self._data_type
+
+    @property
+    def mode(self):
+        return self._mode
+
+    def __repr__(self):
+        return "<Bee Node ({})>".format(self.name)
 
 
 class HiveNode(GUINode):
@@ -98,10 +188,12 @@ class HiveNode(GUINode):
         """
         self.name = name
 
+        # Read only
+        self._import_path = import_path
+
         # Warning - args and cls_args of hive_object might not correspond to params
         # Altering the params dict from the UI is safe as it won't affect the pinout on the hiveobject
         # Use the params dict instead of re-scraping the hive_object if reading these values
-        self.import_path = import_path
         self.params = params
 
         io_info = get_io_info(hive_object)
@@ -115,6 +207,10 @@ class HiveNode(GUINode):
                                    for name, info in io_info['outputs'].items())
 
         self.position = (0.0, 0.0)
+
+    @property
+    def import_path(self):
+        return self._import_path
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

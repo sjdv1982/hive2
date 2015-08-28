@@ -2,7 +2,7 @@ import hive
 
 
 def declare_variable(meta_args):
-    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.data_type = hive.parameter("tuple", ("int",))
 
 
 def build_variable(i, ex, args, meta_args):

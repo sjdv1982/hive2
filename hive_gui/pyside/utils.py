@@ -81,4 +81,6 @@ def create_widget(type_name=None, options=None):
             controller = WidgetController(getter, setter)
             widget.textChanged.connect(controller._on_changed)
 
+            controller.value = None
+
     return widget, controller

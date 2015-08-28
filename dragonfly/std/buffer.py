@@ -2,7 +2,7 @@ import hive
 
 
 def declare_buffer(meta_args):
-    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.data_type = hive.parameter("tuple", ("int",))
     meta_args.mode = hive.parameter("str", "push", options={'push', 'pull'})
 
 

@@ -36,6 +36,7 @@ import weakref
 from PySide import QtGui, QtCore
 
 from ..sockets import SocketTypes
+from ..node_manager import NodeConnectionError
 
 
 class Socket(QtGui.QGraphicsItem):
@@ -164,6 +165,12 @@ class Socket(QtGui.QGraphicsItem):
 
         self.setToolTip(tooltip)
 
+    def set_shape(self, shape):
+        self._shape = shape
+
+    def set_colour(self, colour):
+        self.setColor(QtGui.QColor(*colour))
+
     def setColor(self, color):
         self._color.setRgb(color.red(), color.green(), color.blue())
         self._brush.setColor(self._color)
@@ -216,7 +223,11 @@ class Socket(QtGui.QGraphicsItem):
                 node = self.parent_socket_row.parent_node_ui
 
                 start_socket = connection.start_socket
-                node.view.gui_create_connection(start_socket, target_socket)
+                try:
+                    node.view.gui_create_connection(start_socket, target_socket)
+
+                except NodeConnectionError:
+                    pass
 
             connection.on_deleted()
             self._dragging_connection = None
@@ -256,6 +267,7 @@ class Socket(QtGui.QGraphicsItem):
             painter.scale(0.8, 0.8)
             painter.drawRect(self._rect.translated(-c))
             painter.restore()
+
         else:
             raise ValueError(self._shape)
 

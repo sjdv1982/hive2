@@ -36,12 +36,10 @@ from .view import NodeView
 # </license>
 
 
+from collections import OrderedDict
 import weakref
 
 from .socket import Socket
-from ..sockets import get_shape, get_colour
-
-from collections import OrderedDict
 
 
 class SocketRow(QGraphicsWidget):
@@ -57,26 +55,25 @@ class SocketRow(QGraphicsWidget):
         self._socket = None
         self._outputHook = None
 
-        socket_colour = pin.colour#get_colour(pin.data_type)
-        socket_type = pin.shape#get_socket_type_for_mode(pin.mode)
+        socket_colour = pin.colour
+        socket_type = pin.shape
 
         if pin.io_type == "input":
             self._socket = Socket(self, "input", socket_type, "solid", hover_text="", order_dependent=True)
-            self.setHooksColor("input", QColor(*socket_colour))
+            self._socket.set_colour(socket_colour)
 
         else:
             self._socket = Socket(self, "output", socket_type, "solid", hover_text="", order_dependent=True)
-            self.setHooksColor("output", QColor(*socket_colour))
+            self._socket.set_colour(socket_colour)
 
         self._socket.setVisible(True)
 
         self._label.setBrush(parent_node_ui.labelsColor())
         label = self._pin.name
-        # if self._params.label is not None:
-            # label = self._params.label
+
         self._labelText = label
         self.set_value("")
-        self.setVisible(True)#self._params.visible)
+        self.setVisible(True)
 
     @property
     def pin(self):
@@ -110,10 +107,6 @@ class SocketRow(QGraphicsWidget):
 
     def toolTip(self):
         return ""
-
-    def setHooksColor(self, io, color, mixedColor=False):
-        self._socket.setColor(color)
-        self._socket.setMixedColor(mixedColor)
 
     @property
     def parent_node_ui(self):

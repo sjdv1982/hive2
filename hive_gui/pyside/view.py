@@ -231,6 +231,17 @@ class NodeView(IGUINodeManager, QGraphicsView):
         output_socket = output_socket_row.socket
         input_socket = input_socket_row.socket
 
+        # Update cosmetics
+        output_socket.set_colour(output.colour)
+        input_socket.set_colour(input.colour)
+
+        output_socket.set_shape(output.shape)
+        input_socket.set_shape(input.shape)
+
+        input_socket.update()
+        output_socket.update()
+
+        # Create connection
         from .connection import Connection
         connection = Connection(output_socket, input_socket)
         connection.update_path()
@@ -256,11 +267,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._connections.remove(connection)
 
     def set_node_position(self, node, position):
-        try:
-            gui_node = self.node_to_qtnode[node]
-        except KeyError:
-            print(self.node_to_qtnode, node)
-            raise
+        gui_node = self.node_to_qtnode[node]
 
         self._position_busy = True
         gui_node.setPos(*position)
@@ -316,7 +323,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         try:
             self.node_manager.create_connection(start_pin, end_pin)
 
-        except (ValueError, TypeError):
+        except ConnectionError:
             pass
 
     def gui_delete_connection(self, start_socket, end_socket):
@@ -466,7 +473,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def _write_wrapper_to_dialogue(wrapper, dialogue):
         for arg_name in wrapper:
             param = getattr(wrapper, arg_name)
-            data_type = param.data_type[0]
+            data_type = param.data_type[0] if param.data_type else None
             options = param.options
 
             # If default is defined
@@ -477,8 +484,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
             dialogue.add_widget(arg_name, data_type, default, options)
 
     def on_dropped_bee(self, position, import_path):
+        dialogue = DynamicInputDialogue(self)
+        dialogue.setAttribute(Qt.WA_DeleteOnClose)
+        dialogue.setWindowTitle("Configure Node: Meta Args")
 
-        self.node_manager.create_bee(import_path, data_type, mode)
+        node = self.node_manager.create_bee(import_path)
+        self.node_manager.set_node_position(node, position)
 
     def on_dropped_hive(self, position, import_path):
         hive_cls = import_from_path(import_path)

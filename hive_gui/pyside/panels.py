@@ -76,13 +76,29 @@ class ArgsPanel(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
-        # Args
-        has_args = 'args' in node.params
+        # Meta Args
+        meta_args = node.params.get('meta_args')
+        if meta_args:
+            for name, value in meta_args.items():
+                data_type = infer_type(value, allow_object=True)
+                widget, controller = create_widget(data_type)
+                widget.setEnabled(False)
+                controller.value = repr(value)
 
-        if has_args:
-            args = node.params['args']
+                layout.addRow(self.tr(name), widget)
+
+        # Args
+        args = node.params.get('args')
+        if args:
+            # Divider if required
+            if meta_args:
+                line = QFrame()
+                line.setFrameShape(QFrame.HLine)
+                line.setFrameShadow(QFrame.Sunken)
+                layout.addRow(line)
+
             for name, value in args.items():
-                data_type = infer_type(value)
+                data_type = infer_type(value, allow_object=True)
 
                 widget, controller = create_widget(data_type)
                 widget.controller = controller
@@ -96,17 +112,17 @@ class ArgsPanel(QWidget):
                 layout.addRow(self.tr(name), widget)
 
         # Class Args
-        if 'cls_args' in node.params:
+        cls_args = node.params.get('cls_args')
+        if cls_args:
             # Divider if required
-            if has_args:
+            if cls_args or meta_args:
                 line = QFrame()
                 line.setFrameShape(QFrame.HLine)
                 line.setFrameShadow(QFrame.Sunken)
                 layout.addRow(line)
 
-            cls_args = node.params['cls_args']
             for name, value in cls_args.items():
-                data_type = infer_type(value)
+                data_type = infer_type(value, allow_object=True)
 
                 widget, controller = create_widget(data_type)
                 widget.controller = controller

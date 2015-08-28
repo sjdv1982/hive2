@@ -5,32 +5,34 @@ Type HiveInstanceParameter {
 }
 
 
-Type IOBee {
+Type BaseNode {
   String identifier
-  String bee_type
+  String import_path
+  Coordinate2D position = Coordinate2D(0, 0)
 }
 
 
-Type Hive {
-  String identifier
-  String import_path
+Type IOBeeNode:BaseNode{
+  # GUI data to allow interoperation with other nodes
+}
 
+
+Type HiveNode:BaseNode{
   # Instantiation data
   HiveInstanceParameterArray meta_args = []
   HiveInstanceParameterArray args = []
   HiveInstanceParameterArray cls_args = []
 
   # GUI data
-  Coordinate2D position = Coordinate2D(0, 0)
   StringArray folded_pins = []
 }
 
 
-Type HiveConnection {
-  String from_hive
+Type Connection {
+  String from_node
   String output_name
 
-  String to_hive
+  String to_node
   String input_name
 }
 
@@ -42,7 +44,9 @@ Type Parameter {
 
 
 Type Hivemap {
-  HiveArray hives = []
-  HiveConnectionArray connections = []
+  HiveNodeArray hives = []
+  IOBeeNodeArray io_bees = []
+
+  ConnectionArray connections = []
   String docstring = ""
 }

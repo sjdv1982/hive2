@@ -62,5 +62,8 @@ def get_shape(mode):
     elif mode == "push":
         return SocketTypes.circle
 
+    elif mode == "any":
+        return SocketTypes.square
+
     raise ValueError("Invalid mode")
 

@@ -38,6 +38,9 @@ def infer_type(value, allow_object=False):
     if not allow_object:
         raise ValueError(value)
 
+    if value is None:
+        return 'object'
+
     return value.__class__.__name__
 
 
@@ -182,29 +185,55 @@ def builder_from_hivemap(data):
     hivemap = model.Hivemap(data)
 
     def builder(i, ex, args):
-        hive_instances = {}
+        io_bees = {}
 
         for spyder_hive in hivemap.hives:
+            hive_name = spyder_hive.identifier
+
             # Get params
             meta_args = parameter_array_to_dict(spyder_hive.meta_args)
             args = parameter_array_to_dict(spyder_hive.args)
             cls_args = parameter_array_to_dict(spyder_hive.cls_args)
 
             params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
-
             hive_instance = create_hive_object_instance(spyder_hive.import_path, params)
 
-            setattr(ex, spyder_hive.identifier, hive_instance)
-            hive_instances[spyder_hive.identifier] = hive_instance
+            setattr(i, hive_name, hive_instance)
+
+        for spyder_io_bee in hivemap.io_bees:
+            io_bees[spyder_io_bee.identifier] = spyder_io_bee.import_path
 
         for connection in hivemap.connections:
-            from_hive = hive_instances[connection.from_hive]
-            from_output = getattr(from_hive, connection.output_name)
+            from_identifier = connection.from_node
+            to_identifier = connection.to_node
 
-            to_hive = hive_instances[connection.to_hive]
-            to_input = getattr(to_hive, connection.input_name)
+            # If from node is an antenna or an output
+            if from_identifier in io_bees or to_identifier in io_bees:
+                # Found antenna
+                if from_identifier in io_bees:
+                    to_hive = getattr(i, to_identifier)
+                    to_input = getattr(to_hive, connection.input_name)
 
-            hive.connect(from_output, to_input)
+                    bee_func = import_from_path(io_bees[from_identifier])
+                    setattr(ex, from_identifier, bee_func(to_input))
+
+                # Found output
+                else:
+                    from_hive = getattr(i, from_identifier)
+                    from_output = getattr(from_hive, connection.output_name)
+
+                    bee_func = import_from_path(io_bees[to_identifier])
+                    setattr(ex, to_identifier, bee_func(from_output))
+
+            # Normal connection
+            else:
+                to_hive = getattr(i, to_identifier)
+                to_input = getattr(to_hive, connection.input_name)
+
+                from_hive = getattr(i, from_identifier)
+                from_output = getattr(from_hive, connection.output_name)
+
+                hive.connect(from_output, to_input)
 
     builder.__doc__ = hivemap.docstring
     return builder
