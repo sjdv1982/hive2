@@ -1,4 +1,0 @@
-Metahives are simply hives with parameters.
-Dynahives are a special case of metahive, which we can probably avoid
-
-We could optionally remove dynahives to make clear that building is occurring

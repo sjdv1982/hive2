@@ -21,16 +21,15 @@ Control flow: Generic node manager -> Blender node manager
 
 # General GUI
 - [x] Add docstring to builder function when building from hivemap
-- [ ] Foldable variables (pull in)
-        * If > 1 connection, can't fold
-        * Support hide/show - Infer if connected node is hidden, is folded. (If hide node, notify connections!)
-        * Only cut visible connections
-        * Allow view to populate this in main window? view->set_node_config->... (set options OR set actual form layout) -> More powerful system for config and other things?? window node "context"
+- [x] Foldable variables (pull in)
+    * If > 1 connection, can't fold
+    * Support hide/show - Infer if connected node is hidden, is folded. (If hide node, notify connections!)
+    * Only cut visible connections
+    * Allow view to populate this in main window? view->set_node_config->... (set options OR set actual form layout) -> More powerful system for config and other things?? window node "context"
 
 * Node Finder
-    * Parse all hives (just check if inherits from HiveBuilder)
+    - [x]Parse all hives (just check if inherits from HiveBuilder)
     * Parse all bees (just check if inherits from Bee)
-    * Parse all parameters (just check if inherits from Parameter)
 
 * How to support meta-hives / declarators in GUI?
 * Use bees (hive.antenna, entry, hook, output) to define hive IO interface
@@ -51,9 +50,9 @@ Control flow: Generic node manager -> Blender node manager
   * If operator pressed, find connected nodes, remember and disconnect them.
   * Recreate node & attempt to recreate connections
 
-* Show/hide sockets and plugins?
-* Unfold / fold input pull attributes?
-* Metahives - avoid rebuilding entire hive!
+- [ ] Show/hide sockets and plugins?
+- [x] Unfold / fold input pull attributes?
+- [x] Metahives - avoid rebuilding entire hive!
 
 # Axioms
   * Node pins aren't renameable
