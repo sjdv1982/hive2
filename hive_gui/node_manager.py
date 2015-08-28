@@ -1,5 +1,5 @@
 from .history import History
-from .hive_node import HiveNode
+from .hive_node import HiveNode, BeeNode
 from .models import model
 from .utils import start_value_from_type, create_hive_object_instance, dict_to_parameter_array, parameter_array_to_dict
 
@@ -23,7 +23,11 @@ class NodeManager(object):
         self._clipboard = None
 
         self.history = History()
-        self.fold_node_path = "dragonfly.std.Variable"
+
+        # Hard coded paths for useful node types
+        self.variable_import_path = "dragonfly.std.Variable"
+        self.antenna_import_path = "hive.antenna"
+        self.output_import_path = "hive.antenna"
 
     def create_connection(self, output, input):
         # Check pin isn't folded
@@ -58,6 +62,22 @@ class NodeManager(object):
         name = get_unique_name(self.nodes, hive_class_name)
 
         node = HiveNode(hive, import_path, name, params)
+        self._add_node(node)
+
+        return node
+
+    def create_bee(self, import_path, data_type, mode):
+        if import_path == self.antenna_import_path:
+            io_type = "antenna"
+
+        elif import_path == self.output_import_path:
+            io_type = "output"
+
+        else:
+            raise ValueError(import_path)
+
+        name = get_unique_name(self.nodes, io_type)
+        node = BeeNode(import_path, name, io_type, data_type, mode)
         self._add_node(node)
 
         return node
@@ -156,7 +176,7 @@ class NodeManager(object):
             target_node = target_pin.node
 
             # If is not the correct type (variable)
-            if target_node.hive_path != self.fold_node_path:
+            if target_node.import_path != self.variable_import_path:
                 return False
 
             # This pin is the only connected one
@@ -174,10 +194,10 @@ class NodeManager(object):
                           args=dict(start_value=start_value_from_type(pin.data_type)))
 
             # Create variable node, attempt to call it same as pin
-            target_node = self.create_node(self.fold_node_path, params)
+            target_node = self.create_node(self.variable_import_path, params)
             target_pin = next(iter(target_node.outputs.values()))
 
-            self.set_node_name(target_node, pin.name)
+            self.set_node_name(target_node, pin.name, attempt_till_success=True)
             self.create_connection(target_pin, pin)
 
         pin.is_folded = True
@@ -288,7 +308,7 @@ class NodeManager(object):
             cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
 
             folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
-            spyder_hive = model.Hive(node.name, node.hive_path, meta_arg_array, arg_array, cls_arg_array,
+            spyder_hive = model.Hive(node.name, node.import_path, meta_arg_array, arg_array, cls_arg_array,
                                      node.position, folded_pins)
 
             hivemap.hives.append(spyder_hive)

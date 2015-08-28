@@ -244,6 +244,7 @@ class Socket(QtGui.QGraphicsItem):
     def paint(self, painter, option, widget):
         painter.setBrush(self._brush)
         painter.setPen(self._pen)
+
         if self._shape == SocketTypes.circle:
             painter.drawEllipse(self._rect)
 

@@ -38,7 +38,7 @@ class ConfigurationPanel(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
-        widget = QLabel(node.hive_path)
+        widget = QLabel(node.import_path)
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
         layout.addRow(self.tr("Import path"), widget)
 
@@ -78,6 +78,7 @@ class ArgsPanel(QWidget):
 
         # Args
         has_args = 'args' in node.params
+
         if has_args:
             args = node.params['args']
             for name, value in args.items():

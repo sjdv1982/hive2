@@ -55,7 +55,7 @@ class SocketTypes:
     circle, square, diamond = range(3)
 
 
-def get_socket_type_for_mode(mode):
+def get_shape(mode):
     if mode == "pull":
         return SocketTypes.square
 

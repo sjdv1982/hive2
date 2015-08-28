@@ -39,7 +39,7 @@ from .view import NodeView
 import weakref
 
 from .socket import Socket
-from ..sockets import get_socket_type_for_mode, get_colour
+from ..sockets import get_shape, get_colour
 
 from collections import OrderedDict
 
@@ -57,8 +57,8 @@ class SocketRow(QGraphicsWidget):
         self._socket = None
         self._outputHook = None
 
-        socket_colour = get_colour(pin.data_type)
-        socket_type = get_socket_type_for_mode(pin.mode)
+        socket_colour = pin.colour#get_colour(pin.data_type)
+        socket_type = pin.shape#get_socket_type_for_mode(pin.mode)
 
         if pin.io_type == "input":
             self._socket = Socket(self, "input", socket_type, "solid", hover_text="", order_dependent=True)
@@ -216,7 +216,7 @@ class Node(QGraphicsWidget):
 
         self._label.setText(node.name)
 
-        self.setToolTip(node.docstring)
+        self.setToolTip(node.tooltip)
 
         self._node = node
         self._view = weakref.ref(view)

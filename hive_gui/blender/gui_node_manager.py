@@ -2,7 +2,7 @@ from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME, INVALID
 from .socket_manager import socket_class_manager
 
 from ..gui_node_manager import IGUINodeManager
-from ..sockets import get_colour, get_socket_type_for_mode
+from ..sockets import get_colour, get_shape
 
 from contextlib import contextmanager
 from collections import namedtuple
@@ -130,7 +130,7 @@ class BlenderGUINodeManager(IGUINodeManager):
                 io_collection = gui_node.outputs
 
             socket_colour = get_colour(pin.data_type)
-            socket_type = get_socket_type_for_mode(pin.mode)
+            socket_type = get_shape(pin.mode)
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
             socket = io_collection.new(socket_cls.bl_idname, pin_name)
             socket.colour = socket.default_colour

@@ -28,7 +28,11 @@ window = MainWindow()
 window.resize(480, 320)
 
 window.show()
-window.hive_tree.load_hives(hives)
+
+bees = {"hive": ["antenna", "output"]}
+
+window.hive_widget.load_hives(hives)
+window.bee_widget.load_hives(bees)
 
 # Add Help page
 home_page = QWebView()

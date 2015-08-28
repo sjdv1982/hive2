@@ -4,7 +4,7 @@ from PySide import QtGui, QtCore
 from PySide.QtGui import QTreeWidgetItem
 
 
-class PTree(QtGui.QTreeWidget):
+class TreeWidget(QtGui.QTreeWidget):
 
     def __init__(self, parent=None, on_selected=None):
         QtGui.QTreeWidget.__init__(self, parent)

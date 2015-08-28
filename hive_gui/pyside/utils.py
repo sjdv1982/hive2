@@ -23,8 +23,7 @@ class WidgetController:
         self.setter(value)
 
 
-def create_widget(type_name, options=None):
-
+def create_widget(type_name=None, options=None):
     if options is not None:
         widget = QComboBox()
         for i, option in enumerate(options):
@@ -76,7 +75,7 @@ def create_widget(type_name, options=None):
         else:
             widget = QLineEdit()
 
-            getter = lambda: eval(widget.text)
+            getter = lambda: eval(widget.text())
             setter = lambda value: widget.setText(repr(value))
 
             controller = WidgetController(getter, setter)

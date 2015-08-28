@@ -128,7 +128,7 @@ def get_io_info(hive_object, allow_derived=False):
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
         pin_order.append(bee_name)
-    print(inputs)
+
     return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 
@@ -155,7 +155,7 @@ def create_hive_object_instance(import_path, params):
         _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
 
         # Get RuntimeHive instance
-        args = params.get("args", {})
+        args = params.get("args", {}).copy()
         cls_args = params.get("cls_args", {})
         args.update(cls_args)
 

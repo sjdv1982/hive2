@@ -5,7 +5,7 @@ import os
 
 from .tabs import TabViewWidget
 from .view import NodeView
-from .tree import PTree
+from .tree import TreeWidget
 from .scene import NodeUiScene
 
 
@@ -96,10 +96,18 @@ class MainWindow(QMainWindow):
         self.tab_widget.on_changed = self.on_tab_changed
 
         # Left window
-        self.tree_window = self.create_subwindow("Hives", "left")
-        self.hive_tree = PTree()
-        self.hive_tree.on_selected = self.on_dropped_hive_node
-        self.tree_window.setWidget(self.hive_tree)
+        self.hive_window = self.create_subwindow("Hives", "left")
+        self.hive_window.setVisible(False)
+        self.hive_widget = TreeWidget()
+        self.hive_widget.on_selected = self.on_dropped_hive_node
+        self.hive_window.setWidget(self.hive_widget)
+
+        # Left window
+        self.bee_window = self.create_subwindow("Bees", "left")
+        self.bee_window.setVisible(False)
+        self.bee_widget = TreeWidget()
+        self.bee_widget.on_selected = self.on_dropped_bee_node
+        self.bee_window.setWidget(self.bee_widget)
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")
@@ -165,7 +173,8 @@ class MainWindow(QMainWindow):
             widget.on_enter()
 
     def add_node_view(self, name="<Untitled>"):
-        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window, self.args_window)
+        view = NodeView(self.folding_window, self.docstring_window,
+                        self.configuration_window, self.args_window)
 
         index = self.tab_widget.addTab(view, name)
         self.tab_widget.setCurrentIndex(index)
@@ -204,6 +213,7 @@ class MainWindow(QMainWindow):
         show_folding = False
         show_hives = False
         show_args = False
+        show_bees = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
@@ -215,13 +225,15 @@ class MainWindow(QMainWindow):
             show_folding = True
             show_hives = True
             show_args = True
+            show_bees = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
         self.docstring_window.setVisible(show_docstring)
         self.folding_window.setVisible(show_folding)
         self.configuration_window.setVisible(show_config)
-        self.tree_window.setVisible(show_hives)
+        self.hive_window.setVisible(show_hives)
+        self.bee_window.setVisible(show_bees)
         self.args_window.setVisible(show_args)
 
         menu_bar = self.menuBar()
@@ -237,6 +249,12 @@ class MainWindow(QMainWindow):
 
         if isinstance(view, NodeView):
             view.pre_drop_hive(path)
+
+    def on_dropped_bee_node(self, path):
+        view = self.tab_widget.currentWidget()
+
+        if isinstance(view, NodeView):
+            view.pre_drop_bee(path)
 
     def open_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self.menuBar(), 'Open hivemap', '/home')
