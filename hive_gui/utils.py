@@ -81,8 +81,8 @@ def get_io_info(hive_object, allow_derived=False):
     """Get UI info for a runtime hive object"""
     external_bees = hive_object._hive_ex
 
-    inputs = {}
-    outputs = {}
+    inputs = OrderedDict()
+    outputs = OrderedDict()
 
     pin_order = []
 
@@ -128,7 +128,7 @@ def get_io_info(hive_object, allow_derived=False):
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
         pin_order.append(bee_name)
-
+    print(inputs)
     return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 

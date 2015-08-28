@@ -1,5 +1,6 @@
 from .utils import get_io_info
 
+from collections import OrderedDict
 from hive.tuple_type import types_match
 
 
@@ -61,11 +62,11 @@ class HiveNode(object):
         self.name = name
         self.docstring = hive_object.__doc__ or ""
 
-        self.inputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "input")
-                       for name, info in self.io_info['inputs'].items()}
+        self.inputs = OrderedDict((name, NodeIOPin(self, name, info['data_type'], info['mode'], "input"))
+                                  for name, info in self.io_info['inputs'].items())
 
-        self.outputs = {name: NodeIOPin(self, name, info['data_type'], info['mode'], "output")
-                        for name, info in self.io_info['outputs'].items()}
+        self.outputs = OrderedDict((name, NodeIOPin(self, name, info['data_type'], info['mode'], "output"))
+                                   for name, info in self.io_info['outputs'].items())
 
         self.pin_order = self.io_info['pin_order']
 

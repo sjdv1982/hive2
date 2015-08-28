@@ -316,8 +316,7 @@ class NodeManager(object):
                     if target_node_name not in node_names:
                         continue
 
-                    spyder_connection = model.BeeConnection(node_name, pin_name,
-                                                            target_node_name, target.name)
+                    spyder_connection = model.BeeConnection(node_name, pin_name, target_node_name, target.name)
                     hivemap.connections.append(spyder_connection)
 
         return hivemap
