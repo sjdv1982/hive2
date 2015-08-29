@@ -8,3 +8,4 @@ The hive system can be used for visual programming, large 3D applications, game 
 ![](https://github.com/agoose77/hive2/wiki/dark_theme.JPG)
 ![](https://github.com/agoose77/hive2/wiki/cut.PNG)
 ![](https://github.com/agoose77/hive2/wiki/folding.png)
+![](https://github.com/agoose77/hive2/wiki/collapse.png)
