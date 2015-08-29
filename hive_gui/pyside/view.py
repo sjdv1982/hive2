@@ -118,6 +118,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         QShortcut(QKeySequence("Tab"), self, self._on_tab_key)
         QShortcut(QKeySequence("+"), self, self._on_plus_key)
         QShortcut(QKeySequence("-"), self, self._on_minus_key)
+        QShortcut(QKeySequence("CTRL+I"), self, self._on_import_hivemap)
 
         for num in range(1, 10):
             func = functools.partial(self._on_num_key, num)
@@ -359,6 +360,27 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         return nodes
 
+    def _on_import_hivemap(self):
+        # JUST for testing
+        dialogue = DynamicInputDialogue(self)
+        dialogue.setAttribute(Qt.WA_DeleteOnClose)
+        dialogue.setWindowTitle("Import hivemap")
+        dialogue.add_widget("import_path", "str")
+        dialogue.exec_()
+
+        hive_path = dialogue.values['import_path']
+        from ..utils import class_from_hivemap
+        import os
+
+        with open(hive_path, "r") as f:
+            data = f.read()
+        cls = class_from_hivemap(os.path.basename(hive_path), data)
+
+        import dragonfly
+        dragonfly._H = cls
+        import_path = "dragonfly._H"
+        self.node_manager.create_node(import_path, {})
+
     def _on_backspace_key(self):
         self._on_del_key()
 
@@ -487,10 +509,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
             dialogue.add_widget(arg_name, data_type, default, options)
 
     def on_dropped_bee(self, position, import_path):
-        dialogue = DynamicInputDialogue(self)
-        dialogue.setAttribute(Qt.WA_DeleteOnClose)
-        dialogue.setWindowTitle("Configure Node: Meta Args")
-
         node = self.node_manager.create_bee(import_path)
         self.node_manager.set_node_position(node, position)
 
