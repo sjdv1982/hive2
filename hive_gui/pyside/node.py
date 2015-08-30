@@ -40,6 +40,9 @@ from collections import OrderedDict
 import weakref
 
 from .socket import Socket
+from ..node import HiveNode, BeeNode
+
+COLOUR_THEMES = {HiveNode: (0, 0, 0), BeeNode: (92, 92, 92)}
 
 
 class SocketRow(QGraphicsWidget):
@@ -68,7 +71,7 @@ class SocketRow(QGraphicsWidget):
 
         self._socket.setVisible(True)
 
-        self._label.setBrush(parent_node_ui.labelsColor())
+        self._label.setBrush(parent_node_ui.labels_color)
         label = self._pin.name
 
         self._labelText = label
@@ -83,7 +86,8 @@ class SocketRow(QGraphicsWidget):
     def socket(self):
         return self._socket
 
-    def labelColor(self):
+    @property
+    def label_color(self):
         return self._label.brush().color()
 
     def set_value(self, value):
@@ -178,17 +182,18 @@ class Node(QGraphicsWidget):
     def __init__(self, node, view):
         QGraphicsWidget.__init__(self)
 
-        self._spacerConstant = 5.0
+        self._spacing_constant = 5.0
+
         self._label = QGraphicsSimpleTextItem(self)
-        self._shapePen = QPen(Qt.NoPen)
-        self._socket_rows = OrderedDict()
-        self._brush = QBrush(self.color())
+        self._label.setBrush(self.labels_color)
+        self._label.setText(node.name)
+
         self._selectedColor = QColor(255, 255, 255)
-        self._showingRightClickMenu = False
-        self._rightClickMenuItems = []
-        self._doubleClicked = False
-        self._zValue = self.zValue()
-        self._currentMagnifyFactor = 1.0
+        self._shapePen = QPen(Qt.NoPen)
+        self._shapePen.setColor(self._selectedColor)
+        self._shapePen.setWidthF(1.5)
+
+        self._brush = QBrush(QColor(*COLOUR_THEMES[node.__class__]))
         self._deleted = False
 
         self._dropShadowEffect = QGraphicsDropShadowEffect()
@@ -202,22 +207,25 @@ class Node(QGraphicsWidget):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
-        self._label.setBrush(self.labelsColor())
-
-        self._shapePen.setColor(self._selectedColor)
-        self._shapePen.setWidthF(1.5)
-
-        self._label.setText(node.name)
-
         self.setToolTip(node.tooltip)
 
+        self._name = node.name
         self._node = node
         self._view = weakref.ref(view)
 
-        self._name = node.name
-
-        self._build(node)
         self._busy = False
+        self._socket_rows = OrderedDict()
+
+        # Build IO pin socket rows
+        for pin_name in node.pin_order:
+            if pin_name in node.inputs:
+                pin = node.inputs[pin_name]
+
+            else:
+                pin = node.outputs[pin_name]
+
+            socket_row = SocketRow(self, pin)
+            self._socket_rows[pin_name] = socket_row
 
     @property
     def node(self):
@@ -227,11 +235,19 @@ class Node(QGraphicsWidget):
     def view(self):
         return self._view()
 
-    def _magnifyAnimStep(self, frame):
-        pass
+    @property
+    def name(self):
+        return self._name
 
-    def _magnify(self, factor):
-        pass
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self._label.setText(name)
+        self.update_layout()
+
+    @property
+    def labels_color(self):
+        return QColor(255, 255, 255)
 
     def on_deleted(self):
         self._deleted = True
@@ -254,24 +270,21 @@ class Node(QGraphicsWidget):
     def hoverLeaveEvent(self, event):
         pass
 
-    def setName(self, name):
-        self._label.setText(name)
-        self.update_layout()
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
+            for socket_row in self._socket_rows.values():
+                socket_row.socket.update_connection_positions()
 
-    def addRightClickMenuItem(self, label, callback):
-        pass
+            # Move node
+            if not self._busy:
+                self._busy = True
+                self.view.gui_on_moved(self)
+                self._busy = False
 
-    def showRightClickMenu(self):
-        pass
+        elif change == QGraphicsItem.ItemSelectedHasChanged:
+            self.onSelected()
 
-    def shapePen(self):
-        return QPen(self._shapePen)
-
-    def color(self):
-        return QColor(0, 0, 0)
-
-    def labelsColor(self):
-        return QColor(255, 255, 255)
+        return QGraphicsItem.itemChange(self, change, value)
 
     def onSelected(self):
         if self._deleted:
@@ -304,22 +317,6 @@ class Node(QGraphicsWidget):
 
         QGraphicsWidget.setPos(self, point)
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
-            for socket_row in self._socket_rows.values():
-                socket_row.socket.update_connection_positions()
-
-            # Move node
-            if not self._busy:
-                self._busy = True
-                self.view.gui_on_moved(self)
-                self._busy = False
-
-        elif change == QGraphicsItem.ItemSelectedHasChanged:
-            self.onSelected()
-
-        return QGraphicsItem.itemChange(self, change, value)
-
     def mouseDoubleClickEvent(self, event):
         pass
 
@@ -346,27 +343,16 @@ class Node(QGraphicsWidget):
     def get_socket_row(self, name):
         return self._socket_rows[name]
 
-    def _build(self, node):
-        for pin_name in node.pin_order:
-            if pin_name in node.inputs:
-                pin = node.inputs[pin_name]
-
-            else:
-                pin = node.outputs[pin_name]
-
-            socket_row = SocketRow(self, pin)
-            self._socket_rows[pin_name] = socket_row
-
     def update_layout(self):
         label_width = self._label.boundingRect().width()
         width = label_width
-        y_pos = self._label.boundingRect().bottom() + self._spacerConstant
+        y_pos = self._label.boundingRect().bottom() + self._spacing_constant
 
         for socket_row in self._socket_rows.values():
             if socket_row.isVisible():
                 socket_row.update_layout()
 
-                socket_row.setPos(self._spacerConstant, y_pos)
+                socket_row.setPos(self._spacing_constant, y_pos)
                 height = socket_row.boundingRect().height()
 
                 y_pos += height
@@ -381,8 +367,8 @@ class Node(QGraphicsWidget):
                 if hook.is_output:
                     hook.setPos(width - hook.boundingRect().width(), hook.pos().y())
 
-        width = self._spacerConstant + width + self._spacerConstant
-        self._label.setPos((width - label_width) / 2.0, self._spacerConstant)
+        width = self._spacing_constant + width + self._spacing_constant
+        self._label.setPos((width - label_width) / 2.0, self._spacing_constant)
 
-        self.resize(width, y_pos + self._spacerConstant)
+        self.resize(width, y_pos + self._spacing_constant)
         self.update()

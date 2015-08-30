@@ -126,13 +126,23 @@ class BeeIOPin(IOPin):
 
 
 class GUINode(object):
+    _import_path = None
+    _tooltip = ""
+
     inputs = None
     outputs = None
     position = None
     pin_order = None
     name = None
     params = {}
-    tooltip = ""
+
+    @property
+    def import_path(self):
+        return self._import_path
+
+    @property
+    def tooltip(self):
+        return self._tooltip
 
 
 class BeeNode(GUINode):
@@ -179,10 +189,6 @@ class BeeNode(GUINode):
             raise ValueError(io_type)
 
     @property
-    def import_path(self):
-        return self._import_path
-
-    @property
     def data_type(self):
         return self._data_type
 
@@ -209,6 +215,7 @@ class HiveNode(GUINode):
         self.name = name
 
         # Read only
+        self._tooltip = hive_object.__doc__ or ""
         self._import_path = import_path
 
         # Warning - args and cls_args of hive_object might not correspond to params
@@ -216,9 +223,8 @@ class HiveNode(GUINode):
         # Use the params dict instead of re-scraping the hive_object if reading these values
         self.params = params
 
+        # Pin IO
         io_info = get_io_info(hive_object)
-
-        self.tooltip = hive_object.__doc__ or ""
         self.pin_order = io_info['pin_order']
         self.inputs = OrderedDict((name, IOPin(self, name, info['data_type'], info['mode'], "input"))
                                   for name, info in io_info['inputs'].items())
@@ -227,10 +233,6 @@ class HiveNode(GUINode):
                                    for name, info in io_info['outputs'].items())
 
         self.position = (0.0, 0.0)
-
-    @property
-    def import_path(self):
-        return self._import_path
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

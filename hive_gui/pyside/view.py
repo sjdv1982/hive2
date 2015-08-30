@@ -192,6 +192,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self._dropped_node_info = None
 
+        # Node manager
         self.node_manager = NodeManager(gui_node_manager=self)
         self.file_name = None
 
@@ -354,8 +355,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
     def set_node_name(self, node, name):
         gui_node = self.node_to_qtnode[node]
-        gui_node.setName(name)
-
+        gui_node.name = name
 
     def fold_pin(self, pin):
         self._set_pin_folded(pin, True)

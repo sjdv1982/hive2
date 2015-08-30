@@ -5,12 +5,18 @@ from .utils import start_value_from_type, create_hive_object_instance, dict_to_p
 
 
 def get_unique_name(existing_names, base_name):
+    """Find unique value of base name which may have a number appended to the end
+
+    :param existing_names: names currently in use
+    :param base_name: base of name to use
+    """
     i = 0
     while True:
         name = "{}_{}".format(base_name, i)
-        i += 1
         if name not in existing_names:
             return name
+
+        i += 1
 
 
 class NodeConnectionError(Exception):
@@ -319,12 +325,14 @@ class NodeManager(object):
                     position = node.position[0] + offset_x, node.position[1] + offset_y
                     self.set_node_position(node, position)
 
-    def _export(self, nodes):
+    @staticmethod
+    def _export(nodes):
         hivemap = model.Hivemap()
 
         node_names = set()
 
         for node in nodes:
+            # Serialise HiveNode instance
             if isinstance(node, HiveNode):
                 params = node.params
 
@@ -340,6 +348,7 @@ class NodeManager(object):
 
                 hivemap.hives.append(spyder_hive)
 
+            # Serialise IOBee instance
             else:
                 spyder_io_bee = model.IOBeeNode(identifier=node.name, import_path=node.import_path,
                                                 position=node.position)
