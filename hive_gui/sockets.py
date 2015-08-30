@@ -27,25 +27,25 @@ def get_colour(data_type):
         elif base_type == "id":
             return colours[2]
 
-        elif base_type in ("str", "String"):
+        elif base_type == "str":
             return colours[3]
 
-        elif base_type in ("int", "Integer"):
+        elif base_type == "int":
             return colours[4]
 
-        elif base_type in ("float", "Float"):
+        elif base_type == "float":
             return colours[5]
 
-        elif base_type in ("bool", "Bool"):
+        elif base_type == "bool":
             return colours[6]
 
-        elif base_type in ("Coordinate", "Vector"):
+        elif base_type == "vector":
             return colours[7]
 
-        elif base_type == "AxisSystem":
+        elif base_type == "matrix":
             return colours[8]
 
-        elif base_type == "Color":
+        elif base_type == "colour":
             return colours[9]
 
     return colours[10]

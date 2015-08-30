@@ -184,7 +184,6 @@ class Node(QGraphicsWidget):
         self._socket_rows = OrderedDict()
         self._brush = QBrush(self.color())
         self._selectedColor = QColor(255, 255, 255)
-        self._dropShadowEffect = QGraphicsDropShadowEffect()
         self._showingRightClickMenu = False
         self._rightClickMenuItems = []
         self._doubleClicked = False
@@ -192,6 +191,7 @@ class Node(QGraphicsWidget):
         self._currentMagnifyFactor = 1.0
         self._deleted = False
 
+        self._dropShadowEffect = QGraphicsDropShadowEffect()
         self.setGraphicsEffect(self._dropShadowEffect)
 
         self._dropShadowEffect.setOffset(0.0, 10.0)
@@ -282,6 +282,8 @@ class Node(QGraphicsWidget):
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
+
+        self.view.gui_on_selected(self)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()

@@ -124,6 +124,15 @@ class Socket(QtGui.QGraphicsItem):
             if connection.start_socket is socket:
                 return connection
 
+    def reorder_connection(self, connection, index):
+        current_index = self._connections.index(connection)
+        del self._connections[current_index]
+        self._connections.insert(index, connection)
+
+        # Update all paths
+        for _connection in self._connections:
+            _connection.update_path()
+
     def get_index_info(self, connection):
         index = self._connections.index(connection)
         return index, len(self._connections)
@@ -138,9 +147,6 @@ class Socket(QtGui.QGraphicsItem):
         pass
 
     def _on_plus_key(self):
-        for connection in self._connections:
-            print("PLUS")
-            connection.set_selected(True)
         pass
 
     def _on_minus_key(self):
@@ -152,8 +158,14 @@ class Socket(QtGui.QGraphicsItem):
     def hoverEnterEvent(self, event):
         self.scene().focused_socket = self
 
+        for connection in self._connections:
+            connection.on_socket_hover_enter()
+
     def hoverLeaveEvent(self, event):
         self.scene().focused_socket = None
+
+        for connection in self._connections:
+            connection.on_socket_hover_exit()
 
     def setMixedColor(self, value=True):
         self.mixed_color = value
@@ -170,6 +182,9 @@ class Socket(QtGui.QGraphicsItem):
 
     def set_colour(self, colour):
         self.setColor(QtGui.QColor(*colour))
+
+    def set_style(self, style):
+        self._style = style
 
     def setColor(self, color):
         self._color.setRgb(color.red(), color.green(), color.blue())
@@ -200,16 +215,10 @@ class Socket(QtGui.QGraphicsItem):
             connection = self._dragging_connection
             mouse_pos = connection.mapFromScene(event.scenePos())
 
-            start_socket = connection.start_socket
-
             end_socket = connection.end_socket
             end_socket.setPos(mouse_pos)
 
-            connection.set_color(start_socket.color())
-            # self._handleHover(self._dragging_connection.endHook())
-
-            # end_socket = self._dragging_connection.findClosestHook()
-            connection.setActive(False)
+            connection.set_active(False)
             connection.update_end_pos()
 
         # QtGui.QGraphicsItem.mouseMoveEvent(self, event)
@@ -217,20 +226,21 @@ class Socket(QtGui.QGraphicsItem):
     def mouseReleaseEvent(self, event):
         if self.is_output:
             connection = self._dragging_connection
+
+            start_socket = connection.start_socket
             target_socket = connection.find_closest_socket()
+
+            connection.on_deleted()
+            self._dragging_connection = None
 
             if target_socket is not None:
                 node = self.parent_socket_row.parent_node_ui
 
-                start_socket = connection.start_socket
                 try:
                     node.view.gui_create_connection(start_socket, target_socket)
 
                 except NodeConnectionError:
                     pass
-
-            connection.on_deleted()
-            self._dragging_connection = None
 
         # QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
 
@@ -253,6 +263,7 @@ class Socket(QtGui.QGraphicsItem):
         return self._rect
 
     def paint(self, painter, option, widget):
+
         painter.setBrush(self._brush)
         painter.setPen(self._pen)
 

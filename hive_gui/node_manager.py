@@ -45,8 +45,8 @@ class NodeManager(object):
             raise NodeConnectionError("Can't connect {} to {}".format(output, input))
 
         # Perform mutual connection
-        output.connect(input)
-        input.connect(output)
+        output.connect_target(input)
+        input.connect_target(output)
 
         # Ask GUI to perform connection
         self.gui_node_manager.create_connection(output, input)
@@ -58,10 +58,19 @@ class NodeManager(object):
         self.gui_node_manager.delete_connection(output, input)
         print("Delete Connection", output, input)
 
-        output.targets.remove(input)
-        input.targets.remove(output)
+        output.disconnect_target(input)
+        input.disconnect_target(output)
 
         self.history.push_operation(self.delete_connection, (output, input), self.create_connection, (output, input))
+
+    def reorder_connection(self, output, input, index):
+        old_index = output.targets.index(input)
+
+        output.reorder_target(input, index)
+        self.gui_node_manager.reorder_connection(output, input, index)
+
+        self.history.push_operation(self.reorder_connection, (output, input, index),
+                                    self.reorder_connection, (output, input, old_index))
 
     def create_node(self, import_path, params=None):
         if params is None:
@@ -112,7 +121,6 @@ class NodeManager(object):
         # Remove connections
         for input_pin in node.inputs.values():
             for output_pin in input_pin.targets.copy():
-
                 # Handle folded nodes
                 is_folded = input_pin.is_folded
 
@@ -196,7 +204,7 @@ class NodeManager(object):
             if target_node.import_path != self.variable_import_path:
                 return False
 
-            # This pin is the only connected one
+            # If other pin is in use else where
             if len(target_pin.targets) == 1:
                 return True
 

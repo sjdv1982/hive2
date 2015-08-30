@@ -1,0 +1,57 @@
+Triggerfunc:
+    param: code - callable (optional)
+    output: trigger
+
+
+Triggerable:
+    param: code - callable (required)
+    input: trigger
+
+
+Antenna:
+    output: input
+
+
+Ouptut:
+    input: output
+
+
+Hook:
+    input: trigger
+
+
+Entry:
+    output: trigger
+
+
+
+
+------------------Changes------------------------
+Socket:
+    hover:
+        show:
+            index of each connection [editable]
+            if trigger:
+                pre/post of connections [editable]
+
+    click:
+        show and keep hover info
+
+
+# TODO
+Bees: different colour to Hive nodes
+
+Add connection tracking to UI:
+    Remove pin.targets
+    Add on_connected, on_disconnected method to increment pin counter
+
+Connection info box
+
+When importing / exporting, sort connections for same start pins by index (only needed for push)!
+
+Connection info:
+    start pin
+    end pin
+    index = -1
+
+Use + / - to change index. (resort pin list (order matters ONLY on output pin))

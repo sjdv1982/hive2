@@ -6,6 +6,9 @@ class IGUINodeManager:
     def delete_connection(self, output, input):
         raise NotImplementedError
 
+    def reorder_connection(self, output, input, index):
+        raise NotImplementedError
+
     def create_node(self, node):
         raise NotImplementedError
 

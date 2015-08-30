@@ -1,5 +1,6 @@
 from .utils import get_io_info
 from .sockets import get_colour, get_shape
+from .iterable_view import ListView
 
 from collections import OrderedDict
 from hive.tuple_type import types_match
@@ -16,15 +17,18 @@ class IOPin(object):
         self._io_type = io_type
         self._data_type = data_type
         self._is_trigger = types_match(("trigger",), data_type, allow_none=False)
-        self._mode = mode # "any" for any connection
 
-        self.targets = set()
+        self._mode = mode # "any" for any connection
+        self._current_mode = mode
+
+        self._targets = []
+        self._max_targets = -1
+        self.targets = ListView(self._targets)
 
         self.is_folded = False
-        self._max_connections = -1
 
         if mode == "pull" and io_type == "input":
-            self._max_connections = 1
+            self._max_targets = 1
 
     @property
     def data_type(self):
@@ -55,8 +59,12 @@ class IOPin(object):
         return self._mode
 
     @property
+    def current_mode(self):
+        return self._current_mode
+
+    @property
     def max_connections(self):
-        return self._max_connections
+        return self._max_targets
 
     def can_connect(self, other_pin):
         # Check types match. If trigger, other must be trigger too.
@@ -68,17 +76,25 @@ class IOPin(object):
                 return False
 
         # Pull inputs can only have one input
-        if len(self.targets) == self._max_connections:
+        if len(self._targets) == self._max_targets:
             return False
 
         return True
 
-    def connect(self, other):
-        assert other not in self.targets
-        self.targets.add(other)
+    def connect_target(self, other):
+        assert other not in self._targets
+        self._targets.append(other)
 
-    def disconnect(self, other):
-        self.targets.remove(other)
+    def disconnect_target(self, other):
+        self._targets.remove(other)
+
+    def reorder_target(self, other, index):
+        current_index = self._targets.index(other)
+        if index > current_index:
+            index -= 1
+
+        del self._targets[current_index]
+        self._targets.insert(index, other)
 
     def __repr__(self):
         return "<{} pin {}.{}>".format(self._io_type, self._node.name, self.name)
@@ -89,15 +105,16 @@ class BeeIOPin(IOPin):
     def __init__(self, node, name, data_type, mode, io_type):
         super().__init__(node, name, data_type, mode, io_type)
 
-        self._max_connections = 1
+        self._max_targets = 1
 
     def mimic_other_pin(self, other):
         # Update cosmetics for other
         self._shape = other.shape
         self._colour = other.colour
+        self._current_mode = other.mode
 
-    def connect(self, other):
-        super().connect(other)
+    def connect_target(self, other):
+        super().connect_target(other)
 
         self.mimic_other_pin(other)
 

@@ -63,6 +63,8 @@ class Connection(QtGui.QGraphicsItem):
         self._path = QtGui.QPainterPath()
         self._key_points = []
 
+        self._center_widget = None
+
         self.set_start_socket(start_socket)
 
         if end_socket is None:
@@ -92,6 +94,11 @@ class Connection(QtGui.QGraphicsItem):
             return None
 
         return self._end_socket()
+
+    @property
+    def index(self):
+        index, total = self.start_socket.get_index_info(self)
+        return index
 
     def boundingRect(self):
         return self._rect
@@ -130,6 +137,62 @@ class Connection(QtGui.QGraphicsItem):
 
         distances.sort(key=lambda item: item[1])
         return distances[0][0], distances[1][0]
+
+    def intersects_circle(self, position, rect, size):
+        size_sqr = size ** 2
+        scene_translation = self.start_socket.sceneTransform()
+        connection_rect = scene_translation.mapRect(self._rect)
+
+        # Line circle intersection test http://i.stack.imgur.com/P556i.png
+        if connection_rect.contains(rect) or (connection_rect.width() <= size or connection_rect.height() <= size):
+            connection_path = scene_translation.map(self._path)
+            simplified_path = connection_path.simplified()
+
+            previous_point = None
+
+            # For all line elements (don't loop around)
+            for i in range(simplified_path.elementCount() - 1):
+                element = simplified_path.elementAt(i)
+                point = QtCore.QPointF(element.x, element.y)
+
+                if previous_point is not None:
+                    to_position = QtGui.QVector2D(position - previous_point)
+                    to_end = QtGui.QVector2D(point - previous_point)
+
+                    to_end_length = to_end.length()
+                    projection = QtGui.QVector2D.dotProduct(to_position, to_end) / to_end_length
+
+                    # Projected point lies within this segment
+                    if 0 <= projection <= to_end_length:
+                        dist_path_sqr = to_position.lengthSquared() - projection ** 2
+
+                        if dist_path_sqr < size_sqr:
+                            return self
+
+                previous_point = point
+
+    def intersects_line(self, line, path_rect):
+        scene_translation = self.start_socket.sceneTransform()
+        connection_rect = scene_translation.mapRect(self._rect)
+
+        if connection_rect.contains(path_rect) or path_rect.contains(connection_rect) \
+                or path_rect.intersects(connection_rect):
+            connection_path = scene_translation.map(self._path)
+            simplified_path = connection_path.simplified()
+
+            previous_point = None
+            for i in range(simplified_path.elementCount() - 1):
+                element = simplified_path.elementAt(i)
+
+                point = QtCore.QPointF(element.x, element.y)
+                if previous_point is not None:
+                    segment = QtCore.QLineF(previous_point, point)
+                    intersect_type, intersect_point = segment.intersect(line)
+
+                    if intersect_type == QtCore.QLineF.BoundedIntersection:
+                        return True
+
+                previous_point = point
 
     def set_active(self, active):
         assert active in (True, False), active
@@ -279,10 +342,28 @@ class Connection(QtGui.QGraphicsItem):
         stroke_width = self._pen.widthF()
         rect = path.boundingRect().adjusted(-stroke_width, -stroke_width, stroke_width, stroke_width)
 
+        # draw widget
+        center_widget = self._center_widget
+
+        if center_widget is not None:
+            center = path.pointAtPercent(0.5)
+            center_widget.on_updated(center)
+
         self._path = path
         self._rect = rect
 
+    def on_socket_hover_enter(self):
+        center_widget = self._center_widget
+        if center_widget is not None:
+            center_widget.setVisible(True)
+
+    def on_socket_hover_exit(self):
+        center_widget = self._center_widget
+        if center_widget is not None:
+            center_widget.setVisible(False)
+
     def paint(self, painter, option, widget):
+       # return
         self._pen.setColor(self._color)
         painter.setPen(self._pen)
         painter.drawPath(self._path)

@@ -47,6 +47,9 @@ from ..utils import import_from_path, get_builder_class_args
 from ..gui_node_manager import IGUINodeManager
 
 
+SELECT_SIZE = 8
+
+
 class DynamicInputDialogue(QDialog):
 
     class NoValue:
@@ -93,6 +96,65 @@ class DynamicInputDialogue(QDialog):
         self.values = {n: v() for n, v in self.value_getters.items()}
 
 
+class ConnectionWidget(QGraphicsWidget):
+
+    def __init__(self, connection):
+        QGraphicsWidget.__init__(self, connection)
+        self._connection = connection
+
+        self._label = QGraphicsSimpleTextItem(self)
+        self._label.setBrush(QColor(255, 255, 255))
+
+        # Add dropshadow
+        self._dropShadowEffect = QGraphicsDropShadowEffect()
+        self.setGraphicsEffect(self._dropShadowEffect)
+
+        self._dropShadowEffect.setOffset(0.0, 10.0)
+        self._dropShadowEffect.setBlurRadius(8.0)
+        self._dropShadowEffect.setColor(QColor(0, 0, 0, 50))
+
+        self._spacing_constant = 5.0
+
+        #pushButton = connection.scene().addWidget(QPushButton("Button"))
+
+        # layout = QGraphicsLinearLayout()
+        # layout.addItem(self._label)
+        # self.setLayout(layout)
+
+    def update_layout(self):
+        width = self._label.boundingRect().width()
+        height = self._label.boundingRect().height()
+
+        width = self._spacing_constant + width + self._spacing_constant
+        height = self._spacing_constant + height + self._spacing_constant
+
+        self._label.setPos(self._spacing_constant, self._spacing_constant)
+
+        self.resize(width, height)
+        self.update()
+
+    def paint(self, painter, option, widget):
+        shape = QPainterPath()
+        shape.addRoundedRect(self.rect(), 1, 1)
+
+        #painter.setPen(self._shapePen)
+        painter.setBrush(QBrush(QColor(0, 0, 0)))
+        painter.drawPath(shape)
+        # painter.setPen(self._pen)
+        # painter.drawPath(self._path)
+
+    def on_updated(self, center_position):
+        index = self._connection.index
+        self._label.setText(str(index))
+        self.update_layout()
+
+        rect = self.rect()
+        x_pos = center_position.x() - rect.width() / 2
+        y_pos = center_position.y() - rect.height() / 2
+
+        self.setPos(x_pos, y_pos)
+
+
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
@@ -100,6 +162,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
+        self._zoom_increment = 0.05
+
         self._panning = False
         self._current_center_point = QPointF()
         self._last_pan_point = QPoint()
@@ -151,6 +215,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         # Tracked connections
         self._connections = []
+        self._active_connection = None
+
         self._moved_gui_nodes = set()
         self._position_busy = False
 
@@ -222,18 +288,14 @@ class NodeView(IGUINodeManager, QGraphicsView):
         gui_node = self.node_to_qtnode.pop(node)
         gui_node.on_deleted()
 
+    def _socket_from_pin(self, pin):
+        gui_node = self.node_to_qtnode[pin.node]
+        socket_row = gui_node.get_socket_row(pin.name)
+        return socket_row.socket
+
     def create_connection(self, output, input):
-        output_node = output.node
-        output_gui_node = self.node_to_qtnode[output_node]
-
-        input_node = input.node
-        input_gui_node = self.node_to_qtnode[input_node]
-
-        output_socket_row = output_gui_node.get_socket_row(output.name)
-        input_socket_row = input_gui_node.get_socket_row(input.name)
-
-        output_socket = output_socket_row.socket
-        input_socket = input_socket_row.socket
+        output_socket = self._socket_from_pin(output)
+        input_socket = self._socket_from_pin(input)
 
         # Update cosmetics
         output_socket.set_colour(output.colour)
@@ -242,33 +304,46 @@ class NodeView(IGUINodeManager, QGraphicsView):
         output_socket.set_shape(output.shape)
         input_socket.set_shape(input.shape)
 
+        style = "dashed" if input.current_mode == "pull" else "solid"
+
+        input_socket.set_style(style)
+        output_socket.set_style(style)
+
         input_socket.update()
         output_socket.update()
 
         # Create connection
         from .connection import Connection
         connection = Connection(output_socket, input_socket)
+
+        # Push connections have ordering
+        if input.current_mode == "push":
+            connection._center_widget = widget = ConnectionWidget(connection)
+            widget.setVisible(False)
+
         connection.update_path()
 
         self._connections.append(connection)
 
     def delete_connection(self, output, input):
-        output_node = output.node
-        output_gui_node = self.node_to_qtnode[output_node]
-
-        input_node = input.node
-        input_gui_node = self.node_to_qtnode[input_node]
-
-        output_socket_row = output_gui_node.get_socket_row(output.name)
-        input_socket_row = input_gui_node.get_socket_row(input.name)
-
-        output_socket = output_socket_row.socket
-        input_socket = input_socket_row.socket
+        output_socket = self._socket_from_pin(output)
+        input_socket = self._socket_from_pin(input)
 
         connection = output_socket.find_connection(input_socket)
         connection.on_deleted()
 
+        # Unset active connection
+        if connection is self._active_connection:
+            self._active_connection = None
+
         self._connections.remove(connection)
+
+    def reorder_connection(self, output, input, index):
+        output_socket = self._socket_from_pin(output)
+        input_socket = self._socket_from_pin(input)
+
+        connection = output_socket.find_connection(input_socket)
+        output_socket.reorder_connection(connection, index)
 
     def set_node_position(self, node, position):
         gui_node = self.node_to_qtnode[node]
@@ -280,6 +355,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def set_node_name(self, node, name):
         gui_node = self.node_to_qtnode[node]
         gui_node.setName(name)
+
 
     def fold_pin(self, pin):
         self._set_pin_folded(pin, True)
@@ -303,12 +379,17 @@ class NodeView(IGUINodeManager, QGraphicsView):
         target_gui_node.setVisible(not folded)
         socket_row.socket.setVisible(not folded)
 
+
     def gui_on_moved(self, gui_node):
         # Don't respond to node_manager set_node_position movements
         if self._position_busy:
             return
 
         self._moved_gui_nodes.add(gui_node)
+
+    def gui_on_selected(self, gui_node):
+        self.update()
+        # TODO store active node (clicked, not selected)
 
     def gui_finished_move(self):
         """Called after all nodes in view have been moved"""
@@ -360,6 +441,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         return nodes
 
+    def gui_reorder_connection(self, start_socket, end_socket, index):
+        start_pin = start_socket.parent_socket_row.pin
+        end_pin = end_socket.parent_socket_row.pin
+        self.node_manager.reorder_connection(start_pin, end_pin, index)
+
     def _on_import_hivemap(self):
         # JUST for testing
         dialogue = DynamicInputDialogue(self)
@@ -388,31 +474,42 @@ class NodeView(IGUINodeManager, QGraphicsView):
         pass
 
     def _on_plus_key(self):
-        self.zoom_in()
+        active_connection = self._active_connection
+        if active_connection is not None:
+            start_socket = active_connection.start_socket
+            end_socket = active_connection.end_socket
+
+            index, _ = start_socket.get_index_info(active_connection)
+
+            self.gui_reorder_connection(start_socket, end_socket, index + 1)
 
         focused_socket = self.scene().focused_socket
         if focused_socket is not None:
             focused_socket._on_plus_key()
 
     def _on_minus_key(self):
-        self.zoom_out()
+        active_connection = self._active_connection
+        if active_connection is not None:
+            start_socket = active_connection.start_socket
+            end_socket = active_connection.end_socket
+
+            index, _ = start_socket.get_index_info(active_connection)
+
+            self.gui_reorder_connection(start_socket, end_socket, index - 1)
 
         focused_socket = self.scene().focused_socket
         if focused_socket is not None:
             focused_socket._on_minus_key()
 
     def _on_num_key(self, num):
-        if num == 6:
-            self.node_manager.history.redo()
-
-        elif num == 4:
-            self.node_manager.history.undo()
+        pass
 
     def _on_del_key(self):
         scene = self.scene()
 
         for gui_node in scene.selectedItems():
             self.node_manager.delete_node(gui_node.node)
+
 
     def select_all(self):
         from .node import Node
@@ -569,6 +666,16 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.scene().center = center_point
         self.centerOn(self._current_center_point)
 
+    def _find_connection_at(self, position, size):
+        point_rect = QRectF(position + QPointF(-size/2, -size/2), QSize(size, size))
+
+        for connection in self._connections:
+            if not connection.isVisible():
+                continue
+
+            if connection.intersects_circle(position, point_rect, size):
+                return connection
+
     def mousePressEvent(self, mouseEvent):
         if mouseEvent.modifiers() == Qt.ShiftModifier:
             self._last_pan_point = mouseEvent.pos()
@@ -587,7 +694,21 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 self._draw_path_item.setVisible(True)
 
         else:
+            scene_pos = self.mapToScene(mouseEvent.pos())
+            connection = self._find_connection_at(scene_pos, SELECT_SIZE)
+
+            # If found connection
+            if connection is not None:
+                for connection_ in self._connections:
+                    connection_.set_selected(False)
+
+                # Set selected
+                connection.set_selected(True)
+                self._active_connection = connection
+
             QGraphicsView.mousePressEvent(self, mouseEvent)
+
+            self.update()
 
     def mouseMoveEvent(self, mouseEvent):
         if self._panning:
@@ -613,6 +734,20 @@ class NodeView(IGUINodeManager, QGraphicsView):
         else:
             QGraphicsView.mouseMoveEvent(self, mouseEvent)
 
+    def _get_intersected_connections(self, path):
+        path_rect = path.boundingRect()
+        path_line = QLineF(path.pointAtPercent(0.0), path.pointAtPercent(1.0))
+
+        intersected = []
+        for connection in self._connections:
+            if not connection.isVisible():
+                continue
+
+            if connection.intersects_line(path_line, path_rect):
+                intersected.append(connection)
+
+        return intersected
+
     def mouseReleaseEvent(self, mouseEvent):
         if self._panning:
             self.setCursor(Qt.ArrowCursor)
@@ -622,22 +757,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         # Draw cutting tool
         elif self._slice_path is not None:
-            path = self._slice_path
-            path_rect = path.boundingRect()
-
-            to_remove = []
-            for connection in self._connections:
-                if not connection.isVisible():
-                    continue
-
-                scene_translation = connection.start_socket.sceneTransform()
-                connection_rect = scene_translation.mapRect(connection._rect)
-
-                if path_rect.intersects(connection_rect):
-                    connection_path = scene_translation.map(connection._path)
-
-                    if connection_path.intersects(path):
-                        to_remove.append(connection)
+            to_remove = self._get_intersected_connections(self._slice_path)
 
             for connection in to_remove:
                 self.gui_delete_connection(connection.start_socket, connection.end_socket)
@@ -683,7 +803,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.scene().zoom = self._zoom
 
     def zoom_in(self):
-        self.zoom += 0.05
+        self.zoom += self._zoom_increment
 
     def zoom_out(self):
-        self.zoom -= 0.05
+        self.zoom -= self._zoom_increment
