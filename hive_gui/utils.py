@@ -216,12 +216,207 @@ _wraps_attribute_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out"
 _wrapper_import_paths = _io_import_paths | _wraps_attribute_import_paths
 
 
-def _build_modifier(args):
-    code = args['code']
-    code_body = "\n\t".join(code.split("\n"))
-    statement = """def modifier(self):\n\t{}""".format(code_body)
-    exec(statement, locals(), globals())
-    return hive.modifier(modifier)
+def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
+    bees = {}
+    imports = {"hive",}
+    builder_body = []
+
+    # Build hives
+    for spyder_hive in hivemap.hives:
+        hive_name = spyder_hive.identifier
+
+        # Get params
+        meta_args = parameter_array_to_dict(spyder_hive.meta_args)
+        args = parameter_array_to_dict(spyder_hive.args)
+        cls_args = parameter_array_to_dict(spyder_hive.cls_args)
+
+
+        # Add import path to import set
+        import_path = spyder_hive.import_path
+        root, *_ = import_path.split(".")
+        imports.add(root)
+
+        builder_body.append("i.{} = {}(meta_args={}, args={}, cls_args={})"
+                            .format(hive_name, import_path, meta_args, args, cls_args))
+
+    wraps_attribute = []
+    attribute_name_to_wrapper = {}
+
+    # First pass bees (Standalone bees)
+    for spyder_bee in hivemap.bees:
+        import_path = spyder_bee.import_path
+        identifier = spyder_bee.identifier
+
+        bees[identifier] = spyder_bee
+
+        # Bees that have to be resolved later
+        if import_path in _wrapper_import_paths:
+            # If bee wraps an attribute
+            if import_path in _wraps_attribute_import_paths:
+                wraps_attribute.append(spyder_bee)
+
+            continue
+
+        # Get params
+        meta_args = parameter_array_to_dict(spyder_bee.meta_args)
+        args = parameter_array_to_dict(spyder_bee.args)
+
+        # For attribute
+        if import_path == "hive.attribute":
+            data_type = meta_args['data_type']
+
+            if args['export']:
+                wrapper_name = "ex"
+            else:
+                wrapper_name = "i"
+
+            builder_body.append("{}.{} = hive.attribute({})".format(wrapper_name, identifier, data_type))
+            attribute_name_to_wrapper[identifier] = wrapper_name
+
+        # For modifier
+        elif import_path == "hive.modifier":
+            code = args['code']
+            code_body = "\n    ".join(code.split("\n"))
+            statement = """\ndef {}(self):\n    {}""".format(identifier, code_body)
+            builder_body.extend(statement.split("\n"))
+            builder_body.append("i.{0} = hive.modifier({0})\n".format(identifier))
+
+        elif import_path == "hive.triggerfunc":
+            builder_body.append("i.{} = hive.triggerfunc()".format(identifier))
+
+    # Second Bee pass (For attribute wrappers)
+    for spyder_bee in wraps_attribute:
+        import_path = spyder_bee.import_path
+
+        meta_args = parameter_array_to_dict(spyder_bee.meta_args)
+
+        # Get attribute
+        attribute_name = meta_args['attribute_name']
+        attribute_wrapper = attribute_name_to_wrapper[attribute_name]
+
+        builder_body.append("i.{} = {}({}.{})".format(spyder_bee.identifier, import_path,
+                                                      attribute_wrapper, attribute_name))
+
+    # At this point, wrappers have attribute, modifier, triggerfunc, pullin, pullout, pushin, pushout
+    def connect_bee_to_io():
+        pass
+
+    io_definitions = []
+
+    # For connections
+    for connection in hivemap.connections:
+        from_identifier = connection.from_node
+        to_identifier = connection.to_node
+
+        pretrigger = False
+
+        # From a HIVE
+        if from_identifier not in bees:
+            source_path = "i.{}.{}".format(from_identifier, connection.output_name)
+
+        # From a BEE
+        else:
+            from_bee = bees[from_identifier]
+
+            # Do antenna, entry definitions later
+            if from_bee.import_path in _io_import_paths:
+                io_definitions.append(connection)
+                continue
+
+            # Here bee can be triggerfunc[trigger,pretrigger, ppio[pre,post,value]
+            source_path = "i.{}".format(from_identifier)
+
+            # If pretrigger
+            if "pre" in connection.output_name:
+                pretrigger = True
+
+        if to_identifier not in bees:
+            target_path = "i.{}.{}".format(to_identifier, connection.input_name)
+
+        # From a BEE
+        else:
+            to_bee = bees[to_identifier]
+
+            # Do output, hook definitions later
+            if to_bee.import_path in _io_import_paths:
+                io_definitions.append(connection)
+                continue
+
+            # Here bee can be modifier[trigger], ppio[trigger,value]
+            target_path = "i.{}".format(to_identifier)
+
+        if connection.is_trigger:
+            builder_body.append("hive.trigger({}, {}, pretrigger={})".format(source_path, target_path, pretrigger))
+
+        else:
+            builder_body.append("hive.connect({}, {})".format(source_path, target_path))
+
+    builder_body.append("")
+    builder_body.append("# Interface")
+
+    for connection in io_definitions:
+        from_identifier = connection.from_node
+        to_identifier = connection.to_node
+
+        wrapper_bee = None
+        target_path = None
+
+        # From a BEE
+        if from_identifier in bees:
+            io_bee = bees[from_identifier]
+
+            # From an IO BEE
+            if io_bee.import_path in _io_import_paths:
+                wrapper_bee = io_bee
+
+            # From a generic other bee
+            else:
+                target_path = "i.{}".format(from_identifier)
+
+        else:
+            target_path = "i.{}.{}".format(from_identifier, connection.output_name)
+
+        # To a BEE
+        if to_identifier in bees:
+            io_bee = bees[to_identifier]
+
+            # To an IO BEE
+            if io_bee.import_path in _io_import_paths:
+                assert wrapper_bee is None
+                wrapper_bee = io_bee
+
+            # To a generic other bee
+            else:
+                assert target_path is None
+                target_path = "i.{}".format(to_identifier)
+
+        # To a hive
+        else:
+            assert target_path is None
+            target_path = "i.{}.{}".format(to_identifier, connection.input_name)
+
+        builder_body.append("ex.{} = {}({})".format(wrapper_bee.identifier, wrapper_bee.import_path, target_path))
+
+    import_body = "\n    ".join(["import {}".format(x) for x in imports])
+    execution_body = "\n    ".join(builder_body)
+
+    declaration_statement = \
+"""
+def {}(i, ex, args):
+"""
+    if docstring:
+        declaration_statement += \
+'''    """{}"""
+'''.format(docstring)
+
+    declaration_statement += \
+"""    # Imports
+    {}
+
+    # Declarations
+    {}
+"""
+    return declaration_statement.format(builder_name, import_body, execution_body)
 
 
 def builder_from_hivemap(data):
@@ -230,184 +425,10 @@ def builder_from_hivemap(data):
     :param data: string representation of hivemap
     """
     hivemap = model.Hivemap(data)
+    build_str = hivemap_to_builder_body(hivemap, builder_name="builder", docstring=hivemap.docstring)
+    print(build_str)
+    exec(build_str, locals(), globals())
 
-    def builder(i, ex, args):
-        bees = {}
-
-        # Build hives
-        for spyder_hive in hivemap.hives:
-            hive_name = spyder_hive.identifier
-
-            # Get params
-            meta_args = parameter_array_to_dict(spyder_hive.meta_args)
-            args = parameter_array_to_dict(spyder_hive.args)
-            cls_args = parameter_array_to_dict(spyder_hive.cls_args)
-
-            params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
-            hive_instance = create_hive_object_instance(spyder_hive.import_path, params)
-
-            setattr(i, hive_name, hive_instance)
-
-        wraps_attribute = []
-        attributes = {}
-
-        # First pass bees (Standalone bees)
-        for spyder_bee in hivemap.bees:
-            import_path = spyder_bee.import_path
-            identifier = spyder_bee.identifier
-
-            bees[identifier] = spyder_bee
-
-            # Bees that have to be resolved later
-            if import_path in _wrapper_import_paths:
-                # If bee wraps an attribute
-                if import_path in _wraps_attribute_import_paths:
-                    wraps_attribute.append(spyder_bee)
-
-                continue
-
-            # Get params
-            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
-            args = parameter_array_to_dict(spyder_bee.args)
-
-            # For attribute
-            if import_path == "hive.attribute":
-                data_type = meta_args['data_type']
-                attribute = hive.attribute(data_type)
-                export = args['export']
-                wrapper = ex if export else i
-                attributes[identifier] = attribute
-                setattr(wrapper, identifier, attribute)
-
-            # For modifier
-            elif import_path == "hive.modifier":
-                bee = _build_modifier(args)
-                setattr(i, identifier, bee)
-
-            elif import_path == "hive.triggerfunc":
-                setattr(i, identifier, hive.triggerfunc())
-
-        # Second Bee pass (For attribute wrappers)
-        for spyder_bee in wraps_attribute:
-            import_path = spyder_bee.import_path
-
-            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
-
-            # Get attribute
-            attribute_name = meta_args['attribute_name']
-            attribute = attributes[attribute_name]
-
-            # Create bee
-            bee_func = import_from_path(import_path)
-            bee = bee_func(attribute)
-
-            setattr(i, spyder_bee.identifier, bee)
-
-        # At this point, wrappers have attribute, modifier, triggerfunc, pullin, pullout, pushin, pushout
-        def connect_bee_to_io():
-            pass
-
-        io_definitions = []
-
-        # For connections
-        for connection in hivemap.connections:
-            from_identifier = connection.from_node
-            to_identifier = connection.to_node
-
-            pretrigger = False
-
-            # From a HIVE
-            if from_identifier not in bees:
-                from_hive = getattr(i, from_identifier)
-                source = getattr(from_hive, connection.output_name)
-
-            # From a BEE
-            else:
-                from_bee = bees[from_identifier]
-
-                # Do antenna, entry definitions later
-                if from_bee.import_path in _io_import_paths:
-                    io_definitions.append(connection)
-                    continue
-
-                # Here bee can be triggerfunc[trigger,pretrigger, ppio[pre,post,value]
-                source = getattr(i, from_identifier)
-                from_name = connection.output_name
-
-                # If pretrigger
-                if "pre" in from_name:
-                    pretrigger = True
-
-            if to_identifier not in bees:
-                to_hive = getattr(i, to_identifier)
-                target = getattr(to_hive, connection.input_name)
-
-            # From a BEE
-            else:
-                to_bee = bees[to_identifier]
-
-                # Do output, hook definitions later
-                if to_bee.import_path in _io_import_paths:
-                    io_definitions.append(connection)
-                    continue
-
-                # Here bee can be modifier[trigger], ppio[trigger,value]
-                target = getattr(i, to_identifier)
-
-            if connection.is_trigger:
-                hive.trigger(source, target, pretrigger)
-
-            else:
-                hive.connect(source, target)
-
-        for connection in io_definitions:
-            from_identifier = connection.from_node
-            to_identifier = connection.to_node
-
-            wrapper_bee = None
-            target = None
-
-            # From a BEE
-            if from_identifier in bees:
-                io_bee = bees[from_identifier]
-
-                # From an IO BEE
-                if io_bee.import_path in _io_import_paths:
-                    wrapper_bee = io_bee
-
-                # From a generic other bee
-                else:
-                    target = getattr(i, from_identifier)
-
-            else:
-                # From a HIVE
-                from_hive = getattr(i, from_identifier)
-                target = getattr(from_hive, connection.output_name)
-
-            # To a BEE
-            if to_identifier in bees:
-                io_bee = bees[to_identifier]
-
-                # To an IO BEE
-                if io_bee.import_path in _io_import_paths:
-                    assert wrapper_bee is None
-                    wrapper_bee = io_bee
-
-                # To a generic other bee
-                else:
-                    assert target is None
-                    target = getattr(i, to_identifier)
-
-            # To a hive
-            else:
-                to_hive = getattr(i, to_identifier)
-                target = getattr(to_hive, connection.input_name)
-
-            bee_cls = import_from_path(wrapper_bee.import_path)
-            bee = bee_cls(target)
-            setattr(ex, wrapper_bee.identifier, bee)
-
-    builder.__doc__ = hivemap.docstring
     return builder
 
 

@@ -2,7 +2,7 @@
 import sys
 import os
 
-UI = True
+UI = False
 
 if UI:
     from PySide.QtGui import *
