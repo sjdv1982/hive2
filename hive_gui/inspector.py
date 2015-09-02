@@ -77,7 +77,10 @@ class HiveNodeInspector:
 
             # If default is defined
             default = param.start_value
-            wrapper_options.append((arg_name, data_type, default, options))
+            if default is param.NoValue:
+                default = InspectorOption.NoValue
+
+            wrapper_options.append(InspectorOption(arg_name, data_type, default, options))
 
         return wrapper_options
 

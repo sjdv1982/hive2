@@ -2,7 +2,7 @@
 import sys
 import os
 
-UI = 1
+UI = True
 
 if UI:
     from PySide.QtGui import *
@@ -62,30 +62,18 @@ if UI:
     sys.exit()
 
 else:
+    with open("C:/users/angus/desktop/special_test.hivemap") as f:
+        hm =f.read()
+
+    from hive_gui.utils import builder_from_hivemap
+    b = builder_from_hivemap(hm)
 
     import hive
+    h = hive.hive("H", b)
+    hh=h()
 
-    from hive_gui.factory import HiveInspector
-
-    insp = HiveInspector()
-
-    inspector = insp.inspect_hive("dragonfly.std.Buffer")
-
-
-    result = None
-    while True:
-        try:
-            stage_name, stage_options = inspector.send(result)
-
-        except StopIteration:
-            break
-
-        print("Options for {}".format(stage_name))
-        for option in stage_options:
-            print("\t{}={}".format(option[0], option[2]))
-
-        if stage_name == "meta_args":
-            result = dict(data_type=("int",), mode="pull")
-        else:
-            pass
-
+    print("READY", dir(hh))
+    hh.score_in._trigger.add_target(lambda: print("Internal Post"))
+    hh.score_in._pretrigger.add_target(lambda: print("Internal Pre"))
+    hh.score_in.push(13)
+    print(hh.score)
