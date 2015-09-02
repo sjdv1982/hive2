@@ -1,10 +1,14 @@
+from .connection import Connection, ConnectionType
+from .factory import BeeNodeFactory, HiveNodeFactory, HelperNodeFactory
+from .inspector import HiveNodeInspector, BeeNodeInspector
 from .history import History
-from .node import HiveNode, BeeNode
+from .node import NodeTypes
 from .models import model
-from .utils import start_value_from_type, create_hive_object_instance, dict_to_parameter_array, parameter_array_to_dict
+from .utils import start_value_from_type, dict_to_parameter_array, \
+    parameter_array_to_dict, is_identifier
 
 
-def get_unique_name(existing_names, base_name):
+def _get_unique_name(existing_names, base_name):
     """Find unique value of base name which may have a number appended to the end
 
     :param existing_names: names currently in use
@@ -26,92 +30,97 @@ class NodeConnectionError(Exception):
 class NodeManager(object):
 
     def __init__(self, gui_node_manager):
-        self.docstring = ""
         self.gui_node_manager = gui_node_manager
-        self.nodes = {}
-
-        self._clipboard = None
-
         self.history = History()
+
+        self.bee_node_factory = BeeNodeFactory()
+        self.hive_node_factory = HiveNodeFactory()
+        self.helper_node_factory = HelperNodeFactory()
+
+        self.hive_node_inspector = HiveNodeInspector()
+        self.bee_node_inspector = BeeNodeInspector(self)
+
+        self.docstring = ""
+        self.nodes = {}
+        self._clipboard = None
 
         # Hard coded paths for useful node types
         self.variable_import_path = "dragonfly.std.Variable"
-        self.input_bee_configuration = {"hive.antenna": dict(data_type=None, mode="any"),
-                                        "hive.entry": dict(data_type=("trigger",), mode="push")}
-        self.output_bee_configuration = {"hive.output": dict(data_type=None, mode="any"),
-                                         "hive.hook": dict(data_type=("trigger",), mode="push")}
 
-    def create_connection(self, output, input):
+    def _unique_name_from_import_path(self, import_path):
+        obj_name = import_path.split(".")[-1]
+        return _get_unique_name(self.nodes, obj_name)
+
+    def create_connection(self, output_pin, input_pin):
         # Check pin isn't folded
-        if input.is_folded:
+        if input_pin.is_folded:
             raise NodeConnectionError("Cannot connect to a folded pin")
 
         # Check connection is permitted
-        if not (input.can_connect(output) and output.can_connect(input)):
-            raise NodeConnectionError("Can't connect {} to {}".format(output, input))
+        result = Connection.is_valid_between(output_pin, input_pin)
 
-        # Perform mutual connection
-        output.connect_target(input)
-        input.connect_target(output)
+        if result == ConnectionType.INVALID:
+            raise NodeConnectionError("Can't connect {} to {}".format(output_pin, input_pin))
+
+        is_trigger = result == ConnectionType.TRIGGER
+        connection = Connection(output_pin, input_pin, is_trigger=is_trigger)
 
         # Ask GUI to perform connection
-        self.gui_node_manager.create_connection(output, input)
-        self.history.push_operation(self.create_connection, (output, input), self.delete_connection, (output, input))
+        self.gui_node_manager.create_connection(connection)
+        self.history.push_operation(self.create_connection, (output_pin, input_pin),
+                                    self.delete_connection, (connection,))
 
-        print("Create connection", output.name, output.node, input.name, input.node)
+        print("Create connection", output_pin.name, output_pin.node, input_pin.name, input_pin.node)
 
-    def delete_connection(self, output, input):
-        self.gui_node_manager.delete_connection(output, input)
-        print("Delete Connection", output, input)
+    def delete_connection(self, connection):
+        self.gui_node_manager.delete_connection(connection)
+        print("Delete Connection", connection)
 
-        output.disconnect_target(input)
-        input.disconnect_target(output)
+        connection.delete()
 
-        self.history.push_operation(self.delete_connection, (output, input), self.create_connection, (output, input))
+        output_pin = connection.output_pin
+        input_pin = connection.input_pin
+        self.history.push_operation(self.delete_connection, (connection,),
+                                    self.create_connection, (output_pin, input_pin))
 
-    def reorder_connection(self, output, input, index):
-        old_index = output.targets.index(input)
+    def reorder_connection(self, connection, index):
+        output_pin = connection.output_pin
+        old_index = output_pin.connections.index(connection)
 
-        output.reorder_target(input, index)
-        self.gui_node_manager.reorder_connection(output, input, index)
+        output_pin.reorder_target(connection, index)
+        self.gui_node_manager.reorder_connection(connection, index)
 
-        self.history.push_operation(self.reorder_connection, (output, input, index),
-                                    self.reorder_connection, (output, input, old_index))
+        self.history.push_operation(self.reorder_connection, (connection, index),
+                                    self.reorder_connection, (connection, old_index))
 
-    def create_node(self, import_path, params=None):
+    def create_hive(self, import_path, params=None):
         if params is None:
             params = {}
 
-        hive = create_hive_object_instance(import_path, params)
+        name = self._unique_name_from_import_path(import_path)
+        node = self.hive_node_factory.new(name, import_path, params)
 
-        # Get unique name from hive parent class name
-        hive_class_name = hive._hive_parent_class.__name__
-        name = get_unique_name(self.nodes, hive_class_name)
-
-        node = HiveNode(hive, import_path, name, params)
         self._add_node(node)
-
         return node
 
-    def create_bee(self, import_path):
-        if import_path in self.input_bee_configuration:
-            config = self.input_bee_configuration[import_path]
-            io_type = "input"
+    def create_bee(self, import_path, params=None):
+        if params is None:
+            params = {}
 
-        elif import_path in self.output_bee_configuration:
-            config = self.output_bee_configuration[import_path]
-            io_type = "output"
+        name = self._unique_name_from_import_path(import_path)
+        node = self.bee_node_factory.new(name, import_path, params)
 
-        else:
-            raise ValueError(import_path)
-
-        data_type = config['data_type']
-        mode = config['mode']
-
-        name = get_unique_name(self.nodes, io_type)
-        node = BeeNode(import_path, name, io_type, data_type, mode)
         self._add_node(node)
+        return node
 
+    def create_helper(self, import_path, params=None):
+        if params is None:
+            params = {}
+
+        name = self._unique_name_from_import_path(import_path)
+        node = self.helper_node_factory.new(name, import_path, params)
+
+        self._add_node(node)
         return node
 
     def _add_node(self, node):
@@ -126,22 +135,23 @@ class NodeManager(object):
     def delete_node(self, node):
         # Remove connections
         for input_pin in node.inputs.values():
-            for output_pin in input_pin.targets.copy():
-                # Handle folded nodes
-                is_folded = input_pin.is_folded
+            is_folded = input_pin.is_folded
 
-                if is_folded:
-                    self.unfold_pin(input_pin)
+            # Handle folded nodes
+            if is_folded:
+                self.unfold_pin(input_pin)
+                output_pin = next(iter(input_pin.connections)).output_pin
 
-                self.delete_connection(output_pin, input_pin)
+            for connection in list(input_pin.connections):
+                self.delete_connection(connection)
 
-                # Delete folded nodes
-                if is_folded:
-                    self.delete_node(output_pin.node)
+            # Delete folded nodes (only should be one folded node!)
+            if is_folded:
+                self.delete_node(output_pin.node)
 
         for output_pin in node.outputs.values():
-            for input_pin in output_pin.targets.copy():
-                self.delete_connection(output_pin, input_pin)
+            for connection in list(output_pin.connections):
+                self.delete_connection(connection)
 
         self.gui_node_manager.delete_node(node)
         self.nodes.pop(node.name)
@@ -149,10 +159,13 @@ class NodeManager(object):
         self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
 
     def set_node_name(self, node, name, attempt_till_success=False):
+        if not is_identifier(name):
+            raise ValueError("Name must be valid python identifier: {}".format(name))
+
         if self.nodes.get(name, node) is not node:
             # Try till we succeed
             if attempt_till_success:
-                name = get_unique_name(self.nodes, name)
+                name = _get_unique_name(self.nodes, name)
 
             else:
                 raise ValueError("Can't rename {} to {}".format(node, name))
@@ -179,8 +192,10 @@ class NodeManager(object):
 
         for pin in node.inputs.values():
             if pin.is_folded:
-                target_pin = next(iter(pin.targets))
+                target_connection = next(iter(pin.connections))
+                target_pin = target_connection.output_pin
                 other_node = target_pin.node
+
                 new_position = other_node.position[0] + dx, other_node.position[1] + dy
                 self.set_node_position(other_node, new_position)
 
@@ -190,6 +205,10 @@ class NodeManager(object):
                                     self.set_node_position, (node, old_position))
 
     def can_fold_pin(self, pin):
+        # Only hives support folding
+        if pin.node.node_type != NodeTypes.HIVE:
+            return False
+
         if pin.is_folded:
             return False
 
@@ -199,11 +218,12 @@ class NodeManager(object):
         if pin.mode != "pull":
             return False
 
-        if not pin.targets:
+        if not pin.connections:
             return True
 
-        if len(pin.targets) == 1:
-            target_pin = next(iter(pin.targets))
+        if len(pin.connections) == 1:
+            target_connection = next(iter(pin.connections))
+            target_pin = target_connection.output_pin
             target_node = target_pin.node
 
             # If is not the correct type (variable)
@@ -211,7 +231,7 @@ class NodeManager(object):
                 return False
 
             # If other pin is in use else where
-            if len(target_pin.targets) == 1:
+            if len(target_pin.connections) == 1:
                 return True
 
         return False
@@ -220,12 +240,12 @@ class NodeManager(object):
         assert self.can_fold_pin(pin)
 
         # Create variable
-        if not pin.targets:
+        if not pin.connections:
             params = dict(meta_args=dict(data_type=pin.data_type),
                           args=dict(start_value=start_value_from_type(pin.data_type)))
 
             # Create variable node, attempt to call it same as pin
-            target_node = self.create_node(self.variable_import_path, params)
+            target_node = self.create_hive(self.variable_import_path, params)
             target_pin = next(iter(target_node.outputs.values()))
 
             self.set_node_name(target_node, pin.name, attempt_till_success=True)
@@ -239,7 +259,7 @@ class NodeManager(object):
 
     def unfold_pin(self, pin):
         assert pin.is_folded
-        assert pin.targets
+        assert pin.connections
 
         pin.is_folded = False
         print("UNFOLDED", pin.name, pin.node)
@@ -291,8 +311,10 @@ class NodeManager(object):
         for node in nodes:
             for pin in node.inputs.values():
                 if pin.is_folded:
-                    target = next(iter(pin.targets)).node
-                    with_folded_nodes.add(target)
+                    target_connection = next(iter(pin.connections))
+                    target_pin = target_connection.output_pin
+                    target_node = target_pin.node
+                    with_folded_nodes.add(target_node)
 
         self._clipboard = self._export(with_folded_nodes)
 
@@ -332,13 +354,15 @@ class NodeManager(object):
         node_names = set()
 
         for node in nodes:
-            # Serialise HiveNode instance
-            if isinstance(node, HiveNode):
-                params = node.params
+            # Get node params
+            params = node.params
 
-                # Write to Bee
-                meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
-                arg_array = dict_to_parameter_array(params.get('args', {}))
+            # Write to Bee
+            meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
+            arg_array = dict_to_parameter_array(params.get('args', {}))
+
+            # Serialise HiveNode instance
+            if node.node_type == NodeTypes.HIVE:
                 cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
 
                 folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
@@ -348,11 +372,11 @@ class NodeManager(object):
 
                 hivemap.hives.append(spyder_hive)
 
-            # Serialise IOBee instance
-            else:
-                spyder_io_bee = model.IOBeeNode(identifier=node.name, import_path=node.import_path,
-                                                position=node.position)
-                hivemap.io_bees.append(spyder_io_bee)
+            # Serialise Bee instance
+            elif node.node_type == NodeTypes.BEE:
+                spyder_bee = model.BeeNode(identifier=node.name, import_path=node.import_path, position=node.position,
+                                           meta_args=meta_arg_array, args=arg_array)
+                hivemap.bees.append(spyder_bee)
 
             # Keep track of copied nodes
             node_names.add(node.name)
@@ -361,20 +385,17 @@ class NodeManager(object):
             node_name = node.name
 
             for pin_name, pin in node.outputs.items():
-
-                if not pin.targets:
-                    continue
-
-                pin_name = pin.name
-
-                for target in pin.targets:
-                    target_node_name = target.node.name
+                for connection in pin.connections:
+                    target_pin = connection.input_pin
+                    target_node_name = target_pin.node.name
 
                     # Omit connections that aren't in the copied nodes
                     if target_node_name not in node_names:
                         continue
 
-                    spyder_connection = model.Connection(node_name, pin_name, target_node_name, target.name)
+                    is_trigger = connection.is_trigger
+                    spyder_connection = model.Connection(node_name, pin_name, target_node_name, target_pin.name,
+                                                         is_trigger)
                     hivemap.connections.append(spyder_connection)
 
         return hivemap
@@ -391,17 +412,22 @@ class NodeManager(object):
         node_to_spyder_node = {}
 
         # Load IO bees
-        for spyder_io_bee in hivemap.io_bees:
-            import_path = spyder_io_bee.import_path
+        for spyder_bee in hivemap.bees:
+            import_path = spyder_bee.import_path
+
+            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
+            args = parameter_array_to_dict(spyder_bee.args)
+
+            params = {"meta_args": meta_args, "args": args}
 
             try:
-                node = self.create_bee(import_path)
+                node = self.create_bee(import_path, params)
 
             except Exception as err:
-                print("Unable to create node {}: {}".format(spyder_io_bee.identifier, err))
+                print("Unable to create node {}: {}".format(spyder_bee.identifier, err))
                 continue
 
-            node_to_spyder_node[node] = spyder_io_bee
+            node_to_spyder_node[node] = spyder_bee
 
         # Load hives
         for spyder_hive in hivemap.hives:
@@ -414,7 +440,7 @@ class NodeManager(object):
             params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
 
             try:
-                node = self.create_node(import_path, params)
+                node = self.create_hive(import_path, params)
 
             except Exception as err:
                 print("Unable to create node {}: {}".format(spyder_hive.identifier, err))

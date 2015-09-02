@@ -32,10 +32,14 @@ if UI:
 
     window.show()
 
-    bees = {"hive": ["antenna", "output", "entry", "hook"]}
+    bees = {"hive": ["antenna", "output", "entry", "hook", "triggerfunc", "modifier",
+                     "pull_in", "pull_out", "push_in", "push_out", "attribute"]}
 
-    window.hive_widget.load_hives(hives)
-    window.bee_widget.load_hives(bees)
+    #helpers = {"helpers": ["trigger_in", "trigger_out"]}
+
+    window.hive_widget.load_items(hives)
+    window.bee_widget.load_items(bees)
+    #window.helper_widget.load_items(helpers)
 
     # Add Help page
     home_page = QWebView()
@@ -58,93 +62,30 @@ if UI:
     sys.exit()
 
 else:
-    hivemap_str = """
-Hivemap (
-  hives = HiveNodeArray (
-    HiveNode (
-      identifier = 'Buffer_4',
-      import_path = 'dragonfly.std.Buffer',
-      position = Coordinate2D (
-        x = 332.0,
-        y = 129.0,
-      ),
-      meta_args = HiveInstanceParameterArray (
-        HiveInstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('int',)",
-        ),
-        HiveInstanceParameter (
-          identifier = 'mode',
-          data_type = 'str',
-          value = 'push',
-        ),
-      ),
-      args = HiveInstanceParameterArray (
-        HiveInstanceParameter (
-          identifier = 'start_value',
-          data_type = 'int',
-          value = '0',
-        ),
-      ),
-      cls_args = HiveInstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-  ),
-  io_bees = IOBeeNodeArray (
-    IOBeeNode (
-      identifier = 'input_1',
-      import_path = 'hive.entry',
-      position = Coordinate2D (
-        x = 202.85714285714292,
-        y = 325.71428571428584,
-      ),
-    ),
-    IOBeeNode (
-      identifier = 'input_0',
-      import_path = 'hive.antenna',
-      position = Coordinate2D (
-        x = 49.0,
-        y = 229.0,
-      ),
-    ),
-    IOBeeNode (
-      identifier = 'output_0',
-      import_path = 'hive.output',
-      position = Coordinate2D (
-        x = 526.0,
-        y = 263.0,
-      ),
-    ),
-  ),
-  connections = ConnectionArray (
-    Connection (
-      from_node = 'input_1',
-      output_name = 'input',
-      to_node = 'Buffer_4',
-      input_name = 'trigger',
-    ),
-    Connection (
-      from_node = 'Buffer_4',
-      output_name = 'output',
-      to_node = 'output_0',
-      input_name = 'output',
-    ),
-    Connection (
-      from_node = 'input_0',
-      output_name = 'input',
-      to_node = 'Buffer_4',
-      input_name = 'input',
-    ),
-  ),
-  docstring = '',
-)"""
 
-    from hive_gui.utils import class_from_hivemap
-    cls = class_from_hivemap("TestHive", hivemap_str)
-    h = cls()
+    import hive
 
-    h.input_0.push(12)
-    assert h._Buffer_4.value == 12
+    from hive_gui.factory import HiveInspector
+
+    insp = HiveInspector()
+
+    inspector = insp.inspect_hive("dragonfly.std.Buffer")
+
+
+    result = None
+    while True:
+        try:
+            stage_name, stage_options = inspector.send(result)
+
+        except StopIteration:
+            break
+
+        print("Options for {}".format(stage_name))
+        for option in stage_options:
+            print("\t{}={}".format(option[0], option[2]))
+
+        if stage_name == "meta_args":
+            result = dict(data_type=("int",), mode="pull")
+        else:
+            pass
+

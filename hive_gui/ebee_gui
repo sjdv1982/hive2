@@ -1,3 +1,13 @@
+PPinOutBee:
+    param: variable (ref)
+
+    in/out:
+        trigger: "do push/pull"
+
+        value
+
+
+Non IO
 Triggerfunc:
     param: code - callable (optional)
     output: trigger
@@ -7,12 +17,16 @@ Triggerable:
     param: code - callable (required)
     input: trigger
 
+Attribute:
+    data_type
+        [then] -> start_value
 
+IO:
 Antenna:
     output: input
 
 
-Ouptut:
+Output:
     input: output
 
 
@@ -22,6 +36,63 @@ Hook:
 
 Entry:
     output: trigger
+
+
+TODO: Add Hive previewer with node constructed of IO pins
+
+################################### HELPERS
+Add a trigger "helper" UI node
+
+    Pull In:
+        Can trigger
+        Can be triggered {Use node link}
+
+    Push Out:
+        Can trigger
+        Can be triggered {Use node link}
+
+    Push In:
+        Can trigger
+
+    Pull Out:
+        Can trigger
+
+
+TriggerHelper:
+    input:
+        push/pull in (mimic, linked)
+
+    outputs:
+        push/pull out (mimic, linked)
+
+        pretrigger
+        trigger
+
+
+OutputTriggerHelper:
+    outputs:
+        push/pull out (mimic, linked)
+
+    inputs:
+        push/pull in (mimic, linked)
+
+        pretrigger
+        trigger
+
+
+Hop in / out
+
+##############################
+
+Dragging from push connection to trigger generates a trigger connection
+Add version to hivemap (nest hivemap inside spyder version, using generic string)
+
+PPINOUT bees take data type of attribute used
+
+
+
+
+
 
 
 
@@ -38,7 +109,15 @@ Socket:
         show and keep hover info
 
 
-# TODO
+#TODO:
+#Mimicking of data type and mode (or lower level color because data type isn't important, as long as conn allowed)
+#Add param GUI for bees (instead of hive GUI)
+#Bees ex/i distinction! - allow flag in GUI, so need exporter to export BeeNode.external? Force no for some bees (antenna, ppin)
+
+
+
+
+# BEGIN DONE
 Bees: different colour to Hive nodes
 
 Add connection tracking to UI:
@@ -55,3 +134,4 @@ Connection info:
     index = -1
 
 Use + / - to change index. (resort pin list (order matters ONLY on output pin))
+# END DONE

@@ -3,8 +3,7 @@ from nodeitems_utils import NodeCategory
 
 from .text_area import BlenderTextArea
 
-from ..sockets import colours, SocketTypes
-from ..utils import import_from_path, get_pre_init_info
+from ..utils import import_from_path,
 
 blend_manager = None
 
@@ -192,7 +191,7 @@ def add_hive_node(context, import_path, params=None):
     gui_node_manager = blend_manager.get_gui_manager_for_node_tree(node_tree)
     node_manager = gui_node_manager.node_manager
 
-    node = node_manager.create_node(import_path, params)
+    node = node_manager.create_hive(import_path, params)
     gui_node = gui_node_manager.get_gui_node_from_node(node)
 
     # Select this node

@@ -5,6 +5,9 @@
 # Modified for the Hive system by Sjoerd de Vries
 # All modifications copyright (C) 2012 Sjoerd de Vries, All rights reserved
 #
+# Modified for the Hive2 system by Angus Hollands
+# All modifications copyright (C) 2015 Angus Hollands, All rights reserved
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:

@@ -5,6 +5,9 @@
 # Modified for the Hive system by Sjoerd de Vries
 # All modifications copyright (C) 2012 Sjoerd de Vries, All rights reserved
 #
+# Modified for the Hive2 system by Angus Hollands
+# All modifications copyright (C) 2015 Angus Hollands, All rights reserved
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -41,7 +44,7 @@ from ..node_manager import NodeConnectionError
 
 class Socket(QtGui.QGraphicsItem):
 
-    def __init__(self, socket_row, mode, shape, style, parent_item=None, hover_text=None, order_dependent=False):
+    def __init__(self, socket_row, mode, shape, parent_item=None, hover_text=None, order_dependent=False):
         if parent_item is None:  # parentItem is used by builtinUis.ContainedAttributeUiProxy
             parent_item = socket_row
 
@@ -55,9 +58,6 @@ class Socket(QtGui.QGraphicsItem):
 
         assert shape in (SocketTypes.circle, SocketTypes.square), shape
         self._shape = shape
-
-        assert style in ("dot", "dashed", "solid"), style
-        self._style = style
 
         self._rect = QtCore.QRectF(0, 0, 12, 12)
         self._color = QtGui.QColor(200, 200, 200)
@@ -182,9 +182,6 @@ class Socket(QtGui.QGraphicsItem):
 
     def set_colour(self, colour):
         self.setColor(QtGui.QColor(*colour))
-
-    def set_style(self, style):
-        self._style = style
 
     def setColor(self, color):
         self._color.setRgb(color.red(), color.green(), color.blue())

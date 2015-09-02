@@ -4,6 +4,7 @@ from functools import partial
 
 from .utils import create_widget
 from ..utils import infer_type
+from ..node import NodeTypes
 
 
 class ConfigurationPanel(QWidget):
@@ -38,6 +39,9 @@ class ConfigurationPanel(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
+        if node is None:
+            return
+
         widget = QLabel(node.import_path)
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
         layout.addRow(self.tr("Import path"), widget)
@@ -50,10 +54,11 @@ class ConfigurationPanel(QWidget):
 
 class ArgsPanel(QWidget):
 
-    def __init__(self):
+    def __init__(self, node_manager):
         QWidget.__init__(self)
 
         self._node = None
+        self._node_manager = node_manager
 
         self._layout = QFormLayout()
         self.setLayout(self._layout)
@@ -75,6 +80,9 @@ class ArgsPanel(QWidget):
             item = layout.takeAt(0)
             widget = item.widget()
             widget.deleteLater()
+
+        if node is None:
+            return
 
         # Meta Args
         meta_args = node.params.get('meta_args')
@@ -138,11 +146,10 @@ class ArgsPanel(QWidget):
 
 class FoldingPanel(QWidget):
 
-    def __init__(self, fold_node_path, node_manager):
+    def __init__(self, node_manager):
         QWidget.__init__(self)
 
         self._node = None
-        self._fold_node_path = fold_node_path
         self._node_manager = node_manager
 
         self._folding_layout = QFormLayout()
@@ -174,6 +181,9 @@ class FoldingPanel(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
+        if node is None:
+            return
+
         for name, pin in node.inputs.items():
             if pin.mode != "pull":
                 continue
@@ -192,8 +202,12 @@ class FoldingPanel(QWidget):
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
-                widget = ArgsPanel()
-                widget.node = next(iter(pin.targets)).node
+                widget = ArgsPanel(node_manager=None)
+
+                target_connection = next(iter(pin.connections))
+                target_pin = target_connection.output_pin
+                widget.node = target_pin.node
+
                 layout.addWidget(widget)
 
             else:

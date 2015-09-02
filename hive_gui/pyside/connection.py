@@ -48,7 +48,7 @@ class Connection(QtGui.QGraphicsItem):
     _start_socket = None
     _end_socket = None
 
-    def __init__(self, start_socket, end_socket=None, id_=None):
+    def __init__(self, start_socket, end_socket=None, id_=None, style="solid", curve=True):
         QtGui.QGraphicsItem.__init__(self, None, start_socket.scene())
 
         if id_ is None:
@@ -57,25 +57,31 @@ class Connection(QtGui.QGraphicsItem):
 
         self._rect = QtCore.QRectF(0, 0, 0, 0)
 
+        self._is_temp_connection = False
+
+        self._path = QtGui.QPainterPath()
+
+        self._active_style = style
+        self._curve = curve
+
         self._color = start_socket.colorRef()
         self._pen = QtGui.QPen(self._color)
-        self._is_temp_connection = False
-        self._path = QtGui.QPainterPath()
+        self.set_start_socket(start_socket)
+
         self._key_points = []
 
         self._center_widget = None
-
-        self.set_start_socket(start_socket)
 
         if end_socket is None:
             # creating a dummy endHook for temporary connection dragging, 
             #  the "input" and shape/style parameters have no effect
             end_mode = "output" if start_socket.is_input else "input"
-            end_socket = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, self._active_style, parent_item=self)
+            end_socket = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, parent_item=self)
             end_socket.boundingRect().setSize(QtCore.QSizeF(2.0, 2.0))
             self._is_temp_connection = True
 
         self.set_end_socket(end_socket)
+
         self.update_start_pos()
 
         self.setZValue(-1.0)
@@ -148,10 +154,15 @@ class Connection(QtGui.QGraphicsItem):
             connection_path = scene_translation.map(self._path)
             simplified_path = connection_path.simplified()
 
-            previous_point = None
+            element_count = simplified_path.elementCount() - 1
 
-            # For all line elements (don't loop around)
-            for i in range(simplified_path.elementCount() - 1):
+            # In case path is linear
+            if element_count == -1:
+                simplified_path = connection_path
+                element_count = simplified_path.elementCount()
+
+            previous_point = None
+            for i in range(element_count):
                 element = simplified_path.elementAt(i)
                 point = QtCore.QPointF(element.x, element.y)
 
@@ -177,11 +188,19 @@ class Connection(QtGui.QGraphicsItem):
 
         if connection_rect.contains(path_rect) or path_rect.contains(connection_rect) \
                 or path_rect.intersects(connection_rect):
+
             connection_path = scene_translation.map(self._path)
             simplified_path = connection_path.simplified()
 
+            element_count = simplified_path.elementCount() - 1
+
+            # In case path is linear
+            if element_count == -1:
+                simplified_path = connection_path
+                element_count = simplified_path.elementCount()
+
             previous_point = None
-            for i in range(simplified_path.elementCount() - 1):
+            for i in range(element_count):
                 element = simplified_path.elementAt(i)
 
                 point = QtCore.QPointF(element.x, element.y)
@@ -252,17 +271,18 @@ class Connection(QtGui.QGraphicsItem):
 
         self._color = color
 
+    def set_style(self, style):
+        self._style = style
+
     def set_start_socket(self, socket):
         if self.start_socket:
             self.start_socket.remove_connection(self)
 
         self._start_socket = None
-        self._active_style = "dot"
 
         if socket is not None:
             self._start_socket = weakref.ref(socket)
             socket.add_connection(self)
-            self._active_style = socket._style
 
     def set_end_socket(self, socket):
         if self.end_socket:
@@ -297,47 +317,37 @@ class Connection(QtGui.QGraphicsItem):
         self.prepareGeometryChange()
         end_pos = self.mapFromItem(end_hook, 0.0, 0.0) + end_hook.boundingRect().center()
 
-        if not self._key_points:
-            tangent_length = (abs(end_pos.x()) / 2.0) + (abs(end_pos.y()) / 4.0)
-            tangent_length2 = tangent_length
-
-        else:
-            first_pos = self._key_points[0]
-            tangent_length = (abs(first_pos.x()) / 2.0) + (abs(first_pos.y()) / 4.0)
-            last_pos = self._key_points[-1]
-            last_segment = end_pos - last_pos
-            tangent_length2 = (abs(last_segment.x()) / 2.0) + (abs(last_segment.y()) / 4.0)
-
-        spread = 60.0 / 180.0 * pi
-
-        # Find connection index
-        index, number_connections = self.start_socket.get_index_info(self)
-
-        dev = (index - number_connections / 2.0 + 0.5) * min(spread, pi / (number_connections + 2))
-        tx = tangent_length * cos(dev)
-        ty = tangent_length * sin(dev)
-        start_tangent = QtCore.QPointF(tx, ty)
-
-        end_tangent = QtCore.QPointF(end_pos.x() - tangent_length2, end_pos.y())
-
-        path = QtGui.QPainterPath()
-        current_tangent = start_tangent
-        current_pos = QtCore.QPointF(0.0, 0.0)
-
-        for i, point in enumerate(self._key_points):
-            if i == len(self._key_points) - 1:
-                next_position = end_pos
+        if self._curve:
+            if not self._key_points:
+                tangent_length = (abs(end_pos.x()) / 2.0) + (abs(end_pos.y()) / 4.0)
+                tangent_length2 = tangent_length
 
             else:
-                next_position = self._key_points[i + 1]
+                first_pos = self._key_points[0]
+                tangent_length = (abs(first_pos.x()) / 2.0) + (abs(first_pos.y()) / 4.0)
+                last_pos = self._key_points[-1]
+                last_segment = end_pos - last_pos
+                tangent_length2 = (abs(last_segment.x()) / 2.0) + (abs(last_segment.y()) / 4.0)
 
-            next_tangent = interpolate_tangents((point - current_pos), (next_position - point))
-            path.cubicTo(current_tangent, point - next_tangent, point)
+            spread = 60.0 / 180.0 * pi
 
-            current_tangent = point + next_tangent
-            current_pos = point
+            # Find connection index
+            index, number_connections = self.start_socket.get_index_info(self)
 
-        path.cubicTo(current_tangent, end_tangent, end_pos)
+            dev = (index - number_connections / 2.0 + 0.5) * min(spread, pi / (number_connections + 2))
+            tx = tangent_length * cos(dev)
+            ty = tangent_length * sin(dev)
+
+            start_tangent = QtCore.QPointF(tx, ty)
+            end_tangent = QtCore.QPointF(end_pos.x() - tangent_length2, end_pos.y())
+
+            path = QtGui.QPainterPath()
+            path.cubicTo(start_tangent, end_tangent, end_pos)
+
+        # Dot styles are used for relationships
+        else:
+            path = QtGui.QPainterPath()
+            path.lineTo(end_pos)
 
         stroke_width = self._pen.widthF()
         rect = path.boundingRect().adjusted(-stroke_width, -stroke_width, stroke_width, stroke_width)
@@ -354,6 +364,7 @@ class Connection(QtGui.QGraphicsItem):
 
     def on_socket_hover_enter(self):
         center_widget = self._center_widget
+
         if center_widget is not None:
             center_widget.setVisible(True)
 
@@ -363,7 +374,6 @@ class Connection(QtGui.QGraphicsItem):
             center_widget.setVisible(False)
 
     def paint(self, painter, option, widget):
-       # return
         self._pen.setColor(self._color)
         painter.setPen(self._pen)
         painter.drawPath(self._path)

@@ -30,14 +30,14 @@ class TreeWidget(QtGui.QTreeWidget):
         else:
             self.setDragEnabled(False)
 
-    def load_hives(self, hives, path=()):
-        for name, children in hives.items():
+    def load_items(self, item_dict, path=()):
+        for name, children in item_dict.items():
 
             full_path = path + (name,)
 
             for child in children:
                 if isinstance(child, dict):
-                    self.load_hives(child, full_path)
+                    self.load_items(child, full_path)
 
                 else:
                     self.append(full_path + (child,))

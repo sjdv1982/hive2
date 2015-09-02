@@ -1,4 +1,4 @@
-from .utils import get_io_info
+from .connection import ConnectionType
 from .sockets import get_colour, get_shape
 from .iterable_view import ListView
 
@@ -6,45 +6,87 @@ from collections import OrderedDict
 from hive.tuple_type import types_match
 
 
+class MimicFlags:
+    NONE = 0
+    COLOUR = 1
+    SHAPE = 2
+
+
 class IOPin(object):
 
-    def __init__(self, node, name, data_type, mode, io_type):
+    def __init__(self, node, name, io_type, data_type, mode="pull", max_connections=-1, restricted_types=None,
+                 mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
         self.name = name
-
-        self._node = node
-        self._colour = get_colour(data_type)
-        self._shape = get_shape(mode)
-        self._io_type = io_type
-        self._data_type = data_type
-        self._is_trigger = types_match(("trigger",), data_type, allow_none=False)
-
-        self._mode = mode # "any" for any connection
-        self._current_mode = mode
-
-        self._targets = []
-        self._max_targets = -1
-        self.targets = ListView(self._targets)
-
         self.is_folded = False
 
+        # Non-permitted connection types
+        if restricted_types is None:
+            restricted_types = []
+
+        # Pull rule
         if mode == "pull" and io_type == "input":
-            self._max_targets = 1
+            max_connections = 1
+
+        # Mimicking pins
+        if mode == "any":
+            if not -1 < max_connections <= 1:
+               max_connections = 1
+
+            mimic_flags |= MimicFlags.SHAPE
+
+        # Read only
+        self._colour = get_colour(data_type)
+        self._data_type = data_type
+        self._mode = mode # "any" for any connection
+        self._is_trigger = types_match(data_type, ("trigger",), allow_none=False)
+        self._io_type = io_type
+        self._node = node
+        self._restricted_data_types = restricted_types
+        self._shape = get_shape(mode)
+        self._mimic_flags = mimic_flags
+        self._is_proxy = is_proxy
+
+        self._connections = []
+        self._connection_count = 0
+        self._count_proxies = count_proxies
+        self._max_connections = max_connections
+
+        # Read only view
+        self.connections = ListView(self._connections)
+
+        # Callbacks
+        self.on_connected = None
+        self.on_disconnected = None
+        self.validate_connection = None
+
+    @property
+    def is_trigger(self):
+        return self._is_trigger
 
     @property
     def data_type(self):
         return self._data_type
 
     @property
+    def is_proxy(self):
+        """Whether pin is actually a connectable pin"""
+        return self._is_proxy
+
+    @property
     def node(self):
         return self._node
 
     @property
-    def colour(self):
-        return self._colour
+    def mode(self):
+        return self._mode
 
     @property
     def shape(self):
         return self._shape
+
+    @property
+    def colour(self):
+        return self._colour
 
     @property
     def io_type(self):
@@ -55,184 +97,142 @@ class IOPin(object):
         return self._data_type
 
     @property
-    def mode(self):
-        return self._mode
-
-    @property
-    def current_mode(self):
-        return self._current_mode
-
-    @property
     def max_connections(self):
-        return self._max_targets
+        return self._max_connections
 
-    def can_connect(self, other_pin):
-        # Check types match. If trigger, other must be trigger too.
-        if not types_match(other_pin.data_type, self._data_type, allow_none=not self._is_trigger):
-            return False
+    @property
+    def mimic_flags(self):
+        return self._mimic_flags
 
-        if other_pin.mode != "any" and self._mode != "any":
-            if other_pin.mode != self._mode:
+    def can_connect_to(self, other_pin, is_source):
+        # Custom validator
+        if callable(self.validate_connection):
+            if not self.validate_connection(self, other_pin, is_source):
                 return False
 
-        # Pull inputs can only have one input
-        if len(self._targets) == self._max_targets:
+        # If a restricted data type
+        for data_type in self._restricted_data_types:
+            if types_match(other_pin.data_type, data_type, allow_none=False):
+                return False
+
+        # Limit connections if provided
+        if self._connection_count == self._max_connections:
             return False
 
         return True
 
-    def connect_target(self, other):
-        assert other not in self._targets
-        self._targets.append(other)
+    def mimic_other_pin(self, other_pin):
+        # Update cosmetics for other
+        flags = self._mimic_flags
 
-    def disconnect_target(self, other):
-        self._targets.remove(other)
+        if flags & MimicFlags.SHAPE:
+            self._shape = other_pin.shape
 
-    def reorder_target(self, other, index):
-        current_index = self._targets.index(other)
-        if index > current_index:
-            index -= 1
+        if flags & MimicFlags.COLOUR:
+            self._colour = other_pin.colour
 
-        del self._targets[current_index]
-        self._targets.insert(index, other)
+    def unmimic_other_pin(self, other_pin):
+        pass
+
+    def add_connection(self, connection):
+        assert connection not in self._connections
+        self._connections.append(connection)
+
+        if connection.output_pin is self:
+            other_pin = connection.input_pin
+        else:
+            other_pin = connection.output_pin
+
+        if self._count_proxies or not other_pin.is_proxy:
+            self._connection_count += 1
+            print("CONN COUNT", self._connection_count, self.max_connections)
+
+        # Mimic aesthetics
+        self.mimic_other_pin(other_pin)
+
+        if callable(self.on_connected):
+            self.on_connected(self, other_pin)
+
+    def remove_connection(self, connection):
+        self._connections.remove(connection)
+
+        # Post connection
+        if connection.output_pin is self:
+            other_pin = connection.input_pin
+        else:
+            other_pin = connection.output_pin
+
+        if self._count_proxies or not other_pin.is_proxy:
+            self._connection_count -= 1
+
+        self.unmimic_other_pin(other_pin)
+
+        if callable(self.on_connected):
+            self.on_disconnected(self, other_pin)
+
+    def reorder_target(self, connection, index):
+        current_index = self._connections.index(connection)
+        del self._connections[current_index]
+        self._connections.insert(index, connection)
 
     def __repr__(self):
         return "<{} pin {}.{}>".format(self._io_type, self._node.name, self.name)
 
 
-class BeeIOPin(IOPin):
-
-    def __init__(self, node, name, data_type, mode, io_type):
-        super().__init__(node, name, data_type, mode, io_type)
-
-        self._max_targets = 1
-
-    def mimic_other_pin(self, other):
-        # Update cosmetics for other
-        self._shape = other.shape
-        self._colour = other.colour
-        self._current_mode = other.mode
-
-    def connect_target(self, other):
-        super().connect_target(other)
-
-        self.mimic_other_pin(other)
-
-    def can_connect(self, other_pin):
-        if not super().can_connect(other_pin):
-            return False
-
-        return not isinstance(other_pin, self.__class__)
+class NodeTypes(object):
+    HIVE, BEE, HELPER = range(3)
 
 
-class GUINode(object):
-    _import_path = None
-    _tooltip = ""
+class Node(object):
 
-    inputs = None
-    outputs = None
-    position = None
-    pin_order = None
-    name = None
-    params = {}
+    def __init__(self, name, node_type, import_path, params):
+        """
+        Container for GUI configuration of HiveObject instance
+
+        :param name: unique node name
+        :param import_path: path to find object representing node (may not exist for certain node types)
+        :param params: parameter dictionary containing data about node
+        :return:
+        """
+        self.name = name
+        self.tooltip = ""
+
+        self.position = (0.0, 0.0)
+
+        # Read only
+        self._node_type = node_type
+        self._import_path = import_path
+
+        self.params = params
+
+        # Pin IO
+        self.pin_order = []
+        self.inputs = OrderedDict()
+        self.outputs = OrderedDict()
+
+    def add_input(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
+                  mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
+        pin = IOPin(self, name, "input", data_type, mode, max_connections, restricted_types, mimic_flags,
+                    is_proxy, count_proxies)
+        self.inputs[name] = pin
+        self.pin_order.append(name)
+        return pin
+
+    def add_output(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
+                   mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
+        pin = IOPin(self, name, "output", data_type, mode, max_connections, restricted_types, mimic_flags,
+                    is_proxy, count_proxies)
+        self.outputs[name] = pin
+        self.pin_order.append(name)
+        return pin
 
     @property
     def import_path(self):
         return self._import_path
 
     @property
-    def tooltip(self):
-        return self._tooltip
-
-
-class BeeNode(GUINode):
-
-    def __init__(self, import_path, name, io_type, data_type, mode):
-        """
-        Container for GUI configuration of IO Bee (antenna / output)
-
-        :param import_path: path to import bee
-        :param name: name of GUI node
-        :param io_type: bee io type
-        :param data_type: pin data type
-        :param mode: pin mode
-        :return:
-        """
-        self.name = name
-        self.position = (0.0, 0.0)
-
-        self.inputs = {}
-        self.outputs = {}
-        self.pin_order = []
-
-        # Read only
-        self._import_path = import_path
-
-        # GUI data used to support interoperability with other nodes
-        self._data_type = data_type
-        self._mode = mode
-
-        # Technically lazy, these aren't meta params, but we're just going to cheat
-        self.params = {'meta_args': {'data_type': data_type, 'mode': mode}}
-
-        if io_type == "output":
-            pin_name = "output"
-            self.inputs[pin_name] = BeeIOPin(self, pin_name, data_type, mode, "input")
-            self.pin_order.append(pin_name)
-
-        elif io_type == "input":
-            pin_name = "input"
-            self.outputs[pin_name] = BeeIOPin(self, pin_name, data_type, mode, "output")
-            self.pin_order.append(pin_name)
-
-        else:
-            raise ValueError(io_type)
-
-    @property
-    def data_type(self):
-        return self._data_type
-
-    @property
-    def mode(self):
-        return self._mode
-
-    def __repr__(self):
-        return "<Bee Node ({})>".format(self.name)
-
-
-class HiveNode(GUINode):
-
-    def __init__(self, hive_object, import_path, name, params):
-        """
-        Container for GUI configuration of HiveObject instance
-
-        :param hive_object: HiveObject instance
-        :param import_path: path to import Hive class
-        :param name: name of GUI node
-        :param params: parameter dictionary containing meta_args, args and cls_args data
-        :return:
-        """
-        self.name = name
-
-        # Read only
-        self._tooltip = hive_object.__doc__ or ""
-        self._import_path = import_path
-
-        # Warning - args and cls_args of hive_object might not correspond to params
-        # Altering the params dict from the UI is safe as it won't affect the pinout on the hiveobject
-        # Use the params dict instead of re-scraping the hive_object if reading these values
-        self.params = params
-
-        # Pin IO
-        io_info = get_io_info(hive_object)
-        self.pin_order = io_info['pin_order']
-        self.inputs = OrderedDict((name, IOPin(self, name, info['data_type'], info['mode'], "input"))
-                                  for name, info in io_info['inputs'].items())
-
-        self.outputs = OrderedDict((name, IOPin(self, name, info['data_type'], info['mode'], "output"))
-                                   for name, info in io_info['outputs'].items())
-
-        self.position = (0.0, 0.0)
+    def node_type(self):
+        return self._node_type
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

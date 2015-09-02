@@ -1,4 +1,6 @@
 import hive
+import ast
+
 from hive.mixins import *
 
 from .models import model
@@ -28,6 +30,38 @@ def _get_type_name(value):
     Used to write the type name to a hive BeeInstanceParameter
     """
     return value.__class__.__name__
+
+
+def is_identifier(identifier):
+    """Determines, if string is valid Python identifier."""
+
+    # Smoke test — if it's not string, then it's not identifier, but we don't
+    # want to just silence exception. It's better to fail fast.
+    if not isinstance(identifier, str):
+        raise TypeError('expected str, but got {!r}'.format(type(identifier)))
+
+    # Resulting AST of simple identifier is <Module [<Expr <Name "foo">>]>
+    try:
+        root = ast.parse(identifier)
+    except SyntaxError:
+        return False
+
+    if not isinstance(root, ast.Module):
+        return False
+
+    if len(root.body) != 1:
+        return False
+
+    if not isinstance(root.body[0], ast.Expr):
+        return False
+
+    if not isinstance(root.body[0].value, ast.Name):
+        return False
+
+    if root.body[0].value.id != identifier:
+        return False
+
+    return True
 
 
 def infer_type(value, allow_object=False):
@@ -173,9 +207,11 @@ def parameter_array_to_dict(array):
 
 
 def dict_to_parameter_array(parameters):
-    return [model.HiveInstanceParameter(name, _get_type_name(value), repr(value))
-            for name, value in parameters.items()]
+    return [model.InstanceParameter(name, _get_type_name(value), repr(value)) for name, value in parameters.items()]
 
+
+_wrapper_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out", "hive.pull_out",
+                         "hive.hook", "hive.entry", "hive.antenna", "hive.output"}
 
 def builder_from_hivemap(data):
     """Create Hive builder from hivemap string
@@ -185,7 +221,7 @@ def builder_from_hivemap(data):
     hivemap = model.Hivemap(data)
 
     def builder(i, ex, args):
-        io_bees = {}
+        bees = {}
 
         for spyder_hive in hivemap.hives:
             hive_name = spyder_hive.identifier
@@ -200,21 +236,58 @@ def builder_from_hivemap(data):
 
             setattr(i, hive_name, hive_instance)
 
-        for spyder_io_bee in hivemap.io_bees:
-            io_bees[spyder_io_bee.identifier] = spyder_io_bee.import_path
+        resolve_later = []
+        for spyder_bee in hivemap.bees:
+            import_path = spyder_bee.import_path
+
+            # Bees that have to be resolved later
+            if import_path in _wrapper_import_paths:
+                resolve_later.append(spyder_bee)
+                continue
+
+            # Get params
+            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
+            args = parameter_array_to_dict(spyder_bee.args)
+
+            if import_path == "hive.attribute":
+                data_type = meta_args['data_type']
+                attr = hive.attribute(data_type)
+                setattr(i, spyder_bee.identifier, attr)
+
+            elif import_path == "hive.modifier":
+                code = args['code']
+                code_body = "\n\t".join(code.split("\n"))
+                statement = """def modifier(self):\n\t{}""".format(code_body)
+                exec(statement, locals(), globals())
+                bee = hive.modifier(modifier)
+                setattr(i, spyder_bee.identifier, bee)
+
+            elif import_path == "hive.triggerfunc":
+                setattr(i, spyder_bee.identifier, hive.triggerfunc())
+
+            bees[spyder_bee.identifier] = spyder_bee
+
+        for spyder_bee in resolve_later:
+            pass
 
         for connection in hivemap.connections:
             from_identifier = connection.from_node
             to_identifier = connection.to_node
 
             # If from node is an antenna or an output
-            if from_identifier in io_bees or to_identifier in io_bees:
+            if from_identifier in bees or to_identifier in bees:
+                try:
+                    bee_import_path = bees[from_identifier]
+
+                except KeyError:
+                    bee_import_path = bees[to_identifier]
+
                 # Found antenna
-                if from_identifier in io_bees:
+                if from_identifier in bees:
                     to_hive = getattr(i, to_identifier)
                     to_input = getattr(to_hive, connection.input_name)
 
-                    bee_func = import_from_path(io_bees[from_identifier])
+                    bee_func = import_from_path(bees[from_identifier])
                     setattr(ex, from_identifier, bee_func(to_input))
 
                 # Found output
@@ -222,7 +295,7 @@ def builder_from_hivemap(data):
                     from_hive = getattr(i, from_identifier)
                     from_output = getattr(from_hive, connection.output_name)
 
-                    bee_func = import_from_path(io_bees[to_identifier])
+                    bee_func = import_from_path(bees[to_identifier])
                     setattr(ex, to_identifier, bee_func(from_output))
 
             # Normal connection

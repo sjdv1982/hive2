@@ -11,6 +11,9 @@ from .view import NodeView
 # Modified for the Hive system by Sjoerd de Vries
 # All modifications copyright (C) 2012 Sjoerd de Vries, All rights reserved
 #
+# Modified for the Hive2 system by Angus Hollands
+# All modifications copyright (C) 2015 Angus Hollands, All rights reserved
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -40,9 +43,9 @@ from collections import OrderedDict
 import weakref
 
 from .socket import Socket
-from ..node import HiveNode, BeeNode
+from ..node import NodeTypes
 
-COLOUR_THEMES = {HiveNode: (0, 0, 0), BeeNode: (92, 92, 92)}
+COLOUR_THEMES = {NodeTypes.HIVE: (0, 0, 0), NodeTypes.BEE: (92, 92, 92), NodeTypes.HELPER: (0, 0, 0, 60)}
 
 
 class SocketRow(QGraphicsWidget):
@@ -62,11 +65,11 @@ class SocketRow(QGraphicsWidget):
         socket_type = pin.shape
 
         if pin.io_type == "input":
-            self._socket = Socket(self, "input", socket_type, "solid", hover_text="", order_dependent=True)
+            self._socket = Socket(self, "input", socket_type, hover_text="", order_dependent=True)
             self._socket.set_colour(socket_colour)
 
         else:
-            self._socket = Socket(self, "output", socket_type, "solid", hover_text="", order_dependent=True)
+            self._socket = Socket(self, "output", socket_type, hover_text="", order_dependent=True)
             self._socket.set_colour(socket_colour)
 
         self._socket.setVisible(True)
@@ -90,20 +93,27 @@ class SocketRow(QGraphicsWidget):
     def label_color(self):
         return self._label.brush().color()
 
+    def refresh(self):
+        # Update cosmetics
+        self._socket.set_colour(self._pin.colour)
+        self._socket.set_shape(self._pin.shape)
+
+        self._socket.update()
+
     def set_value(self, value):
         text = self._labelText
-        if value is not None:
-            if False:#self._params.value_on_newline:
-                text += ":\n  "
-            else:
-                text += ": "
-            value2 = value
-            pos = value.find("\n")
-            if pos > -1:
-                value2 = value[:pos] + " ..."
-            if len(value2) > 34:
-                value2 = value2[:30] + " ..."
-            text += value2
+        # if value is not None:
+        #     if False:#self._params.value_on_newline:
+        #         text += ":\n  "
+        #     else:
+        #         text += ": "
+        #     value2 = value
+        #     pos = value.find("\n")
+        #     if pos > -1:
+        #         value2 = value[:pos] + " ..."
+        #     if len(value2) > 34:
+        #         value2 = value2[:30] + " ..."
+        #     text += value2
         self._label.setText(text)
 
     def label(self):
@@ -193,7 +203,7 @@ class Node(QGraphicsWidget):
         self._shapePen.setColor(self._selectedColor)
         self._shapePen.setWidthF(1.5)
 
-        self._brush = QBrush(QColor(*COLOUR_THEMES[node.__class__]))
+        self._brush = QBrush(QColor(*COLOUR_THEMES[node.node_type]))
         self._deleted = False
 
         self._dropShadowEffect = QGraphicsDropShadowEffect()
@@ -292,11 +302,11 @@ class Node(QGraphicsWidget):
 
         if self.isSelected():
             self._shapePen.setStyle(Qt.SolidLine)
+            self.view.gui_on_selected(self)
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-
-        self.view.gui_on_selected(self)
+            self.view.gui_on_selected(None)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()
@@ -324,9 +334,6 @@ class Node(QGraphicsWidget):
         if event.button() == Qt.RightButton:
             pass
 
-        elif event.button() == Qt.LeftButton:
-            self.view.gui_on_selected(self)
-
         else:
             QGraphicsWidget.mousePressEvent(self, event)
 
@@ -342,6 +349,10 @@ class Node(QGraphicsWidget):
 
     def get_socket_row(self, name):
         return self._socket_rows[name]
+
+    def refresh_socket_rows(self):
+        for socket_row in self._socket_rows.values():
+            socket_row.refresh()
 
     def update_layout(self):
         label_width = self._label.boundingRect().width()

@@ -1,4 +1,4 @@
-from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME, INVALID_NODE_ID
+from .types import BlenderHiveNode, INVALID_NODE_NAME, INVALID_NODE_ID
 from .socket_manager import socket_class_manager
 
 from ..gui_node_manager import IGUINodeManager
@@ -163,6 +163,15 @@ class BlenderGUINodeManager(IGUINodeManager):
                 self._logger.error("Couldn't find Blender GUI node to delete: {}".format(node))
                 return
 
+    def fold_pin(self, pin):
+        pass
+
+    def unfold_pin(self, pin):
+        pass
+
+    def reorder_connection(self, output, input, index):
+        pass
+
     def set_node_name(self, node, name):
         gui_node = self.get_gui_node_from_node(node)
         gui_node.label = name
@@ -188,7 +197,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             return
 
         gui_node = self.get_gui_node_from_node(node)
-        gui_node.location = position[0] * LOCATION_DIVISOR, position[1] * LOCATION_DIVISOR
+        gui_node.location = position
 
     def gui_on_freed(self, gui_node):
         try:
@@ -264,7 +273,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             print("Pasting from clipboard, source nodes won't be there")
 
     def gui_post_pasted(self):
-        position = context.space_data.cursor_location / LOCATION_DIVISOR
+        position = context.space_data.cursor_location
         self.node_manager.paste(position)
         print("PASTE")
 
@@ -346,7 +355,7 @@ class BlenderGUINodeManager(IGUINodeManager):
 
             # Update position
             gui_node_position = gui_node.location
-            node_position = tuple(gui_node_position / LOCATION_DIVISOR)
+            node_position = tuple(gui_node_position)
 
             with self.internal_operation_from("set_position"):
                 self.node_manager.set_node_position(node, node_position)

@@ -69,11 +69,11 @@ def create_widget(type_name=None, options=None):
         elif type_name == "bool":
             widget = QCheckBox()
 
-            getter = widget.isChecked
+            getter = lambda: bool(widget.isChecked)
             setter = lambda value: widget.setChecked(value)
 
             controller = WidgetController(getter, setter)
-            widget.stateChanged.connect(controller._on_changed)
+            widget.stateChanged.connect(lambda v: controller._on_changed(bool(v)))
 
         else:
             widget = QLineEdit()

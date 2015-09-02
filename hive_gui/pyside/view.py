@@ -4,6 +4,9 @@
 #
 # Modified for the Hive system by Sjoerd de Vries
 # All modifications copyright (C) 2012 Sjoerd de Vries, All rights reserved
+#
+# Modified for the Hive2 system by Angus Hollands
+# All modifications copyright (C) 2015 Angus Hollands, All rights reserved
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -34,20 +37,18 @@ from __future__ import print_function, absolute_import
 from PySide.QtCore import *
 from PySide.QtGui import *
 
-import collections
-import weakref
 import functools
-import os
 
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .utils import create_widget
 
+from ..node import NodeTypes
 from ..node_manager import NodeManager
-from ..utils import import_from_path, get_builder_class_args
+from ..inspector import InspectorOption
 from ..gui_node_manager import IGUINodeManager
 
 
-SELECT_SIZE = 8
+SELECT_SIZE = 10
 
 
 class DynamicInputDialogue(QDialog):
@@ -158,7 +159,7 @@ class ConnectionWidget(QGraphicsWidget):
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
-    def __init__(self, folding_window, docstring_window, configuration_window, args_window):
+    def __init__(self, folding_window, docstring_window, configuration_window, parameter_window):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
@@ -200,12 +201,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._folding_window = folding_window
         self._docstring_window = docstring_window
         self._configuration_window = configuration_window
-        self._args_window = args_window
+        self._parameter_window = parameter_window
 
-        self._folding_widget = FoldingPanel("dragonfly.std.Variable", self.node_manager)
         self._docstring_widget = QTextEdit()
+        self._args_widget = ArgsPanel(self.node_manager)
         self._configuration_widget = ConfigurationPanel(self.node_manager)
-        self._args_widget = ArgsPanel()
+        self._folding_widget = FoldingPanel(self.node_manager)
 
         # Path editing
         self._cut_start_position = None
@@ -215,7 +216,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._draw_path_item = None
 
         # Tracked connections
-        self._connections = []
+        self._connections = {}
         self._active_connection = None
 
         self._moved_gui_nodes = set()
@@ -225,13 +226,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._docstring_window.setWidget(self._docstring_widget)
         self._folding_window.setWidget(self._folding_widget)
         self._configuration_window.setWidget(self._configuration_widget)
-        self._args_window.setWidget(self._args_widget)
+        self._parameter_window.setWidget(self._args_widget)
 
     def on_exit(self):
         self._docstring_window.setWidget(QWidget())
         self._folding_window.setWidget(QWidget())
         self._configuration_window.setWidget(QWidget())
-        self._args_window.setWidget(QWidget())
+        self._parameter_window.setWidget(QWidget())
 
     @property
     def is_untitled(self):
@@ -294,57 +295,62 @@ class NodeView(IGUINodeManager, QGraphicsView):
         socket_row = gui_node.get_socket_row(pin.name)
         return socket_row.socket
 
-    def create_connection(self, output, input):
-        output_socket = self._socket_from_pin(output)
-        input_socket = self._socket_from_pin(input)
+    def create_connection(self, connection):
+        output_pin = connection.output_pin
+        input_pin = connection.input_pin
 
-        # Update cosmetics
-        output_socket.set_colour(output.colour)
-        input_socket.set_colour(input.colour)
+        # Update all socket rows colours for each pin's GUI node
+        input_gui_node = self.node_to_qtnode[input_pin.node]
+        output_gui_node = self.node_to_qtnode[output_pin.node]
 
-        output_socket.set_shape(output.shape)
-        input_socket.set_shape(input.shape)
+        input_gui_node.refresh_socket_rows()
+        output_gui_node.refresh_socket_rows()
 
-        style = "dashed" if input.current_mode == "pull" else "solid"
-
-        input_socket.set_style(style)
-        output_socket.set_style(style)
-
-        input_socket.update()
-        output_socket.update()
+        # Get sockets for involved pins
+        output_socket = self._socket_from_pin(output_pin)
+        input_socket = self._socket_from_pin(input_pin)
 
         # Create connection
         from .connection import Connection
-        connection = Connection(output_socket, input_socket)
+
+        # Choose pin for styling info
+        if output_pin.mode == "any":
+            style_pin = input_pin
+        else:
+            style_pin = output_pin
+
+        # Use dot style for relationships
+        if output_pin.is_proxy or input_pin.is_proxy:
+            style = "dot"
+
+        else:
+            style = "dashed" if style_pin.mode == "pull" else "solid"
+
+        # TODO work this out properly
+        curve = not (output_pin.node.node_type == NodeTypes.HELPER or input_pin.node.node_type == NodeTypes.HELPER)
+        gui_connection = Connection(output_socket, input_socket, style=style, curve=curve)
 
         # Push connections have ordering
-        if input.current_mode == "push":
-            connection._center_widget = widget = ConnectionWidget(connection)
+        if style_pin.mode == "push":
+            gui_connection._center_widget = widget = ConnectionWidget(gui_connection)
             widget.setVisible(False)
 
-        connection.update_path()
+        gui_connection.update_path()
 
-        self._connections.append(connection)
+        self._connections[connection] = gui_connection
 
-    def delete_connection(self, output, input):
-        output_socket = self._socket_from_pin(output)
-        input_socket = self._socket_from_pin(input)
-
-        connection = output_socket.find_connection(input_socket)
-        connection.on_deleted()
+    def delete_connection(self, connection):
+        gui_connection = self._connections.pop(connection)
+        gui_connection.on_deleted()
 
         # Unset active connection
-        if connection is self._active_connection:
+        if gui_connection is self._active_connection:
             self._active_connection = None
 
-        self._connections.remove(connection)
-
-    def reorder_connection(self, output, input, index):
-        output_socket = self._socket_from_pin(output)
-        input_socket = self._socket_from_pin(input)
-
-        connection = output_socket.find_connection(input_socket)
-        output_socket.reorder_connection(connection, index)
+    def reorder_connection(self, connection, index):
+        gui_connection = self._connections[connection]
+        output_socket = gui_connection.start_socket
+        output_socket.reorder_connection(gui_connection, index)
 
     def set_node_position(self, node, position):
         gui_node = self.node_to_qtnode[node]
@@ -372,13 +378,14 @@ class NodeView(IGUINodeManager, QGraphicsView):
         socket_row = gui_node.get_socket_row(pin.name)
 
         # Get target
-        target_pin = next(iter(pin.targets))
+        target_connection = next(iter(pin.connections))
+        target_pin = target_connection.output_pin
         target_node = target_pin.node
+
         target_gui_node = self.node_to_qtnode[target_node]
 
         target_gui_node.setVisible(not folded)
         socket_row.socket.setVisible(not folded)
-
 
     def gui_on_moved(self, gui_node):
         # Don't respond to node_manager set_node_position movements
@@ -386,10 +393,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
             return
 
         self._moved_gui_nodes.add(gui_node)
-
-    def gui_on_selected(self, gui_node):
-        self.update()
-        # TODO store active node (clicked, not selected)
 
     def gui_finished_move(self):
         """Called after all nodes in view have been moved"""
@@ -411,13 +414,17 @@ class NodeView(IGUINodeManager, QGraphicsView):
         except ConnectionError:
             pass
 
-    def gui_delete_connection(self, start_socket, end_socket):
-        start_pin = start_socket.parent_socket_row.pin
-        end_pin = end_socket.parent_socket_row.pin
-        self.node_manager.delete_connection(start_pin, end_pin)
+    def gui_delete_connection(self, gui_connection):
+        connection = next((k for k, v in self._connections.items() if v is gui_connection))
+        self.node_manager.delete_connection(connection)
 
     def gui_on_selected(self, gui_node):
-        node = gui_node.node
+        if gui_node is None:
+            node = None
+
+        else:
+            node = gui_node.node
+
         self._folding_widget.node = node
         self._configuration_widget.node = node
         self._args_widget.node = node
@@ -441,10 +448,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         return nodes
 
-    def gui_reorder_connection(self, start_socket, end_socket, index):
-        start_pin = start_socket.parent_socket_row.pin
-        end_pin = end_socket.parent_socket_row.pin
-        self.node_manager.reorder_connection(start_pin, end_pin, index)
+    def gui_reorder_connection(self, gui_connection, index):
+        connection = next((k for k, v in self._connections.items() if v is gui_connection))
+        self.node_manager.reorder_connection(connection, index)
 
     def _on_import_hivemap(self):
         # JUST for testing
@@ -465,7 +471,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         import dragonfly
         dragonfly._H = cls
         import_path = "dragonfly._H"
-        self.node_manager.create_node(import_path, {})
+        self.node_manager.create_hive(import_path, {})
 
     def _on_backspace_key(self):
         self._on_del_key()
@@ -477,11 +483,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
         active_connection = self._active_connection
         if active_connection is not None:
             start_socket = active_connection.start_socket
-            end_socket = active_connection.end_socket
-
             index, _ = start_socket.get_index_info(active_connection)
 
-            self.gui_reorder_connection(start_socket, end_socket, index + 1)
+            self.gui_reorder_connection(active_connection, index + 1)
 
         focused_socket = self.scene().focused_socket
         if focused_socket is not None:
@@ -491,11 +495,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
         active_connection = self._active_connection
         if active_connection is not None:
             start_socket = active_connection.start_socket
-            end_socket = active_connection.end_socket
-
             index, _ = start_socket.get_index_info(active_connection)
 
-            self.gui_reorder_connection(start_socket, end_socket, index - 1)
+            self.gui_reorder_connection(active_connection, index - 1)
 
         focused_socket = self.scene().focused_socket
         if focused_socket is not None:
@@ -509,7 +511,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         for gui_node in scene.selectedItems():
             self.node_manager.delete_node(gui_node.node)
-
 
     def select_all(self):
         from .node import Node
@@ -541,10 +542,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.node_manager.paste(mouse_pos)
 
     def pre_drop_hive(self, path):
-        self._dropped_node_info = "hive", path
+        self._dropped_node_info = NodeTypes.HIVE, path
 
     def pre_drop_bee(self, path):
-        self._dropped_node_info = "bee", path
+        self._dropped_node_info = NodeTypes.BEE, path
+
+    def pre_drop_helper(self, path):
+        self._dropped_node_info = NodeTypes.HELPER, path
 
     def setScene(self, new_scene):
         QGraphicsView.setScene(self, new_scene)
@@ -582,78 +586,69 @@ class NodeView(IGUINodeManager, QGraphicsView):
         node_type, import_path = node_info
         position = scene_pos.x(), scene_pos.y()
 
-        if node_type == "bee":
+        if node_type == NodeTypes.BEE:
             self.on_dropped_bee(position, import_path)
 
-        elif node_type == "hive":
+        elif node_type == NodeTypes.HIVE:
             self.on_dropped_hive(position, import_path)
+
+        elif node_type == NodeTypes.HELPER:
+            self.on_dropped_helper(position, import_path)
 
         else:
             raise ValueError(node_type)
 
-    @staticmethod
-    def _write_wrapper_to_dialogue(wrapper, dialogue):
-        for arg_name in wrapper:
-            param = getattr(wrapper, arg_name)
-            data_type = param.data_type[0] if param.data_type else None
-            options = param.options
+    def _execute_inspector(self, inspector):
+        params = {"meta_args": {}, "args": {}, "cls_args": {}}
 
-            # If default is defined
-            default = param.start_value
-            if default is param.NoValue:
-                default = dialogue.NoValue
+        result = None
+        while True:
+            try:
+                print("PRE INSPECT")
+                stage_name, stage_options = inspector.send(result)
 
-            dialogue.add_widget(arg_name, data_type, default, options)
+            except StopIteration:
+                break
+
+            dialogue = DynamicInputDialogue(self)
+            dialogue.setAttribute(Qt.WA_DeleteOnClose)
+            dialogue.setWindowTitle(stage_name.replace("_", " ").title())
+
+            for option in stage_options:
+                # Get default
+                default = option.default
+                if default is InspectorOption.NoValue:
+                    default = DynamicInputDialogue.NoValue
+
+                dialogue.add_widget(option.name, option.data_type, default, option.options)
+
+            dialogue_result = dialogue.exec_()
+            if dialogue_result == QDialog.DialogCode.Rejected:
+                return
+
+            params[stage_name] = result = dialogue.values
+
+        return params
 
     def on_dropped_bee(self, position, import_path):
-        node = self.node_manager.create_bee(import_path)
+        inspector = self.node_manager.bee_node_inspector.inspect(import_path)
+        params = self._execute_inspector(inspector)
+
+        node = self.node_manager.create_bee(import_path, params=params)
+        self.node_manager.set_node_position(node, position)
+
+    def on_dropped_helper(self, position, import_path):
+        inspector = self.node_manager.helper_node_inspector.inspect(import_path)
+        params = self._execute_inspector(inspector)
+
+        node = self.node_manager.create_helper(import_path, params=params)
         self.node_manager.set_node_position(node, position)
 
     def on_dropped_hive(self, position, import_path):
-        hive_cls = import_from_path(import_path)
-        hive_cls._hive_build_args_wrapper()
+        inspector = self.node_manager.hive_node_inspector.inspect(import_path)
+        params = self._execute_inspector(inspector)
 
-        params = {"meta_args": {}, "args": {}, "cls_args": {}}
-
-        # For Meta Arguments
-        meta_args_wrapper = hive_cls._hive_meta_args
-        if meta_args_wrapper:
-            dialogue = DynamicInputDialogue(self)
-            dialogue.setAttribute(Qt.WA_DeleteOnClose)
-            dialogue.setWindowTitle("Configure Node: Meta Args")
-            self._write_wrapper_to_dialogue(meta_args_wrapper, dialogue)
-
-            dialogue.exec()
-            meta_args = params['meta_args'] = dialogue.values
-            _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
-
-        else:
-            hive_object_cls = hive_cls._hive_build(())
-
-        args_wrapper = hive_object_cls._hive_args
-        if args_wrapper:
-            dialogue = DynamicInputDialogue(self)
-            dialogue.setAttribute(Qt.WA_DeleteOnClose)
-            dialogue.setWindowTitle("Configure Node: Args")
-            self._write_wrapper_to_dialogue(args_wrapper, dialogue)
-
-            dialogue.exec()
-            params['args'] = dialogue.values
-
-        builder_args = get_builder_class_args(hive_cls)
-        if builder_args:
-            dialogue = DynamicInputDialogue(self)
-            dialogue.setAttribute(Qt.WA_DeleteOnClose)
-            dialogue.setWindowTitle("Configure Node: Class Args")
-
-            for name, data in builder_args.items():
-                dialogue.add_widget(name, default=data['default'])
-
-            dialogue.exec()
-
-            params['cls_args'] = dialogue.values
-
-        node = self.node_manager.create_node(import_path, params=params)
+        node = self.node_manager.create_hive(import_path, params=params)
         self.node_manager.set_node_position(node, position)
 
     @property
@@ -669,7 +664,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def _find_connection_at(self, position, size):
         point_rect = QRectF(position + QPointF(-size/2, -size/2), QSize(size, size))
 
-        for connection in self._connections:
+        for connection in self._connections.values():
             if not connection.isVisible():
                 continue
 
@@ -699,15 +694,21 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             # If found connection
             if connection is not None:
-                for connection_ in self._connections:
+                for connection_ in self._connections.values():
                     connection_.set_selected(False)
 
                 # Set selected
                 connection.set_selected(True)
                 self._active_connection = connection
 
-            QGraphicsView.mousePressEvent(self, mouseEvent)
+            # Unselect current
+            else:
+                connection = self._active_connection
+                if connection:
+                    connection.set_selected(False)
+                    self._active_connection = None
 
+            QGraphicsView.mousePressEvent(self, mouseEvent)
             self.update()
 
     def mouseMoveEvent(self, mouseEvent):
@@ -739,7 +740,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         path_line = QLineF(path.pointAtPercent(0.0), path.pointAtPercent(1.0))
 
         intersected = []
-        for connection in self._connections:
+        for connection in self._connections.values():
             if not connection.isVisible():
                 continue
 
@@ -760,7 +761,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
             to_remove = self._get_intersected_connections(self._slice_path)
 
             for connection in to_remove:
-                self.gui_delete_connection(connection.start_socket, connection.end_socket)
+                self.gui_delete_connection(connection)
 
             self._slice_path = None
             self._cut_start_position = None

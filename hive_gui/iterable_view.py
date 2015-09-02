@@ -9,6 +9,9 @@ class ListView:
     def __getitem__(self, index):
         return self._sequence[index]
 
+    def __bool__(self):
+        return bool(self._sequence)
+
     def __contains__(self, item):
         return item in self._sequence
 
