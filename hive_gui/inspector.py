@@ -45,6 +45,9 @@ class BeeNodeInspector:
     def inspect_modifier(self):
         yield ("args", [InspectorOption("code", "str", "")])
 
+    def inspect_triggerfunc(self):
+        return no_inspector()
+
     def inspect_attribute(self):
         yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
         yield ("args", [InspectorOption("export", "bool", False)])
@@ -81,7 +84,9 @@ class HiveNodeInspector:
     def _inspect_generator(self, import_path):
         # Import and prepare hive
         hive_cls = import_from_path(import_path)
-        hive_cls._hive_build_args_wrapper()
+
+        # Prepare args wrapper
+        hive_cls._hive_build_meta_args_wrapper()
 
         meta_args_wrapper = hive_cls._hive_meta_args
         if meta_args_wrapper:
@@ -93,7 +98,7 @@ class HiveNodeInspector:
 
         args_wrapper = hive_object_cls._hive_args
         if args_wrapper:
-            args = yield ("args", self._parse_wrapper(args_wrapper))
+            yield ("args", self._parse_wrapper(args_wrapper))
 
         builder_args = get_builder_class_args(hive_cls)
         if builder_args:

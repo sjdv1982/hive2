@@ -666,7 +666,7 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
-    def _hive_build_args_wrapper(cls):
+    def _hive_build_meta_args_wrapper(cls):
         cls._hive_meta_args = args_wrapper = HiveArgs(cls, "meta_args")
 
         # Execute declarators
@@ -681,7 +681,7 @@ class HiveBuilder(object):
         Extract meta args from arguments and return remainder
         """
         if cls._hive_meta_args is None:
-            cls._hive_build_args_wrapper()
+            cls._hive_build_meta_args_wrapper()
 
         # Map keyword arguments to parameters, return remaining arguments
         args, kwargs, meta_arg_values = cls._hive_meta_args.extract_from_args(args, kwargs)
