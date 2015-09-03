@@ -54,7 +54,7 @@ class BeeNodeFactory:
         node.add_input("value", None, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
-        node.add_output("pre_update", ("trigger",), "push")
+        node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
         node.add_output("post_update", ("trigger",), "push")
 
         return node
@@ -65,7 +65,7 @@ class BeeNodeFactory:
         node.add_output("value", None, "pull", restricted_types=[("trigger",)])
 
         node.add_output("pre_output", ("trigger",), "push", is_proxy=True)
-        node.add_output("post_output", ("trigger",), "push", is_proxy=True)
+        node.add_output("post_output", ("trigger",), "push")
 
         return node
 
@@ -74,7 +74,7 @@ class BeeNodeFactory:
 
         node.add_input("value", None, "push", restricted_types=[("trigger",)])
 
-        node.add_output("pre_update", ("trigger",), "push")
+        node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
         node.add_output("post_update", ("trigger",), "push")
 
         return node
@@ -86,7 +86,7 @@ class BeeNodeFactory:
         node.add_input("trigger", ("trigger",), "push")
 
         node.add_output("pre_output", ("trigger",), "push", is_proxy=True)
-        node.add_output("post_output", ("trigger",), "push", is_proxy=True)
+        node.add_output("post_output", ("trigger",), "push")
 
         return node
 

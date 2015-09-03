@@ -236,6 +236,8 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
         root, *_ = import_path.split(".")
         imports.add(root)
 
+        # TODO support meta/dynahive!
+        # TODO add start value
         declaration_body.append("i.{} = {}(meta_args={}, args={}, cls_args={})"
                                 .format(hive_name, import_path, meta_args, args, cls_args))
 
@@ -264,13 +266,16 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
         # For attribute
         if import_path == "hive.attribute":
             data_type = meta_args['data_type']
+            start_value = args['start_value']
 
             if args['export']:
                 wrapper_name = "ex"
+
             else:
                 wrapper_name = "i"
 
-            declaration_body.append("{}.{} = hive.attribute({})".format(wrapper_name, identifier, data_type))
+            declaration_body.append("{}.{} = hive.attribute({}, {})".format(wrapper_name, identifier, data_type,
+                                                                            start_value))
             attribute_name_to_wrapper[identifier] = wrapper_name
 
         # For modifier

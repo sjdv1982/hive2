@@ -49,8 +49,10 @@ class BeeNodeInspector:
         return no_inspector()
 
     def inspect_attribute(self):
-        yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
-        yield ("args", [InspectorOption("export", "bool", False)])
+        results = yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
+        data_type = results['data_type'][0] if results['data_type'] else None
+
+        yield ("args", [InspectorOption("export", "bool", False), InspectorOption("start_value", data_type)])
 
     def inspect_pull_in(self):
         attribute_names = [name for name, node in self._node_manager.nodes.items()

@@ -57,6 +57,9 @@ class DynamicInputDialogue(QDialog):
     class NoValue:
         pass
 
+    class DialogueCancelled(Exception):
+        pass
+
     def __init__(self, parent):
         QDialog.__init__(self, parent)
 
@@ -82,6 +85,7 @@ class DynamicInputDialogue(QDialog):
     def add_widget(self, name, data_type=None, default=NoValue, options=None):
         # HACKY XXX
         use_text_area = name == "code"
+
         widget, controller = create_widget(data_type, options, use_text_area)
 
         if default is not self.__class__.NoValue:
@@ -705,7 +709,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             dialogue_result = dialogue.exec_()
             if dialogue_result == QDialog.DialogCode.Rejected:
-                return
+                raise DynamicInputDialogue.DialogueCancelled("Menu cancelled")
 
             params[stage_name] = result = dialogue.values
 
