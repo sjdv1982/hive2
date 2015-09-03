@@ -62,40 +62,15 @@ if UI:
     sys.exit()
 
 else:
-    # with open("C:/users/angus/desktop/some_hive.hivemap") as f:
-    #     hm =f.read()
-    #
-    # from hive_gui.utils import builder_from_hivemap
-    # b = builder_from_hivemap(hm)
+    with open("C:/users/angus/desktop/some_hive.hivemap") as f:
+        hm =f.read()
+
+    from hive_gui.utils import builder_from_hivemap
+    builder = builder_from_hivemap(hm)
 
     import hive
-    s="""
-
-def builder(i, ex, args):
-
-    # Imports
-    import hive
-    import dragonfly
-
-    # Declarations
-    i.a = dragonfly.std.Variable(data_type=('int',), start_value=1)
-    i.Op_0 = dragonfly.op.Op(data_type='int', operator= 'add', mode='pull', default_value=0)
-    ex.score = hive.attribute(('int',), 0)
-    i.pull_in_0 = hive.pull_in(ex.score)
-    i.pull_out_0 = hive.pull_out(ex.score)
-
-    # Connectivity
-    hive.connect(i.a.value, i.Op_0.a)
-    hive.connect(i.Op_0.c, i.pull_in_0)
-    hive.connect(i.pull_out_0, i.Op_0.b)
-
-    # IO
-    ex.trig_out = hive.hook(i.pull_in_0)
-    ex.trig_in = hive.entry(i.pull_in_0)
-
-"""
-    exec(s, locals(), globals())
     h = hive.hive("H", builder)
+
     hh=h()
 
     for i in range(5):

@@ -113,7 +113,7 @@ class ArgsPanel(QWidget):
                 widget, controller = create_widget(data_type, use_text_area=use_text_area)
                 widget.controller = controller
 
-                def on_changed(value, args=args):
+                def on_changed(value, name=name, args=args):
                     args[name] = value
 
                 controller.on_changed = on_changed
@@ -137,7 +137,7 @@ class ArgsPanel(QWidget):
                 widget, controller = create_widget(data_type)
                 widget.controller = controller
 
-                def on_changed(value, cls_args=cls_args):
+                def on_changed(value, name=name, cls_args=cls_args):
                     cls_args[name] = value
 
                 controller.on_changed = on_changed

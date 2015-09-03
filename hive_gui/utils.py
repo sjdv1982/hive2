@@ -236,10 +236,34 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
         root, *_ = import_path.split(".")
         imports.add(root)
 
-        # TODO support meta/dynahive!
-        # TODO add start value
-        declaration_body.append("i.{} = {}(meta_args={}, args={}, cls_args={})"
-                                .format(hive_name, import_path, meta_args, args, cls_args))
+        # Find Hive class and inspect it
+        try:
+            hive_cls = import_from_path(import_path)
+
+        except (ImportError, AttributeError):
+            raise ValueError("Invalid import path: {}".format(import_path))
+
+        is_meta_hive = bool(hive_cls._declarators)
+        is_dyna_hive = hive_cls._is_dyna_hive
+
+        # Two stage instantiation
+        if is_meta_hive and not is_dyna_hive:
+            non_meta_args = args.copy()
+            non_meta_args.update(cls_args)
+            meta_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in meta_args.items()])
+            arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in non_meta_args.items()])
+            statement = "i.{} = {}({})()".format(hive_name, import_path, meta_arg_pairs, arg_pairs)
+
+        # One stage instantiation
+        else:
+            all_args = meta_args.copy()
+            all_args.update(args)
+            all_args.update(cls_args)
+
+            all_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in all_args.items()])
+            statement = "i.{} = {}({})".format(hive_name, import_path, all_arg_pairs)
+
+        declaration_body.append(statement)
 
     wraps_attribute = []
     attribute_name_to_wrapper = {}
@@ -274,8 +298,8 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
             else:
                 wrapper_name = "i"
 
-            declaration_body.append("{}.{} = hive.attribute({}, {})".format(wrapper_name, identifier, data_type,
-                                                                            start_value))
+            declaration_body.append("{}.{} = hive.attribute({}, {})"
+                                    .format(wrapper_name, identifier, data_type, start_value))
             attribute_name_to_wrapper[identifier] = wrapper_name
 
         # For modifier
@@ -449,8 +473,6 @@ def builder_from_hivemap(data):
     """
     hivemap = model.Hivemap(data)
     build_str = hivemap_to_builder_body(hivemap, builder_name="builder", docstring=hivemap.docstring)
-    with open("C:/users/angus/desktop/output.txt", "w") as f:
-        f.write(build_str)
     exec(build_str, locals(), globals())
     return builder
 

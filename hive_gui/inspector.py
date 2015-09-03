@@ -49,8 +49,8 @@ class BeeNodeInspector:
         return no_inspector()
 
     def inspect_attribute(self):
-        results = yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
-        data_type = results['data_type'][0] if results['data_type'] else None
+        meta_args = yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
+        data_type = meta_args['data_type'][0] if meta_args['data_type'] else None
 
         yield ("args", [InspectorOption("export", "bool", False), InspectorOption("start_value", data_type)])
 

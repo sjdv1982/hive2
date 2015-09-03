@@ -24,8 +24,8 @@ window.resize(480, 320)
 
 window.show()
 
-bees = {"hive": ["antenna", "output", "entry", "hook", "triggerfunc", "modifier",
-                 "pull_in", "pull_out", "push_in", "push_out", "attribute"]}
+bees = {"hive": ["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier", "pull_in", "pull_out",
+                 "push_in", "push_out"]}
 
 
 window.hive_widget.load_items(hives)
