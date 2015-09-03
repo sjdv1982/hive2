@@ -94,7 +94,7 @@ class BeeNodeFactory:
         node = Node(name, NodeTypes.BEE, import_path, params)
 
         node.add_output("trigger", ("trigger",), "push")
-        node.add_output("pre_trigger", ("trigger",), "push")
+        node.add_output("pre_trigger", ("trigger",), "push", is_proxy=True)
 
         return node
 

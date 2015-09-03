@@ -62,7 +62,7 @@ if UI:
     sys.exit()
 
 else:
-    with open("C:/users/angus/desktop/special_test.hivemap") as f:
+    with open("C:/users/angus/desktop/some_hive.hivemap") as f:
         hm =f.read()
 
     from hive_gui.utils import builder_from_hivemap
@@ -73,8 +73,6 @@ else:
     hh=h()
 
     print("READY", dir(hh))
-    hh.score_in._trigger.add_target(lambda: print("Internal Post"))
-    hh.score_in._pretrigger.add_target(lambda: print("Internal Pre"))
-    hh.on_updated._trigger.add_target(lambda: print("TRIGGERFUNC WORKEDs"))
-    hh.score_in.push(13)
-    print(hh.score)
+
+    hh.hook_0._trigger.add_target(lambda: print("Mod worked!"))
+    hh.entry_0()

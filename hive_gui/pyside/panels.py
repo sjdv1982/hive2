@@ -108,7 +108,9 @@ class ArgsPanel(QWidget):
             for name, value in args.items():
                 data_type = infer_type(value, allow_object=True)
 
-                widget, controller = create_widget(data_type)
+                # HACKY XXX
+                use_text_area = name == "code"
+                widget, controller = create_widget(data_type, use_text_area=use_text_area)
                 widget.controller = controller
 
                 def on_changed(value, args=args):

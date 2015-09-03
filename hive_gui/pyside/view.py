@@ -79,7 +79,9 @@ class DynamicInputDialogue(QDialog):
         self.values = {}
 
     def add_widget(self, name, data_type=None, default=NoValue, options=None):
-        widget, controller = create_widget(data_type, options)
+        # HACKY XXX
+        use_text_area = name == "code"
+        widget, controller = create_widget(data_type, options, use_text_area)
 
         if default is not self.__class__.NoValue:
             try:
@@ -620,6 +622,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 if default is InspectorOption.NoValue:
                     default = DynamicInputDialogue.NoValue
 
+                # Allow textarea
+                # HACKY XXX
                 dialogue.add_widget(option.name, option.data_type, default, option.options)
 
             dialogue_result = dialogue.exec_()

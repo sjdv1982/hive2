@@ -26,7 +26,7 @@ class WidgetController:
             print("Unable to set value {}: {}".format(value, err))
 
 
-def create_widget(type_name=None, options=None):
+def create_widget(type_name=None, options=None, use_text_area=False):
     if options is not None:
         widget = QComboBox()
         for i, option in enumerate(options):
@@ -40,13 +40,25 @@ def create_widget(type_name=None, options=None):
 
     else:
         if type_name == "str":
-            widget = QLineEdit()
+            if use_text_area:
+                widget = QTextEdit()
 
-            getter = widget.text
-            setter = lambda value: widget.setText(value)
+                getter = widget.toPlainText
+                setter = lambda value: widget.setPlainText(value)
+
+            else:
+                widget = QLineEdit()
+
+                getter = widget.text
+                setter = lambda value: widget.setText(value)
 
             controller = WidgetController(getter, setter)
-            widget.textChanged.connect(controller._on_changed)
+
+            def on_changed(value=None):
+                controller._on_changed(getter())
+
+            widget.textChanged.connect(on_changed)
+            controller.__on_changed = on_changed
 
         elif type_name == "int":
             widget = QSpinBox()
