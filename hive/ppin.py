@@ -76,9 +76,6 @@ class PullIn(PPInBase, TriggerTarget):
     mode = "pull"
     _pull_callback = None
 
-    def __call__(self):
-        self.pull()
-
     def pull(self):
         # TODO: exception handling hooks
         self._pretrigger.push()
@@ -130,6 +127,8 @@ class PullIn(PPInBase, TriggerTarget):
     
     def _hive_trigger_target(self):
         return self.pull
+
+    __call__ = pull
 
 
 class PPInBee(Antenna, ConnectTarget, TriggerSource):

@@ -76,9 +76,6 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         PPOutBase.__init__(self, target, data_type, bound, run_hive)
         self._targets = []
 
-    def __call__(self):
-        self.push()
-
     def push(self):
         # TODO: exception handling hooks
         self._pretrigger.push()
@@ -138,6 +135,8 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
             
     def _hive_trigger_target(self):
         return self.push
+
+    __call__ = push
 
 
 class PPOutBee(Output, ConnectSource, TriggerSource):
