@@ -152,10 +152,10 @@ class BlendManager:
 
         # Add new
         for text_block_name in text_block_paths:
-            hive_map_name = text_block_name[:-len(".hivemap")]
+            hivemap_name = text_block_name[:-len(".hivemap")]
 
             # Node tree doesn't exist
-            if hive_map_name not in data.node_groups:
+            if hivemap_name not in data.node_groups:
                 # Delete text
                 text_block = data.texts[text_block_name]
                 data.texts.remove(text_block)

@@ -20,7 +20,7 @@ app.setStyleSheet(qdarkstyle.load_stylesheet())
 hives = get_hives(dragonfly)
 
 window = MainWindow()
-window.resize(480, 320)
+window.resize(1024, 768)
 
 window.show()
 

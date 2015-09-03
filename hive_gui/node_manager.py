@@ -271,26 +271,31 @@ class NodeManager(object):
         self.gui_node_manager.on_pasted_pre_connect(nodes)
 
     def export(self):
-        hivemap = self._export(self.nodes.values())
-        hivemap.docstring = self.docstring
-
+        hivemap = self.export_hivemap()
         return str(hivemap)
 
     def load(self, data):
+        # Validate type
+        if not isinstance(data, str):
+            raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
+
+        # Read hivemap
+        hivemap = model.Hivemap(data)
+        self.load_hivemap(hivemap)
+
+    def export_hivemap(self):
+        hivemap = self._write(self.nodes.values())
+        hivemap.docstring = self.docstring
+        return hivemap
+
+    def load_hivemap(self, hivemap):
         with self.history.composite_operation("load"):
             # Clear nodes first
             for node in list(self.nodes.values()):
                 self.delete_node(node)
 
-            # Validate type
-            if not isinstance(data, str):
-                raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
-
-            # Read hivemap
-            hive_map = model.Hivemap(data)
-            self.docstring = hive_map.docstring
-
-            self._load(hive_map)
+            self.docstring = hivemap.docstring
+            self._read(hivemap)
 
     def cut(self, nodes):
         with self.history.composite_operation("cut"):
@@ -316,7 +321,7 @@ class NodeManager(object):
                     target_node = target_pin.node
                     with_folded_nodes.add(target_node)
 
-        self._clipboard = self._export(with_folded_nodes)
+        self._clipboard = self._write(with_folded_nodes)
 
     def paste(self, position):
         """Paste nodes from clipboard
@@ -324,7 +329,7 @@ class NodeManager(object):
         :param position: position of target center of mass of nodes
         """
         with self.history.composite_operation("paste"):
-            nodes = self._load(self._clipboard)
+            nodes = self._read(self._clipboard)
 
             if nodes:
                 # Find midpoint
@@ -348,7 +353,7 @@ class NodeManager(object):
                     self.set_node_position(node, position)
 
     @staticmethod
-    def _export(nodes):
+    def _write(nodes):
         hivemap = model.Hivemap()
 
         node_names = set()
@@ -400,7 +405,7 @@ class NodeManager(object):
 
         return hivemap
 
-    def _load(self, hivemap):
+    def _read(self, hivemap):
         if hivemap is None:
             return []
 

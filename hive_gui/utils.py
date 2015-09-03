@@ -216,7 +216,7 @@ _wraps_attribute_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out"
 _wrapper_import_paths = _io_import_paths | _wraps_attribute_import_paths
 
 
-def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
+def hivemap_to_builder_body(hivemap, builder_name="builder"):
     bees = {}
     imports = {"hive",}
 
@@ -425,6 +425,8 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
 
     body_declaration_statement = ""
 
+    docstring = hivemap.docstring
+
     if docstring:
         body_declaration_statement += \
 '''"""{}"""'''.format(docstring)
@@ -466,22 +468,21 @@ def {}(i, ex, args):
     return declaration_statement
 
 
-def builder_from_hivemap(data):
-    """Create Hive builder from hivemap string
+def builder_from_hivemap(hivemap):
+    """Create Hive builder from hivemap
 
-    :param data: string representation of hivemap
+    :param hivemap: Hivemap instance
     """
-    hivemap = model.Hivemap(data)
-    build_str = hivemap_to_builder_body(hivemap, builder_name="builder", docstring=hivemap.docstring)
+    build_str = hivemap_to_builder_body(hivemap, builder_name="builder")
     exec(build_str, locals(), globals())
     return builder
 
 
-def class_from_hivemap(name, data):
+def class_from_hivemap(name, hivemap):
     """Build Hive class from hivemap string
 
     :param name: name of hive class
-    :param data: string representation of hivemap
+    :param hivemap: Hivemap isntance
     """
-    builder = builder_from_hivemap(data)
+    builder = builder_from_hivemap(hivemap)
     return hive.hive(name, builder)

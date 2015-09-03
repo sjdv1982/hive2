@@ -47,6 +47,7 @@ from ..node import NodeTypes
 from ..node_manager import NodeManager
 from ..inspector import InspectorOption
 from ..gui_node_manager import IGUINodeManager
+from ..utils import hivemap_to_builder_body
 
 
 SELECT_SIZE = 10
@@ -84,9 +85,13 @@ class DynamicInputDialogue(QDialog):
 
     def add_widget(self, name, data_type=None, default=NoValue, options=None):
         # HACKY XXX
-        use_text_area = name == "code"
+        is_code_field = name == "code"
 
-        widget, controller = create_widget(data_type, options, use_text_area)
+        widget, controller = create_widget(data_type, options, is_code_field)
+
+        # HACKY XXX
+        if is_code_field:
+            widget.setCurrentFont(QFont("Consolas"))
 
         if default is not self.__class__.NoValue:
             try:
@@ -180,7 +185,8 @@ class NodePreviewView(QGraphicsView):
         from ..node import Node, MimicFlags
 
         for item in self.scene().items():
-            self.scene().removeItem(item)
+            if isinstance(item, GUINode):
+                item.on_deleted()
 
         hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {})
 
@@ -215,6 +221,57 @@ class NodePreviewView(QGraphicsView):
         self.scene().addItem(gui_node)
         new_center = self.scene().center = QPointF(self.scene().itemsBoundingRect().center())
         self.centerOn(new_center)
+
+    # Disable events
+    def mousePressEvent(self, event):
+        return
+
+    def mouseReleaseEvent(self, event):
+        return
+
+
+class SourceCodePreviewDialogue(QDialog):
+
+    def __init__(self, parent, code):
+        QDialog.__init__(self, parent)
+        self.resize(400, 500)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        text_editor = QTextEdit()
+        text_editor.setCurrentFont(QFont("Consolas"))
+        text_editor.setPlainText(code)
+
+        layout.addWidget(text_editor)
+
+
+class PreviewWidget(QWidget):
+
+    def __init__(self, node_manager):
+        QWidget.__init__(self)
+
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+
+        self._preview_view = NodePreviewView(node_manager)
+        self._layout.addWidget(self._preview_view)
+
+        self._node_manager = node_manager
+        self._show_source = QPushButton("Show Source")
+        self._layout.addWidget(self._show_source)
+        self._show_source.clicked.connect(self._show_code)
+
+    def _show_code(self):
+        hivemap = self._node_manager.export_hivemap()
+        code = hivemap_to_builder_body(hivemap)
+        dialogue = SourceCodePreviewDialogue(self, code)
+      #  dialogue.setParent(self)
+        dialogue.setAttribute(Qt.WA_DeleteOnClose)
+        dialogue.show()
+
+    def update_preview(self):
+        self._preview_view.update_preview()
 
 
 class NodeView(IGUINodeManager, QGraphicsView):
@@ -266,10 +323,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._preview_window = preview_window
 
         self._docstring_widget = QTextEdit()
+        self._docstring_widget.textChanged.connect(self._docstring_text_updated)
         self._args_widget = ArgsPanel(self.node_manager)
         self._configuration_widget = ConfigurationPanel(self.node_manager)
         self._folding_widget = FoldingPanel(self.node_manager)
-        self._preview_widget = NodePreviewView(self.node_manager)
+        self._preview_widget = PreviewWidget(self.node_manager)
 
         # Path editing
         self._cut_start_position = None
@@ -285,6 +343,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._moved_gui_nodes = set()
         self._position_busy = False
 
+    @property
+    def is_untitled(self):
+        return self.file_name is None
+
+    def _docstring_text_updated(self):
+        self.node_manager.docstring = self._docstring_widget.toPlainText()
+
     def on_enter(self):
         self._docstring_window.setWidget(self._docstring_widget)
         self._folding_window.setWidget(self._folding_widget)
@@ -299,10 +364,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._parameter_window.setWidget(QWidget())
         self._preview_window.setWidget(QWidget())
 
-    @property
-    def is_untitled(self):
-        return self.file_name is None
-
     def save(self, file_name=None):
         if file_name is None:
             file_name = self.file_name
@@ -311,8 +372,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 raise ValueError("Untitled hivemap cannot be saved without filename")
 
         node_manager = self.node_manager
-
-        node_manager.docstring = self._docstring_widget.toPlainText()
 
         # Export data
         data = node_manager.export()
@@ -704,7 +763,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
                     default = DynamicInputDialogue.NoValue
 
                 # Allow textarea
-                # HACKY XXX
                 dialogue.add_widget(option.name, option.data_type, default, option.options)
 
             dialogue_result = dialogue.exec_()
@@ -755,6 +813,20 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             if connection.intersects_circle(position, point_rect, size):
                 return connection
+
+    def _get_intersected_connections(self, path):
+        path_rect = path.boundingRect()
+        path_line = QLineF(path.pointAtPercent(0.0), path.pointAtPercent(1.0))
+
+        intersected = []
+        for connection in self._connections.values():
+            if not connection.isVisible():
+                continue
+
+            if connection.intersects_line(path_line, path_rect):
+                intersected.append(connection)
+
+        return intersected
 
     def mousePressEvent(self, mouseEvent):
         if mouseEvent.modifiers() == Qt.ShiftModifier:
@@ -819,20 +891,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         else:
             QGraphicsView.mouseMoveEvent(self, mouseEvent)
-
-    def _get_intersected_connections(self, path):
-        path_rect = path.boundingRect()
-        path_line = QLineF(path.pointAtPercent(0.0), path.pointAtPercent(1.0))
-
-        intersected = []
-        for connection in self._connections.values():
-            if not connection.isVisible():
-                continue
-
-            if connection.intersects_line(path_line, path_rect):
-                intersected.append(connection)
-
-        return intersected
 
     def mouseReleaseEvent(self, mouseEvent):
         if self._panning:

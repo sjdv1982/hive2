@@ -109,9 +109,14 @@ class ArgsPanel(QWidget):
                 data_type = infer_type(value, allow_object=True)
 
                 # HACKY XXX
-                use_text_area = name == "code"
-                widget, controller = create_widget(data_type, use_text_area=use_text_area)
+                is_code_field = name == "code"
+
+                widget, controller = create_widget(data_type, use_text_area=is_code_field)
                 widget.controller = controller
+
+                # HACKY XXX
+                if is_code_field:
+                    widget.setCurrentFont(QFont("Consolas"))
 
                 def on_changed(value, name=name, args=args):
                     args[name] = value
