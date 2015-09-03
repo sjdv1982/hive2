@@ -128,6 +128,9 @@ class MainWindow(QMainWindow):
         self.helper_widget.on_selected = self.on_dropped_helper_node
         self.helpers_window.setWidget(self.helper_widget)
 
+        self.preview_window = self.create_subwindow("Preview", "left")
+        self.preview_window.setVisible(False)
+
         self.tabifyDockWidget(self.hive_window, self.bee_window)
         self.tabifyDockWidget(self.bee_window, self.helpers_window)
 
@@ -182,8 +185,8 @@ class MainWindow(QMainWindow):
             widget.on_enter()
 
     def add_node_view(self, name="<Untitled>"):
-        view = NodeView(self.folding_window, self.docstring_window,
-                        self.configuration_window, self.parameter_window)
+        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window, self.parameter_window,
+                        self.preview_window)
 
         index = self.tab_widget.addTab(view, name)
         self.tab_widget.setCurrentIndex(index)
@@ -225,6 +228,7 @@ class MainWindow(QMainWindow):
         show_args = False
         show_bees = False
         show_helpers = False
+        show_preview = False
 
         if isinstance(widget, NodeView):
             show_save_as = True
@@ -238,6 +242,7 @@ class MainWindow(QMainWindow):
             show_args = True
             show_bees = True
             show_helpers = True
+            show_preview = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
@@ -248,6 +253,7 @@ class MainWindow(QMainWindow):
         self.bee_window.setVisible(show_bees)
         self.parameter_window.setVisible(show_args)
         self.helpers_window.setVisible(show_helpers)
+        self.preview_window.setVisible(show_preview)
 
         menu_bar = self.menuBar()
         menu_bar.clear()

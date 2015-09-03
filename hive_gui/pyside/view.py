@@ -41,6 +41,7 @@ import functools
 
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .utils import create_widget
+from .scene import NodeUiScene
 
 from ..node import NodeTypes
 from ..node_manager import NodeManager
@@ -158,10 +159,64 @@ class ConnectionWidget(QGraphicsWidget):
         self.setPos(x_pos, y_pos)
 
 
+class NodePreviewView(QGraphicsView):
+
+    def __init__(self, node_manager):
+        QGraphicsView.__init__(self)
+
+        self.setScene(NodeUiScene())
+        self._preview_update_timer = QTimer(self)
+        self._node_manager = node_manager
+
+    def update_preview(self):
+        self._preview_update_timer.singleShot(0.01, self._update_preview)
+
+    def _update_preview(self):
+        from .node import Node as GUINode
+        from ..node import Node, MimicFlags
+
+        for item in self.scene().items():
+            self.scene().removeItem(item)
+
+        hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {})
+
+        for node_name, node in sorted(self._node_manager.nodes.items()):
+            # If an input IO bee
+            if node.import_path in {"hive.antenna", "hive.entry"}:
+                pin = next(iter(node.outputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.input_pin
+                input_pin = hive_node.add_input(node_name, mimic_flags=MimicFlags.SHAPE|MimicFlags.COLOUR)
+                input_pin.mimic_other_pin(remote_pin)
+
+            # If an output IO bee
+            if node.import_path in {"hive.output", "hive.hook"}:
+                pin = next(iter(node.inputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.output_pin
+                output_pin = hive_node.add_output(node_name, mimic_flags=MimicFlags.SHAPE|MimicFlags.COLOUR)
+                output_pin.mimic_other_pin(remote_pin)
+
+        gui_node = GUINode(hive_node, self)
+        self.scene().addItem(gui_node)
+        new_center = self.scene().center = QPointF(self.scene().itemsBoundingRect().center())
+        self.centerOn(new_center)
+
+
 class NodeView(IGUINodeManager, QGraphicsView):
     _panning = False
 
-    def __init__(self, folding_window, docstring_window, configuration_window, parameter_window):
+    def __init__(self, folding_window, docstring_window, configuration_window, parameter_window, preview_window):
         QGraphicsView.__init__(self)
 
         self._zoom = 1.0
@@ -204,11 +259,13 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._docstring_window = docstring_window
         self._configuration_window = configuration_window
         self._parameter_window = parameter_window
+        self._preview_window = preview_window
 
         self._docstring_widget = QTextEdit()
         self._args_widget = ArgsPanel(self.node_manager)
         self._configuration_widget = ConfigurationPanel(self.node_manager)
         self._folding_widget = FoldingPanel(self.node_manager)
+        self._preview_widget = NodePreviewView(self.node_manager)
 
         # Path editing
         self._cut_start_position = None
@@ -229,12 +286,14 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._folding_window.setWidget(self._folding_widget)
         self._configuration_window.setWidget(self._configuration_widget)
         self._parameter_window.setWidget(self._args_widget)
+        self._preview_window.setWidget(self._preview_widget)
 
     def on_exit(self):
         self._docstring_window.setWidget(QWidget())
         self._folding_window.setWidget(QWidget())
         self._configuration_window.setWidget(QWidget())
         self._parameter_window.setWidget(QWidget())
+        self._preview_window.setWidget(QWidget())
 
     @property
     def is_untitled(self):
@@ -274,9 +333,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         except Exception as err:
             print("Error during loading: {}".format(err))
+            return
 
         self._docstring_widget.setPlainText(node_manager.docstring)
         self.file_name = file_name
+
+        self.frame_scene_content()
 
     def create_node(self, node):
         from .node import Node
@@ -288,9 +350,15 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self.node_to_qtnode[node] = gui_node
 
+        # Update preview
+        self._preview_widget.update_preview()
+
     def delete_node(self, node):
         gui_node = self.node_to_qtnode.pop(node)
         gui_node.on_deleted()
+
+        # Update preview
+        self._preview_widget.update_preview()
 
     def _socket_from_pin(self, pin):
         gui_node = self.node_to_qtnode[pin.node]
@@ -341,6 +409,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         self._connections[connection] = gui_connection
 
+        # Update preview
+        self._preview_widget.update_preview()
+
     def delete_connection(self, connection):
         gui_connection = self._connections.pop(connection)
         gui_connection.on_deleted()
@@ -348,6 +419,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
         # Unset active connection
         if gui_connection is self._active_connection:
             self._active_connection = None
+
+        # Update preview
+        self._preview_widget.update_preview()
 
     def reorder_connection(self, connection, index):
         gui_connection = self._connections[connection]
@@ -364,6 +438,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
     def set_node_name(self, node, name):
         gui_node = self.node_to_qtnode[node]
         gui_node.name = name
+
+        # Update preview
+        self._preview_widget.update_preview()
 
     def fold_pin(self, pin):
         self._set_pin_folded(pin, True)

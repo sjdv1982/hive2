@@ -237,6 +237,8 @@ class Node(QGraphicsWidget):
             socket_row = SocketRow(self, pin)
             self._socket_rows[pin_name] = socket_row
 
+        self.update_layout()
+
     @property
     def node(self):
         return self._node
