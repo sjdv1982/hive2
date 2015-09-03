@@ -75,5 +75,6 @@ else:
     print("READY", dir(hh))
     hh.score_in._trigger.add_target(lambda: print("Internal Post"))
     hh.score_in._pretrigger.add_target(lambda: print("Internal Pre"))
+    hh.on_updated._trigger.add_target(lambda: print("TRIGGERFUNC WORKEDs"))
     hh.score_in.push(13)
     print(hh.score)

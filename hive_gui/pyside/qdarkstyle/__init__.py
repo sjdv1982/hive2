@@ -49,9 +49,10 @@ def load_stylesheet(pyside=True):
     """
     # Smart import of the rc file
     if pyside:
-        import qdarkstyle.pyside_style_rc
+        from . import pyside_style_rc
+
     else:
-        import qdarkstyle.pyqt_style_rc
+        from . import pyqt_style_rc
 
     # Load the stylesheet content from resources
     if not pyside:
@@ -90,7 +91,7 @@ def load_stylesheet_pyqt5():
     :return the stylesheet string
     """
     # Smart import of the rc file
-    import qdarkstyle.pyqt5_style_rc
+    from . import pyqt5_style_rc
 
     # Load the stylesheet content from resources
     from PyQt5.QtCore import QFile, QTextStream

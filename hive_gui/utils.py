@@ -219,7 +219,8 @@ _wrapper_import_paths = _io_import_paths | _wraps_attribute_import_paths
 def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
     bees = {}
     imports = {"hive",}
-    builder_body = []
+
+    declaration_body = []
 
     # Build hives
     for spyder_hive in hivemap.hives:
@@ -230,14 +231,13 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
         args = parameter_array_to_dict(spyder_hive.args)
         cls_args = parameter_array_to_dict(spyder_hive.cls_args)
 
-
         # Add import path to import set
         import_path = spyder_hive.import_path
         root, *_ = import_path.split(".")
         imports.add(root)
 
-        builder_body.append("i.{} = {}(meta_args={}, args={}, cls_args={})"
-                            .format(hive_name, import_path, meta_args, args, cls_args))
+        declaration_body.append("i.{} = {}(meta_args={}, args={}, cls_args={})"
+                                .format(hive_name, import_path, meta_args, args, cls_args))
 
     wraps_attribute = []
     attribute_name_to_wrapper = {}
@@ -270,19 +270,19 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
             else:
                 wrapper_name = "i"
 
-            builder_body.append("{}.{} = hive.attribute({})".format(wrapper_name, identifier, data_type))
+            declaration_body.append("{}.{} = hive.attribute({})".format(wrapper_name, identifier, data_type))
             attribute_name_to_wrapper[identifier] = wrapper_name
 
         # For modifier
         elif import_path == "hive.modifier":
             code = args['code']
             code_body = "\n    ".join(code.split("\n"))
-            statement = """\ndef {}(self):\n    {}""".format(identifier, code_body)
-            builder_body.extend(statement.split("\n"))
-            builder_body.append("i.{0} = hive.modifier({0})\n".format(identifier))
+            statement = """def {}(self):\n    {}""".format(identifier, code_body)
+            declaration_body.extend(statement.split("\n"))
+            declaration_body.append("i.{0} = hive.modifier({0})\n".format(identifier))
 
         elif import_path == "hive.triggerfunc":
-            builder_body.append("i.{} = hive.triggerfunc()".format(identifier))
+            declaration_body.append("i.{} = hive.triggerfunc()".format(identifier))
 
     # Second Bee pass (For attribute wrappers)
     for spyder_bee in wraps_attribute:
@@ -294,16 +294,14 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
         attribute_name = meta_args['attribute_name']
         attribute_wrapper = attribute_name_to_wrapper[attribute_name]
 
-        builder_body.append("i.{} = {}({}.{})".format(spyder_bee.identifier, import_path,
-                                                      attribute_wrapper, attribute_name))
+        declaration_body.append("i.{} = {}({}.{})".format(spyder_bee.identifier, import_path,
+                                                          attribute_wrapper, attribute_name))
 
     # At this point, wrappers have attribute, modifier, triggerfunc, pullin, pullout, pushin, pushout
-    def connect_bee_to_io():
-        pass
-
     io_definitions = []
 
-    # For connections
+    # Define connectons
+    connectivity_body = []
     for connection in hivemap.connections:
         from_identifier = connection.from_node
         to_identifier = connection.to_node
@@ -346,14 +344,13 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
             target_path = "i.{}".format(to_identifier)
 
         if connection.is_trigger:
-            builder_body.append("hive.trigger({}, {}, pretrigger={})".format(source_path, target_path, pretrigger))
+            connectivity_body.append("hive.trigger({}, {}, pretrigger={})".format(source_path, target_path, pretrigger))
 
         else:
-            builder_body.append("hive.connect({}, {})".format(source_path, target_path))
+            connectivity_body.append("hive.connect({}, {})".format(source_path, target_path))
 
-    builder_body.append("")
-    builder_body.append("# Interface")
-
+    # Define IO pins (antenna, entry, output, hook)
+    io_body = []
     for connection in io_definitions:
         from_identifier = connection.from_node
         to_identifier = connection.to_node
@@ -395,28 +392,49 @@ def hivemap_to_builder_body(hivemap, builder_name, docstring=""):
             assert target_path is None
             target_path = "i.{}.{}".format(to_identifier, connection.input_name)
 
-        builder_body.append("ex.{} = {}({})".format(wrapper_bee.identifier, wrapper_bee.import_path, target_path))
+        io_body.append("ex.{} = {}({})".format(wrapper_bee.identifier, wrapper_bee.import_path, target_path))
 
-    import_body = "\n    ".join(["import {}".format(x) for x in imports])
-    execution_body = "\n    ".join(builder_body)
+    body_declaration_statement = ""
+
+    if docstring:
+        body_declaration_statement += \
+'''"""{}"""'''.format(docstring)
+
+    if imports:
+        body_declaration_statement += \
+"""
+# Imports
+{}
+""".format("\n".join(["import {}".format(x) for x in imports]))
+
+    if declaration_body:
+        body_declaration_statement += \
+"""
+# Declarations
+{}
+""".format("\n".join(declaration_body))
+
+    if connectivity_body:
+        body_declaration_statement += \
+"""
+# Connectivity
+{}
+""".format("\n".join(connectivity_body))
+
+    if io_body:
+        body_declaration_statement += \
+"""
+# IO
+{}
+""".format("\n".join(io_body))
+
 
     declaration_statement = \
 """
 def {}(i, ex, args):
-"""
-    if docstring:
-        declaration_statement += \
-'''    """{}"""
-'''.format(docstring)
-
-    declaration_statement += \
-"""    # Imports
     {}
-
-    # Declarations
-    {}
-"""
-    return declaration_statement.format(builder_name, import_body, execution_body)
+""".format(builder_name, body_declaration_statement.replace("\n", "\n    "))
+    return declaration_statement
 
 
 def builder_from_hivemap(data):
@@ -426,9 +444,9 @@ def builder_from_hivemap(data):
     """
     hivemap = model.Hivemap(data)
     build_str = hivemap_to_builder_body(hivemap, builder_name="builder", docstring=hivemap.docstring)
-    print(build_str)
+    with open("C:/users/angus/desktop/output.txt", "w") as f:
+        f.write(build_str)
     exec(build_str, locals(), globals())
-
     return builder
 
 
