@@ -55,9 +55,16 @@ class BeeNodeInspector:
         yield ("args", [InspectorOption("export", "bool", False), InspectorOption("start_value", data_type)])
 
     def inspect_pull_in(self):
-        attribute_names = [name for name, node in self._node_manager.nodes.items()
-                           if node.import_path == "hive.attribute"]
-        yield ("meta_args", [InspectorOption("attribute_name", "str", options=attribute_names)])
+        attributes = {name: node for name, node in self._node_manager.nodes.items()
+                      if node.import_path == "hive.attribute"}
+
+        meta_args = yield ("meta_args", [InspectorOption("attribute_name", "str", options=attributes.keys())])
+
+        attribute_name = meta_args['attribute_name']
+        attribute_node = attributes[attribute_name]
+
+        # Find bound attribute and save data type
+        meta_args['data_type'] = attribute_node.params['meta_args']['data_type']
 
     inspect_pull_out = inspect_pull_in
     inspect_push_out = inspect_pull_in

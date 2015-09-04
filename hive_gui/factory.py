@@ -50,8 +50,9 @@ class BeeNodeFactory:
 
     def build_pull_in(self, name, import_path, params):
         node = Node(name, NodeTypes.BEE, import_path, params)
+        data_type = params['meta_args']['data_type']
 
-        node.add_input("value", None, "pull", restricted_types=[("trigger",)])
+        node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
         node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
@@ -61,8 +62,9 @@ class BeeNodeFactory:
 
     def build_pull_out(self, name, import_path, params):
         node = Node(name, NodeTypes.BEE, import_path, params)
+        data_type = params['meta_args']['data_type']
 
-        node.add_output("value", None, "pull", restricted_types=[("trigger",)])
+        node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
 
         node.add_output("pre_output", ("trigger",), "push", is_proxy=True)
         node.add_output("post_output", ("trigger",), "push")
@@ -71,8 +73,9 @@ class BeeNodeFactory:
 
     def build_push_in(self, name, import_path, params):
         node = Node(name, NodeTypes.BEE, import_path, params)
+        data_type = params['meta_args']['data_type']
 
-        node.add_input("value", None, "push", restricted_types=[("trigger",)])
+        node.add_input("value", data_type, "push", restricted_types=[("trigger",)])
 
         node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
         node.add_output("post_update", ("trigger",), "push")
@@ -81,8 +84,9 @@ class BeeNodeFactory:
 
     def build_push_out(self, name, import_path, params):
         node = Node(name, NodeTypes.BEE, import_path, params)
+        data_type = params['meta_args']['data_type']
 
-        node.add_output("value", None, "push", restricted_types=[("trigger",)])
+        node.add_output("value", data_type, "push", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
         node.add_output("pre_output", ("trigger",), "push", is_proxy=True)

@@ -746,7 +746,6 @@ class NodeView(IGUINodeManager, QGraphicsView):
         result = None
         while True:
             try:
-                print("PRE INSPECT")
                 stage_name, stage_options = inspector.send(result)
 
             except StopIteration:
