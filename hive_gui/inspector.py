@@ -2,8 +2,10 @@ from .utils import import_from_path, get_builder_class_args
 
 
 class InspectorOption:
+    """Configurable named field"""
 
     class NoValue:
+        """Unique object used to indicate no value"""
         pass
 
     def __init__(self, name, data_type=None, default=NoValue, options=None):
@@ -14,6 +16,7 @@ class InspectorOption:
 
 
 def no_inspector():
+    """Call to return no-op generator"""
     return
     yield
 
@@ -24,6 +27,7 @@ class BeeNodeInspector:
         self._node_manager = node_manager
 
     def inspect(self, import_path):
+        """Inspect the UI attributes available for a bee with the given import path"""
         root, bee_name = import_path.split(".")
         assert root == "hive"
 
@@ -63,7 +67,7 @@ class BeeNodeInspector:
         attribute_name = meta_args['attribute_name']
         attribute_node = attributes[attribute_name]
 
-        # Find bound attribute and save data type
+        # Find bound attribute and save data type to meta_args
         meta_args['data_type'] = attribute_node.params['meta_args']['data_type']
 
     inspect_pull_out = inspect_pull_in
@@ -74,9 +78,17 @@ class BeeNodeInspector:
 class HiveNodeInspector:
 
     def inspect(self, import_path):
+        """Inspect the UI attribute available for a hive with the given import path
+
+        :param import_path: import path of Hive class
+        """
         return self._inspect_generator(import_path)
 
-    def _parse_wrapper(self, wrapper):
+    def _scrape_wrapper(self, wrapper):
+        """Scrape parameters from a HiveArgs wrapper
+
+        :param wrapper: HiveArgs wrapper instance
+        """
         wrapper_options = []
 
         for arg_name in wrapper:
@@ -102,7 +114,7 @@ class HiveNodeInspector:
 
         meta_args_wrapper = hive_cls._hive_meta_args
         if meta_args_wrapper:
-            meta_args = yield ("meta_args", self._parse_wrapper(meta_args_wrapper))
+            meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
             _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
 
         else:
@@ -110,7 +122,7 @@ class HiveNodeInspector:
 
         args_wrapper = hive_object_cls._hive_args
         if args_wrapper:
-            yield ("args", self._parse_wrapper(args_wrapper))
+            yield ("args", self._scrape_wrapper(args_wrapper))
 
         builder_args = get_builder_class_args(hive_cls)
         if builder_args:

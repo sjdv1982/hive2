@@ -9,6 +9,12 @@ class BeeNodeFactory:
     """
 
     def new(self, name, import_path, params):
+        """Create new Bee node with given name, import path and params dict
+
+        :param name: name of node
+        :param import_path: import path of bee
+        :param params: configuration data for node
+        """
         root, bee_name = import_path.split(".")
         assert root == "hive"
 
@@ -112,7 +118,6 @@ class BeeNodeFactory:
 
 class HiveNodeFactory:
     """Create HIve nodes from import paths"""
-
     @staticmethod
     def new(name, import_path, params):
         hive_object = create_hive_object_instance(import_path, params)
