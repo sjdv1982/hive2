@@ -165,7 +165,7 @@ class MainWindow(QMainWindow):
         view.paste()
 
     def load_home_page(self, home_page):
-        self.tab_widget.addTab(home_page, "Home", closeable=False)
+        self.tab_widget.addTab(home_page, "About", closeable=False)
         self.home_page = home_page
 
     def on_tab_changed(self, tab_menu, previous_index=None):
@@ -282,28 +282,51 @@ class MainWindow(QMainWindow):
             view.pre_drop_helper(path)
 
     def open_file(self):
-        file_name, _ = QFileDialog.getOpenFileName(self.menuBar(), 'Open hivemap', '/home')
-        if not file_name:
+        dialogue = QFileDialog(self, caption="Open Hivemap")
+        dialogue.setDefaultSuffix("hivemap")
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.hivemap)"))
+        dialogue.setFileMode(QFileDialog.AnyFile)
+        dialogue.setAcceptMode(QFileDialog.AcceptOpen)
+
+        if not dialogue.exec_():
             return
 
-        view = self.add_node_view()
-        view.load(file_name=file_name)
+        file_name = dialogue.selectedFiles()[0]
 
-        # Rename tab
-        name = os.path.basename(file_name)
-        index = self.tab_widget.currentIndex()
-        self.tab_widget.setTabText(index, name)
+        # Check if already open
+        for index in range(self.tab_widget.count()):
+            widget = self.tab_widget.widget(index)
+
+            if not isinstance(widget, NodeView):
+                continue
+
+            # If already open
+            if file_name == widget.file_name:
+                self.tab_widget.setCurrentIndex(index)
+                break
+
+        else:
+            view = self.add_node_view()
+            view.load(file_name=file_name)
+
+            # Rename tab
+            name = os.path.basename(file_name)
+            index = self.tab_widget.currentIndex()
+            self.tab_widget.setTabText(index, name)
 
         # Update save UI elements now we have a filename
         self.update_ui_layout()
 
     def save_as_file(self):
-        file_name, _ = QFileDialog.getSaveFileName(self.menuBar(), 'Save hivemap', '/home')
-        if not file_name:
-            return
+        dialogue = QFileDialog(self, caption="Save Hivemap")
+        dialogue.setDefaultSuffix("hivemap")
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.hivemap)"))
+        dialogue.setFileMode(QFileDialog.AnyFile)
+        dialogue.setAcceptMode(QFileDialog.AcceptSave)
 
-        # Perform save
-        self.save_file(file_name)
+        if dialogue.exec_():
+            file_name = dialogue.selectedFiles()[0]
+            self.save_file(file_name)
 
     def save_file(self, file_name=None):
         view = self.tab_widget.currentWidget()
