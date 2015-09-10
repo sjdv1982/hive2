@@ -88,9 +88,7 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_action)
         self.edit_menu.addAction(self.paste_action)
 
-        self.help_action = QAction("&Help", menu_bar,
-                                   shortcut=QKeySequence.Paste,
-                                   statusTip="Open Help page in browser", triggered=self.goto_help_page)
+        self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser", triggered=self.goto_help_page)
 
         self.save_as_action.setVisible(False)
 

@@ -138,7 +138,7 @@ def get_io_info(hive_object, allow_derived=False):
         exported_bee = bee.export()
 
         # Skip plugins and sockets
-        if isinstance(exported_bee, (Plugin, Socket)):
+        if exported_bee.implements(Plugin) or exported_bee.implements(Socket):
             continue
 
         if exported_bee.implements(connect_target_type):
