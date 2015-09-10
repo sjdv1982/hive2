@@ -2,6 +2,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 
 import os
+import webbrowser
 
 from .tabs import TabViewWidget
 from .view import NodeView
@@ -87,6 +88,10 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_action)
         self.edit_menu.addAction(self.paste_action)
 
+        self.help_action = QAction("&Help", menu_bar,
+                                   shortcut=QKeySequence.Paste,
+                                   statusTip="Open Help page in browser", triggered=self.goto_help_page)
+
         self.save_as_action.setVisible(False)
 
         # Add tab widget
@@ -135,6 +140,9 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(self.bee_window, self.helpers_window)
 
         self.home_page = None
+
+    def goto_help_page(self):
+        webbrowser.open("https://github.com/agoose77/hive2/wiki")
 
     def get_current_node_manager(self):
         view = self.tab_widget.currentWidget()
@@ -262,6 +270,8 @@ class MainWindow(QMainWindow):
 
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
+
+        menu_bar.addAction(self.help_action)
 
     def on_dropped_hive_node(self, path):
         view = self.tab_widget.currentWidget()

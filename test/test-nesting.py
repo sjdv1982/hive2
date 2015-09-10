@@ -27,34 +27,35 @@ class C:
         o()
 
 
-def build_h(cls, i, ex, args):
-    print("Build hive", args.i)
+def build_h(cls, i, ex, args, meta_args):
+    print("Build hive", meta_args.i)
 
-    is_root = args.root
+    is_root = meta_args.root
 
     if is_root:
+        print("IS ROOT")
         ex.plug = hive.plugin(cls.print_name, identifier=("some_api", "func"), auto_connect=True)
 
-    if args.i:
-        ex.h = SomeHive(i=args.i-1, root=False, name="<internal>", import_namespace=True)
+    if meta_args.i:
+        ex.h = SomeHive(i=meta_args.i-1, root=False, name="<internal>", import_namespace=True)
 
     else:
         ex.sock = hive.socket(cls.get_plug, identifier=("some_api", "func"), auto_connect=True)
 
-    if is_root and 0:
-        hive.connect(ex.plug, get_last(ex, "h").sock)
+    # if is_root and 0:
+    #     hive.connect(ex.plug, get_last(ex, "h").sock)
 
 
-def declare_h(args):
-    args.i = hive.parameter("int", 2)
-    args.root = hive.parameter("bool", True)
+def declare_h(meta_args):
+    meta_args.i = hive.parameter("int", 3)
+    meta_args.root = hive.parameter("bool", True)
 
-SomeHive = hive.hive("H1", build_h, cls=C, declarator=declare_h)
+SomeHive = hive.dyna_hive("H1", build_h, cls=C, declarator=declare_h)
 
 # This works
 h1 = SomeHive(name="OtherHive")
 
 # This doesn't
-h2 = SomeHive()
+h2 = SomeHive(name="OtherHive2")
 
-print(h2.h.h.sock is h1.h.h.sock)
+#print(h2.h.h.sock is h1.h.h.sock)

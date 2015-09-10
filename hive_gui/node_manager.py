@@ -206,7 +206,7 @@ class NodeManager(object):
 
     def can_fold_pin(self, pin):
         # Only hives support folding
-        if pin.node.node_type != NodeTypes.HIVE:
+        if pin.is_proxy:
             return False
 
         if pin.is_folded:
@@ -366,11 +366,12 @@ class NodeManager(object):
             meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
             arg_array = dict_to_parameter_array(params.get('args', {}))
 
+            folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
+
             # Serialise HiveNode instance
             if node.node_type == NodeTypes.HIVE:
                 cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
 
-                folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
                 spyder_hive = model.HiveNode(identifier=node.name, import_path=node.import_path, position=node.position,
                                              meta_args=meta_arg_array, args=arg_array, cls_args=cls_arg_array,
                                              folded_pins=folded_pins)
@@ -380,7 +381,7 @@ class NodeManager(object):
             # Serialise Bee instance
             elif node.node_type == NodeTypes.BEE:
                 spyder_bee = model.BeeNode(identifier=node.name, import_path=node.import_path, position=node.position,
-                                           meta_args=meta_arg_array, args=arg_array)
+                                           meta_args=meta_arg_array, args=arg_array, folded_pins=folded_pins)
                 hivemap.bees.append(spyder_bee)
 
             # Keep track of copied nodes
@@ -495,8 +496,8 @@ class NodeManager(object):
             self.create_connection(from_pin, to_pin)
 
         # Fold folded pins
-        for node, spyder_hive in node_to_spyder_hive_node.items():
-            for pin_name in spyder_hive.folded_pins:
+        for node, spyder_node in node_to_spyder_node.items():
+            for pin_name in spyder_node.folded_pins:
                 pin = node.inputs[pin_name]
                 self.fold_pin(pin)
 

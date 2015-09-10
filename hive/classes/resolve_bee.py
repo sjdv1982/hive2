@@ -1,5 +1,5 @@
-from ..mixins import Bee, Bindable
-from ..manager import memoize
+from ..mixins import Bee, Bindable, Exportable
+from ..manager import memoize, get_building_hive
 
 
 class BindableResolveBee(Bee, Bindable):
@@ -7,6 +7,11 @@ class BindableResolveBee(Bee, Bindable):
     def __init__(self, unbound_run_hive, bee):
         self._bee = bee
         self._unbound_run_hive = unbound_run_hive
+
+        # For inspection purposes
+        self._hive_object_cls = get_building_hive()
+
+        # For supporting multiple-level ResolveBee
         self._hive_object = unbound_run_hive._hive_object
 
     @memoize
@@ -15,12 +20,13 @@ class BindableResolveBee(Bee, Bindable):
         return self._bee.bind(hive_instance)
 
 
-class ResolveBee(Bee):
+class ResolveBee(Exportable):
     """Wraps Bee instance to resolve appropriate reference at runtime"""
 
     def __init__(self, bee, own_hive_object):
         self._bee = bee
         self._own_hive_object = own_hive_object
+        self._hive_object_cls = get_building_hive()
 
     def __getattr__(self, attr):
         result = getattr(self._bee, attr)
@@ -35,12 +41,15 @@ class ResolveBee(Bee):
     def __repr__(self):
         return "<*{}::{}>".format(self._own_hive_object, self._bee)
 
-    @memoize
-    def getinstance(self, hive_object):
-        unbound_run_hive = self._own_hive_object.getinstance(hive_object)
-        hive_object = unbound_run_hive._hive_object
+    def export(self):
+        return self
 
-        result = self._bee.getinstance(hive_object)
+    @memoize
+    def getinstance(self, redirected_hive_object):
+        unbound_run_hive = self._own_hive_object.getinstance(redirected_hive_object)
+        redirected_hive_object = unbound_run_hive._hive_object
+
+        result = self._bee.getinstance(redirected_hive_object)
 
         if isinstance(result, Bindable):
             return BindableResolveBee(unbound_run_hive, result)

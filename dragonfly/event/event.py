@@ -50,22 +50,22 @@ class EventListener:
 class EventManager:
 
     def __init__(self):
-        self.handlers = []
+        self.listeners = []
 
-    def add_handler(self, handler):
-        self.handlers.append(handler)
-        self.handlers.sort()
+    def add_listener(self, listener):
+        self.listeners.append(listener)
+        self.listeners.sort()
 
-    def handle_event(self, event):
-        for listener in self.handlers:
+    def dispatch_event(self, event):
+        for listener in self.listeners:
             listener(event)
 
 
 def event_builder(cls, i, ex, args):
-    ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"), policy_cls=MultipleOptional,
-                                auto_connect=True)
-    ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"), auto_connect=True,
-                                policy_cls=MultipleOptional)
+    ex.dispatch_event = hive.plugin(cls.dispatch_event, identifier=("event", "dispatch"), policy_cls=MultipleOptional,
+                                    export_to_parent=True)
+    ex.add_listener = hive.plugin(cls.add_listener, identifier=("event", "add_listener"), policy_cls=MultipleOptional,
+                                  export_to_parent=True)
 
 
 EventHive = hive.hive("EventHive", event_builder, EventManager)

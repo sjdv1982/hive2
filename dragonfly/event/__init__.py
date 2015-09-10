@@ -1,1 +1,2 @@
-from dragonfly.event.event import EventListener, EventHive, EventManager
+from .event import EventListener, EventHive, EventManager
+from .tick import Tick

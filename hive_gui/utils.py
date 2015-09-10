@@ -482,7 +482,7 @@ def class_from_hivemap(name, hivemap):
     """Build Hive class from hivemap string
 
     :param name: name of hive class
-    :param hivemap: Hivemap isntance
+    :param hivemap: Hivemap instance
     """
     builder = builder_from_hivemap(hivemap)
     return hive.hive(name, builder)
