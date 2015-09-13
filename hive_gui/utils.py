@@ -9,7 +9,8 @@ from collections import OrderedDict
 from inspect import getargspec
 
 
-_type_map = dict(str=str, int=int, float=float, bool=bool, dict=dict, list=list, set=set, tuple=tuple)
+_type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("dict", dict), ("list", list),
+                         ("set", set), ("tuple", tuple)))
 
 
 def _eval_spyder_string(type_name, value):

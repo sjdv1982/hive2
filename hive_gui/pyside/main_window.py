@@ -97,6 +97,8 @@ class MainWindow(QMainWindow):
 
         # Left window
         self.hive_window = self.create_subwindow("Hives", "left")
+        self.hive_window.setMinimumHeight(450)
+
         self.hive_window.setVisible(False)
         self.hive_widget = TreeWidget()
         self.hive_widget.on_selected = self.on_dropped_hive_node
