@@ -484,7 +484,7 @@ def class_from_hivemap(name, hivemap):
 
 
 @lru_cache(maxsize=256)
-def class_from_file(filepath):
+def class_from_filepath(filepath):
     """Build Hive class from hivemap filepath
 
     :param filepath: path to hivemap
