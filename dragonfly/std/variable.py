@@ -6,10 +6,11 @@ def declare_variable(meta_args):
 
 
 def build_variable(i, ex, args, meta_args):
+    """Simple value-holding hive"""
     args.start_value = hive.parameter(meta_args.data_type)
-    i.value = hive.attribute(meta_args.data_type, args.start_value)
+    ex.value = hive.attribute(meta_args.data_type, args.start_value)
 
-    value_out = hive.pull_out(i.value)
+    value_out = hive.pull_out(ex.value)
     ex.value = hive.output(value_out)
 
 

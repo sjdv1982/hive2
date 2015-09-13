@@ -27,6 +27,7 @@ def declare_dictionary(meta_args):
 
 
 def build_dictionary(cls, i, ex, args, meta_args):
+    """HIVE interface to dictionary object"""
     ex.dict = hive.property(cls, "dict", "dict")
 
     i.in_dict = hive.pull_in(ex.dict)

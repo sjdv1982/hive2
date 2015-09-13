@@ -21,6 +21,7 @@ def func(self):
 
 
 def build_any(i, ex, args, meta_args):
+    """Trigger output if any inputs evaluate to True"""
     # On pull
     func = build_any_func(meta_args.count)
     i.trigger = hive.modifier(func)

@@ -18,6 +18,7 @@ def declare_operator(meta_args):
 
 
 def build_operator(i, ex, args, meta_args):
+    """HIVE interface to python "operator" module"""
     assert meta_args.operator in operators
     args.default_value = hive.parameter("int", 0)
 

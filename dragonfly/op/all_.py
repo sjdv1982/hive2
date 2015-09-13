@@ -21,6 +21,7 @@ def func(self):
 
 
 def build_all(i, ex, args, meta_args):
+    """Trigger output if all inputs evaluate to True"""
     # On pull
     func = build_all_func(meta_args.count)
     i.trigger = hive.modifier(func)

@@ -241,6 +241,7 @@ class NodeManager(object):
 
         # Create variable
         if not pin.connections:
+            # TODO take start value from pin bee?
             params = dict(meta_args=dict(data_type=pin.data_type),
                           args=dict(start_value=start_value_from_type(pin.data_type)))
 

@@ -56,6 +56,10 @@ class EventManager:
         self.handlers.append(handler)
         self.handlers.sort()
 
+    def remove_handler(self, handler):
+        self.handlers.remove(handler)
+        self.handlers.sort()
+
     def handle_event(self, event):
         for listener in self.handlers:
             listener(event)
@@ -63,7 +67,9 @@ class EventManager:
 
 def event_builder(cls, i, ex, args):
     ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"), policy_cls=MultipleOptional,
-                                auto_connect=True)
+                                 auto_connect=True)
+    ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"),
+                                    policy_cls=MultipleOptional, auto_connect=True)
     ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"), auto_connect=True,
                                 policy_cls=MultipleOptional)
 
