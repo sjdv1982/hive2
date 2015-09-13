@@ -1,4 +1,4 @@
-from ._compatability import next, is_method
+from .compatability import next, is_method
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
 from .connect import connect
 from .mixins import *

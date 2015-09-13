@@ -1,5 +1,5 @@
 from ..mixins import Parameter
-from .. _compatability import next
+from .. compatability import next
 
 
 class FrozenHiveArgs(object):

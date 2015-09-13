@@ -1,5 +1,7 @@
 import hive
 
+from hive.compatability import next
+
 
 class _GeneratorCls:
 
