@@ -34,13 +34,13 @@ def build_h(cls, i, ex, args, meta_args):
 
     if is_root:
         print("IS ROOT")
-        ex.plug = hive.plugin(cls.print_name, identifier=("some_api", "func"), auto_connect=True)
+        ex.plug = hive.plugin(cls.print_name, identifier=("some_api", "func"))
 
     if meta_args.i:
         ex.h = SomeHive(i=meta_args.i-1, root=False, name="<internal>", import_namespace=True)
 
     else:
-        ex.sock = hive.socket(cls.get_plug, identifier=("some_api", "func"), auto_connect=True)
+        ex.sock = hive.socket(cls.get_plug, identifier=("some_api", "func"))
 
     # if is_root and 0:
     #     hive.connect(ex.plug, get_last(ex, "h").sock)

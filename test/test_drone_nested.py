@@ -22,8 +22,7 @@ class DroneCls:
         self.name = name
 
     def print_name(self):
-        #print("NAME =", self.name)
-        pass
+        print("NAME =", self.name)
 
 
 def build_drone(cls, i, ex, args):

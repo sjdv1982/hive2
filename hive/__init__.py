@@ -19,18 +19,15 @@ from .attribute import attribute
 #ex primitives
 from .entry import entry
 from .hook import hook
-from .socket import socket
-from . import socket_policies
-from .plugin import plugin
-from . import plugin_policies
+from .sockets import socket
+from .plugins import plugin
 from .antenna import antenna
 from .output import output
+
+#plugin socket policies
+from . import plugins
+from . import sockets
 
 #args primitives
 from .parameter import parameter
 from .helpers import init_options, init_types
-
-# TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
-# TODO: autosocket default policy (for parent and for children) on args object
-#    - if there are named sockets, a policy towards the parent MUST be defined
-#    - a policy towards the children is optional     

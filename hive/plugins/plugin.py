@@ -1,11 +1,11 @@
-from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from .manager.factory import ContextFactory
-from .socket_policies import SingleRequired, SocketPolicyError
-from .manager import memoize, get_building_hive
-from .tuple_type import tuple_type
+from ..mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
+from ..manager import get_building_hive, memoize, ContextFactory
+from ..tuple_type import tuple_type
+
+from .policies import SingleRequired, PluginPolicyError
 
 
-class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
+class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
     def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
                  bound=None):
@@ -22,7 +22,23 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
             self.policy = policy_cls()
 
     def __repr__(self):
-        return "<Socket: {}>".format(self._func)
+        return "<Plugin: {}>".format(self._func)
+
+    def plugin(self):
+        return self._func
+        
+    def _hive_is_connectable_source(self, target):
+        if not isinstance(target, Socket):
+            raise ValueError("Plugin target must be a subclass of Socket")
+
+        try:
+            self.policy.pre_donated()
+
+        except PluginPolicyError as err:
+            raise PluginPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, target, self))
+
+    def _hive_connect_source(self, target):
+        self.policy.on_donated()
 
     @memoize
     def bind(self, run_hive):
@@ -35,39 +51,22 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         else:
             func = self._func
 
-        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
-                              bound=run_hive)
+        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
 
     @memoize
     def export(self):
         # TODO: somehow log the redirection path
         func = self._func
-
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
-                                  bound=self._bound)
+            return self.__class__(exported, self.identifier, self.data_type, policy_cls=self.policy_cls,
+                                  export_to_parent=self.export_to_parent, bound=self._bound)
 
         else:
             return self
-    
-    def _hive_is_connectable_target(self, source):
-        if not isinstance(source, Plugin):
-            raise ValueError("Socket source must be a subclass of Plugin")
 
-        try:
-            self.policy.pre_filled()
 
-        except SocketPolicyError as err:
-            raise SocketPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, self, source))
-
-    def _hive_connect_target(self, source):
-        plugin = source.plugin()
-        self._func(plugin)
-        self.policy.on_filled()
-    
-
-class HiveSocketBee(Socket, ConnectTarget, Exportable):
+class HivePluginBee(Plugin, ConnectSource, Exportable):
 
     def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False):
         self._hive_object_cls = get_building_hive()
@@ -79,15 +78,15 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self.policy_cls = policy_cls
 
     def __repr__(self):
-        return "<Socket: {}>".format(self._target)
+        return "<Plugin: {}>".format(self._target)
 
     @memoize
     def getinstance(self, hive_object):
         target = self._target
-        if isinstance(target, Bee): 
+        if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
-        return HiveSocket(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
+        return HivePlugin(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
     @memoize
     def export(self):
@@ -95,11 +94,10 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         target = self._target
         if isinstance(target, Exportable):
             exported = target.export()
-
             return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
         else:
             return self
 
 
-socket = ContextFactory("hive.socket", immediate_mode_cls=HiveSocket, build_mode_cls=HiveSocketBee)
+plugin = ContextFactory("hive.plugin", immediate_mode_cls=HivePlugin, build_mode_cls=HivePluginBee)

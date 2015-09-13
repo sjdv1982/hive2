@@ -1,4 +1,4 @@
-from hive.plugin_policies import MultipleOptional
+from hive.plugins import MultipleOptional
 import hive
 
 
@@ -65,11 +65,11 @@ class EventManager:
 
 def event_builder(cls, i, ex, args):
     ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"), policy_cls=MultipleOptional,
-                                 auto_connect=True)
+                                 export_to_parent=True)
     ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"),
-                                    policy_cls=MultipleOptional, auto_connect=True)
-    ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"), auto_connect=True,
-                                policy_cls=MultipleOptional)
+                                    policy_cls=MultipleOptional, export_to_parent=True)
+    ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"), policy_cls=MultipleOptional,
+                                export_to_parent=True)
 
 
 EventHive = hive.hive("EventHive", event_builder, EventManager)

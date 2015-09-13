@@ -26,20 +26,20 @@ class Dog(object):
 def build_dog(cls, i, ex, args):
     i.print_house = hive.triggerable(cls.print_house)
     ex.print_house = hive.entry(i.print_house)
-    ex.some_socket = hive.socket(cls.set_get_house, identifier=("get", "house"), data_type="float", auto_connect=True)
+    ex.some_socket = hive.socket(cls.set_get_house, identifier=("get", "house"), data_type="float")
 
 
 DogHive = hive.hive("DogHive", build_dog, Dog)
 
 
-def declare_filler(args):
-    args.i = hive.parameter("int", 2)
+def declare_filler(meta_args):
+    meta_args.i = hive.parameter("int", 2)
 
 
-def build_filler(i, ex, args):
-    print("NEW FILLER", args.i)
-    if args.i:
-        i.inner = FillerHive(args.i - 1, import_namespace=True)
+def build_filler(i, ex, args, meta_args):
+    print("NEW FILLER", meta_args.i)
+    if meta_args.i:
+        i.inner = FillerHive(meta_args.i - 1, import_namespace=True)
         ex.inner = hive.hook(i.inner)
 
     else:
@@ -47,7 +47,7 @@ def build_filler(i, ex, args):
         ex.inner = hive.hook(i.inner)
 
 
-FillerHive = hive.hive("FillerHive", build_filler, declarator=declare_filler)
+FillerHive = hive.dyna_hive("FillerHive", build_filler, declarator=declare_filler)
 
 
 class House(object):
@@ -59,15 +59,14 @@ class House(object):
 def build_house(cls, i, ex, args):
     print("BUILD")
     ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("get", "house"), data_type="float",
-                                 policy_cls=hive.plugin_policies.MultipleOptional,
-                                 auto_connect=True)
+                                 policy_cls=hive.plugins.MultipleOptional)
 
     # Auto connect
-    i.filler = FillerHive(import_namespace=False)
+    i.filler = FillerHive()
     ex.filler = hive.hook(i.filler)
 
     # Manual connect
-    i.fido = DogHive(name="Main")
+    i.fido = DogHive(name="Main", import_namespace=False)
     ex.fido = hive.hook(i.fido)
 
     hive.connect(ex.some_plugin, i.fido.some_socket)

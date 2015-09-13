@@ -10,8 +10,6 @@ from .tuple_type import tuple_type, types_match
 from inspect import isfunction, getcallargs
 from collections import defaultdict
 
-from colorama import init
-init()
 
 def generate_bee_name():
     i = 0
@@ -83,9 +81,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
         self._hive_bee_instances = {}
         self._bee_names = ["_drones"]
         self._drones = []
-
-        from colorama import Fore as FORE
-        print(FORE.BLUE + "New Run Hive", self, FORE.RESET)
 
         with run_hive_as(self):
             # Build args
