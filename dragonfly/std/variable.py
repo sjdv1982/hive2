@@ -10,8 +10,8 @@ def build_variable(i, ex, args, meta_args):
     args.start_value = hive.parameter(meta_args.data_type)
     ex.value = hive.attribute(meta_args.data_type, args.start_value)
 
-    value_out = hive.pull_out(ex.value)
-    ex.value = hive.output(value_out)
+    i.value_out = hive.pull_out(ex.value)
+    ex.value_out = hive.output(i.value_out)
 
 
 Variable = hive.dyna_hive("Variable", build_variable, declarator=declare_variable)
