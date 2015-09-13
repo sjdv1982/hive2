@@ -13,7 +13,8 @@ from .models import model
 
 from collections import OrderedDict
 from inspect import getargspec
-
+from functools import lru_cache
+from os import path
 
 _type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("dict", dict), ("list", list),
                          ("set", set), ("tuple", tuple)))
@@ -164,8 +165,8 @@ def get_io_info(hive_object):
 
 
 # TODO Memoize?
-def import_from_path(path):
-    split_path = path.split(".")
+def import_from_path(import_path):
+    split_path = import_path.split(".")
     *module_parts, class_name = split_path
     import_path = ".".join(module_parts)
     sub_module_name = module_parts[-1]
@@ -476,7 +477,21 @@ def class_from_hivemap(name, hivemap):
     """Build Hive class from hivemap string
 
     :param name: name of hive class
-    :param hivemap: Hivemap isntance
+    :param hivemap: Hivemap instance
     """
     builder = builder_from_hivemap(hivemap)
     return hive.hive(name, builder)
+
+
+@lru_cache(maxsize=256)
+def class_from_file(filepath):
+    """Build Hive class from hivemap filepath
+
+    :param filepath: path to hivemap
+    """
+    name = path.splitext(path.basename(filepath))
+
+    with open(filepath, "r") as f:
+        hivemap = model.Hivemap(f.read())
+
+    return class_from_hivemap(name, hivemap)
