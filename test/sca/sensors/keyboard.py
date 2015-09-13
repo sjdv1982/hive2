@@ -22,7 +22,7 @@ class Keyboard_:
 
 
 def build_keyboard(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_handler"), auto_connect=True)
+    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_handler"))
     i.on_tick = hive.triggerfunc()
 
     ex.name = hive.attribute(("str",), "<Sensor>")

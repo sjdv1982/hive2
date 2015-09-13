@@ -608,7 +608,10 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         with open(hive_path, "r") as f:
             data = f.read()
-        cls = class_from_hivemap(os.path.basename(hive_path), data)
+
+        from ..models.model import Hivemap
+        hivemap = Hivemap(data)
+        cls = class_from_hivemap(os.path.basename(hive_path), hivemap)
 
         import dragonfly
         dragonfly._H = cls

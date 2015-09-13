@@ -18,23 +18,22 @@ class Mouse_:
         if button == self.button:
             self._hive.on_pressed()
 
-    def on_moved(self, coordinates):
-        self.pos_x, self.pos_y = coordinates
+    def on_moved(self, leader):
+        self.pos_x, self.pos_y = leader[0]
         self._hive._on_moved()
 
     def add_listener(self, func):
-        button_listener = EventListener(self.on_button, ("event", "mouse", "pressed"))
-        moved_listener = EventListener(self.on_button, ("event", "mouse", "move"))
+        button_listener = EventListener(self.on_button, ("mouse", "pressed"))
+        moved_listener = EventListener(self.on_moved, ("mouse", "move"))
 
         func(button_listener)
         func(moved_listener)
 
 
 def build_mouse(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_handler"), auto_connect=True)
+    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_listener"))
     i.on_tick = hive.triggerfunc()
 
-    ex.name = hive.attribute(("str",), "<Sensor>")
     ex.button = hive.property(cls, "button", "str")
 
     i.button_in = hive.pull_in(ex.button)
@@ -46,8 +45,8 @@ def build_mouse(cls, i, ex, args):
     i.on_moved = hive.triggerfunc()
     ex.on_moved = hive.hook(i.on_moved)
 
-    ex.pos_x = hive.property(cls, "pos_x")
-    ex.pos_y = hive.property(cls, "pos_y")
+    ex.pos_x = hive.property(cls, "pos_x", "float")
+    ex.pos_y = hive.property(cls, "pos_y", "float")
 
     x_out = hive.pull_out(ex.pos_x)
     ex.x_out = hive.output(x_out)

@@ -12,6 +12,8 @@ Type BaseNode {
 
   InstanceParameterArray meta_args = []
   InstanceParameterArray args = []
+
+  StringArray folded_pins = []
 }
 
 
@@ -27,9 +29,6 @@ Type BeeNode:BaseNode{
 Type HiveNode:BaseNode{
   # Instantiation data
   InstanceParameterArray cls_args = []
-
-  # GUI data
-  StringArray folded_pins = []
 }
 
 

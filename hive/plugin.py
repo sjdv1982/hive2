@@ -6,12 +6,13 @@ from .tuple_type import tuple_type
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False, bound=None):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
+                 bound=None):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._func = func
 
-        self.auto_connect = auto_connect
+        self.export_to_parent = export_to_parent
         self.identifier = identifier
         self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
@@ -49,7 +50,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         else:
             func = self._func
 
-        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.auto_connect, run_hive)
+        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
 
     @memoize
     def export(self):
@@ -58,7 +59,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         if isinstance(func, Exportable):
             exported = func.export()
             return self.__class__(exported, self.identifier, self.data_type, policy_cls=self.policy_cls,
-                                  bound=self._bound)
+                                  export_to_parent=self.export_to_parent, bound=self._bound)
 
         else:
             return self
@@ -66,11 +67,11 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False):
+    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
-        self.auto_connect = auto_connect
+        self.export_to_parent = export_to_parent
         self.identifier = identifier
         self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
@@ -84,7 +85,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
-        return HivePlugin(target, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
+        return HivePlugin(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
     @memoize
     def export(self):
@@ -92,7 +93,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         target = self._target
         if isinstance(target, Exportable):
             exported = target.export()
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
         else:
             return self

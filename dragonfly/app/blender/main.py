@@ -2,10 +2,12 @@ import hive
 
 from ...mainloop import Mainloop as _Mainloop
 from ...event import EventHive, EventListener
+
 from .input_handler import InputHandler
+from .startup_binder import StartupBinder
 
 
-class Mainloop:
+class _MainloopCls:
 
     def __init__(self, max_framerate=60):
         self.bge = __import__("bge")
@@ -21,7 +23,8 @@ class Mainloop:
 
         self.read_event(("tick",))
 
-    def set_event_processor(self, func):
+    def set_event_dispatcher(self, func):
+        # Dispatch events from input handler to event manager
         self.input_handler.add_listener(func)
         self.read_event = func
 
@@ -37,16 +40,19 @@ class Mainloop:
 def build_mainloop(cls, i, ex, args):
     i.event_manager = EventHive()
 
+    # Get read event
+    ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, ("event", "dispatch"))
+
+    # Get add handler
+    ex.get_add_handler = hive.socket(cls.add_listener, ("event", "add_listener"))
+
+    # Get add handler
+    ex.do_quit = hive.plugin(ex.stop, ("quit",))
+
+    i.startup_binder = StartupBinder()
+
     i.on_tick = hive.triggerable(cls.on_tick)
     hive.trigger(i.tick, i.on_tick)
 
-    # Get read event
-    ex.event_reader = hive.socket(cls.set_event_processor)
-    hive.connect(i.event_manager.read_event, ex.event_reader)
 
-    # Get add handler
-    ex.on_quit = hive.socket(cls.add_listener)
-    hive.connect(i.event_manager.add_handler, ex.on_quit)
-
-
-Mainloop = _Mainloop.extend("Mainloop", build_mainloop, builder_cls=Mainloop)
+Mainloop = _Mainloop.extend("Mainloop", build_mainloop, builder_cls=_MainloopCls)

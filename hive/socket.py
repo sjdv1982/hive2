@@ -7,12 +7,13 @@ from .tuple_type import tuple_type
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False, bound=None):
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
+                 bound=None):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._func = func
 
-        self.auto_connect = auto_connect
+        self.export_to_parent = export_to_parent
         self.identifier = identifier
         self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
@@ -34,7 +35,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         else:
             func = self._func
 
-        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.auto_connect,
+        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
                               bound=run_hive)
 
     @memoize
@@ -44,7 +45,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.auto_connect,
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
                                   bound=self._bound)
 
         else:
@@ -68,11 +69,11 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
 
 class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, auto_connect=False):
+    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
-        self.auto_connect = auto_connect
+        self.export_to_parent = export_to_parent
         self.identifier = identifier
         self.data_type = tuple_type(data_type)
         self.policy_cls = policy_cls
@@ -86,7 +87,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         if isinstance(target, Bee): 
             target = target.getinstance(hive_object)
 
-        return HiveSocket(target, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
+        return HiveSocket(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
     @memoize
     def export(self):
@@ -95,7 +96,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         if isinstance(target, Exportable):
             exported = target.export()
 
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.auto_connect)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
 
         else:
             return self

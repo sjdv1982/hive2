@@ -6,8 +6,12 @@ from .manager import bee_register_context, get_mode, hive_mode_as, get_building_
     memoize
 from .tuple_type import tuple_type, types_match
 
-import inspect
 
+from inspect import isfunction, getcallargs
+from collections import defaultdict
+
+from colorama import init
+init()
 
 def generate_bee_name():
     i = 0
@@ -79,6 +83,9 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
         self._hive_bee_instances = {}
         self._bee_names = ["_drones"]
         self._drones = []
+
+        from colorama import Fore as FORE
+        print(FORE.BLUE + "New Run Hive", self, FORE.RESET)
 
         with run_hive_as(self):
             # Build args
@@ -197,12 +204,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
     _hive_i = None
     _hive_ex = None
+    _hive_exportable_to_parent = None
 
     _hive_args = None
     _hive_meta_args_frozen = None
-
-    _hive_namespace = None
-    _hive_parent_namespace = None
 
     export_only = False
 
@@ -213,7 +218,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # TODO: filter args and kwargs based on _hive_args and _hive_hive_kwargs
 
         # Automatically import parent sockets and plugins
-        self._allow_import_namespace = kwargs.pop("import_namespace", False)
+        self._hive_allow_import_namespace = kwargs.pop("import_namespace", True)
+        self._hive_allow_export_namespace = kwargs.pop("export_namespace", True)
+
+        self._hive_exported_to_parent = set()
 
         # Take out args parameters
         args, kwargs, arg_values = self._hive_args.extract_from_args(args, kwargs)
@@ -228,14 +236,15 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
-            if builder_cls is not None and inspect.isfunction(builder_cls.__init__):
+            if builder_cls is not None and isfunction(builder_cls.__init__):
 
                 try:
-                    inspect.getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
+                    getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
 
                 except TypeError as err:
                     raise TypeError("{}.{}".format(builder_cls.__name__, err.args[0]))
 
+        # Create ResolveBee wrappers for external interface
         with hive_mode_as("build"):
             external_bees = self.__class__._hive_ex
             for bee_name in external_bees:
@@ -252,90 +261,94 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         """Return an instance of the runtime Hive for this Hive object."""
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
 
-    def import_namespace(self, parent_namespace):
-        """Import plugins from parent class"""
-        if not self._allow_import_namespace:
-            return
+    @classmethod
+    def export_namespace_to_children(cls, self_as_resolve_bee=None, plugin_map=None, socket_map=None):
+        externals = cls._hive_ex
+        internals = cls._hive_i
 
-        self._hive_parent_namespace = parent_namespace
+        # For children of the root hive, we must connect relative to top-most hive
 
-        # Self as resolved bee
-        resolved_bee = parent_namespace['resolved_self']
+        # This is for the top level (building) hive
+        is_root = self_as_resolve_bee is None
 
-        socket_names = self._hive_namespace['socket_names']
-        plugin_names = self._hive_namespace['plugin_names']
+        if is_root:
+            exported_to_parent = set()
 
-        # Resolve sockets and plugins
-        sockets = self._hive_namespace['sockets'] = {i: getattr(resolved_bee, n) for i, n in socket_names.items()}
-        plugins = self._hive_namespace['plugins'] = {i: getattr(resolved_bee, n) for i, n in plugin_names.items()}
+            plugin_map = defaultdict(list)
+            socket_map = defaultdict(list)
 
-        parent_sockets = parent_namespace['sockets']
-        parent_plugins = parent_namespace['plugins']
+        # This method call applies to a HiveObject instance (bee_source)
+        else:
+            exported_to_parent = self_as_resolve_bee._hive_exported_to_parent
 
-        connections = []
+            plugin_map = plugin_map.copy()
+            socket_map = socket_map.copy()
 
-        # Connect at this layer
-        for identifier, socket in sockets.items():
-            if not socket.auto_connect:
+        child_hives = set()
+
+        # Find external hives
+        for bee_name in externals:
+            bee = getattr(externals, bee_name)
+
+            if not bee.implements(HiveObject):
                 continue
 
-            try:
-                plugin = parent_plugins[identifier]
-            except KeyError:
+            if bee._hive_allow_import_namespace:
+                child_hives.add(bee)
+
+        # Find internal hives
+        for bee_name in internals:
+            bee = getattr(internals, bee_name)
+
+            if not bee.implements(HiveObject):
                 continue
 
-            if not plugin.auto_connect:
+            if bee._hive_allow_import_namespace:
+                child_hives.add(bee)
+
+        # Find sockets and plugins that are exportable
+        for bee_name in externals:
+            # This will have already been handled by parent
+            if bee_name in exported_to_parent:
                 continue
 
-            connections.append((plugin, socket))
+            if is_root:
+                bee = getattr(externals, bee_name)
 
-        for identifier, plugin in plugins.items():
-            if not plugin.auto_connect:
-                continue
+            else:
+                bee = getattr(self_as_resolve_bee, bee_name)
 
-            try:
-                socket = parent_sockets[identifier]
-            except KeyError:
-                continue
+            # Find auto-plugin
+            if bee.implements(Plugin) and bee.identifier is not None:
+                identifier = bee.identifier
+                plugin_map[identifier].append(bee)
 
-            if not socket.auto_connect:
-                continue
+                # Can we connect to a socket?
+                if identifier in socket_map:
+                    socket_bees = socket_map[identifier]
 
-            connections.append((plugin, socket))
+                    for socket_bee in socket_bees:
+                        connect(bee, socket_bee)
 
-        for plugin, socket in connections:
-            if not types_match(socket.data_type, plugin.data_type, allow_none=True):
-                continue
+            # Find auto-socket
+            if bee.implements(Socket) and bee.identifier is not None:
+                identifier = bee.identifier
+                socket_map[identifier].append(bee)
 
-            connect(plugin, socket)
+                # Can we connect to a plugin?
+                if identifier in plugin_map:
+                    plugin_bees = plugin_map[identifier]
 
-        # Create aggregate namespace
-        all_plugins = parent_plugins.copy()
-        all_plugins.update(plugins)
+                    for plugin_bee in plugin_bees:
+                        connect(plugin_bee, bee)
 
-        all_sockets = parent_sockets.copy()
-        all_sockets.update(sockets)
+        # Get resolve bees instead of raw HiveObject instances
+        if not is_root:
+            child_hives = {ResolveBee(bee.export(), self_as_resolve_bee) for bee in child_hives}
 
-        for bee_name in self._hive_ex:
-            bee = getattr(self._hive_ex, bee_name)
-
-            if not isinstance(bee, HiveObject):
-                continue
-
-            resolved_child_bee = getattr(resolved_bee, bee_name)
-            imported_namespace = dict(sockets=all_sockets, plugins=all_plugins, resolved_self=resolved_child_bee)
-            bee.import_namespace(imported_namespace)
-
-        for bee_name in self._hive_i:
-            bee = getattr(self._hive_i, bee_name)
-
-            if not isinstance(bee, HiveObject):
-                continue
-
-            resolved_child_bee = getattr(resolved_bee, bee_name)
-            imported_namespace = dict(sockets=all_sockets, plugins=all_plugins, resolved_self=resolved_child_bee)
-
-            bee.import_namespace(imported_namespace)
+        # Now export to child hives
+        for resolved_child_hive in child_hives:
+            resolved_child_hive.export_namespace_to_children(resolved_child_hive, plugin_map, socket_map)
 
     @classmethod
     @memoize
@@ -571,27 +584,13 @@ class HiveBuilder(object):
                 builder(*builder_args)
 
             # Importing
-            child_plugins = {}
-            child_sockets = {}
-
-            child_plugin_names = {}
-            child_socket_names = {}
-
             child_hives = set()
 
-            # Find plugins and sockets
+            # Find external hives
             for bee_name in externals:
                 bee = getattr(externals, bee_name)
 
-                if bee.implements(Plugin) and bee.identifier is not None:
-                    child_plugins[bee.identifier] = bee
-                    child_plugin_names[bee.identifier] = bee_name
-
-                elif bee.implements(Socket) and bee.identifier is not None:
-                    child_sockets[bee.identifier] = bee
-                    child_socket_names[bee.identifier] = bee_name
-
-                elif isinstance(bee, HiveObject):
+                if isinstance(bee, HiveObject):
                     child_hives.add(bee)
 
             # Find internal hives
@@ -601,18 +600,37 @@ class HiveBuilder(object):
                 if isinstance(bee, HiveObject):
                     child_hives.add(bee)
 
-            # Save namespace of hive
-            hive_object_cls._hive_namespace = dict(plugins=child_plugins,
-                                                   sockets=child_sockets,
-                                                   plugin_names=child_plugin_names,
-                                                   socket_names=child_socket_names)
+            # Export bees from drone-like child hives
+            for child_hive in child_hives:
+                # If child doesn't allow exporting
+                if not child_hive._hive_allow_export_namespace:
+                    continue
 
-            # Automatically connect plugins and sockets
+                # Find exportable from child and save to HiveObject instance
+                importable_from_child = child_hive.__class__._hive_exportable_to_parent
+                child_hive._hive_exported_to_parent.update(importable_from_child)
+
+                # Find bees at set them on parent
+                for bee_name in importable_from_child:
+                    assert not hasattr(externals, bee_name)
+                    bee = getattr(child_hive, bee_name)
+                    setattr(externals, bee_name, bee)
+
+            # Exportable bees to parent if drone
+            hive_object_cls._hive_exportable_to_parent = export_to_parent = set()
+            for bee_name in externals:
+                bee = getattr(externals, bee_name)
+
+                if not (bee.implements(Plugin) or bee.implements(Socket)):
+                    continue
+
+                if bee.identifier is not None and bee.export_to_parent:
+                    export_to_parent.add(bee_name)
+
+            # TODO add flag for drone like export to parent (off by default)
+            # TODO support resolvebees in ex wrapper?
             if is_root:
-                for bee in child_hives:
-                    # Create connections to sockets and plugins
-                    namespace = dict(plugins=child_plugins, sockets=child_sockets, resolved_self=bee)
-                    bee.import_namespace(namespace)
+                hive_object_cls.export_namespace_to_children()
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
