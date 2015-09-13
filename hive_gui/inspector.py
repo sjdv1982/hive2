@@ -114,6 +114,6 @@ class HiveNodeInspector:
 
         builder_args = get_builder_class_args(hive_cls)
         if builder_args:
-            options = [InspectorOption(name=name, default=data['default'])
-                       for name, data in builder_args.items()]
+            options = [InspectorOption(name=name, default=data['default'], data_type=data['data_type'],
+                                       options=data['options']) for name, data in builder_args.items()]
             yield ("cls_args", options)

@@ -1,8 +1,6 @@
 from hive.plugin_policies import MultipleOptional
 import hive
 
-from dragonfly.std import Buffer
-
 
 def match_leader(event, leader):
     event_leader = event[:len(leader)]
@@ -75,3 +73,5 @@ def event_builder(cls, i, ex, args):
 
 
 EventHive = hive.hive("EventHive", event_builder, EventManager)
+
+

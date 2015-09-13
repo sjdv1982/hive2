@@ -100,26 +100,36 @@ def start_value_from_type(data_type):
 
 def get_builder_class_args(hive_cls):
     # Get arg spec for first builder
-    builder_args = []
-    arg_defaults = {}
+    builder_args = OrderedDict()
 
     for builder, cls in hive_cls._builders:
         if cls is None:
             continue
 
-        spec = getargspec(cls.__init__)
-        defaults = spec.defaults if spec.defaults else []
+        # Get init func
+        init_func = cls.__init__
+        arg_types = getattr(init_func, "types", {})
+        arg_options = getattr(init_func, "options", {})
+
+        arg_spec = getargspec(init_func)
+        defaults = arg_spec.defaults if arg_spec.defaults else []
 
         # Ignore self
-        builder_args = spec.args[1:]
+        arg_names = arg_spec.args[1:]
 
         # Populate defaults
-        for arg_name, default_value in zip(reversed(builder_args), reversed(defaults)):
+        arg_defaults = {}
+        for arg_name, default_value in zip(reversed(arg_names), reversed(defaults)):
             arg_defaults[arg_name] = default_value
 
-        break
+        # Construct argument pairs
+        for arg_name in arg_names:
+            arg_data = {'optional': arg_name in arg_defaults, 'default': arg_defaults.get(arg_name),
+                        'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name)}
 
-    return OrderedDict((k, {'optional': k in arg_defaults, 'default': arg_defaults.get(k)}) for k in builder_args)
+            builder_args[arg_name] = arg_data
+
+    return builder_args
 
 
 def get_io_info(hive_object):
