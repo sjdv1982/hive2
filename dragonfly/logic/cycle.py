@@ -4,21 +4,22 @@ from ..std import Buffer
 
 
 def build_cycle(i, ex, args):
-    ex.b_period = Buffer("int", 0)
-    ex.period = hive.antenna(ex.b_period.input)
-
+    ex.period = hive.attribute("int", 0)
     ex.counter = hive.attribute("int", 0)
-    ex.input = hive.entry(ex.b_period.trigger)
+
+    i.period_in = hive.pull_in(ex.period)
+    ex.period_in = hive.antenna(i.period_in)
+    ex.input = hive.entry(i.period_in)
 
     def cycle(self):
         self.counter += 1
 
-        if self.counter >= self.b_period.value:
-            self.counter -= self.b_period.value
+        if self.counter >= self.period_in:
+            self.counter -= self.period_in
             self.output()
 
     i.trigger = hive.modifier(cycle)
-    hive.trigger(ex.b_period.output, i.trigger)
+    hive.trigger(i.period_in, i.trigger)
 
     i.output = hive.triggerfunc()
     ex.output = hive.hook(i.output)

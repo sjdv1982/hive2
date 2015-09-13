@@ -3,6 +3,12 @@ import ast
 
 from hive.mixins import *
 
+# IO bees
+from hive.hook import Hook
+from hive.entry import Entry
+from hive.antenna import HiveAntenna
+from hive.output import HiveOutput
+
 from .models import model
 
 from collections import OrderedDict
@@ -115,7 +121,7 @@ def get_builder_class_args(hive_cls):
     return OrderedDict((k, {'optional': k in arg_defaults, 'default': arg_defaults.get(k)}) for k in builder_args)
 
 
-def get_io_info(hive_object, allow_derived=False):
+def get_io_info(hive_object):
     """Get UI info for a runtime hive object"""
     external_bees = hive_object._hive_ex
 
@@ -124,45 +130,32 @@ def get_io_info(hive_object, allow_derived=False):
 
     pin_order = []
 
-    if allow_derived:
-        connect_target_type = ConnectTargetBase
-        connect_source_type = ConnectSourceBase
-
-    else:
-        connect_target_type = ConnectTarget
-        connect_source_type = ConnectSource
-
     for bee_name in external_bees:
         bee = getattr(external_bees, bee_name)
 
         # Find IO pins
         exported_bee = bee.export()
 
-        # Skip plugins and sockets
-        if isinstance(exported_bee, (Plugin, Socket)):
-            continue
-
-        if exported_bee.implements(connect_target_type):
+        if exported_bee.implements(ConnectTarget):
             storage_target = inputs
 
-        elif exported_bee.implements(connect_source_type):
+        elif exported_bee.implements(ConnectSource):
             storage_target = outputs
 
         else:
             continue
 
         # Find data type and IO mode
-        if exported_bee.implements(Antenna) or exported_bee.implements(Output):
+        if isinstance(bee, (HiveAntenna, HiveOutput)):
             data_type = exported_bee.data_type
             mode = exported_bee.mode
 
-        elif isinstance(exported_bee, hive.HiveObject):
-            data_type = ()
-            mode = None
-
-        else:
+        elif isinstance(bee, (Hook, Entry)):
             data_type = ("trigger",)
             mode = "push"
+
+        else:
+            continue
 
         storage_target[bee_name] = dict(data_type=data_type, mode=mode)
         pin_order.append(bee_name)

@@ -7,6 +7,13 @@ def declare_buffer(meta_args):
 
 
 def build_buffer(i, ex, args, meta_args):
+    """Store the input value and output saved value.
+
+    In pull mode, the trigger is used to update the internal value.
+    In push mode, the trigger is used to output the internal value.
+
+    Can be used to cache changing values
+    """
     args.start_value = hive.parameter(meta_args.data_type, None)
     ex.value = hive.attribute(meta_args.data_type, args.start_value)
 

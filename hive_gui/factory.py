@@ -124,6 +124,7 @@ class HiveNodeFactory:
         # Use the params dict instead of re-scraping the hive_object if reading these values
 
         node = Node(name, NodeTypes.HIVE, import_path, params)
+        node.tooltip = hive_object.__doc__ or ""
 
         for pin_name, info in io_info['inputs'].items():
             node.add_input(pin_name, info['data_type'], info['mode'])
