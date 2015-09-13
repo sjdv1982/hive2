@@ -28,11 +28,11 @@ Control flow: Generic node manager -> Blender node manager
     * Support hide/show - Infer if connected node is hidden, is folded. (If hide node, notify connections!)
     * Only cut visible connections
     * Allow view to populate this in main window? view->set_node_config->... (set options OR set actual form layout) -> More powerful system for config and other things?? window node "context"
-- [ ] Support modifier bees?
+- [x] Support modifier bees?
 
 * Node Finder
     - [x] Parse all hives (just check if inherits from HiveBuilder)
-    - [ ] Parse all bees (just check if inherits from Bee)
+    - [x] Parse all bees ~~(just check if inherits from Bee)~~
 
 * How to support meta-hives / declarators in GUI?
 * Use bees (hive.antenna, entry, hook, output) to define hive IO interface
@@ -53,7 +53,7 @@ Control flow: Generic node manager -> Blender node manager
   * If operator pressed, find connected nodes, remember and disconnect them.
   * Recreate node & attempt to recreate connections
 
-- [ ] Show/hide sockets and plugins?
+- [x] Hide ~~/ show~~ sockets and plugins?
 - [x] Unfold / fold input pull attributes?
 - [x] Metahives - avoid rebuilding entire hive!
 
