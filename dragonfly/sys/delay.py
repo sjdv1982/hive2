@@ -32,7 +32,7 @@ class _DelayCls:
 
     def on_elapsed(self):
         # Unregister and forget listener
-        self.remove_listener(self._listener)
+        self.remove_handler(self._listener)
         self._listener = None
 
         self._hive._on_elapsed()
