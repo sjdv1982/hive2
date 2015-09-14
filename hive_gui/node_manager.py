@@ -1,7 +1,7 @@
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory, HelperNodeFactory
 from .inspector import HiveNodeInspector, BeeNodeInspector
-from .history import History
+from .history import OperationHistory
 from .node import NodeTypes
 from .models import model
 from .utils import start_value_from_type, dict_to_parameter_array, \
@@ -31,7 +31,7 @@ class NodeManager(object):
 
     def __init__(self, gui_node_manager):
         self.gui_node_manager = gui_node_manager
-        self.history = History()
+        self.history = OperationHistory()
 
         self.bee_node_factory = BeeNodeFactory()
         self.hive_node_factory = HiveNodeFactory()

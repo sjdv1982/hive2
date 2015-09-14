@@ -99,35 +99,45 @@ def start_value_from_type(data_type):
 
 
 def get_builder_class_args(hive_cls):
-    # Get arg spec for first builder
+    """Find initialiser arguments for builder (bind) class
+
+    :param hive_cls: Hive class
+    """
     builder_args = OrderedDict()
 
+    # Find first builder class
     for builder, cls in hive_cls._builders:
         if cls is None:
             continue
 
-        # Get init func
-        init_func = cls.__init__
-        arg_types = getattr(init_func, "types", {})
-        arg_options = getattr(init_func, "options", {})
+        # Same arguments are provided to all bind classes
+        break
 
-        arg_spec = getargspec(init_func)
-        defaults = arg_spec.defaults if arg_spec.defaults else []
+    else:
+        return builder_args
 
-        # Ignore self
-        arg_names = arg_spec.args[1:]
+    # Get init func
+    init_func = cls.__init__
+    arg_types = getattr(init_func, "types", {})
+    arg_options = getattr(init_func, "options", {})
 
-        # Populate defaults
-        arg_defaults = {}
-        for arg_name, default_value in zip(reversed(arg_names), reversed(defaults)):
-            arg_defaults[arg_name] = default_value
+    arg_spec = getargspec(init_func)
+    defaults = arg_spec.defaults if arg_spec.defaults else []
 
-        # Construct argument pairs
-        for arg_name in arg_names:
-            arg_data = {'optional': arg_name in arg_defaults, 'default': arg_defaults.get(arg_name),
-                        'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name)}
+    # Ignore self
+    arg_names = arg_spec.args[1:]
 
-            builder_args[arg_name] = arg_data
+    # Populate defaults
+    arg_defaults = {}
+    for arg_name, default_value in zip(reversed(arg_names), reversed(defaults)):
+        arg_defaults[arg_name] = default_value
+
+    # Construct argument pairs
+    for arg_name in arg_names:
+        arg_data = {'optional': arg_name in arg_defaults, 'default': arg_defaults.get(arg_name),
+                    'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name)}
+
+        builder_args[arg_name] = arg_data
 
     return builder_args
 
@@ -174,7 +184,6 @@ def get_io_info(hive_object):
     return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 
-# TODO Memoize?
 def import_from_path(import_path):
     split_path = import_path.split(".")
     *module_parts, class_name = split_path
@@ -186,6 +195,11 @@ def import_from_path(import_path):
 
 
 def create_hive_object_instance(import_path, params):
+    """Import Hive class from import path, and instantiate it using parameter dictionary
+
+    :param import_path: path to import Hive class
+    :param params: parameter dictionary (meta_args, args and cls_args)
+    """
     try:
         hive_cls = import_from_path(import_path)
 
@@ -222,8 +236,13 @@ _wrapper_import_paths = _io_import_paths | _wraps_attribute_import_paths
 
 
 def hivemap_to_builder_body(hivemap, builder_name="builder"):
+    """Generate Hive builder from Hivemap
+
+    :param hivemap: Hivemap instance
+    :param builder_name: name of builder function
+    """
     bees = {}
-    imports = {"hive",}
+    imports = {"hive", }
 
     declaration_body = []
 

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 
-class History:
+class OperationHistory:
 
     def __init__(self):
         self._history = AtomicOperationHistory()
@@ -24,6 +24,7 @@ class History:
     @contextmanager
     def composite_operation(self, name):
         history = AtomicOperationHistory(name=name)
+
         self._history, old_history = history, self._history
         yield
         self._history = old_history

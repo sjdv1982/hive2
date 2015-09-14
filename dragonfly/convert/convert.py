@@ -41,16 +41,10 @@ def build_convert(i, ex, args, meta_args):
     # For casting (explicit conversion)
     if meta_args.conversion == "cast":
         to_base_type_name = meta_args.to_data_type[0]
+        value_cls = _type_map[to_base_type_name]
 
-        if to_base_type_name == "object":
-            def converter(self):
-                self._value_out = self._value_in
-
-        else:
-            value_cls = _type_map[to_base_type_name]
-
-            def converter(self):
-                self._value_out = value_cls(self._value_in)
+        def converter(self):
+            self._value_out = value_cls(self._value_in)
 
         i.do_conversion = hive.modifier(converter)
         hive.trigger(i.ppout, i.do_conversion, pretrigger=True)
