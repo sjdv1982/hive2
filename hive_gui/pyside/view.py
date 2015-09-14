@@ -745,11 +745,12 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
     def _execute_inspector(self, inspector):
         params = {"meta_args": {}, "args": {}, "cls_args": {}}
+        inspection_info = {"meta_args": {}, "args": {}, "cls_args": {}}
 
-        result = None
+        previous_values = None
         while True:
             try:
-                stage_name, stage_options = inspector.send(result)
+                stage_name, stage_options = inspector.send(previous_values)
 
             except StopIteration:
                 break
@@ -771,7 +772,11 @@ class NodeView(IGUINodeManager, QGraphicsView):
             if dialogue_result == QDialog.DialogCode.Rejected:
                 raise DynamicInputDialogue.DialogueCancelled("Menu cancelled")
 
-            params[stage_name] = result = dialogue.values
+            # Set result
+            params[stage_name] = previous_values = dialogue.values
+
+            # Save inspection stage
+            inspection_info[stage_name] = stage_options
 
         return params
 

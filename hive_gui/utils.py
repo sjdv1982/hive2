@@ -10,14 +10,17 @@ from hive.antenna import HiveAntenna
 from hive.output import HiveOutput
 
 from .models import model
+from .types import Vector, Colour
 
 from collections import OrderedDict
 from inspect import getargspec
 from functools import lru_cache
 from os import path
 
-_type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("dict", dict), ("list", list),
-                         ("set", set), ("tuple", tuple)))
+
+_type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("vector", Vector),
+                         ("colour", Colour), ("dict", dict), ("list", list), ("set", set), ("tuple", tuple)))
+_type_factories = {"vector": lambda: Vector(0.0, 0.0, 0.0), "colour": lambda: Colour(0.0, 0.0, 0.0)}
 
 
 def _eval_spyder_string(type_name, value):
@@ -88,6 +91,9 @@ def infer_type(value, allow_object=False):
 
 def start_value_from_type(data_type):
     base_type = data_type[0]
+
+    if base_type in _type_factories:
+        return _type_factories[base_type]()
 
     if base_type in _type_map:
         return _type_map[base_type]()
