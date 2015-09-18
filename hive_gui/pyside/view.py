@@ -160,6 +160,7 @@ class FloatingTextWidget(QGraphicsWidget):
 
         x_pos = center_position.x()
         y_pos = center_position.y()
+
         if self.anchor == "center":
             x_pos -= rect.width() / 2
             y_pos -= rect.height() / 2
@@ -445,6 +446,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         # Update preview
         self._preview_widget.update_preview()
+
+        self.gui_on_selected(None)
 
     def _socket_from_pin(self, pin):
         gui_node = self.node_to_qtnode[pin.node]
