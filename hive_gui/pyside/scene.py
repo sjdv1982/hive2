@@ -57,8 +57,6 @@ class NodeUiScene(QGraphicsScene):
         self.setBackgroundBrush(self._background_color)
         self.setStickyFocus(True)
 
-        self.focused_socket = None
-
     def helpEvent(self, event):
         items = self.items(event.scenePos())
         for item in items:

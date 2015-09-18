@@ -357,7 +357,7 @@ class Connection(QtGui.QGraphicsItem):
 
         if center_widget is not None:
             center = path.pointAtPercent(0.5)
-            center_widget.on_updated(center)
+            center_widget.on_updated(center, text=str(self.index))
 
         self._path = path
         self._rect = rect

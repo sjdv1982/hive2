@@ -156,13 +156,13 @@ class Socket(QtGui.QGraphicsItem):
         pass
 
     def hoverEnterEvent(self, event):
-        self.scene().focused_socket = self
+        self.parent_node_ui.view.on_socket_hover(self, event)
 
         for connection in self._connections:
             connection.on_socket_hover_enter()
 
     def hoverLeaveEvent(self, event):
-        self.scene().focused_socket = None
+        self.parent_node_ui.view.on_socket_hover(None)
 
         for connection in self._connections:
             connection.on_socket_hover_exit()

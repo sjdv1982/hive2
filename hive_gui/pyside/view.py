@@ -109,11 +109,13 @@ class DynamicInputDialogue(QDialog):
         self.values = {n: v() for n, v in self.value_getters.items()}
 
 
-class ConnectionWidget(QGraphicsWidget):
+class FloatingTextWidget(QGraphicsWidget):
 
-    def __init__(self, connection):
-        QGraphicsWidget.__init__(self, connection)
-        self._connection = connection
+    def __init__(self, parent=None, anchor="center"):
+        QGraphicsWidget.__init__(self, parent)
+
+        assert anchor in {"center", "corner"}
+        self.anchor = anchor
 
         self._label = QGraphicsSimpleTextItem(self)
         self._label.setBrush(QColor(255, 255, 255))
@@ -127,12 +129,6 @@ class ConnectionWidget(QGraphicsWidget):
         self._dropShadowEffect.setColor(QColor(0, 0, 0, 50))
 
         self._spacing_constant = 5.0
-
-        #pushButton = connection.scene().addWidget(QPushButton("Button"))
-
-        # layout = QGraphicsLinearLayout()
-        # layout.addItem(self._label)
-        # self.setLayout(layout)
 
     def update_layout(self):
         width = self._label.boundingRect().width()
@@ -156,14 +152,17 @@ class ConnectionWidget(QGraphicsWidget):
         # painter.setPen(self._pen)
         # painter.drawPath(self._path)
 
-    def on_updated(self, center_position):
-        index = self._connection.index
-        self._label.setText(str(index))
+    def on_updated(self, center_position, text):
+        self._label.setText(text)
         self.update_layout()
 
         rect = self.rect()
-        x_pos = center_position.x() - rect.width() / 2
-        y_pos = center_position.y() - rect.height() / 2
+
+        x_pos = center_position.x()
+        y_pos = center_position.y()
+        if self.anchor == "center":
+            x_pos -= rect.width() / 2
+            y_pos -= rect.height() / 2
 
         self.setPos(x_pos, y_pos)
 
@@ -343,6 +342,30 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self._moved_gui_nodes = set()
         self._position_busy = False
 
+        self.focused_socket = None
+        self.type_info_widget = None
+
+    def on_socket_hover(self, socket, event=None):
+        widget = self.type_info_widget
+        if widget is None:
+            # Type info
+            self.type_info_widget = widget = FloatingTextWidget(anchor="corner")
+            self.scene().addItem(widget)
+            widget.setVisible(False)
+
+        if event is not None:
+            cursor_pos = QCursor.pos()
+            origin = self.mapFromGlobal(cursor_pos)
+            scene_pos = self.mapToScene(origin)
+
+            widget.setVisible(True)
+            widget.on_updated(scene_pos, repr(socket.parent_socket_row.pin.data_type))
+
+        else:
+            widget.setVisible(False)
+
+        self.focused_socket = socket
+
     @property
     def is_untitled(self):
         return self.file_name is None
@@ -465,7 +488,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
         # Push connections have ordering
         if style_pin.mode == "push":
-            gui_connection._center_widget = widget = ConnectionWidget(gui_connection)
+            gui_connection._center_widget = widget = FloatingTextWidget(gui_connection)
             widget.setVisible(False)
 
         gui_connection.update_path()
@@ -632,7 +655,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             self.gui_reorder_connection(active_connection, index + 1)
 
-        focused_socket = self.scene().focused_socket
+        focused_socket = self.focused_socket
         if focused_socket is not None:
             focused_socket._on_plus_key()
 
@@ -644,7 +667,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
 
             self.gui_reorder_connection(active_connection, index - 1)
 
-        focused_socket = self.scene().focused_socket
+        focused_socket = self.focused_socket
         if focused_socket is not None:
             focused_socket._on_minus_key()
 
