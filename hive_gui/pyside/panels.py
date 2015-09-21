@@ -3,8 +3,6 @@ from functools import partial
 
 
 from .utils import create_widget
-from ..utils import infer_type
-from ..node import NodeTypes
 
 
 class ConfigurationPanel(QWidget):

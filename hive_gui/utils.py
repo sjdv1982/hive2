@@ -10,17 +10,24 @@ from hive.antenna import HiveAntenna
 from hive.output import HiveOutput
 
 from .models import model
-from .types import Vector, Colour
 
 from collections import OrderedDict
 from inspect import getargspec
 from functools import lru_cache
 from os import path
 
-
-_type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("vector", Vector),
-                         ("colour", Colour), ("dict", dict), ("list", list), ("set", set), ("tuple", tuple)))
-_type_factories = {"vector": lambda: Vector(0.0, 0.0, 0.0), "colour": lambda: Colour(0.0, 0.0, 0.0)}
+# Factories for types
+type_factories = {}
+type_factories["vector"] = lambda: (0.0, 0.0, 0.0)
+type_factories["colour"] = lambda: (0.0, 0.0, 0.0)
+type_factories["str"] = str
+type_factories["bool"] = bool
+type_factories["int"] = int
+type_factories["float"] = float
+type_factories["tuple"] = tuple
+type_factories["list"] = list
+type_factories["dict"] = dict
+type_factories["set"] = set
 
 
 def _eval_spyder_string(type_name, value):
@@ -75,28 +82,12 @@ def is_identifier(identifier):
     return True
 
 
-def infer_type(value, allow_object=False):
-    for type_name, cls in _type_map.items():
-        if isinstance(value, cls):
-            return (type_name,)
-
-    if not allow_object:
-        raise ValueError(value)
-
-    if value is None:
-        return ('object',)
-
-    return value.__class__.__name__
-
-
 def start_value_from_type(data_type):
+    """Attempt to return a unique "starting value" for a given data type"""
     base_type = data_type[0]
 
-    if base_type in _type_factories:
-        return _type_factories[base_type]()
-
-    if base_type in _type_map:
-        return _type_map[base_type]()
+    if base_type in type_factories:
+        return type_factories[base_type]()
 
     elif base_type == "object":
         return None
