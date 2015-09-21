@@ -8,6 +8,9 @@ from .utils import start_value_from_type, dict_to_parameter_array, \
     parameter_array_to_dict, is_identifier
 
 
+from traceback import format_exc
+
+
 def _get_unique_name(existing_names, base_name):
     """Find unique value of base name which may have a number appended to the end
 
@@ -436,7 +439,8 @@ class NodeManager(object):
                 node = self.create_bee(import_path, params)
 
             except Exception as err:
-                print("Unable to create node {}: {}".format(spyder_bee.identifier, err))
+                print("Unable to create node {}".format(spyder_bee.identifier))
+                print(format_exc())
                 continue
 
             node_to_spyder_node[node] = spyder_bee
@@ -455,7 +459,8 @@ class NodeManager(object):
                 node = self.create_hive(import_path, params)
 
             except Exception as err:
-                print("Unable to create node {}: {}".format(spyder_hive.identifier, err))
+                print("Unable to create node {}".format(spyder_hive.identifier))
+                print(format_exc())
                 continue
 
             node_to_spyder_node[node] = spyder_hive

@@ -412,7 +412,9 @@ class NodeView(IGUINodeManager, QGraphicsView):
             node_manager.load(data)
 
         except Exception as err:
-            print("Error during loading: {}".format(err))
+            print("Error during loading")
+            import traceback
+            print(traceback.format_exc())
             return
 
         self._docstring_widget.setPlainText(node_manager.docstring)

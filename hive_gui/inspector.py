@@ -100,10 +100,17 @@ class BeeNodeInspector:
         meta_args = yield ("meta_args", meta_arg_options)
 
         attribute_name = meta_args['attribute_name']
-        attribute_node = attributes[attribute_name]
 
-        # Find bound attribute and save data type to meta_args
-        meta_args['data_type'] = attribute_node.params['meta_args']['data_type']
+        try:
+            attribute_node = attributes[attribute_name]
+
+        except KeyError:
+            pass
+
+        else:
+            # TODO how can this better my supported so attributes can be renamed
+            # Find bound attribute and save data type to meta_args
+            meta_args['data_type'] = attribute_node.params['meta_args']['data_type']
 
     inspect_pull_out = inspect_pull_in
     inspect_push_out = inspect_pull_in

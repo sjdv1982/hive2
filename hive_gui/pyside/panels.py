@@ -3,8 +3,6 @@ from functools import partial
 
 
 from .utils import create_widget
-from ..utils import infer_type
-from ..node import NodeTypes
 
 
 class ConfigurationPanel(QWidget):
@@ -90,8 +88,14 @@ class ArgsPanel(QWidget):
             meta_arg_data = node.params_info["meta_args"]
 
             for name, value in meta_args.items():
+                try:
+                    inspector_option = meta_arg_data[name]
+
+                # This happens with hidden args passed to factory (currently only exists for meta args [hive.pull/push in/out])
+                except KeyError:
+                    continue
+
                 # Get data type
-                inspector_option = meta_arg_data[name]
                 data_type = inspector_option.data_type
 
                 widget, controller = create_widget(data_type)

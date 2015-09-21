@@ -6,8 +6,6 @@ from collections import OrderedDict
 from functools import partial
 from hive import types_match
 
-from ..utils import Colour, Vector
-
 
 INT_RANGE = -999, 999
 FLOAT_RANGE = -999.0, 999.0
@@ -146,8 +144,7 @@ def _create_vector():
             field.setValue(field_value)
 
     def getter():
-        data = tuple(layout.itemAt(i).widget().value() for i in range(3))
-        return Vector(*data)
+        return tuple(layout.itemAt(i).widget().value() for i in range(3))
 
     controller = WidgetController(getter, setter)
     return widget, controller
@@ -180,8 +177,7 @@ def _create_colour():
             field.setValue(field_value)
 
     def getter():
-        data = tuple(layout.itemAt(i).widget().value() for i in range(3))
-        return Colour(*data)
+        return tuple(layout.itemAt(i).widget().value() for i in range(3))
 
     controller = WidgetController(getter, setter)
     return widget, controller

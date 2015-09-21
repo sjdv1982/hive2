@@ -6,7 +6,7 @@ from collections import OrderedDict
 from hive.tuple_type import types_match
 
 
-class MimicFlags:
+class MimicFlags(object):
     NONE = 0
     COLOUR = 1
     SHAPE = 2
@@ -145,7 +145,6 @@ class IOPin(object):
 
         if self._count_proxies or not other_pin.is_proxy:
             self._connection_count += 1
-            print("CONN COUNT", self._connection_count, self.max_connections)
 
         # Mimic aesthetics
         self.mimic_other_pin(other_pin)
