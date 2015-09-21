@@ -84,14 +84,7 @@ class DynamicInputDialogue(QDialog):
         self.values = {}
 
     def add_widget(self, name, data_type=None, default=NoValue, options=None):
-        # HACKY XXX
-        is_code_field = name == "code"
-
-        widget, controller = create_widget(data_type, options, is_code_field)
-
-        # HACKY XXX
-        if is_code_field:
-            widget.setCurrentFont(QFont("Consolas"))
+        widget, controller = create_widget(data_type, options)
 
         if default is not self.__class__.NoValue:
             try:

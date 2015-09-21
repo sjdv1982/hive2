@@ -76,15 +76,15 @@ def is_identifier(identifier):
 
 
 def infer_type(value, allow_object=False):
-    for name, cls in _type_map.items():
+    for type_name, cls in _type_map.items():
         if isinstance(value, cls):
-            return name
+            return (type_name,)
 
     if not allow_object:
         raise ValueError(value)
 
     if value is None:
-        return 'object'
+        return ('object',)
 
     return value.__class__.__name__
 

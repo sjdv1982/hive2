@@ -47,22 +47,23 @@ class BeeNodeInspector:
         return no_inspector()
 
     def inspect_modifier(self):
-        yield ("args", [InspectorOption("code", "str", "")])
+        yield ("args", [InspectorOption("code", ("str", "code"), "")])
 
     def inspect_triggerfunc(self):
         return no_inspector()
 
     def inspect_attribute(self):
-        meta_args = yield ("meta_args", [InspectorOption("data_type", "tuple", ("int",))])
-        data_type = meta_args['data_type'][0] if meta_args['data_type'] else None
+        meta_args = yield ("meta_args", [InspectorOption("data_type", ("tuple",), ("int",))])
+        data_type = meta_args['data_type'] if meta_args['data_type'] else None
 
-        yield ("args", [InspectorOption("export", "bool", False), InspectorOption("start_value", data_type)])
+        yield ("args", [InspectorOption("export", ("bool",), False),
+                        InspectorOption("start_value", data_type)])
 
     def inspect_pull_in(self):
         attributes = {name: node for name, node in self._node_manager.nodes.items()
                       if node.import_path == "hive.attribute"}
 
-        meta_args = yield ("meta_args", [InspectorOption("attribute_name", "str", options=attributes.keys())])
+        meta_args = yield ("meta_args", [InspectorOption("attribute_name", ("str",), options=attributes.keys())])
 
         attribute_name = meta_args['attribute_name']
         attribute_node = attributes[attribute_name]
@@ -93,7 +94,7 @@ class HiveNodeInspector:
 
         for arg_name in wrapper:
             param = getattr(wrapper, arg_name)
-            data_type = param.data_type[0] if param.data_type else None
+            data_type = param.data_type if param.data_type else None
             options = param.options
 
             # If default is defined

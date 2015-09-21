@@ -42,6 +42,7 @@ def declare_expression(meta_args):
 
 
 def build_expression(i, ex, args, meta_args):
+    """Execute bound expression for provided inputs and output result"""
     ast_node = ast.parse(meta_args.expression, mode='eval')
 
     visitor = NodeVisitor()

@@ -62,6 +62,7 @@ class PullOut(PPOutBase):
         if target.mode != "pull":
             raise TypeError("Target {} is not configured for pull mode".format(target))
 
+        #print(target.data_type, self.data_type, target,self)
         if not types_match(target.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
 

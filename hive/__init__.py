@@ -1,5 +1,6 @@
 from .manager import get_building_hive, get_mode, get_run_hive
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
+from .tuple_type import types_match
 
 #i primitives
 from .triggerfunc import triggerfunc
