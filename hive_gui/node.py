@@ -185,13 +185,14 @@ class NodeTypes(object):
 
 class Node(object):
 
-    def __init__(self, name, node_type, import_path, params):
+    def __init__(self, name, node_type, import_path, params, params_info):
         """
         Container for GUI configuration of HiveObject instance
 
         :param name: unique node name
         :param import_path: path to find object representing node (may not exist for certain node types)
         :param params: parameter dictionary containing data about node
+        :param params_info: parameter dictionary containing data about params dict
         :return:
         """
         self.name = name
@@ -204,6 +205,7 @@ class Node(object):
         self._import_path = import_path
 
         self.params = params
+        self.params_info = params_info
 
         # Pin IO
         self.pin_order = []

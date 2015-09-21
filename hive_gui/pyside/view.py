@@ -181,7 +181,7 @@ class NodePreviewView(QGraphicsView):
             if isinstance(item, GUINode):
                 item.on_deleted()
 
-        hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {})
+        hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
 
         for node_name, node in sorted(self._node_manager.nodes.items()):
             # If an input IO bee
@@ -778,14 +778,14 @@ class NodeView(IGUINodeManager, QGraphicsView):
             dialogue.setAttribute(Qt.WA_DeleteOnClose)
             dialogue.setWindowTitle(stage_name.replace("_", " ").title())
 
-            for option in stage_options:
+            for name, option in stage_options.items():
                 # Get default
                 default = option.default
                 if default is InspectorOption.NoValue:
                     default = DynamicInputDialogue.NoValue
 
                 # Allow textarea
-                dialogue.add_widget(option.name, option.data_type, default, option.options)
+                dialogue.add_widget(name, option.data_type, default, option.options)
 
             dialogue_result = dialogue.exec_()
             if dialogue_result == QDialog.DialogCode.Rejected:

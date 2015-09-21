@@ -98,7 +98,8 @@ class NodeManager(object):
             params = {}
 
         name = self._unique_name_from_import_path(import_path)
-        node = self.hive_node_factory.new(name, import_path, params)
+        param_info = self.hive_node_inspector.inspect_configured(import_path, params)
+        node = self.hive_node_factory.new(name, import_path, params, param_info)
 
         self._add_node(node)
         return node
@@ -108,7 +109,8 @@ class NodeManager(object):
             params = {}
 
         name = self._unique_name_from_import_path(import_path)
-        node = self.bee_node_factory.new(name, import_path, params)
+        param_info = self.bee_node_inspector.inspect_configured(import_path, params)
+        node = self.bee_node_factory.new(name, import_path, params, param_info)
 
         self._add_node(node)
         return node
@@ -117,8 +119,11 @@ class NodeManager(object):
         if params is None:
             params = {}
 
+        raise NotImplementedError
+
         name = self._unique_name_from_import_path(import_path)
-        node = self.helper_node_factory.new(name, import_path, params)
+        param_info = self.helper_node_inspector.inspect_configured(import_path, params)
+        node = self.helper_node_factory.new(name, import_path, params, param_info)
 
         self._add_node(node)
         return node

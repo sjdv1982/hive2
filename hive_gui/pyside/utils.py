@@ -202,7 +202,7 @@ def _create_repr():
 
 def _create_options(options):
     widget = QComboBox()
-    1111111111111
+
     for i, option in enumerate(options):
         widget.insertItem(i, str(option), option)
 
@@ -224,11 +224,16 @@ _factories = OrderedDict((
     (("colour",), _create_colour)
     ))
 
+
 def create_widget(data_type=None, options=None):
     if options is not None:
         return _create_options(options)
 
     for factory_type, factory in _factories.items():
+        # Don't match str types with (str, code)!
+        if len(data_type) < len(factory_type):
+            continue
+
         if types_match(factory_type, data_type, allow_none=False):
             return factory()
 

@@ -87,8 +87,13 @@ class ArgsPanel(QWidget):
         # Meta Args
         meta_args = node.params.get('meta_args')
         if meta_args:
+            meta_arg_data = node.params_info["meta_args"]
+
             for name, value in meta_args.items():
-                data_type = infer_type(value, allow_object=True)
+                # Get data type
+                inspector_option = meta_arg_data[name]
+                data_type = inspector_option.data_type
+
                 widget, controller = create_widget(data_type)
                 widget.setEnabled(False)
                 controller.value = repr(value)
@@ -105,8 +110,11 @@ class ArgsPanel(QWidget):
                 line.setFrameShadow(QFrame.Sunken)
                 layout.addRow(line)
 
+            arg_data = node.params_info["args"]
             for name, value in args.items():
-                data_type = infer_type(value, allow_object=True)
+                # Get data type
+                inspector_option = arg_data[name]
+                data_type = inspector_option.data_type
 
                 widget, controller = create_widget(data_type)
                 widget.controller = controller
@@ -129,8 +137,11 @@ class ArgsPanel(QWidget):
                 line.setFrameShadow(QFrame.Sunken)
                 layout.addRow(line)
 
+            cls_arg_data = node.params_info["cls_args"]
             for name, value in cls_args.items():
-                data_type = infer_type(value, allow_object=True)
+                # Get data type
+                inspector_option = cls_arg_data[name]
+                data_type = inspector_option.data_type
 
                 widget, controller = create_widget(data_type)
                 widget.controller = controller

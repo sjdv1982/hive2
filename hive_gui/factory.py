@@ -8,7 +8,7 @@ class BeeNodeFactory:
     Bees cannot be inspected like Hives because they are the GUI primitives
     """
 
-    def new(self, name, import_path, params):
+    def new(self, name, import_path, params, param_info):
         """Create new Bee node with given name, import path and params dict
 
         :param name: name of node
@@ -19,44 +19,37 @@ class BeeNodeFactory:
         assert root == "hive"
 
         builder = getattr(self, "build_{}".format(bee_name))
-        return builder(name, import_path, params)
+        node = Node(name, NodeTypes.BEE, import_path, params, param_info)
 
-    def build_antenna(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
+        return builder(node)
 
+    def build_antenna(self, node):
         node.add_output("antenna", None, "any", max_connections=1, restricted_types=[("trigger",)],
                         mimic_flags=MimicFlags.COLOUR, is_proxy=True, count_proxies=True)
 
         return node
 
-    def build_output(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-
+    def build_output(self, node):
         node.add_input("output", None, "any", max_connections=1, restricted_types=[("trigger",)],
                        mimic_flags=MimicFlags.COLOUR, is_proxy=True, count_proxies=True)
 
         return node
 
-    def build_entry(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-
+    def build_entry(self, node):
         node.add_output("output", ("trigger",), "push", max_connections=1, is_proxy=True, count_proxies=True)
 
         return node
 
-    def build_hook(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-
+    def build_hook(self, node):
         node.add_input("output", ("trigger",), "push", max_connections=1, is_proxy=True, count_proxies=True)
 
         return node
 
-    def build_attribute(self, name, import_path, params):
-        return Node(name, NodeTypes.BEE, import_path, params)
+    def build_attribute(self, node):
+        return node
 
-    def build_pull_in(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-        data_type = params['meta_args']['data_type']
+    def build_pull_in(self, node):
+        data_type = node.params['meta_args']['data_type']
 
         node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
@@ -66,9 +59,8 @@ class BeeNodeFactory:
 
         return node
 
-    def build_pull_out(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-        data_type = params['meta_args']['data_type']
+    def build_pull_out(self, node):
+        data_type = node.params['meta_args']['data_type']
 
         node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
 
@@ -77,9 +69,8 @@ class BeeNodeFactory:
 
         return node
 
-    def build_push_in(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-        data_type = params['meta_args']['data_type']
+    def build_push_in(self, node):
+        data_type = node.params['meta_args']['data_type']
 
         node.add_input("value", data_type, "push", restricted_types=[("trigger",)])
 
@@ -88,9 +79,8 @@ class BeeNodeFactory:
 
         return node
 
-    def build_push_out(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-        data_type = params['meta_args']['data_type']
+    def build_push_out(self, node):
+        data_type = node.params['meta_args']['data_type']
 
         node.add_output("value", data_type, "push", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
@@ -100,17 +90,13 @@ class BeeNodeFactory:
 
         return node
 
-    def build_triggerfunc(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-
+    def build_triggerfunc(self, node):
         node.add_output("trigger", ("trigger",), "push")
         node.add_output("pre_trigger", ("trigger",), "push", is_proxy=True)
 
         return node
 
-    def build_modifier(self, name, import_path, params):
-        node = Node(name, NodeTypes.BEE, import_path, params)
-
+    def build_modifier(self, node):
         node.add_input("trigger", ("trigger",), "push")
 
         return node
@@ -119,7 +105,7 @@ class BeeNodeFactory:
 class HiveNodeFactory:
     """Create HIve nodes from import paths"""
     @staticmethod
-    def new(name, import_path, params):
+    def new(name, import_path, params, param_info):
         hive_object = create_hive_object_instance(import_path, params)
         io_info = get_io_info(hive_object)
 
@@ -128,7 +114,7 @@ class HiveNodeFactory:
         # Aren't mirrored to the args wrappers on this hive_object
         # Use the params dict instead of re-scraping the hive_object if reading these values
 
-        node = Node(name, NodeTypes.HIVE, import_path, params)
+        node = Node(name, NodeTypes.HIVE, import_path, params, param_info)
         node.tooltip = hive_object.__doc__ or ""
 
         for pin_name, info in io_info['inputs'].items():
@@ -153,11 +139,11 @@ A trigger_{} helper enables nodes to hook into trigger and pretrigger events fro
 This helper has no build or runtime presence, only the connections to its trigger pins, implemented as triggers
 """
 
-    def new(self, name, import_path, params):
+    def new(self, name, import_path, params, param_info):
         root, helper_name = import_path.split(".")
         builder = getattr(self, "build_{}".format(helper_name))
 
-        return builder(name, import_path, params)
+        return builder(name, import_path, params, param_info)
     #
     # def build_trigger_out(self, name, import_path, params):
     #     node = Node(name, NodeTypes.HELPER, import_path, params)

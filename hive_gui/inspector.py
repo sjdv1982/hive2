@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from .utils import import_from_path, get_builder_class_args
 
 
@@ -8,8 +10,7 @@ class InspectorOption:
         """Unique object used to indicate no value"""
         pass
 
-    def __init__(self, name, data_type=None, default=NoValue, options=None):
-        self.name = name
+    def __init__(self, data_type=None, default=NoValue, options=None):
         self.data_type = data_type
         self.default = default
         self.options = options
@@ -34,6 +35,24 @@ class BeeNodeInspector:
         inspector = getattr(self, "inspect_{}".format(bee_name))
         return inspector()
 
+    def inspect_configured(self, import_path, params):
+        inspector = self.inspect(import_path)
+        param_info = {}
+
+        # Find first stage values
+        previous_values = None
+        while True:
+            try:
+                stage_name, stage_options = inspector.send(previous_values)
+
+            except StopIteration:
+                break
+
+            param_info[stage_name] = stage_options
+            previous_values = params[stage_name]
+
+        return param_info
+
     def inspect_antenna(self):
         return no_inspector()
 
@@ -47,23 +66,38 @@ class BeeNodeInspector:
         return no_inspector()
 
     def inspect_modifier(self):
-        yield ("args", [InspectorOption("code", ("str", "code"), "")])
+        args_options = OrderedDict()
+        args_options["code"] = InspectorOption(("str", "code"), "")
+        yield ("args", args_options)
 
     def inspect_triggerfunc(self):
         return no_inspector()
 
     def inspect_attribute(self):
-        meta_args = yield ("meta_args", [InspectorOption("data_type", ("tuple",), ("int",))])
-        data_type = meta_args['data_type'] if meta_args['data_type'] else None
+        # Configure meta args
+        meta_arg_options = OrderedDict()
+        meta_arg_options["data_type"] = InspectorOption(("tuple",), ("int",))
+        meta_args = yield ("meta_args", meta_arg_options)
 
-        yield ("args", [InspectorOption("export", ("bool",), False),
-                        InspectorOption("start_value", data_type)])
+        data_type = meta_args['data_type']
+        if not data_type:
+            data_type = None
+
+        # Configure ARGS
+        arg_options = OrderedDict()
+        arg_options["export"] = InspectorOption(("bool",), False)
+        arg_options["start_value"] = InspectorOption(data_type)
+
+        yield ("args", arg_options)
 
     def inspect_pull_in(self):
         attributes = {name: node for name, node in self._node_manager.nodes.items()
                       if node.import_path == "hive.attribute"}
 
-        meta_args = yield ("meta_args", [InspectorOption("attribute_name", ("str",), options=attributes.keys())])
+        # Configure meta args
+        meta_arg_options = OrderedDict()
+        meta_arg_options["attribute_name"] = InspectorOption(("str",), options=set(attributes))
+        meta_args = yield ("meta_args", meta_arg_options)
 
         attribute_name = meta_args['attribute_name']
         attribute_node = attributes[attribute_name]
@@ -85,12 +119,30 @@ class HiveNodeInspector:
         """
         return self._inspect_generator(import_path)
 
+    def inspect_configured(self, import_path, params):
+        inspector = self.inspect(import_path)
+        param_info = {}
+
+        # Find first stage values
+        previous_values = None
+        while True:
+            try:
+                stage_name, stage_options = inspector.send(previous_values)
+
+            except StopIteration:
+                break
+
+            param_info[stage_name] = stage_options
+            previous_values = params[stage_name]
+
+        return param_info
+
     def _scrape_wrapper(self, wrapper):
         """Scrape parameters from a HiveArgs wrapper
 
         :param wrapper: HiveArgs wrapper instance
         """
-        wrapper_options = []
+        wrapper_options = OrderedDict()
 
         for arg_name in wrapper:
             param = getattr(wrapper, arg_name)
@@ -100,9 +152,12 @@ class HiveNodeInspector:
             # If default is defined
             default = param.start_value
             if default is param.NoValue:
-                default = InspectorOption.NoValue
+                option = InspectorOption(data_type, options=options)
 
-            wrapper_options.append(InspectorOption(arg_name, data_type, default, options))
+            else:
+                option = InspectorOption(data_type, default, options)
+
+            wrapper_options[arg_name] = option
 
         return wrapper_options
 
@@ -116,6 +171,8 @@ class HiveNodeInspector:
         meta_args_wrapper = hive_cls._hive_meta_args
         if meta_args_wrapper:
             meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
+
+            # Create HiveObject class
             _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
 
         else:
@@ -127,6 +184,9 @@ class HiveNodeInspector:
 
         builder_args = get_builder_class_args(hive_cls)
         if builder_args:
-            options = [InspectorOption(name=name, default=data['default'], data_type=data['data_type'],
-                                       options=data['options']) for name, data in builder_args.items()]
+            # Convert options into InspectorOptions
+            options = OrderedDict()
+            for name, data in builder_args.items():
+                options[name] = InspectorOption(data["data_type"], data["default"], data["options"])
+
             yield ("cls_args", options)

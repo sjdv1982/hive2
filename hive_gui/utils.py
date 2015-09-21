@@ -524,7 +524,7 @@ def class_from_filepath(filepath):
 
     :param filepath: path to hivemap
     """
-    name = path.splitext(path.basename(filepath))
+    name = path.splitext(path.basename(filepath))[0]
 
     with open(filepath, "r") as f:
         hivemap = model.Hivemap(f.read())
