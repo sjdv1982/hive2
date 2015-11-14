@@ -25,23 +25,23 @@ class BeeNodeFactory:
 
     def build_antenna(self, node):
         node.add_output("antenna", None, "any", max_connections=1, restricted_types=[("trigger",)],
-                        mimic_flags=MimicFlags.COLOUR, is_proxy=True, count_proxies=True)
+                        mimic_flags=MimicFlags.COLOUR, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_output(self, node):
         node.add_input("output", None, "any", max_connections=1, restricted_types=[("trigger",)],
-                       mimic_flags=MimicFlags.COLOUR, is_proxy=True, count_proxies=True)
+                       mimic_flags=MimicFlags.COLOUR, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_entry(self, node):
-        node.add_output("output", ("trigger",), "push", max_connections=1, is_proxy=True, count_proxies=True)
+        node.add_output("output", ("trigger",), "push", max_connections=1, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_hook(self, node):
-        node.add_input("output", ("trigger",), "push", max_connections=1, is_proxy=True, count_proxies=True)
+        node.add_input("output", ("trigger",), "push", max_connections=1, is_virtual=True, count_proxies=True)
 
         return node
 
@@ -54,7 +54,7 @@ class BeeNodeFactory:
         node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
-        node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
+        node.add_output("pre_update", ("trigger",), "push", is_virtual=True)
         node.add_output("post_update", ("trigger",), "push")
 
         return node
@@ -64,7 +64,7 @@ class BeeNodeFactory:
 
         node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
 
-        node.add_output("pre_output", ("trigger",), "push", is_proxy=True)
+        node.add_output("pre_output", ("trigger"), "push", is_virtual=True)
         node.add_output("post_output", ("trigger",), "push")
 
         return node
@@ -74,7 +74,7 @@ class BeeNodeFactory:
 
         node.add_input("value", data_type, "push", restricted_types=[("trigger",)])
 
-        node.add_output("pre_update", ("trigger",), "push", is_proxy=True)
+        node.add_output("pre_update", ("trigger",), "push", is_virtual=True)
         node.add_output("post_update", ("trigger",), "push")
 
         return node
@@ -85,14 +85,14 @@ class BeeNodeFactory:
         node.add_output("value", data_type, "push", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
-        node.add_output("pre_output", ("trigger",), "push", is_proxy=True)
+        node.add_output("pre_output", ("trigger",), "push", is_virtual=True)
         node.add_output("post_output", ("trigger",), "push")
 
         return node
 
     def build_triggerfunc(self, node):
         node.add_output("trigger", ("trigger",), "push")
-        node.add_output("pre_trigger", ("trigger",), "push", is_proxy=True)
+        node.add_output("pre_trigger", ("trigger",), "push", is_virtual=True)
 
         return node
 
@@ -149,10 +149,10 @@ This helper has no build or runtime presence, only the connections to its trigge
     #     node = Node(name, NodeTypes.HELPER, import_path, params)
     #     node.tooltip = self._trigger_tooltip.format("out")
     #
-    #     node.add_output("pretrigger", ("trigger",), "push", is_proxy=True)
+    #     node.add_output("pretrigger", ("trigger",), "push", is_virtual=True)
     #     node.add_input("pin", data_type=None, mode="any", mimic_flags=MimicFlags.COLOUR | MimicFlags.SHAPE,
-    #                    max_connections=1, is_proxy=True, count_proxies=True)
-    #     node.add_output("trigger", ("trigger",), "push", is_proxy=True)
+    #                    max_connections=1, is_virtual=True, count_proxies=True)
+    #     node.add_output("trigger", ("trigger",), "push", is_virtual=True)
     #
     #     return node
     #
@@ -160,9 +160,9 @@ This helper has no build or runtime presence, only the connections to its trigge
     #     node = Node(name, NodeTypes.HELPER, import_path, params)
     #     node.tooltip = self._trigger_tooltip.format("in")
     #
-    #     node.add_output("pretrigger", ("trigger",), "push", is_proxy=True)
+    #     node.add_output("pretrigger", ("trigger",), "push", is_virtual=True)
     #     node.add_output("pin", data_type=None, mode="any", mimic_flags=MimicFlags.COLOUR | MimicFlags.SHAPE,
-    #                     max_connections=1, is_proxy=True, count_proxies=True)
-    #     node.add_output("trigger", ("trigger",), "push", is_proxy=True)
+    #                     max_connections=1, is_virtual=True, count_proxies=True)
+    #     node.add_output("trigger", ("trigger",), "push", is_virtual=True)
     #
     #     return node

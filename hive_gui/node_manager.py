@@ -4,8 +4,7 @@ from .inspector import HiveNodeInspector, BeeNodeInspector
 from .history import OperationHistory
 from .node import NodeTypes
 from .models import model
-from .utils import start_value_from_type, dict_to_parameter_array, \
-    parameter_array_to_dict, is_identifier
+from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier
 
 
 from traceback import format_exc
@@ -214,7 +213,7 @@ class NodeManager(object):
 
     def can_fold_pin(self, pin):
         # Only hives support folding
-        if pin.is_proxy:
+        if pin.is_virtual:
             return False
 
         if pin.is_folded:
@@ -261,7 +260,6 @@ class NodeManager(object):
             self.create_connection(target_pin, pin)
 
         pin.is_folded = True
-        print("FOLDED", pin.name, pin.node)
 
         self.gui_node_manager.fold_pin(pin)
         self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
@@ -271,7 +269,6 @@ class NodeManager(object):
         assert pin.connections
 
         pin.is_folded = False
-        print("UNFOLDED", pin.name, pin.node)
 
         self.gui_node_manager.unfold_pin(pin)
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))

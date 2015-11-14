@@ -1,5 +1,5 @@
-from PySide.QtGui import *
-from PySide.QtCore import *
+from .qt_gui import *
+from .qt_core import *
 
 
 from collections import OrderedDict

@@ -49,7 +49,7 @@ class Connection:
                 return ConnectionType.INVALID
 
         # Can't connect two proxy pins together (don't support connect interface)
-        if source.is_proxy and target.is_proxy:
+        if source.is_virtual and target.is_virtual:
             return ConnectionType.INVALID
 
         # Output pin triggers input BY push

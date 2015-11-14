@@ -2,20 +2,20 @@
 import sys
 import os
 
-from PySide.QtGui import *
-from PySide.QtWebKit import *
+from hive_gui.qt.qt_gui import *
+from hive_gui.qt.qt_webkit import *
 
-import hive_gui.pyside as pyside_gui
-import hive_gui.pyside.qdarkstyle as qdarkstyle
+import hive_gui.qt as pyside_gui
+import hive_gui.qt.qdarkstyle as qdarkstyle
 
-from hive_gui.pyside.main_window import MainWindow
+from hive_gui.qt.main_window import MainWindow
 from hive_gui.finder import get_hives
 
 import dragonfly
 
 # Create a Qt application
 app = QApplication(sys.argv)
-app.setStyleSheet(qdarkstyle.load_stylesheet())
+app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
 
 hives = get_hives(dragonfly)
 

@@ -1,4 +1,4 @@
-from PySide.QtGui import *
+from QT.QtGui import *
 
 
 class NodeCanvas(QWidget):

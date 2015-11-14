@@ -1,8 +1,9 @@
-
 import weakref
-from PySide import QtCore, QtGui
 
+from .qt_gui import *
+from .qt_core import *
 from .socket import Socket
+
 from math import *
 from operator import sub
 
@@ -41,31 +42,31 @@ def interpolate_tangents(t1, t2):
     r = 0.5 * r
     r = min(r, 100)
     x, y = polar_to_cartesian(r, theta)
-    return QtCore.QPointF(x, y)
+    return QPointF(x, y)
 
 
-class Connection(QtGui.QGraphicsItem):
+class Connection(QGraphicsItem):
     _start_socket = None
     _end_socket = None
 
     def __init__(self, start_socket, end_socket=None, id_=None, style="solid", curve=True):
-        QtGui.QGraphicsItem.__init__(self, None, start_socket.scene())
+        QGraphicsItem.__init__(self, None, start_socket.scene())
 
         if id_ is None:
             id_ = id(self)
         self.id = id_
 
-        self._rect = QtCore.QRectF(0, 0, 0, 0)
+        self._rect = QRectF(0, 0, 0, 0)
 
         self._is_temp_connection = False
 
-        self._path = QtGui.QPainterPath()
+        self._path = QPainterPath()
 
         self._active_style = style
         self._curve = curve
 
         self._color = start_socket.colorRef()
-        self._pen = QtGui.QPen(self._color)
+        self._pen = QPen(self._color)
         self.set_start_socket(start_socket)
 
         self._key_points = []
@@ -77,7 +78,7 @@ class Connection(QtGui.QGraphicsItem):
             #  the "input" and shape/style parameters have no effect
             end_mode = "output" if start_socket.is_input else "input"
             end_socket = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, parent_item=self)
-            end_socket.boundingRect().setSize(QtCore.QSizeF(2.0, 2.0))
+            end_socket.boundingRect().setSize(QSizeF(2.0, 2.0))
             self._is_temp_connection = True
 
         self.set_end_socket(end_socket)
@@ -112,7 +113,7 @@ class Connection(QtGui.QGraphicsItem):
     def set_key_points(self, interpoints):
         s = self.scenePos()
         sx, sy = s.x(), s.y()
-        self._key_points = [QtCore.QPointF(x - sx, -y - sy) for x, y in interpoints]
+        self._key_points = [QPointF(x - sx, -y - sy) for x, y in interpoints]
 
     def insert_key_point(self, index, coordinate):
         if index is None:
@@ -164,14 +165,14 @@ class Connection(QtGui.QGraphicsItem):
             previous_point = None
             for i in range(element_count):
                 element = simplified_path.elementAt(i)
-                point = QtCore.QPointF(element.x, element.y)
+                point = QPointF(element.x, element.y)
 
                 if previous_point is not None:
-                    to_position = QtGui.QVector2D(position - previous_point)
-                    to_end = QtGui.QVector2D(point - previous_point)
+                    to_position = QVector2D(position - previous_point)
+                    to_end = QVector2D(point - previous_point)
 
                     to_end_length = to_end.length()
-                    projection = QtGui.QVector2D.dotProduct(to_position, to_end) / to_end_length
+                    projection = QVector2D.dotProduct(to_position, to_end) / to_end_length
 
                     # Projected point lies within this segment
                     if 0 <= projection <= to_end_length:
@@ -203,12 +204,12 @@ class Connection(QtGui.QGraphicsItem):
             for i in range(element_count):
                 element = simplified_path.elementAt(i)
 
-                point = QtCore.QPointF(element.x, element.y)
+                point = QPointF(element.x, element.y)
                 if previous_point is not None:
-                    segment = QtCore.QLineF(previous_point, point)
+                    segment = QLineF(previous_point, point)
                     intersect_type, intersect_point = segment.intersect(line)
 
-                    if intersect_type == QtCore.QLineF.BoundedIntersection:
+                    if intersect_type == QLineF.BoundedIntersection:
                         return True
 
                 previous_point = point
@@ -224,13 +225,13 @@ class Connection(QtGui.QGraphicsItem):
         value = self._active_style
 
         if value == "dashed":
-            self._pen.setStyle(QtCore.Qt.DashLine)
+            self._pen.setStyle(Qt.DashLine)
 
         elif value == "solid":
-            self._pen.setStyle(QtCore.Qt.SolidLine)
+            self._pen.setStyle(Qt.SolidLine)
 
         elif value == "dot":
-            self._pen.setStyle(QtCore.Qt.DotLine)
+            self._pen.setStyle(Qt.DotLine)
 
         else:
             raise ValueError("Unknown pen style '%s'" % value)
@@ -264,10 +265,10 @@ class Connection(QtGui.QGraphicsItem):
 
     def set_color(self, color):
         if isinstance(color, tuple):
-            color = QtGui.QColor(*color)
+            color = QColor(*color)
 
         else:
-            color = QtGui.QColor(color)
+            color = QColor(color)
 
         self._color = color
 
@@ -297,7 +298,7 @@ class Connection(QtGui.QGraphicsItem):
     def find_closest_socket(self):
         closest_socket = None
 
-        colliding_items = self.end_socket.collidingItems(QtCore.Qt.IntersectsItemBoundingRect)
+        colliding_items = self.end_socket.collidingItems(Qt.IntersectsItemBoundingRect)
 
         for colliding_item in colliding_items:
             if isinstance(colliding_item, Socket):
@@ -338,15 +339,15 @@ class Connection(QtGui.QGraphicsItem):
             tx = tangent_length * cos(dev)
             ty = tangent_length * sin(dev)
 
-            start_tangent = QtCore.QPointF(tx, ty)
-            end_tangent = QtCore.QPointF(end_pos.x() - tangent_length2, end_pos.y())
+            start_tangent = QPointF(tx, ty)
+            end_tangent = QPointF(end_pos.x() - tangent_length2, end_pos.y())
 
-            path = QtGui.QPainterPath()
+            path = QPainterPath()
             path.cubicTo(start_tangent, end_tangent, end_pos)
 
         # Dot styles are used for relationships
         else:
-            path = QtGui.QPainterPath()
+            path = QPainterPath()
             path.lineTo(end_pos)
 
         stroke_width = self._pen.widthF()

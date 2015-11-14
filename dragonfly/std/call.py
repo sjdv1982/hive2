@@ -11,6 +11,7 @@ def modifier(self):
 
 
 def build_call(i, ex, args, meta_args):
+    """Call callable object with provided inputs and output result"""
     i.callable = hive.attribute(("object", "callable"))
     i.pull_callable = hive.pull_in(i.callable)
     ex.callable = hive.antenna(i.pull_callable)

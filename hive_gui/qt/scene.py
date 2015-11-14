@@ -35,8 +35,8 @@
 from __future__ import print_function, absolute_import
 
 import weakref
-from PySide.QtGui import *
-from PySide.QtCore import *
+from .qt_gui import *
+from .qt_core import *
 
 
 class NodeUiScene(QGraphicsScene):

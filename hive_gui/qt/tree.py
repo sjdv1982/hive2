@@ -1,19 +1,19 @@
 from __future__ import print_function, absolute_import
 
-from PySide import QtGui, QtCore
-from PySide.QtGui import QTreeWidgetItem
+from .qt_core import *
+from .qt_gui import *
 
 
-class TreeWidget(QtGui.QTreeWidget):
+class TreeWidget(QTreeWidget):
 
     def __init__(self, parent=None, on_selected=None):
-        QtGui.QTreeWidget.__init__(self, parent)
+        QTreeWidget.__init__(self, parent)
         self.setColumnCount(1)
 
         self._keys = []
         self.all_items = {}
         self._widget_id_to_key = {}
-        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.itemPressed.connect(self._on_item_pressed)
         self.setDragEnabled(True)
         self.on_selected = on_selected

@@ -1,6 +1,6 @@
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+from .qt_core import *
+from .qt_gui import *
 
 from .view import NodeView
 
@@ -283,7 +283,7 @@ class Node(QGraphicsWidget):
         pass
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
+        if change == QGraphicsItem.ItemPositionHasChanged:
             for socket_row in self._socket_rows.values():
                 socket_row.socket.update_connection_positions()
 

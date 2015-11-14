@@ -21,7 +21,7 @@ def declare_define(meta_args):
 # Call node - output generator OR result
 
 def build_define(i, ex, args, meta_args):
-    """Execute bound expression for provided inputs and output result"""
+    """Define callable object from expression"""
     # Check body is valid
     ast_node = ast.parse(meta_args.definition, mode='exec')
 

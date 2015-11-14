@@ -36,19 +36,20 @@ from __future__ import print_function, absolute_import
 
 import copy
 import weakref
-from PySide import QtGui, QtCore
+from .qt_gui import *
+from .qt_core import *
 
 from ..sockets import SocketTypes
 from ..node_manager import NodeConnectionError
 
 
-class Socket(QtGui.QGraphicsItem):
+class Socket(QGraphicsItem):
 
     def __init__(self, socket_row, mode, shape, parent_item=None, hover_text=None, order_dependent=False):
         if parent_item is None:  # parentItem is used by builtinUis.ContainedAttributeUiProxy
             parent_item = socket_row
 
-        QtGui.QGraphicsItem.__init__(self, parent_item)
+        QGraphicsItem.__init__(self, parent_item)
 
         self._parent_node_ui = weakref.ref(socket_row.parent_node_ui)
         self._parent_socket_row = weakref.ref(socket_row)
@@ -59,17 +60,17 @@ class Socket(QtGui.QGraphicsItem):
         assert shape in (SocketTypes.circle, SocketTypes.square), shape
         self._shape = shape
 
-        self._rect = QtCore.QRectF(0, 0, 12, 12)
-        self._color = QtGui.QColor(200, 200, 200)
-        self._brush = QtGui.QBrush(self.color())
-        self._pen = QtGui.QPen(QtCore.Qt.NoPen)
+        self._rect = QRectF(0, 0, 12, 12)
+        self._color = QColor(200, 200, 200)
+        self._brush = QBrush(self.color())
+        self._pen = QPen(Qt.NoPen)
 
         self._hover_text = hover_text
         self._is_order_dependent = order_dependent
 
         self.mixed_color = False
 
-        self.setFlag(QtGui.QGraphicsItem.ItemSendsScenePositionChanges, True)
+        self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
 
         self._pen.setWidthF(1.0)
 
@@ -100,15 +101,15 @@ class Socket(QtGui.QGraphicsItem):
 
     @property
     def border_enabled(self):
-        return self._pen.getStyle() == QtCore.Qt.SolidLine
+        return self._pen.getStyle() == Qt.SolidLine
 
     @border_enabled.setter
     def border_enabled(self, value):
         if value:
-            self._pen.setStyle(QtCore.Qt.SolidLine)
+            self._pen.setStyle(Qt.SolidLine)
 
         else:
-            self._pen.setStyle(QtCore.Qt.NoPen)
+            self._pen.setStyle(Qt.NoPen)
 
     def add_connection(self, connection):
         self._connections.append(connection)
@@ -181,7 +182,7 @@ class Socket(QtGui.QGraphicsItem):
         self._shape = shape
 
     def set_colour(self, colour):
-        self.setColor(QtGui.QColor(*colour))
+        self.setColor(QColor(*colour))
 
     def setColor(self, color):
         self._color.setRgb(color.red(), color.green(), color.blue())
@@ -189,7 +190,7 @@ class Socket(QtGui.QGraphicsItem):
         self._pen.setColor(self._color.darker(150))
 
     def color(self):
-        return QtGui.QColor(self._color)
+        return QColor(self._color)
 
     def setColorRef(self, color):
         self._color = color
@@ -198,7 +199,7 @@ class Socket(QtGui.QGraphicsItem):
         return self._color
 
     def mousePressEvent(self, event):
-        # QtGui.QGraphicsItem.mousePressEvent(self, event)
+        # QGraphicsItem.mousePressEvent(self, event)
 
         from .connection import Connection
 
@@ -218,7 +219,7 @@ class Socket(QtGui.QGraphicsItem):
             connection.set_active(False)
             connection.update_end_pos()
 
-        # QtGui.QGraphicsItem.mouseMoveEvent(self, event)
+        # QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if self.is_output:
@@ -239,10 +240,10 @@ class Socket(QtGui.QGraphicsItem):
                 except NodeConnectionError:
                     pass
 
-        # QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
+        # QGraphicsItem.mouseReleaseEvent(self, event)
 
     def setVisible(self, flag):
-        QtGui.QGraphicsItem.setVisible(self, flag)
+        QGraphicsItem.setVisible(self, flag)
 
         for connection in self._connections:
             connection.update_visibility()

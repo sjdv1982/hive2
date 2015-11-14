@@ -31,6 +31,9 @@ Control flow: Generic node manager -> Blender node manager
 - [ ] Support modifier bees?
 - [ ] Add support for i/ex wrapper overlapping names 
     - [ ] Display in node name?
+    
+    ## Idea for better UX
+    - [x] Bees "wrap" other bees
 
 * Node Finder
     - [x] Parse all hives (just check if inherits from HiveBuilder)

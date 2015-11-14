@@ -1,5 +1,5 @@
-from PySide.QtCore import *
-from PySide.QtGui import *
+from .qt_core import *
+from .qt_gui import *
 
 import os
 import webbrowser
@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
         if isinstance(widget, NodeView):
             widget.on_enter()
 
-    def add_node_view(self, name="<Untitled>"):
+    def add_node_view(self, *, name="<Untitled>"):
         view = NodeView(self.folding_window, self.docstring_window, self.configuration_window, self.parameter_window,
                         self.preview_window)
 

@@ -1,4 +1,4 @@
-from PySide.QtGui import *
+from .qt_gui import *
 from functools import partial
 
 

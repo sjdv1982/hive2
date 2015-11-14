@@ -34,8 +34,8 @@
 
 from __future__ import print_function, absolute_import
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+from .qt_core import *
+from .qt_gui import *
 
 import functools
 
@@ -473,8 +473,8 @@ class NodeView(IGUINodeManager, QGraphicsView):
         else:
             style_pin = output_pin
 
-        # Use dot style for relationships
-        if output_pin.is_proxy or input_pin.is_proxy:
+        # Use dot style for virtual relationships
+        if output_pin.is_virtual or input_pin.is_virtual:
             style = "dot"
 
         else:
@@ -790,7 +790,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
                 dialogue.add_widget(name, option.data_type, default, option.options)
 
             dialogue_result = dialogue.exec_()
-            if dialogue_result == QDialog.DialogCode.Rejected:
+            if dialogue_result == QDialog.Rejected:
                 raise DynamicInputDialogue.DialogueCancelled("Menu cancelled")
 
             # Set result
@@ -833,7 +833,7 @@ class NodeView(IGUINodeManager, QGraphicsView):
         self.centerOn(self._current_center_point)
 
     def _find_connection_at(self, position, size):
-        point_rect = QRectF(position + QPointF(-size/2, -size/2), QSize(size, size))
+        point_rect = QRectF(position + QPointF(-size/2, -size/2), QSizeF(size, size))
 
         for connection in self._connections.values():
             if not connection.isVisible():

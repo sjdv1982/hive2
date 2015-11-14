@@ -1,12 +1,14 @@
 import hive
-import dragonfly
+import hive_gui.utils as utils
+#
+# MyHive = utils.class_from_filepath("D:/hivedemo/my_iter.hivemap")
+#
+# my_hive = MyHive()
+# my_hive.do_iter()
+#
+MyHive = utils.class_from_filepath("D:/hivedemo/example.hivemap")
 
-var = dragonfly.std.Variable("str", "12")
-conv_cast = dragonfly.convert.Convert(("str",), ("float",), "pull", "cast")
-conv_duck = dragonfly.convert.Convert(("str",), ("float",), "pull", "duck")
-
-hive.connect(var, conv_cast)
-hive.connect(var, conv_duck)
-
-print(repr(conv_cast.value_out.pull()))
-print(repr(conv_duck.value_out.pull()))
+my_hive = MyHive()
+print("BEFORE")
+my_hive.start_counting()
+print("AFTER")

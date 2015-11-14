@@ -15,7 +15,7 @@ class MimicFlags(object):
 class IOPin(object):
 
     def __init__(self, node, name, io_type, data_type, mode="pull", max_connections=-1, restricted_types=None,
-                 mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
+                 mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         self.name = name
         self.is_folded = False
 
@@ -44,7 +44,7 @@ class IOPin(object):
         self._restricted_data_types = restricted_types
         self._shape = get_shape(mode)
         self._mimic_flags = mimic_flags
-        self._is_proxy = is_proxy
+        self._is_virtual = is_virtual
 
         self._connections = []
         self._connection_count = 0
@@ -68,9 +68,9 @@ class IOPin(object):
         return self._data_type
 
     @property
-    def is_proxy(self):
+    def is_virtual(self):
         """Whether pin is actually a connectable pin"""
-        return self._is_proxy
+        return self._is_virtual
 
     @property
     def node(self):
@@ -143,7 +143,7 @@ class IOPin(object):
         else:
             other_pin = connection.output_pin
 
-        if self._count_proxies or not other_pin.is_proxy:
+        if self._count_proxies or not other_pin.is_virtual:
             self._connection_count += 1
 
         # Mimic aesthetics
@@ -161,7 +161,7 @@ class IOPin(object):
         else:
             other_pin = connection.output_pin
 
-        if self._count_proxies or not other_pin.is_proxy:
+        if self._count_proxies or not other_pin.is_virtual:
             self._connection_count -= 1
 
         self.unmimic_other_pin(other_pin)
@@ -212,17 +212,17 @@ class Node(object):
         self.outputs = OrderedDict()
 
     def add_input(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
-                  mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
+                  mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         pin = IOPin(self, name, "input", data_type, mode, max_connections, restricted_types, mimic_flags,
-                    is_proxy, count_proxies)
+                    is_virtual, count_proxies)
         self.inputs[name] = pin
         self.pin_order.append(name)
         return pin
 
     def add_output(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
-                   mimic_flags=MimicFlags.NONE, is_proxy=False, count_proxies=False):
+                   mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         pin = IOPin(self, name, "output", data_type, mode, max_connections, restricted_types, mimic_flags,
-                    is_proxy, count_proxies)
+                    is_virtual, count_proxies)
         self.outputs[name] = pin
         self.pin_order.append(name)
         return pin
