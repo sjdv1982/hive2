@@ -28,9 +28,12 @@ Control flow: Generic node manager -> Blender node manager
     * Support hide/show - Infer if connected node is hidden, is folded. (If hide node, notify connections!)
     * Only cut visible connections
     * Allow view to populate this in main window? view->set_node_config->... (set options OR set actual form layout) -> More powerful system for config and other things?? window node "context"
-- [ ] Support modifier bees?
+- [x] Support modifier bees?
 - [ ] Add support for i/ex wrapper overlapping names 
     - [ ] Display in node name?
+- [ ] Allow access to all pre/post trigger events
+- [ ] Add better indicator for proxy pins (/rethink virtual pins)
+- [ ] Auto-arrange node support
     
     ## Idea for better UX
     - [x] Bees "wrap" other bees
