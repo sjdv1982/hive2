@@ -56,6 +56,7 @@ class NodeManager(object):
 
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
+        # TODO when is this used - check not using import path elsewhere in this manner
         as_variable = camelcase_to_underscores(obj_name)
         return _get_unique_name(self.nodes, as_variable)
 
