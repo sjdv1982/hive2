@@ -12,7 +12,6 @@ operator_names = set(operators)
 
 
 def declare_operator(meta_args):
-    meta_args.mode = hive.parameter("str", "push", options={"push", "pull"})
     meta_args.data_type = hive.parameter("str", "int")
     meta_args.operator = hive.parameter("str", "add", options=operator_names)
 
@@ -32,62 +31,28 @@ def build_operator(i, ex, args, meta_args):
 
     i.c = hive.attribute(meta_args.data_type)
 
-    if meta_args.mode == "push":
-        i.a_in = hive.push_in(i.a)
-        ex.a = hive.antenna(i.a_in)
+    i.a_in = hive.pull_in(i.a)
+    ex.a = hive.antenna(i.a_in)
 
-        i.c_out = hive.push_out(i.c)
-        ex.c = hive.output(i.c_out)
+    i.c_out = hive.pull_out(i.c)
+    ex.c = hive.output(i.c_out)
 
-        i.trig = hive.triggerfunc()
+    if is_single_arg:
+        def calc(self):
+            self._c = op(self._a)
 
-        # Trigger output when updated
-        hive.trigger(i.a_in, i.c_out)
+    else:
+        def calc(self):
+            self._c = op(self._a, self._b)
 
-        # Single arg operators
-        if is_single_arg:
-            def calc(h):
-                h._c = op(h._a)
-                h._trig()
+        i.b_in = hive.pull_in(i.b)
+        ex.b = hive.antenna(i.b_in)
+        hive.trigger(i.a_in, i.b_in)
 
-        else:
-            i.b_in = hive.push_in(i.b)
-            ex.b = hive.antenna(i.b_in)
+    i.calc = hive.modifier(calc)
 
-            # Trigger output when updated
-            hive.trigger(i.b_in, i.c_out)
-
-            def calc(h):
-                h._c = op(h._a, h._b)
-                h._trig()
-
-        # Trigger calculation before output
-        i.calc = hive.modifier(calc)
-        hive.trigger(i.c_out, i.calc, pretrigger=True)
-
-    elif meta_args.mode == "pull":
-        i.a_in = hive.pull_in(i.a)
-        ex.a = hive.antenna(i.a_in)
-
-        i.c_out = hive.pull_out(i.c)
-        ex.c = hive.output(i.c_out)
-
-        if is_single_arg:
-            def calc(h):
-                h._c = op(h._a)
-
-        else:
-            def calc(h):
-                h._c = op(h._a, h._b)
-
-            i.b_in = hive.pull_in(i.b)
-            ex.b = hive.antenna(i.b_in)
-            hive.trigger(i.a_in, i.b_in)
-
-        i.calc = hive.modifier(calc)
-
-        hive.trigger(i.a_in, i.calc)
-        hive.trigger(i.c_out, i.a_in, pretrigger=True)
+    hive.trigger(i.a_in, i.calc)
+    hive.trigger(i.c_out, i.a_in, pretrigger=True)
 
 
 Op = hive.dyna_hive("Op", build_operator, declare_operator)

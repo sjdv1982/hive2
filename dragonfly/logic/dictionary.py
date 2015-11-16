@@ -1,7 +1,5 @@
 import hive
 
-from ..std import Buffer
-
 
 class DictCls:
 

@@ -1,9 +1,6 @@
 import hive
 
 
-primitive_non_iterable = {'int', 'float', 'bool'}
-
-
 def declare_foreach(meta_args):
     meta_args.data_type = hive.parameter("tuple", ("int",))
 

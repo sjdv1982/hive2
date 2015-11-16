@@ -8,6 +8,9 @@ def next_modifier(self):
 
     if generator is None:
         self._pull_generator()
+        if generator is self._generator:
+            raise StopIteration("Could not pull a new generator")
+
         generator = self._generator
 
     try:
@@ -24,7 +27,7 @@ def declare_next(meta_args):
 
 def build_next(i, ex, args, meta_args):
     """Iterate over generator object, output new value when pulled"""
-    i.generator = hive.attribute(("object", "generator"))
+    i.generator = hive.attribute()
     i.generator_in = hive.pull_in(i.generator)
     ex.generator = hive.antenna(i.generator_in)
 
