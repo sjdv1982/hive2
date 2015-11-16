@@ -6,7 +6,7 @@ from .node import NodeTypes
 from .models import model
 from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier
 
-from re import compile as re_compile, sub as re_sub
+from re import sub as re_sub
 from traceback import format_exc
 
 
@@ -56,7 +56,6 @@ class NodeManager(object):
 
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
-        # TODO when is this used - check not using import path elsewhere in this manner
         as_variable = camelcase_to_underscores(obj_name)
         return _get_unique_name(self.nodes, as_variable)
 
