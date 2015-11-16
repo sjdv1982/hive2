@@ -38,6 +38,10 @@ Control flow: Generic node manager -> Blender node manager
     ## Idea for better UX
     - [x] Bees "wrap" other bees
 
+# Hive project
+- [ ] Have a HIVEPATH env variable to find HIVE nodes
+- [ ] Use same loader for HIVEPATH to load from local path
+
 * Node Finder
     - [x] Parse all hives (just check if inherits from HiveBuilder)
     - [xx] Parse all bees (just check if inherits from Bee)
