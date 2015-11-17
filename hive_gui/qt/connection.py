@@ -207,7 +207,8 @@ class Connection(QGraphicsItem):
                 point = QPointF(element.x, element.y)
                 if previous_point is not None:
                     segment = QLineF(previous_point, point)
-                    intersect_type, intersect_point = segment.intersect(line)
+
+                    intersect_type, intersect_point = COMPAT_QT_do_intersection(segment, line)
 
                     if intersect_type == QLineF.BoundedIntersection:
                         return True

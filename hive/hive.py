@@ -129,6 +129,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     # TODO: nice exception reporting
                     instance = bee.getinstance(self._hive_object)
+
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
                         if instance is None:
