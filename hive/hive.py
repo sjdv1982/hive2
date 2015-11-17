@@ -281,6 +281,8 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             plugin_map = defaultdict(list)
             socket_map = defaultdict(list)
 
+            bee_source = externals
+
         # This method call applies to a HiveObject instance (bee_source)
         else:
             # If this hive exported to parent
@@ -293,6 +295,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
             plugin_map = plugin_map.copy()
             socket_map = socket_map.copy()
+
+            # Get the external bees' resolvebee instead of raw bee
+            bee_source = self_as_resolve_bee
 
         child_hives = set()
 
@@ -316,17 +321,13 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         # Find sockets and plugins that are exportable
         for bee_name in externals:
-            # This will have already been handled by parent
+            # This will have already been handled by parent (as this method is called top-down)
             if bee_name in exported_to_parent:
                 continue
 
-            if is_root:
-                bee = getattr(externals, bee_name)
+            bee = getattr(bee_source, bee_name)
 
-            else:
-                bee = getattr(self_as_resolve_bee, bee_name)
-
-            # Find auto-plugin
+            # Find and connect identified plugins with existing sockets
             if bee.implements(Plugin) and bee.identifier is not None:
                 identifier = bee.identifier
                 plugin_map[identifier].append(bee)
@@ -338,7 +339,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                     for socket_bee in socket_bees:
                         connect(bee, socket_bee)
 
-            # Find auto-socket
+            # Find and connect identified sockets with existing plugins
             if bee.implements(Socket) and bee.identifier is not None:
                 identifier = bee.identifier
                 socket_map[identifier].append(bee)
