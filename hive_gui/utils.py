@@ -115,8 +115,8 @@ def get_builder_class_args(hive_cls):
 
     # Get init func
     init_func = cls.__init__
-    arg_types = getattr(init_func, "types", {})
-    arg_options = getattr(init_func, "options", {})
+    arg_types = hive.get_argument_types(init_func)
+    arg_options = hive.get_argument_options(init_func)
 
     arg_spec = getargspec(init_func)
     defaults = arg_spec.defaults if arg_spec.defaults else []

@@ -21,6 +21,9 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         if bound:
             self.policy = policy_cls()
 
+        else:
+            self.policy = None
+
     def __repr__(self):
         return "<Plugin: {}>".format(self._func)
 
@@ -59,8 +62,8 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         func = self._func
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.identifier, self.data_type, policy_cls=self.policy_cls,
-                                  export_to_parent=self.export_to_parent, bound=self._bound)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
+                                  self._bound)
 
         else:
             return self
@@ -92,6 +95,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target
+
         if isinstance(target, Exportable):
             exported = target.export()
             return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)

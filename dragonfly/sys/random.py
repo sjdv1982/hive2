@@ -1,12 +1,14 @@
 import hive
-from random import Random as RNG
 
+from random import Random as RNG
 
 
 class _RandomCls:
 
-    def __init__(self):
+    @hive.argument_types(seed="float")
+    def __init__(self, seed=None):
         self.rng = RNG()
+        self.rng.seed(seed)
 
         self.randint_min = None
         self.randint_max = None

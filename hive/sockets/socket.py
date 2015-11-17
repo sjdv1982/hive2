@@ -21,6 +21,9 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         if bound:
             self.policy = policy_cls()
 
+        else:
+            self.policy = None
+
     def __repr__(self):
         return "<Socket: {}>".format(self._func)
 
@@ -35,8 +38,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         else:
             func = self._func
 
-        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
-                              bound=run_hive)
+        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
 
     @memoize
     def export(self):
