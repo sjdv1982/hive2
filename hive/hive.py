@@ -778,33 +778,21 @@ def meta_hive(name, builder, declarator, cls=None):
 
     return HiveBuilder.extend(name, builder, cls, declarator=declarator)
 
+#==========Hive construction path=========
+# 1. Take args and kwargs for construction call.
+# 2. Extract the meta-args (defined by declarators, which are called once when the Hive is called first time).
+#           If None, return empty tuple
+# 3. Find a HiveObject class for the given meta arg values. If None, build HiveObject
+# 4. With remaining args and kwargs, if HIVE is meta hive, construct and return metahive primitive, else:
+#           If in runtime mode, create HiveObject instance and instantiate it
+#           If in build mode, return HiveObject instance.
+# //4.1 The MetaHive primitive exposes a __new__ constructor that performs step 4.
 
-
-
-
-
-# Metahive returns a primitive
-# Dynahive is a metahive which instantiates immediately, no args wrapper - but instantiate build class with unused parameters
-# Declare Meta Args
-#   -> Parse meta args
-#       -> Invoke builder
-# If no declarator, is not meta
-
-def build():
-    if meta_args is None:
-        declare_meta_args()
-
-    declared_params = meta_args.parse(args, kwargs)
-    hive_obj = hive_objs[declared_params]
-
-    if hive_obj is None:
-        frozen_meta_args = meta_args.freeze(declared_params)
-
-        if is_meta:
-            args = ...
-            hive_obj = build_hive_obj(cls, i, ex, frozen_meta_args, args)
-        elif is_dyna:
-            hive_obj = build_hive_obj(cls, i, ex, frozen_meta_args)
-        else:
-            hive_obj = build_hive_obj(cls, i, ex, args)
-
+#==========Hive build path================
+# Hive building is bottom-up after builder functions, top down before
+# 1. Call all builder functions with i, ex and args wrappers (and frozen meta args)
+# 2. Find all defined HiveObject bees.
+# 3. If bees set _hive_allow_export_namespace true, import appropriate plugins and sockets from child HiveObject
+# 4. For all plugins and sockets of current building hive, if export_to_parent, add names to class
+#       set "_hive_exportable_to_parent"
+# 5. If root HIVE (get_building_hive() is None after building), top-down recurse HiveObject._hive_establish_connectivity
