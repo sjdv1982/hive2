@@ -452,13 +452,6 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
         body_declaration_statement += \
 '''"""{}"""'''.format(docstring)
 
-    if imports:
-        body_declaration_statement += \
-"""
-# Imports
-{}
-""".format("\n".join(["import {}".format(x) for x in imports]))
-
     if declaration_body:
         body_declaration_statement += \
 """
@@ -480,12 +473,19 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
 {}
 """.format("\n".join(io_body))
 
+    if imports:
+        import_statement = \
+"""# Imports
+{}""".format("\n".join(["import {}".format(x) for x in imports]))
+    else:
+        import_statement = ""
 
     declaration_statement = \
-"""
+"""{}
+
 def {}(i, ex, args):
     {}
-""".format(builder_name, body_declaration_statement.replace("\n", "\n    "))
+""".format(import_statement, builder_name, body_declaration_statement.replace("\n", "\n    "))
     return declaration_statement
 
 

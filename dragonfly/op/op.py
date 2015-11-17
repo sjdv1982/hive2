@@ -1,10 +1,10 @@
 import hive
 
-from operator import add, sub, mul, truediv, mod, eq, or_, not_, and_
+from operator import add, sub, mul, truediv, mod, eq, or_, not_, and_, gt, lt, ge, le
 
 
-operators = {'add': add, 'mul': mul, 'div': truediv, 'sub': sub, 'mod': mod, 'eq': eq, 'not': not_, 'or': or_,
-             'and': and_, '+': add, '-': sub, '*': mul, '/': truediv, '%': mod, '=': eq, '!': not_, '|': or_, '&': and_}
+operators = {'+': add, '-': sub, '*': mul, '/': truediv, '%': mod, '=': eq, '!': not_, '|': or_, '&': and_,
+             '>': gt, '<': lt, '>=': ge, '<=': le}
 
 single_arg_operators = {not_,}
 
@@ -13,7 +13,7 @@ operator_names = set(operators)
 
 def declare_operator(meta_args):
     meta_args.data_type = hive.parameter("str", "int")
-    meta_args.operator = hive.parameter("str", "add", options=operator_names)
+    meta_args.operator = hive.parameter("str", "+", options=operator_names)
 
 
 def build_operator(i, ex, args, meta_args):
