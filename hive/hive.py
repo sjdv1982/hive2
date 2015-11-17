@@ -221,10 +221,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         self._hive_args_frozen = self._hive_args.freeze(arg_values)
 
         # Args to instantiate builder-class instances
-        self._hive_builder_args = args #for now
-        self._hive_builder_kwargs = kwargs #for now
+        self._hive_builder_args = args
+        self._hive_builder_kwargs = kwargs
             
-        # Check calling signature of builderclass.__init__
+        # Used to check calling signature of builderclass.__init__
         init_plus_args = (None,) + self._hive_builder_args
 
         # Check build functions are valid
@@ -255,7 +255,11 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
 
     @classmethod
-    def export_namespace_to_children(cls, self_as_resolve_bee=None, plugin_map=None, socket_map=None):
+    def establish_connectivity(cls, self_as_resolve_bee=None, plugin_map=None, socket_map=None):
+        """Connect plugins and sockets together by identifier.
+
+        If children allow importing of namespace, pass namespace to children.
+        """
         externals = cls._hive_ex
         internals = cls._hive_i
 
@@ -335,13 +339,13 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                     for plugin_bee in plugin_bees:
                         connect(plugin_bee, bee)
 
-        # Get resolve bees instead of raw HiveObject instances
+        # Get resolve bees instead of raw HiveObject instances (ResolveBees relative to parent)
         if not is_root:
             child_hives = {ResolveBee(bee.export(), self_as_resolve_bee) for bee in child_hives}
 
         # Now export to child hives
         for resolved_child_hive in child_hives:
-            resolved_child_hive.export_namespace_to_children(resolved_child_hive, plugin_map, socket_map)
+            resolved_child_hive.establish_connectivity(resolved_child_hive, plugin_map, socket_map)
 
     @classmethod
     @memoize
@@ -564,6 +568,7 @@ class HiveBuilder(object):
         with hive_mode_as("build"), building_hive_as(hive_object_cls), bee_register_context() as registered_bees:
             # Invoke builder functions to build wrappers
             for builder, builder_cls in cls._builders:
+                # Call builder with appropriate arguments depending upon Hive type
                 if builder_cls is not None:
                     wrapper = HiveMethodWrapper(builder_cls)
                     builder_args = wrapper, internals, externals, args
@@ -623,7 +628,7 @@ class HiveBuilder(object):
             # TODO add flag for drone like export to parent (off by default)
             # TODO support resolvebees in ex wrapper?
             if is_root:
-                hive_object_cls.export_namespace_to_children()
+                hive_object_cls.establish_connectivity()
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
