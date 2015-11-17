@@ -221,8 +221,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         self._hive_allow_import_namespace = kwargs.pop("import_namespace", True)
         self._hive_allow_export_namespace = kwargs.pop("export_namespace", True)
 
-        self._hive_exported_to_parent = set()
-
         # Take out args parameters
         args, kwargs, arg_values = self._hive_args.extract_from_args(args, kwargs)
         self._hive_args_frozen = self._hive_args.freeze(arg_values)
@@ -285,7 +283,13 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         # This method call applies to a HiveObject instance (bee_source)
         else:
-            exported_to_parent = self_as_resolve_bee._hive_exported_to_parent
+            # If this hive exported to parent
+            if self_as_resolve_bee._hive_allow_export_namespace:
+                exported_to_parent = cls._hive_exportable_to_parent
+
+            # Nothing was exported
+            else:
+                exported_to_parent = set()
 
             plugin_map = plugin_map.copy()
             socket_map = socket_map.copy()
@@ -309,7 +313,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                 continue
 
             child_hives.add(bee)
-        
+
         # Find sockets and plugins that are exportable
         for bee_name in externals:
             # This will have already been handled by parent
@@ -616,7 +620,7 @@ class HiveBuilder(object):
 
                 # Find exportable from child and save to HiveObject instance
                 importable_from_child = child_hive.__class__._hive_exportable_to_parent
-                child_hive._hive_exported_to_parent.update(importable_from_child)
+                #child_hive._hive_exported_to_parent.update(importable_from_child)
 
                 # Find bees at set them on parent
                 for bee_name in importable_from_child:
