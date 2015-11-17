@@ -3,7 +3,7 @@ from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Metho
 from .connect import connect
 from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
-    memoize
+    memoize, get_run_hive
 from .tuple_type import tuple_type, types_match
 
 
@@ -102,7 +102,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
             with building_hive_as(hive_object), hive_mode_as("build"):
                 # Add external bees to runtime hive
-                bees = []
+                exposed_bees = []
 
                 external_bees = hive_object._hive_ex
                 for bee_name in external_bees:
@@ -115,7 +115,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
 
-                    bees.append((bee_name, instance))
+                    exposed_bees.append((bee_name, instance))
 
                 # Add internal bees (that are hives, Callable or Stateful) to runtime hive
                 internal_bees = hive_object._hive_i
@@ -137,9 +137,9 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         instance.parent = self
 
                     if isinstance(bee, HiveObject) or bee.implements(Callable):
-                        bees.append((private_name, instance))
+                        exposed_bees.append((private_name, instance))
 
-                for bee_name, instance in bees:
+                for bee_name, instance in exposed_bees:
                     if isinstance(instance, Stateful):
                         continue
 
@@ -148,6 +148,13 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
                     setattr(self, bee_name, instance)
+
+        # Is root run hive
+        if get_run_hive() is None:
+            pass
+
+            # for child in recursive_run_children(root):
+                #child.validate_policies()
 
     @staticmethod
     def _hive_can_connect_hive(other):
@@ -242,8 +249,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             external_bees = self.__class__._hive_ex
             for bee_name in external_bees:
                 exportable = getattr(external_bees, bee_name)
+
                 target = exportable.export()
                 resolve_bee = ResolveBee(target, self)
+
                 setattr(self, bee_name, resolve_bee)
 
     @memoize
@@ -255,7 +264,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
 
     @classmethod
-    def establish_connectivity(cls, self_as_resolve_bee=None, plugin_map=None, socket_map=None):
+    def _hive_establish_connectivity(cls, self_as_resolve_bee=None, plugin_map=None, socket_map=None):
         """Connect plugins and sockets together by identifier.
 
         If children allow importing of namespace, pass namespace to children.
@@ -290,8 +299,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             if not bee.implements(HiveObject):
                 continue
 
-            if bee._hive_allow_import_namespace:
-                child_hives.add(bee)
+            child_hives.add(bee)
 
         # Find internal hives
         for bee_name in internals:
@@ -300,9 +308,8 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             if not bee.implements(HiveObject):
                 continue
 
-            if bee._hive_allow_import_namespace:
-                child_hives.add(bee)
-
+            child_hives.add(bee)
+        
         # Find sockets and plugins that are exportable
         for bee_name in externals:
             # This will have already been handled by parent
@@ -344,8 +351,11 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             child_hives = {ResolveBee(bee.export(), self_as_resolve_bee) for bee in child_hives}
 
         # Now export to child hives
-        for resolved_child_hive in child_hives:
-            resolved_child_hive.establish_connectivity(resolved_child_hive, plugin_map, socket_map)
+        for child in child_hives:
+            if not child._hive_allow_import_namespace:
+                continue
+
+            child._hive_establish_connectivity(child, plugin_map, socket_map)
 
     @classmethod
     @memoize
@@ -501,7 +511,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         return self
 
     def __repr__(self):
-        return "[{}({})::{}]".format(self.__class__.__name__, id(self), getattr(self._hive_meta_args_frozen, 'i', None))
+        return "[{}({})]".format(self.__class__.__name__, id(self))
 
 
 class MetaHivePrimitive:
@@ -625,10 +635,8 @@ class HiveBuilder(object):
                 if bee.identifier is not None and bee.export_to_parent:
                     export_to_parent.add(bee_name)
 
-            # TODO add flag for drone like export to parent (off by default)
-            # TODO support resolvebees in ex wrapper?
             if is_root:
-                hive_object_cls.establish_connectivity()
+                hive_object_cls._hive_establish_connectivity()
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)

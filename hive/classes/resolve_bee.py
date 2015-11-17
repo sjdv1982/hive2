@@ -39,7 +39,7 @@ class ResolveBee(Exportable):
         return result
 
     def __repr__(self):
-        return "<*{}::{}>".format(self._own_hive_object, self._bee)
+        return "{}->{}".format(self._own_hive_object, self._bee)
 
     def export(self):
         return self
