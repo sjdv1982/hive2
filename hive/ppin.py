@@ -16,7 +16,7 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         if isinstance(target, Stateful):
             data_type = target.data_type
 
-        self._stateful = isinstance(target, Stateful)
+        self._is_stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
         self._bound = bound
@@ -24,11 +24,11 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
                 
-    def _hive_trigger_source(self, targetfunc):
-        self._trigger.add_target(targetfunc)
+    def _hive_trigger_source(self, func):
+        self._trigger.add_target(func)
 
-    def _hive_pretrigger_source(self, targetfunc):
-        self._pretrigger.add_target(targetfunc)
+    def _hive_pretrigger_source(self, func):
+        self._pretrigger.add_target(func)
                 
     @memoize
     def bind(self, run_hive):
@@ -36,7 +36,6 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
             return self
 
         target = self.target
-
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
@@ -50,7 +49,7 @@ class PushIn(PPInBase):
         # TODO: exception handling hooks
         self._pretrigger.push()
 
-        if self._stateful:
+        if self._is_stateful:
             self.target._hive_stateful_setter(self._run_hive, value)
 
         else:
@@ -81,7 +80,7 @@ class PullIn(PPInBase, TriggerTarget):
         self._pretrigger.push()
         value = self._pull_callback()
 
-        if self._stateful:
+        if self._is_stateful:
             self.target._hive_stateful_setter(self._run_hive, value)
 
         else:
@@ -134,10 +133,13 @@ class PullIn(PPInBase, TriggerTarget):
 class PPInBee(Antenna, ConnectTarget, TriggerSource):
     mode = None
 
-    def __init__(self, target):        
-        assert isinstance(target, Stateful) or target.implements(Callable) # TODO: nice error message
+    def __init__(self, target):
+        is_stateful = isinstance(target, Stateful)
 
-        if isinstance(target, Stateful):
+        if not (is_stateful or target.implements(Callable)):
+            raise TypeError("Target must implement Callable or Stateful protocol")
+
+        if is_stateful:
             self.data_type = target.data_type
 
         else:

@@ -10,10 +10,10 @@ import debug
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
     def __init__(self, target, data_type, bound=None, run_hive=None):
-        if not bound:
-            assert isinstance(target, Stateful) or target.implements(Callable), target
+        is_stateful = isinstance(target, Stateful)
+        assert is_stateful or callable(target) or target.implements(Callable), target
 
-        self._stateful = isinstance(target, Stateful)
+        self._is_stateful = is_stateful
         self.target = target
         self.data_type = data_type
         self._bound = bound
@@ -45,7 +45,7 @@ class PullOut(PPOutBase):
     def pull(self):
         # TODO: exception handling hooks
         self._pretrigger.push()
-        if self._stateful:
+        if self._is_stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
 
         else:
@@ -62,7 +62,6 @@ class PullOut(PPOutBase):
         if target.mode != "pull":
             raise TypeError("Target {} is not configured for pull mode".format(target))
 
-        #print(target.data_type, self.data_type, target,self)
         if not types_match(target.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
 
@@ -81,7 +80,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         # TODO: exception handling hooks
         self._pretrigger.push()
 
-        if self._stateful:
+        if self._is_stateful:
             value = self.target._hive_stateful_getter(self._run_hive)
 
         else:
@@ -143,9 +142,11 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
 class PPOutBee(Output, ConnectSource, TriggerSource):
     mode = None
 
-    def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) # TODO: nice error message
-        if isinstance(target, Stateful) or isinstance(target, Output):
+    def __init__(self, target):
+        is_stateful_or_output = isinstance(target, (Stateful, Output))
+        assert is_stateful_or_output or target.implements(Callable) # TODO: nice error message
+
+        if is_stateful_or_output:
             self.data_type = target.data_type
 
         else:
@@ -189,26 +190,16 @@ class PullOutBee(PPOutBee):
 
 
 def push_out(target):
-    # TODO: nice error message
-    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
-
     if get_mode() == "immediate":
-        assert is_valid_bee or callable(target)
         return PushOut(target)
 
     else:
-        assert is_valid_bee, target
         return PushOutBee(target)
 
 
 def pull_out(target):
-    # TODO: nice error message
-    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
-
     if get_mode() == "immediate":
-        assert is_valid_bee or callable(target), target
         return PullOut(target)
 
     else:
-        assert is_valid_bee, target
         return PullOutBee(target)
