@@ -115,6 +115,7 @@ class ArgsPanel(QWidget):
                 layout.addRow(line)
 
             arg_data = node.params_info["args"]
+            print(args)
             for name, value in args.items():
                 # Get data type
                 inspector_option = arg_data[name]

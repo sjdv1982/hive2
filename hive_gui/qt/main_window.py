@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         self.folding_window = self.create_subwindow("Folding", "right")
         self.folding_window.setVisible(False)
 
-        self.helpers_window = self.create_subwindow("Helpers", "left")
+        self.helpers_window = self.create_subwindow("Project", "left")
         self.helpers_window.setVisible(False)
         self.helper_widget = TreeWidget()
         self.helper_widget.on_selected = self.on_dropped_helper_node

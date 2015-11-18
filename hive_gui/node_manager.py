@@ -4,15 +4,10 @@ from .inspector import HiveNodeInspector, BeeNodeInspector
 from .history import OperationHistory
 from .node import NodeTypes
 from .models import model
-from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier
+from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier, \
+    camelcase_to_underscores
 
-from re import sub as re_sub
 from traceback import format_exc
-
-
-def camelcase_to_underscores(name):
-    s1 = re_sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re_sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def _get_unique_name(existing_names, base_name):

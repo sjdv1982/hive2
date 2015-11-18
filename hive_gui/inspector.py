@@ -80,8 +80,6 @@ class BeeNodeInspector:
         meta_args = yield ("meta_args", meta_arg_options)
 
         data_type = meta_args['data_type']
-        if not data_type:
-            data_type = None
 
         # Configure ARGS
         arg_options = OrderedDict()
@@ -153,7 +151,7 @@ class HiveNodeInspector:
 
         for arg_name in wrapper:
             param = getattr(wrapper, arg_name)
-            data_type = param.data_type if param.data_type else None
+            data_type = param.data_type if param.data_type else ()
             options = param.options
 
             # If default is defined

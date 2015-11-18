@@ -15,6 +15,7 @@ from collections import OrderedDict
 from inspect import getargspec
 from functools import lru_cache
 from os import path
+from re import sub as re_sub
 
 # Factories for types
 type_factories = {}
@@ -84,6 +85,9 @@ def is_identifier(identifier):
 
 def start_value_from_type(data_type):
     """Attempt to return a unique "starting value" for a given data type"""
+    if not data_type:
+        return None
+
     base_type = data_type[0]
 
     if base_type in type_factories:
@@ -495,8 +499,11 @@ def builder_from_hivemap(hivemap):
     :param hivemap: Hivemap instance
     """
     build_str = hivemap_to_builder_body(hivemap, builder_name="builder")
-    exec(build_str, locals(), globals())
-    return builder
+    local_dict = dict(globals())
+    local_dict.update(locals())
+
+    exec(build_str, local_dict, local_dict)
+    return local_dict['builder']
 
 
 def class_from_hivemap(name, hivemap):
@@ -515,9 +522,20 @@ def class_from_filepath(filepath):
 
     :param filepath: path to hivemap
     """
-    name = path.splitext(path.basename(filepath))[0]
+    file_name = path.splitext(path.basename(filepath))[0]
+    name = underscore_to_class_name(file_name)
 
     with open(filepath, "r") as f:
         hivemap = model.Hivemap(f.read())
 
     return class_from_hivemap(name, hivemap)
+
+
+def camelcase_to_underscores(name):
+    s1 = re_sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re_sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def underscore_to_class_name(name):
+    name = name.capitalize()
+    return "".join(x.capitalize() if x else '_' for x in name.split("_"))

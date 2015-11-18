@@ -25,13 +25,12 @@ class Keyboard_:
 
 
 def build_keyboard(cls, i, ex, args):
-    args.key = hive.parameter("str", "W")
     ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_listener"))
     i.on_tick = hive.triggerfunc()
 
-    i.key = hive.property(cls, "key", "str", args.key)
+    i.key = hive.property(cls, "key", "str", "w")
 
-    i.key_in = hive.push_in(i.key)
+    i.key_in = hive.pull_in(i.key)
     ex.key_in = hive.antenna(i.key_in)
 
     i.on_key_changed = hive.triggerable(cls.update_listeners)
