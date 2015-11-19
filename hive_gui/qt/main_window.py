@@ -1,14 +1,12 @@
-from .qt_core import *
-from .qt_gui import *
-
 import os
 import webbrowser
 
-from .tabs import TabViewWidget
-from .view import NodeView
-from .tree import TreeWidget
+from .qt_core import *
+from .qt_gui import *
 from .scene import NodeUiScene
-
+from .tabs import TabViewWidget
+from .tree import TreeWidget
+from .view import NodeView
 from ..finder import HiveFinder, found_bees
 
 area_classes = {
@@ -341,9 +339,9 @@ class MainWindow(QMainWindow):
 
         if dialogue.exec_():
             file_name = dialogue.selectedFiles()[0]
-            self.save_file(file_name)
+            self.save_file(save_file=file_name)
 
-    def save_file(self, file_name=None):
+    def save_file(self, *, file_name=None):
         view = self.tab_widget.currentWidget()
         assert isinstance(view, NodeView)
 

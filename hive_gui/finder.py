@@ -1,11 +1,11 @@
-import sys
 import os
-import hive
+import sys
+from inspect import isclass, getmembers
+
 import dragonfly
-
-from inspect import isclass, getmembers, ismodule
-
+import hive
 from .importer import install_hook
+
 install_hook()
 
 
@@ -22,6 +22,7 @@ class HiveFinder:
     def __init__(self, *root_paths):
         paths = list(root_paths)
         paths.append(dragonfly.__path__[0])
+
         self.root_paths = paths
 
     def _recurse(self, base_file_path, relative_folder_path, modules):
