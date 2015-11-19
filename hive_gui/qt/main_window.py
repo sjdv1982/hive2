@@ -9,6 +9,7 @@ from .view import NodeView
 from .tree import TreeWidget
 from .scene import NodeUiScene
 
+from ..finder import HiveFinder, found_bees
 
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
@@ -107,12 +108,16 @@ class MainWindow(QMainWindow):
         self.hive_widget.on_selected = self.on_dropped_hive_node
         self.hive_window.setWidget(self.hive_widget)
 
+        self.hive_finder = HiveFinder("D:/PycharmProjects/hive2/test_fs")
+        self.hive_widget.load_items(self.hive_finder.find_hives())
+
         # Left window
         self.bee_window = self.create_subwindow("Bees", "left")
         self.bee_window.setVisible(False)
         self.bee_widget = TreeWidget()
         self.bee_widget.on_selected = self.on_dropped_bee_node
         self.bee_window.setWidget(self.bee_widget)
+        self.bee_widget.load_items(found_bees)
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")

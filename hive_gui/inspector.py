@@ -106,7 +106,7 @@ class BeeNodeInspector:
             pass
 
         else:
-            # TODO how can this better my supported so attributes can be renamed
+            # TODO how can this better be supported so attributes can be renamed
             # Find bound attribute and save data type to meta_args
             meta_args['data_type'] = attribute_node.params['meta_args']['data_type']
 
@@ -168,6 +168,7 @@ class HiveNodeInspector:
 
     def _inspect_generator(self, import_path):
         # Import and prepare hive
+        print("IMP",import_path)
         hive_cls = import_from_path(import_path)
 
         # Prepare args wrapper

@@ -9,27 +9,15 @@ import hive_gui.qt as pyside_gui
 import hive_gui.qt.qdarkstyle as qdarkstyle
 
 from hive_gui.qt.main_window import MainWindow
-from hive_gui.finder import get_hives
-
-import dragonfly
 
 # Create a Qt application
 app = QApplication(sys.argv)
 app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
 
-hives = get_hives(dragonfly)
-
 window = MainWindow()
 window.resize(1024, 768)
 
 window.show()
-
-bees = {"hive": ["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier", "pull_in", "pull_out",
-                 "push_in", "push_out"]}
-
-
-window.hive_widget.load_items(hives)
-window.bee_widget.load_items(bees)
 
 # Add Help page
 home_page = QWebView()

@@ -23,9 +23,16 @@ class HiveModuleLoader:
 class HiveModuleImporter(object):
 
     def find_module(self, fullname, path=None):
-        for directory in sys.path:
-            file_name = os.path.join(directory, "{}.hivemap".format(fullname))
+        paths = list(sys.path)
+        if path:
+            paths.append(path)
 
+        *split_name, tail = fullname.split(".")
+        name_parts = split_name + ["{}.hivemap".format(tail)]
+        template_file_name = os.path.join('{}', *name_parts)
+
+        for directory in paths:
+            file_name = template_file_name.format(directory)
             if os.path.exists(file_name):
                 return HiveModuleLoader(file_name)
 

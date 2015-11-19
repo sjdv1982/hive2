@@ -34,12 +34,11 @@ class TreeWidget(QTreeWidget):
         for name, children in item_dict.items():
 
             full_path = path + (name,)
+            if isinstance(children, dict):
+                self.load_items(children, full_path)
 
-            for child in children:
-                if isinstance(child, dict):
-                    self.load_items(child, full_path)
-
-                else:
+            else:
+                for child in children:
                     self.append(full_path + (child,))
 
     def append(self, key):
