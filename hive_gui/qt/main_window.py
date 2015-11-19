@@ -108,7 +108,7 @@ class MainWindow(QMainWindow):
         self.hive_widget.on_selected = self.on_dropped_hive_node
         self.hive_window.setWidget(self.hive_widget)
 
-        self.hive_finder = HiveFinder("D:/PycharmProjects/hive2/test_fs")
+        self.hive_finder = HiveFinder("D:/users/angus/documents/PycharmProjects/hive2/hivemaps")
         self.hive_widget.load_items(self.hive_finder.find_hives())
 
         # Left window

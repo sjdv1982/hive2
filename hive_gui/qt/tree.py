@@ -31,15 +31,15 @@ class TreeWidget(QTreeWidget):
             self.setDragEnabled(False)
 
     def load_items(self, item_dict, path=()):
-        for name, children in item_dict.items():
-
+        for name, child in item_dict.items():
             full_path = path + (name,)
-            if isinstance(children, dict):
-                self.load_items(children, full_path)
+
+            if isinstance(child, dict):
+                self.load_items(child, full_path)
 
             else:
-                for child in children:
-                    self.append(full_path + (child,))
+                assert child is None
+                self.append(full_path)
 
     def append(self, key):
         assert key not in self._keys

@@ -9,8 +9,12 @@ from .importer import install_hook
 install_hook()
 
 
-found_bees = {"hive": ["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier", "pull_in", "pull_out",
-                       "push_in", "push_out"]}
+def _keys_to_dict(keys):
+    return {k: None for k in keys}
+
+
+found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier",
+                                     "pull_in", "pull_out", "push_in", "push_out"])}
 
 
 class HiveFinder:
@@ -42,39 +46,33 @@ class HiveFinder:
             relative_file_path = os.path.join(relative_folder_path, file_name)
             name, extension = os.path.splitext(file_name)
 
-            if extension[1:] in {'py', 'hivemap'}:
+            is_directory = os.path.isdir(current_file_path)
+
+            if is_directory or extension[1:] in {'py', 'hivemap'}:
                 module_file_path = os.path.join(base_folder_name, relative_folder_path, name)
                 import_path = module_file_path.replace(os.path.sep, ".")
 
-                module = __import__(import_path, fromlist=[import_path])
+                module = __import__(import_path, fromlist=[name])
 
                 # Find submodule dict
                 sub_modules = modules
 
-                *component_path, package_name, module_name = import_path.split('.')
-                for component in component_path:
+                for component in import_path.split('.'):
                     try:
                         sub_modules = sub_modules[component]
 
                     except KeyError:
                         sub_modules[component] = sub_modules = {}
 
-                # Get set of hive names
-                try:
-                    hive_set = sub_modules[package_name]
-
-                except KeyError:
-                    hive_set = sub_modules[package_name] = set()
-
                 for name, value in getmembers(module):
                     if name.startswith('_'):
                         continue
 
                     if isclass(value) and issubclass(value, hive.HiveBuilder):
-                        hive_set.add(name)
+                        sub_modules[name] = None
 
-            elif os.path.isdir(current_file_path):
-                self._recurse(base_file_path, relative_file_path, modules)
+                if is_directory and not sub_modules:
+                    self._recurse(base_file_path, relative_file_path, modules)
 
     def find_hives(self):
         filesystem = {}
