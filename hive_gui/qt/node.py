@@ -283,6 +283,7 @@ class Node(QGraphicsWidget):
             # Move node
             if not self._busy:
                 self._busy = True
+
                 self.view.gui_on_moved(self)
                 self._busy = False
 

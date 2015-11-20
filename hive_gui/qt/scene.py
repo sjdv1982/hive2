@@ -39,7 +39,7 @@ from .qt_gui import *
 from .qt_core import *
 
 
-class NodeUiScene(QGraphicsScene):
+class NodeUIScene(QGraphicsScene):
 
     def __init__(self):
         QGraphicsScene.__init__(self)

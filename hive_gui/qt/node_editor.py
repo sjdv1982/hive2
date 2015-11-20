@@ -1,7 +1,7 @@
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .qt_core import *
 from .qt_gui import *
-from .scene import NodeUiScene
+from .scene import NodeUIScene
 from .utils import create_widget
 from .view import NodeView
 from ..inspector import InspectorOption
@@ -64,7 +64,7 @@ class NodePreviewView(QGraphicsView):
     def __init__(self, node_manager):
         QGraphicsView.__init__(self)
 
-        self.setScene(NodeUiScene())
+        self.setScene(NodeUIScene())
         self._preview_update_timer = QTimer(self)
         self._node_manager = node_manager
 
@@ -223,13 +223,26 @@ class PreviewWidget(QWidget):
         self._preview_view.update_preview()
 
 
-class NodeViewController:
+class NodeEditorSpace(QWidget):
 
-    def __init__(self, application, file_name=None):
+    def __init__(self, file_name=None):
+        QWidget.__init__(self)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
         self.file_name = file_name
 
         self._node_manager = NodeManager()
+
         self._view = NodeView()
+        layout.addWidget(self._view)
+
+        scene = NodeUIScene()
+        self._view.setScene(scene)
+
+        self._view.setParent(self)
+        self._view.show()
 
         # Node manager to view
         nm = self._node_manager
@@ -249,9 +262,12 @@ class NodeViewController:
         v.on_connection_destroyed = self._gui_connection_destroyed
         v.on_connection_reordered = self._gui_connection_reordered
         v.on_node_selected = self._gui_node_selected
+        v.on_dropped_tree_node = self._gui_dropped_tree_node
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
+
+        self._pending_dropped_node = None
 
         self._docstring_widget = QTextEdit()
         self._docstring_widget.textChanged.connect(self._docstring_text_updated)
@@ -260,10 +276,13 @@ class NodeViewController:
         self._folding_widget = FoldingPanel(self._node_manager)
         self._preview_widget = PreviewWidget(self._node_manager)
 
+        if file_name is not None:
+            self.load(file_name)
+
     def _on_node_created(self, node):
         from .node import Node
 
-        gui_node = Node(node, self)
+        gui_node = Node(node, self._view)
         self._node_to_qt_node[node] = gui_node
 
         self._view.add_node(gui_node)
@@ -417,6 +436,24 @@ class NodeViewController:
         node = gui_node.node
         self._node_manager.set_node_position(node, position)
 
+    def _gui_dropped_tree_node(self, position):
+        if not self._pending_dropped_node:
+            return
+
+        import_path, node_type = self._pending_dropped_node
+
+        if node_type == NodeTypes.BEE:
+            inspector = self._node_manager.bee_node_inspector.inspect(import_path)
+            params = self._execute_inspector(inspector)
+            node = self._node_manager.create_bee(import_path, params=params)
+
+        else:
+            inspector = self._node_manager.hive_node_inspector.inspect(import_path)
+            params = self._execute_inspector(inspector)
+            node = self._node_manager.create_hive(import_path, params=params)
+
+        self._node_manager.set_node_position(node, position)
+
     def _socket_from_pin(self, pin):
         gui_node = self._node_to_qt_node[pin.node]
         socket_row = gui_node.get_socket_row(pin.name)
@@ -462,22 +499,8 @@ class NodeViewController:
 
         return params
 
-    # Control operations
-    def on_dropped_bee(self, position, import_path):
-        node_manager = self._node_manager
-        inspector = node_manager.bee_node_inspector.inspect(import_path)
-        params = self._execute_inspector(inspector)
-
-        node = node_manager.create_bee(import_path, params=params)
-        node_manager.set_node_position(node, position)
-
-    def on_dropped_hive(self, position, import_path):
-        node_manager = self._node_manager
-        inspector = node_manager.hive_node_inspector.inspect(import_path)
-        params = self._execute_inspector(inspector)
-
-        node = node_manager.create_hive(import_path, params=params)
-        node_manager.set_node_position(node, position)
+    def pre_drop_node(self, import_path, node_type):
+        self._pending_dropped_node = import_path, node_type
 
     def undo(self):
         self._node_manager.history.undo()
@@ -526,6 +549,7 @@ class NodeViewController:
             data = f.read()
 
         node_manager = self._node_manager
+
         try:
             node_manager.load(data)
 

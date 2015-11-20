@@ -12,7 +12,12 @@ class HiveModuleLoader:
 
     def load_module(self, name):
         if name not in sys.modules:
-            cls = class_from_filepath(self.path)
+            try:
+                cls = class_from_filepath(self.path)
+
+            except Exception as exc:
+                raise ImportError from exc
+
             module = types.ModuleType(name, cls.__doc__)
             module.__file__ = self.path
             setattr(module, cls.__name__, cls)

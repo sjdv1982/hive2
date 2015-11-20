@@ -53,7 +53,12 @@ class HiveFinder:
                 module_file_path = os.path.join(base_folder_name, relative_folder_path, name)
                 import_path = module_file_path.replace(os.path.sep, ".")
 
-                module = __import__(import_path, fromlist=[name])
+                try:
+                    module = __import__(import_path, fromlist=[name])
+
+                except ImportError:
+                    print("Couldn't import {}".format(import_path))
+                    continue
 
                 # Find submodule dict
                 sub_modules = modules

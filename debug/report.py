@@ -23,8 +23,8 @@ def report_pull(source_name, target_name, data_type, value):
     stack.append((OpCodes.pull, source_name, target_name, data_type, value))
 
 
-def report_trigger(source_name, target_name):
-    stack.append((OpCodes.trigger, source_name, target_name))
+def report_trigger(source_name, target_name, is_pretrigger=False):
+    stack.append((OpCodes.trigger, source_name, target_name, is_pretrigger))
 
 
 def _decode_string(view):

@@ -75,8 +75,6 @@ class NodeView(QGraphicsView):
             func = functools.partial(self._on_num_key, num)
             QShortcut(QKeySequence(str(num)), self, func)
 
-        self._dropped_node_info = None
-
         # Path editing
         self._cut_start_position = None
         self._slice_path = None
@@ -100,6 +98,7 @@ class NodeView(QGraphicsView):
         self.on_connection_destroyed = None
         self.on_connection_reordered = None
         self.on_node_selected = None
+        self.on_dropped_tree_node = None
 
     def on_socket_hover(self, socket, event=None):
         widget = self.type_info_widget
@@ -271,15 +270,6 @@ class NodeView(QGraphicsView):
         nodes = [item for item in self.scene().items() if isinstance(item, Node)]
         self.gui_set_selected_nodes(nodes)
 
-    def pre_drop_hive(self, path):
-        self._dropped_node_info = NodeTypes.HIVE, path
-
-    def pre_drop_bee(self, path):
-        self._dropped_node_info = NodeTypes.BEE, path
-
-    def pre_drop_helper(self, path):
-        self._dropped_node_info = NodeTypes.HELPER, path
-
     def setScene(self, new_scene):
         QGraphicsView.setScene(self, new_scene)
 
@@ -308,25 +298,10 @@ class NodeView(QGraphicsView):
         scene_pos = self.mapToScene(event.pos())
         event.accept()
 
-        node_info = self._dropped_node_info
-
-        if node_info is None:
-            return
-
-        node_type, import_path = node_info
         position = scene_pos.x(), scene_pos.y()
 
-        if node_type == NodeTypes.BEE:
-            self.on_dropped_bee(position, import_path)
-
-        elif node_type == NodeTypes.HIVE:
-            self.on_dropped_hive(position, import_path)
-
-        elif node_type == NodeTypes.HELPER:
-            self.on_dropped_helper(position, import_path)
-
-        else:
-            raise ValueError(node_type)
+        if callable(self.on_dropped_tree_node):
+            self.on_dropped_tree_node(position)
 
     @property
     def center(self):
@@ -341,7 +316,7 @@ class NodeView(QGraphicsView):
     def _find_connection_at(self, position, size):
         point_rect = QRectF(position + QPointF(-size/2, -size/2), QSizeF(size, size))
 
-        for connection in self._connections.values():
+        for connection in self._connections:
             if not connection.isVisible():
                 continue
 
@@ -353,7 +328,7 @@ class NodeView(QGraphicsView):
         path_line = QLineF(path.pointAtPercent(0.0), path.pointAtPercent(1.0))
 
         intersected = []
-        for connection in self._connections.values():
+        for connection in self._connections:
             if not connection.isVisible():
                 continue
 
@@ -385,7 +360,7 @@ class NodeView(QGraphicsView):
 
             # If found connection
             if connection is not None:
-                for connection_ in self._connections.values():
+                for connection_ in self._connections:
                     connection_.set_selected(False)
 
                 # Set selected

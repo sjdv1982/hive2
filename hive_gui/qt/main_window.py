@@ -1,14 +1,18 @@
 import os
 import webbrowser
 
+from functools import partial
+
 from .qt_core import *
 from .qt_gui import *
-from .scene import NodeUiScene
+from .scene import NodeUIScene
 from .tabs import TabViewWidget
 from .tree import TreeWidget
-from .view import NodeView
+from .node_editor import NodeEditorSpace
+
 from ..finder import found_bees
 from ..importer import clear_imported_hivemaps
+from ..node import NodeTypes
 from ..project_manager import ProjectManager
 from ..utils import import_path_to_module_file_path
 
@@ -36,7 +40,7 @@ class MainWindow(QMainWindow):
 
         self.new_action = QAction("&New", menu_bar,
                         shortcut=QKeySequence.New,
-                        statusTip="Create a new file", triggered=self.add_node_view)
+                        statusTip="Create a new file", triggered=self.add_editor_space)
 
         self.load_action = QAction("&Open...", menu_bar,
                         shortcut=QKeySequence.Open,
@@ -157,8 +161,10 @@ class MainWindow(QMainWindow):
         # Exit last open view
         if previous_index is not None:
             previous_widget = tab_menu.widget(previous_index)
-            if isinstance(previous_widget, NodeView):
-                previous_widget.on_exit()
+
+            if isinstance(previous_widget, NodeEditorSpace):
+                previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
+                                        self.parameter_window, self.preview_window)
 
         # Update UI elements
         self.update_ui_layout()
@@ -166,22 +172,24 @@ class MainWindow(QMainWindow):
         widget = tab_menu.currentWidget()
 
         # Replace docstring
-        if isinstance(widget, NodeView):
-            widget.on_enter()
+        if isinstance(widget, NodeEditorSpace):
+            widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window,
+                            self.parameter_window, self.preview_window)
 
-    def add_node_view(self, *, name="<Untitled>"):
-        view = NodeView(self.folding_window, self.docstring_window, self.configuration_window, self.parameter_window,
-                        self.preview_window)
+    def add_editor_space(self, *, file_name=None):
+        editor = NodeEditorSpace(file_name)
 
-        index = self.tab_widget.addTab(view, name)
+        if file_name is None:
+            label = "<Unsaved>"
+        else:
+            label = file_name
+
+        index = self.tab_widget.addTab(editor, label)
         self.tab_widget.setCurrentIndex(index)
 
-        scene = NodeUiScene()
-        view.setScene(scene)
+        editor.show()
 
-        view.show()
-
-        return view
+        return editor
 
     def create_subwindow(self, title, position, closeable=False):
         area = area_classes[position]
@@ -223,7 +231,7 @@ class MainWindow(QMainWindow):
         if self.project_manager is not None:
             widget = self.tab_widget.currentWidget()
 
-            if isinstance(widget, NodeView):
+            if isinstance(widget, NodeEditorSpace):
                 show_save_as = True
                 show_save = widget.file_name is not None
                 show_edit = True
@@ -236,7 +244,6 @@ class MainWindow(QMainWindow):
             self.hive_window.setVisible(show_hives)
             self.bee_window.setVisible(show_bees)
             self.parameter_window.setVisible(show_args)
-            self.helpers_window.setVisible(show_helpers)
             self.preview_window.setVisible(show_preview)
 
             self.file_menu.addAction(self.new_action)
@@ -253,20 +260,16 @@ class MainWindow(QMainWindow):
     def on_dropped_hive_node(self, path):
         view = self.tab_widget.currentWidget()
 
-        if isinstance(view, NodeView):
+        if isinstance(view, NodeEditorSpace):
             view.pre_drop_hive(path)
 
-    def on_dropped_bee_node(self, path):
-        view = self.tab_widget.currentWidget()
+    def on_selected_tree_node(self, path, node_type):
+        widget = self.tab_widget.currentWidget()
 
-        if isinstance(view, NodeView):
-            view.pre_drop_bee(path)
+        if not isinstance(widget, NodeEditorSpace):
+            return
 
-    def on_dropped_helper_node(self, path):
-        view = self.tab_widget.currentWidget()
-
-        if isinstance(view, NodeView):
-            view.pre_drop_helper(path)
+        widget.pre_drop_node(path, node_type)
 
     def open_project(self):
         dialogue = QFileDialog(self, caption="Open Hive Project")
@@ -288,13 +291,13 @@ class MainWindow(QMainWindow):
         self.project_manager = ProjectManager(directory_path)
 
         self.hive_widget = TreeWidget()
-        self.hive_widget.on_selected = self.on_dropped_hive_node
+        self.hive_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.HIVE)
         self.hive_window.setWidget(self.hive_widget)
         self.hive_widget.load_items(self.project_manager.hive_finder.find_hives())
         self.hive_widget.on_right_click = self.show_hive_edit_menu
 
         self.bee_widget = TreeWidget()
-        self.bee_widget.on_selected = self.on_dropped_bee_node
+        self.bee_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.BEE)
         self.bee_window.setWidget(self.bee_widget)
         self.bee_widget.load_items(found_bees)
 
@@ -314,7 +317,6 @@ class MainWindow(QMainWindow):
 
         if called_action == edit_action:
             view = self._open_file(hivemap_file_path)
-            view.on_saved = ...
 
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
@@ -334,7 +336,7 @@ class MainWindow(QMainWindow):
         for index in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(index)
 
-            if not isinstance(widget, NodeView):
+            if not isinstance(widget, NodeEditorSpace):
                 continue
 
             # If already open
@@ -343,8 +345,7 @@ class MainWindow(QMainWindow):
                 break
 
         else:
-            view = self.add_node_view()
-            view.load(file_name=file_name)
+            editor = self.add_editor_space(file_name=file_name)
 
             # Rename tab
             name = os.path.basename(file_name)
@@ -363,11 +364,11 @@ class MainWindow(QMainWindow):
 
         if dialogue.exec_():
             file_name = dialogue.selectedFiles()[0]
-            self.save_file(save_file=file_name)
+            self.save_file(file_name=file_name)
 
     def save_file(self, *, file_name=None):
         view = self.tab_widget.currentWidget()
-        assert isinstance(view, NodeView)
+        assert isinstance(view, NodeEditorSpace)
 
         view.save(file_name=file_name)
 

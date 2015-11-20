@@ -77,13 +77,20 @@ def build_connection(source, target):
 
         elif hive_target:
             target = target._hive_get_connect_target(source)
-                    
+
+
     # will raise an Exception if incompatible:
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
-        
-    target._hive_connect_target(source)
-    source._hive_connect_source(target)
+
+    if False:
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
+    else:
+        from debug import report2
+        dsource, dtarget = report2.connect(source, target)
+        target._hive_connect_target(dtarget)
+        source._hive_connect_target(dsource)
 
 
 class Connection(Bindable):
