@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 import types
 
 from .utils import class_from_filepath
@@ -14,6 +14,7 @@ class HiveModuleLoader:
         if name not in sys.modules:
             cls = class_from_filepath(self.path)
             module = types.ModuleType(name, cls.__doc__)
+            module.__file__ = self.path
             setattr(module, cls.__name__, cls)
             sys.modules[name] = module
 
@@ -40,4 +41,17 @@ class HiveModuleImporter(object):
 
 
 def install_hook():
-    sys.meta_path.append(HiveModuleImporter())
+    importer = HiveModuleImporter()
+    sys.meta_path.append(importer)
+    return importer
+
+
+def clear_imported_hivemaps():
+    to_remove = []
+
+    for name, module in sys.modules.items():
+        if isinstance(module.__loader__, HiveModuleLoader):
+            to_remove.append(name)
+
+    for name in to_remove:
+        del sys.modules[name]

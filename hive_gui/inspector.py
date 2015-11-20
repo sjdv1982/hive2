@@ -168,7 +168,6 @@ class HiveNodeInspector:
 
     def _inspect_generator(self, import_path):
         # Import and prepare hive
-        print("IMP",import_path)
         hive_cls = import_from_path(import_path)
 
         # Prepare args wrapper

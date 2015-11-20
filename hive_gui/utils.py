@@ -1,8 +1,7 @@
-import hive
 import ast
 
+import hive
 from hive.mixins import *
-
 # IO bees
 from hive.hook import Hook
 from hive.entry import Entry
@@ -193,6 +192,14 @@ def import_from_path(import_path):
 
     module = __import__(import_path, fromlist=[sub_module_name])
     return getattr(module, class_name)
+
+
+def import_path_to_module_file_path(import_path):
+    module_path = import_path.rsplit('.', 1)[0]
+    module_name = module_path.split('.')[0]
+    module = __import__(module_path, fromlist=[module_name])
+
+    return module.__file__
 
 
 def create_hive_object_instance(import_path, params):

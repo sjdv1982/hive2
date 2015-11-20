@@ -1,13 +1,13 @@
+from traceback import format_exc
+
 from .connection import Connection, ConnectionType
-from .factory import BeeNodeFactory, HiveNodeFactory, HelperNodeFactory
-from .inspector import HiveNodeInspector, BeeNodeInspector
+from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import OperationHistory
-from .node import NodeTypes
+from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
+from .node import NodeTypes
 from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier, \
     camelcase_to_underscores
-
-from traceback import format_exc
 
 
 def _get_unique_name(existing_names, base_name):
@@ -31,13 +31,11 @@ class NodeConnectionError(Exception):
 
 class NodeManager(object):
 
-    def __init__(self, gui_node_manager):
-        self.gui_node_manager = gui_node_manager
+    def __init__(self):
         self.history = OperationHistory()
 
         self.bee_node_factory = BeeNodeFactory()
         self.hive_node_factory = HiveNodeFactory()
-        self.helper_node_factory = HelperNodeFactory()
 
         self.hive_node_inspector = HiveNodeInspector()
         self.bee_node_inspector = BeeNodeInspector(self)
@@ -48,6 +46,20 @@ class NodeManager(object):
 
         # Hard coded paths for useful node types
         self.variable_import_path = "dragonfly.std.Variable"
+
+        self.on_node_created = None
+        self.on_node_destroyed = None
+        self.on_node_moved = None
+        self.on_node_renamed = None
+
+        self.on_connection_created = None
+        self.on_connection_destroyed = None
+        self.on_connection_reordered = None
+
+        self.on_pin_folded = None
+        self.on_pin_unfolded = None
+
+        self.on_pasted_pre_connect = None
 
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
@@ -68,15 +80,20 @@ class NodeManager(object):
         is_trigger = result == ConnectionType.TRIGGER
         connection = Connection(output_pin, input_pin, is_trigger=is_trigger)
 
-        # Ask GUI to perform connection
-        self.gui_node_manager.create_connection(connection)
         self.history.push_operation(self.create_connection, (output_pin, input_pin),
                                     self.delete_connection, (connection,))
+
+        # Ask GUI to perform connection
+        if callable(self.on_connection_created):
+            self.on_connection_created(connection)
 
         print("Create connection", output_pin.name, output_pin.node, input_pin.name, input_pin.node)
 
     def delete_connection(self, connection):
-        self.gui_node_manager.delete_connection(connection)
+        # Ask GUI to perform connection
+        if callable(self.on_connection_destroyed):
+            self.on_connection_destroyed(connection)
+
         print("Delete Connection", connection)
 
         connection.delete()
@@ -91,7 +108,10 @@ class NodeManager(object):
         old_index = output_pin.connections.index(connection)
 
         output_pin.reorder_target(connection, index)
-        self.gui_node_manager.reorder_connection(connection, index)
+
+        # Ask GUI to reorder connection
+        if callable(self.on_connection_reordered):
+            self.on_connection_reordered(connection, index)
 
         self.history.push_operation(self.reorder_connection, (connection, index),
                                     self.reorder_connection, (connection, old_index))
@@ -118,22 +138,11 @@ class NodeManager(object):
         self._add_node(node)
         return node
 
-    def create_helper(self, import_path, params=None):
-        if params is None:
-            params = {}
-
-        raise NotImplementedError
-
-        name = self._unique_name_from_import_path(import_path)
-        param_info = self.helper_node_inspector.inspect_configured(import_path, params)
-        node = self.helper_node_factory.new(name, import_path, params, param_info)
-
-        self._add_node(node)
-        return node
-
     def _add_node(self, node):
         self.nodes[node.name] = node
-        self.gui_node_manager.create_node(node)
+
+        if callable(self.on_node_created):
+            self.on_node_created(node)
 
         for pin in node.inputs.values():
             assert not pin.is_folded, (pin.name, pin.node)
@@ -161,7 +170,9 @@ class NodeManager(object):
             for connection in list(output_pin.connections):
                 self.delete_connection(connection)
 
-        self.gui_node_manager.delete_node(node)
+        if callable(self.on_node_destroyed):
+            self.on_node_destroyed(node)
+
         self.nodes.pop(node.name)
 
         self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
@@ -187,7 +198,9 @@ class NodeManager(object):
         # Update name
         node.name = name
 
-        self.gui_node_manager.set_node_name(node, name)
+        if callable(self.on_node_renamed):
+            self.on_node_renamed(node, name)
+
         self.history.push_operation(self.set_node_name, (node, name), self.set_node_name, (node, old_name))
 
     def set_node_position(self, node, position):
@@ -207,7 +220,8 @@ class NodeManager(object):
                 new_position = other_node.position[0] + dx, other_node.position[1] + dy
                 self.set_node_position(other_node, new_position)
 
-        self.gui_node_manager.set_node_position(node, position)
+        if callable(self.on_node_moved):
+            self.on_node_moved(node, position)
 
         self.history.push_operation(self.set_node_position, (node, position),
                                     self.set_node_position, (node, old_position))
@@ -262,7 +276,9 @@ class NodeManager(object):
 
         pin.is_folded = True
 
-        self.gui_node_manager.fold_pin(pin)
+        if callable(self.on_pin_folded):
+            self.on_pin_folded(pin)
+
         self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
 
     def unfold_pin(self, pin):
@@ -271,11 +287,14 @@ class NodeManager(object):
 
         pin.is_folded = False
 
-        self.gui_node_manager.unfold_pin(pin)
+        if callable(self.on_pin_unfolded):
+            self.on_pin_unfolded(pin)
+
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
 
-    def on_pasted_pre_connect(self, nodes):
-        self.gui_node_manager.on_pasted_pre_connect(nodes)
+    def _paste_pre_connect(self, nodes):
+        if callable(self.on_pasted_pre_connect):
+            self.on_pasted_pre_connect(nodes)
 
     def export(self):
         hivemap = self.export_hivemap()
@@ -484,7 +503,7 @@ class NodeManager(object):
             nodes.add(node)
 
         # Pre connectivity step (Blender hack)
-        self.on_pasted_pre_connect(nodes)
+        self._paste_pre_connect(nodes)
 
         # Recreate connections
         for connection in hivemap.connections:

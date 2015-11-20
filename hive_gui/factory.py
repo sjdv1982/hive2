@@ -1,5 +1,5 @@
 from .node import Node, NodeTypes, MimicFlags
-from .utils import create_hive_object_instance, get_io_info, import_from_path, get_builder_class_args
+from .utils import create_hive_object_instance, get_io_info
 
 
 class BeeNodeFactory:
@@ -126,43 +126,3 @@ class HiveNodeFactory:
         node.pin_order[:] = io_info['pin_order']
 
         return node
-
-
-class HelperNodeFactory:
-    """Helper nodes enable expression of non-bee constructs.
-
-    They have no runtime presence themselves
-    """
-    _trigger_tooltip = \
-"""
-A trigger_{} helper enables nodes to hook into trigger and pretrigger events from the connected pin.
-This helper has no build or runtime presence, only the connections to its trigger pins, implemented as triggers
-"""
-
-    def new(self, name, import_path, params, param_info):
-        root, helper_name = import_path.split(".")
-        builder = getattr(self, "build_{}".format(helper_name))
-
-        return builder(name, import_path, params, param_info)
-    #
-    # def build_trigger_out(self, name, import_path, params):
-    #     node = Node(name, NodeTypes.HELPER, import_path, params)
-    #     node.tooltip = self._trigger_tooltip.format("out")
-    #
-    #     node.add_output("pretrigger", ("trigger",), "push", is_virtual=True)
-    #     node.add_input("pin", data_type=None, mode="any", mimic_flags=MimicFlags.COLOUR | MimicFlags.SHAPE,
-    #                    max_connections=1, is_virtual=True, count_proxies=True)
-    #     node.add_output("trigger", ("trigger",), "push", is_virtual=True)
-    #
-    #     return node
-    #
-    # def build_trigger_in(self, name, import_path, params):
-    #     node = Node(name, NodeTypes.HELPER, import_path, params)
-    #     node.tooltip = self._trigger_tooltip.format("in")
-    #
-    #     node.add_output("pretrigger", ("trigger",), "push", is_virtual=True)
-    #     node.add_output("pin", data_type=None, mode="any", mimic_flags=MimicFlags.COLOUR | MimicFlags.SHAPE,
-    #                     max_connections=1, is_virtual=True, count_proxies=True)
-    #     node.add_output("trigger", ("trigger",), "push", is_virtual=True)
-    #
-    #     return node

@@ -1,9 +1,6 @@
 
 from .qt_core import *
 from .qt_gui import *
-
-from .view import NodeView
-
 # <license>
 # Copyright (C) 2011 Andrea Interguglielmi, All rights reserved.
 # This file is part of the coral repository downloaded from http://code.google.com/p/coral-repo.
@@ -271,10 +268,6 @@ class Node(QGraphicsWidget):
             socket_row.on_deleted()
 
         self._socket_rows.clear()
-
-        if self.scene():
-            if self in self.scene().items():
-                self.scene().removeItem(self)
 
     def hoverEnterEvent(self, event):
         pass

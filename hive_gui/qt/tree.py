@@ -1,6 +1,5 @@
 from __future__ import print_function, absolute_import
 
-from .qt_core import *
 from .qt_gui import *
 
 
@@ -16,7 +15,22 @@ class TreeWidget(QTreeWidget):
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.itemPressed.connect(self._on_item_pressed)
         self.setDragEnabled(True)
+
         self.on_selected = on_selected
+        self.on_right_click = None
+
+    def contextMenuEvent(self, event):
+        item = self.selectedItems()[0]
+
+        try:
+            key = self._widget_id_to_key[id(item)]
+
+        except KeyError:
+            return
+
+        path = '.'.join(key)
+        if callable(self.on_right_click):
+            self.on_right_click(path, event)
 
     def _on_item_pressed(self, item, column):
         if id(item) in self._widget_id_to_key:

@@ -7,7 +7,10 @@ from .scene import NodeUiScene
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from .view import NodeView
-from ..finder import HiveFinder, found_bees
+from ..finder import found_bees
+from ..importer import clear_imported_hivemaps
+from ..project_manager import ProjectManager
+from ..utils import import_path_to_module_file_path
 
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
@@ -15,6 +18,8 @@ area_classes = {
     "top": Qt.TopDockWidgetArea,
     "bottom": Qt.BottomDockWidgetArea,
 }
+
+# TODO throw unsaved warning when closing tabs
 
 
 class MainWindow(QMainWindow):
@@ -47,10 +52,8 @@ class MainWindow(QMainWindow):
 
         self.file_menu = QMenu("&File")
 
-        self.file_menu.addAction(self.new_action)
-        self.file_menu.addAction(self.load_action)
-        self.file_menu.addAction(self.save_action)
-        self.file_menu.addAction(self.save_as_action)
+        self.open_project_action = QAction("Open Project", menu_bar,
+                                   statusTip="Open an existing Hive project", triggered=self.open_project)
 
         self.select_all_action = QAction("Select &All", menu_bar,
                                    shortcut=QKeySequence.SelectAll,
@@ -101,55 +104,26 @@ class MainWindow(QMainWindow):
         self.hive_window = self.create_subwindow("Hives", "left")
         self.hive_window.setMinimumHeight(450)
 
-        self.hive_window.setVisible(False)
-        self.hive_widget = TreeWidget()
-        self.hive_widget.on_selected = self.on_dropped_hive_node
-        self.hive_window.setWidget(self.hive_widget)
-
-        self.hive_finder = HiveFinder("D:/users/angus/documents/PycharmProjects/hive2/hivemaps")
-        self.hive_widget.load_items(self.hive_finder.find_hives())
-
         # Left window
         self.bee_window = self.create_subwindow("Bees", "left")
-        self.bee_window.setVisible(False)
-        self.bee_widget = TreeWidget()
-        self.bee_widget.on_selected = self.on_dropped_bee_node
-        self.bee_window.setWidget(self.bee_widget)
-        self.bee_widget.load_items(found_bees)
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")
-        self.docstring_window.setVisible(False)
-
         self.configuration_window = self.create_subwindow("Configuration", "right")
-        self.configuration_window.setVisible(False)
-
         self.parameter_window = self.create_subwindow("Parameters", "right")
-        self.parameter_window.setVisible(False)
-
         self.folding_window = self.create_subwindow("Folding", "right")
-        self.folding_window.setVisible(False)
-
-        self.helpers_window = self.create_subwindow("Project", "left")
-        self.helpers_window.setVisible(False)
-        self.helper_widget = TreeWidget()
-        self.helper_widget.on_selected = self.on_dropped_helper_node
-        self.helpers_window.setWidget(self.helper_widget)
-
         self.preview_window = self.create_subwindow("Preview", "left")
-        self.preview_window.setVisible(False)
 
         self.tabifyDockWidget(self.hive_window, self.bee_window)
-        self.tabifyDockWidget(self.bee_window, self.helpers_window)
 
         self.home_page = None
 
+        self.project_manager = None
+
+        # self.hive_finder = HiveFinder("D:/users/angus/documents/PycharmProjects/hive2/hivemaps")
+
     def goto_help_page(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
-
-    def get_current_node_manager(self):
-        view = self.tab_widget.currentWidget()
-        return view.node_manager
 
     def select_all_operation(self):
         view = self.tab_widget.currentWidget()
@@ -225,56 +199,56 @@ class MainWindow(QMainWindow):
         return window
 
     def update_ui_layout(self):
-        widget = self.tab_widget.currentWidget()
-
         show_save = False
         show_save_as = False
 
-        show_docstring = False
         show_edit = False
 
-        show_config = False
-        show_folding = False
-        show_hives = False
-        show_args = False
-        show_bees = False
-        show_helpers = False
-        show_preview = False
-
-        if isinstance(widget, NodeView):
-            show_save_as = True
-            show_save = widget.file_name is not None
-            show_edit = True
-
-            show_docstring = True
-            show_config = True
-            show_folding = True
-            show_hives = True
-            show_args = True
-            show_bees = True
-            show_helpers = True
-            show_preview = True
-
-        self.save_action.setVisible(show_save)
-        self.save_as_action.setVisible(show_save_as)
-        self.docstring_window.setVisible(show_docstring)
-        self.folding_window.setVisible(show_folding)
-        self.configuration_window.setVisible(show_config)
-        self.hive_window.setVisible(show_hives)
-        self.bee_window.setVisible(show_bees)
-        self.parameter_window.setVisible(show_args)
-        self.helpers_window.setVisible(show_helpers)
-        self.preview_window.setVisible(show_preview)
+        show_docstring = True
+        show_config = True
+        show_folding = True
+        show_hives = True
+        show_args = True
+        show_bees = True
+        show_helpers = True
+        show_preview = True
 
         menu_bar = self.menuBar()
         menu_bar.clear()
 
         menu_bar.addMenu(self.file_menu)
 
-        if show_edit:
-            menu_bar.addMenu(self.edit_menu)
+        self.file_menu.addAction(self.open_project_action)
 
-        menu_bar.addAction(self.help_action)
+        if self.project_manager is not None:
+            widget = self.tab_widget.currentWidget()
+
+            if isinstance(widget, NodeView):
+                show_save_as = True
+                show_save = widget.file_name is not None
+                show_edit = True
+
+            self.save_action.setVisible(show_save)
+            self.save_as_action.setVisible(show_save_as)
+            self.docstring_window.setVisible(show_docstring)
+            self.folding_window.setVisible(show_folding)
+            self.configuration_window.setVisible(show_config)
+            self.hive_window.setVisible(show_hives)
+            self.bee_window.setVisible(show_bees)
+            self.parameter_window.setVisible(show_args)
+            self.helpers_window.setVisible(show_helpers)
+            self.preview_window.setVisible(show_preview)
+
+            self.file_menu.addAction(self.new_action)
+            self.file_menu.addAction(self.load_action)
+
+            self.file_menu.addAction(self.save_action)
+            self.file_menu.addAction(self.save_as_action)
+
+            if show_edit:
+                menu_bar.addMenu(self.edit_menu)
+
+            menu_bar.addAction(self.help_action)
 
     def on_dropped_hive_node(self, path):
         view = self.tab_widget.currentWidget()
@@ -294,6 +268,54 @@ class MainWindow(QMainWindow):
         if isinstance(view, NodeView):
             view.pre_drop_helper(path)
 
+    def open_project(self):
+        dialogue = QFileDialog(self, caption="Open Hive Project")
+        dialogue.setFileMode(QFileDialog.DirectoryOnly)
+        dialogue.setAcceptMode(QFileDialog.AcceptOpen)
+        dialogue.setOption(QFileDialog.ShowDirsOnly)
+
+        if not dialogue.exec_():
+            return
+
+        directory_path = dialogue.selectedFiles()[0]
+
+        # Close open tabs
+        while self.tab_widget.count() > 1:
+            self.tab_widget.removeTab(1)
+
+        clear_imported_hivemaps()
+
+        self.project_manager = ProjectManager(directory_path)
+
+        self.hive_widget = TreeWidget()
+        self.hive_widget.on_selected = self.on_dropped_hive_node
+        self.hive_window.setWidget(self.hive_widget)
+        self.hive_widget.load_items(self.project_manager.hive_finder.find_hives())
+        self.hive_widget.on_right_click = self.show_hive_edit_menu
+
+        self.bee_widget = TreeWidget()
+        self.bee_widget.on_selected = self.on_dropped_bee_node
+        self.bee_window.setWidget(self.bee_widget)
+        self.bee_widget.load_items(found_bees)
+
+        self.update_ui_layout()
+
+    def show_hive_edit_menu(self, path, event):
+        # Can only edit .hivemaps
+        hivemap_file_path = import_path_to_module_file_path(path)
+
+        if not hivemap_file_path.endswith(".hivemap"):
+            return
+
+        menu = QMenu(self.hive_widget)
+        edit_action = menu.addAction("Edit Hivemap")
+
+        called_action = menu.exec_(self.mapToGlobal(event.pos()))
+
+        if called_action == edit_action:
+            view = self._open_file(hivemap_file_path)
+            view.on_saved = ...
+
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
         dialogue.setDefaultSuffix("hivemap")
@@ -305,7 +327,9 @@ class MainWindow(QMainWindow):
             return
 
         file_name = dialogue.selectedFiles()[0]
+        self._open_file(file_name)
 
+    def _open_file(self, file_name):
         # Check if already open
         for index in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(index)
