@@ -25,6 +25,7 @@ area_classes = {
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
     hivemap_extension = ".hivemap"
+    untitled_file_name = "<Unsaved>"
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -103,7 +104,8 @@ class MainWindow(QMainWindow):
         self.tab_widget = TabViewWidget()
         self.setCentralWidget(self.tab_widget)
 
-        self.tab_widget.on_changed = self.on_tab_changed
+        self.tab_widget.on_changed = self._on_tab_changed
+        self.tab_widget.check_tab_closable = self._check_tab_closable
 
         # Left window
         self.bee_window = self.create_subwindow("Bees", "left")
@@ -145,6 +147,15 @@ class MainWindow(QMainWindow):
         title = self.project_name_template.format(directory_name)
         self.setWindowTitle(title)
 
+    def _get_display_name(self, file_name, allow_untitled=True):
+        if file_name is None:
+            if not allow_untitled:
+                raise ValueError("File name must not be None")
+
+            return self.untitled_file_name
+
+        return os.path.basename(file_name)
+
     def goto_help_page(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
 
@@ -176,7 +187,19 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(home_page, "About", closeable=False)
         self.home_page = home_page
 
-    def on_tab_changed(self, tab_menu, previous_index=None):
+    def _check_tab_closable(self, index):
+        widget = self.tab_widget.widget(index)
+
+        if widget.has_unsaved_changes:
+            reply = QMessageBox.warning(self, 'Close File', "This file has unsaved changes. Do you want to close it?",
+                                        QMessageBox.Yes, QMessageBox.No)
+
+            if reply != QMessageBox.Yes:
+                return False
+
+        return True
+
+    def _on_tab_changed(self, tab_menu, previous_index=None):
         # Exit last open view
         if previous_index is not None:
             previous_widget = tab_menu.widget(previous_index)
@@ -198,15 +221,12 @@ class MainWindow(QMainWindow):
     def add_editor_space(self, *, file_name=None):
         editor = NodeEditorSpace(file_name)
 
-        if file_name is None:
-            label = "<Unsaved>"
+        display_name = self._get_display_name(file_name)
 
-        else:
-            label = file_name
-
-        index = self.tab_widget.addTab(editor, label)
+        index = self.tab_widget.addTab(editor, display_name)
         self.tab_widget.setCurrentIndex(index)
 
+        editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
         editor.show()
 
         return editor
@@ -305,16 +325,17 @@ class MainWindow(QMainWindow):
             return
 
         directory_path = dialogue.selectedFiles()[0]
-        self.close_project()
+        can_close = self.close_project()
 
-        # Load HIVES from project
-        self.hive_finder.additional_paths = {directory_path, }
+        if can_close:
+            # Load HIVES from project
+            self.hive_finder.additional_paths = {directory_path, }
 
-        # Set directory
-        self.project_directory = directory_path
+            # Set directory
+            self.project_directory = directory_path
 
-        self.refresh_project_tree()
-        self.update_ui_layout()
+            self.refresh_project_tree()
+            self.update_ui_layout()
 
     def close_project(self):
         # Close open tabs
@@ -357,6 +378,24 @@ class MainWindow(QMainWindow):
         if called_action == edit_action:
             editor = self._open_file(hivemap_file_path)
 
+    def _on_save_state_changed(self, editor, has_unsaved_changes):
+        # Check if already open
+        for index in range(self.tab_widget.count()):
+            widget = self.tab_widget.widget(index)
+            if widget is editor:
+                break
+
+        else:
+            raise ValueError()
+
+        file_name = self._get_display_name(editor.file_name)
+
+        if not has_unsaved_changes:
+            self.tab_widget.setTabText(index, file_name)
+
+        else:
+            self.tab_widget.setTabText(index, "{}*".format(file_name))
+
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
         dialogue.setDefaultSuffix("hivemap")
@@ -391,7 +430,7 @@ class MainWindow(QMainWindow):
             editor = self.add_editor_space(file_name=file_name)
 
             # Rename tab
-            name = os.path.basename(file_name)
+            name = self._get_display_name(file_name, allow_untitled=False)
             index = self.tab_widget.currentIndex()
             self.tab_widget.setTabText(index, name)
 
@@ -417,7 +456,7 @@ class MainWindow(QMainWindow):
         widget.save(file_name=file_name)
 
         # Rename tab
-        name = os.path.basename(file_name)
+        name = self._get_display_name(file_name, allow_untitled=False)
         index = self.tab_widget.currentIndex()
         self.tab_widget.setTabText(index, name)
 

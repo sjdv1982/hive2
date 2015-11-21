@@ -15,8 +15,9 @@ class Connection:
 
         self._is_trigger = is_trigger
 
-        output_pin.add_connection(self)
-        input_pin.add_connection(self)
+    def connect(self):
+        self._output_pin.add_connection(self)
+        self._input_pin.add_connection(self)
 
     def delete(self):
         self._input_pin.remove_connection(self)

@@ -197,6 +197,11 @@ class NodeEditorSpace(QWidget):
         nm.on_connection_reordered = self._on_connection_reordered
         nm.on_pin_folded = self._on_pin_folded
         nm.on_pin_unfolded = self._on_pin_unfolded
+        nm.history.on_updated = self._on_node_history_update
+
+        self._history_id = None
+        self._last_saved_id = None
+        self.on_update_is_saved = None
 
         # View to node manager
         v = self._view
@@ -222,6 +227,16 @@ class NodeEditorSpace(QWidget):
 
         if file_name is not None:
             self.load(file_name)
+
+    @property
+    def has_unsaved_changes(self):
+        return self._last_saved_id != self._history_id
+
+    def _on_node_history_update(self, history):
+        self._history_id = history.operation_id
+
+        if callable(self.on_update_is_saved):
+            self.on_update_is_saved(self.has_unsaved_changes)
 
     def _on_node_created(self, node):
         from .node import Node
@@ -301,6 +316,7 @@ class NodeEditorSpace(QWidget):
         # Update preview
         gui_connection = self._connection_to_qt_connection.pop(connection)
         self._view.remove_connection(gui_connection)
+
         gui_connection.on_deleted()
 
         self._preview_widget.update_preview()
@@ -442,6 +458,9 @@ class NodeEditorSpace(QWidget):
     def pre_drop_node(self, import_path, node_type):
         self._pending_dropped_node = import_path, node_type
 
+    def select_all(self):
+        self._view.select_all()
+
     def undo(self):
         self._node_manager.history.undo()
 
@@ -478,6 +497,12 @@ class NodeEditorSpace(QWidget):
             f.write(data)
 
         self.file_name = file_name
+
+        # Mark pending changes as false
+        self._last_saved_id = self._history_id
+
+        if callable(self.on_update_is_saved):
+            self.on_update_is_saved(False)
 
     def load(self, file_name=None):
         if file_name is None:

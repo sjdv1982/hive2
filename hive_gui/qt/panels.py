@@ -1,7 +1,6 @@
-from .qt_gui import *
 from functools import partial
 
-
+from .qt_gui import *
 from .utils import create_widget
 
 
@@ -115,7 +114,7 @@ class ArgsPanel(QWidget):
                 layout.addRow(line)
 
             arg_data = node.params_info["args"]
-            print(args)
+
             for name, value in args.items():
                 # Get data type
                 inspector_option = arg_data[name]

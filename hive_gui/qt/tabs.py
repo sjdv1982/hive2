@@ -13,6 +13,7 @@ class TabViewWidget(QTabWidget):
         self.on_inserted = None
         self.on_removed = None
         self.on_changed = None
+        self.check_tab_closable = None
 
         self._current_tab_index = None
 
@@ -25,6 +26,10 @@ class TabViewWidget(QTabWidget):
         return tab
 
     def _close_tab(self, index):
+        if callable(self.check_tab_closable):
+            if not self.check_tab_closable(index):
+                return
+            
         self.removeTab(index)
 
     def _tab_changed(self, index):

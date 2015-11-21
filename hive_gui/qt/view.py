@@ -36,10 +36,10 @@ from __future__ import print_function, absolute_import
 
 import functools
 
-from .scene import NodeUIScene
+from .floating_text import FloatingTextWidget
 from .qt_core import *
 from .qt_gui import *
-from .floating_text import FloatingTextWidget
+from .scene import NodeUIScene
 
 SELECT_SIZE = 10
 
@@ -187,13 +187,8 @@ class NodeView(QGraphicsView):
         self._moved_gui_nodes.clear()
 
     def gui_create_connection(self, start_socket, end_socket):
-
-        try:
-            if callable(self.on_connection_created):
-                self.on_connection_created(start_socket, end_socket)
-
-        except ValueError:
-            pass
+        if callable(self.on_connection_created):
+            self.on_connection_created(start_socket, end_socket)
 
     def gui_delete_connection(self, gui_connection):
         if callable(self.on_connection_destroyed):

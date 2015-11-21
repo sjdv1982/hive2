@@ -79,14 +79,21 @@ class NodeManager(object):
 
         is_trigger = result == ConnectionType.TRIGGER
         connection = Connection(output_pin, input_pin, is_trigger=is_trigger)
+        # Must call connection.connect()
+        self._add_connection(connection)
 
-        self.history.push_operation(self.create_connection, (output_pin, input_pin),
+    def _add_connection(self, connection):
+        self.history.push_operation(self._add_connection, (connection,),
                                     self.delete_connection, (connection,))
+
+        connection.connect()
 
         # Ask GUI to perform connection
         if callable(self.on_connection_created):
             self.on_connection_created(connection)
 
+        output_pin = connection.output_pin
+        input_pin = connection.input_pin
         print("Create connection", output_pin.name, output_pin.node, input_pin.name, input_pin.node)
 
     def delete_connection(self, connection):
@@ -98,10 +105,8 @@ class NodeManager(object):
 
         connection.delete()
 
-        output_pin = connection.output_pin
-        input_pin = connection.input_pin
         self.history.push_operation(self.delete_connection, (connection,),
-                                    self.create_connection, (output_pin, input_pin))
+                                    self._add_connection, (connection,))
 
     def reorder_connection(self, connection, index):
         output_pin = connection.output_pin
@@ -175,7 +180,7 @@ class NodeManager(object):
 
         self.nodes.pop(node.name)
 
-        self.history.push_operation(self.delete_node, (node, ), self._add_node, (node,))
+        self.history.push_operation(self.delete_node, (node,), self._add_node, (node,))
 
     def set_node_name(self, node, name, attempt_till_success=False):
         if not is_identifier(name):
