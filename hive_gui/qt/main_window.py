@@ -24,12 +24,15 @@ area_classes = {
 
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
+    hivemap_extension = ".hivemap"
 
     def __init__(self):
         QMainWindow.__init__(self)
 
         status_bar = QStatusBar(self)
         self.setStatusBar(status_bar)
+
+        self.setDockNestingEnabled(True)
 
         menu_bar = self.menuBar()
 
@@ -107,16 +110,16 @@ class MainWindow(QMainWindow):
 
         # Left window
         self.hive_window = self.create_subwindow("Hives", "left")
-        self.hive_window.setMinimumHeight(450)
 
         # Docstring editor
         self.docstring_window = self.create_subwindow("Docstring", "left")
         self.configuration_window = self.create_subwindow("Configuration", "right")
+
         self.parameter_window = self.create_subwindow("Parameters", "right")
         self.folding_window = self.create_subwindow("Folding", "right")
         self.preview_window = self.create_subwindow("Preview", "left")
 
-        self.tabifyDockWidget(self.hive_window, self.bee_window)
+        self.tabifyDockWidget(self.bee_window, self.hive_window)
 
         self.home_page = None
 
@@ -197,6 +200,7 @@ class MainWindow(QMainWindow):
 
         if file_name is None:
             label = "<Unsaved>"
+
         else:
             label = file_name
 
@@ -341,13 +345,14 @@ class MainWindow(QMainWindow):
         # Can only edit .hivemaps
         hivemap_file_path = import_path_to_module_file_path(path)
 
-        if not hivemap_file_path.endswith(".hivemap"):
+        if not hivemap_file_path.endswith(self.hivemap_extension):
             return
 
         menu = QMenu(self.hive_widget)
         edit_action = menu.addAction("Edit Hivemap")
 
-        called_action = menu.exec_(self.mapToGlobal(event.pos()))
+        global_position = self.hive_widget.mapToGlobal(event.pos())
+        called_action = menu.exec_(global_position)
 
         if called_action == edit_action:
             editor = self._open_file(hivemap_file_path)
@@ -355,7 +360,7 @@ class MainWindow(QMainWindow):
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
         dialogue.setDefaultSuffix("hivemap")
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.hivemap)"))
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*{})".format(self.hivemap_extension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptOpen)
 
@@ -399,7 +404,7 @@ class MainWindow(QMainWindow):
 
         dialogue = QFileDialog(self, caption="Save Hivemap")
         dialogue.setDefaultSuffix("hivemap")
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.hivemap)"))
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*{})".format(self.hivemap_extension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptSave)
 
