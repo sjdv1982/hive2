@@ -36,9 +36,10 @@ from __future__ import print_function, absolute_import
 
 import functools
 
+from .scene import NodeUIScene
 from .qt_core import *
 from .qt_gui import *
-from ..node import NodeTypes
+from .floating_text import FloatingTextWidget
 
 SELECT_SIZE = 10
 
@@ -89,8 +90,13 @@ class NodeView(QGraphicsView):
         self._moved_gui_nodes = set()
         self._position_busy = False
 
+        self.setScene(NodeUIScene())
+
         self.focused_socket = None
-        self.type_info_widget = None
+        self.type_info_widget = FloatingTextWidget(anchor="corner") # TODO
+        self.type_info_widget.setZValue(1e4)
+        self.scene().addItem(self.type_info_widget)
+        self.type_info_widget.setVisible(False)
 
         self.on_node_moved = None
         self.on_node_deleted = None
@@ -102,11 +108,6 @@ class NodeView(QGraphicsView):
 
     def on_socket_hover(self, socket, event=None):
         widget = self.type_info_widget
-        if widget is None:
-            # Type info
-            self.type_info_widget = widget = FloatingTextWidget(anchor="corner") # TODO
-            self.scene().addItem(widget)
-            widget.setVisible(False)
 
         if event is not None:
             cursor_pos = QCursor.pos()

@@ -19,11 +19,9 @@ found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", 
 
 class HiveFinder:
 
-    def __init__(self, *root_paths):
-        paths = list(root_paths)
-        paths.append(dragonfly.__path__[0])
-
-        self.root_paths = paths
+    def __init__(self, *additional_paths):
+        self.root_paths = {dragonfly.__path__[0], }
+        self.additional_paths = set(additional_paths)
 
     def _recurse(self, base_file_path, relative_folder_path, modules):
         """Recursively find hive names from module path
@@ -83,7 +81,7 @@ class HiveFinder:
     def find_hives(self):
         filesystem = {}
 
-        for root_path in self.root_paths:
+        for root_path in (self.root_paths | self.additional_paths):
             if root_path not in sys.path:
                 sys.path.append(root_path)
 
