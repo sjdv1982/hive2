@@ -491,12 +491,19 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     else:
         import_statement = ""
 
+    # Allow empty hives to be built
+    if not body_declaration_statement:
+        function_body = "pass"
+
+    else:
+        function_body = body_declaration_statement.replace("\n", "\n    ")
+
     declaration_statement = \
 """{}
 
 def {}(i, ex, args):
     {}
-""".format(import_statement, builder_name, body_declaration_statement.replace("\n", "\n    "))
+""".format(import_statement, builder_name, function_body)
     return declaration_statement
 
 

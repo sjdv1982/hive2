@@ -69,6 +69,9 @@ class NodePreviewView(QGraphicsView):
         self._preview_update_timer = QTimer(self)
         self._node_manager = node_manager
 
+    def on_socket_hover(self, socket, event=None):
+        pass
+
     def update_preview(self):
         self._preview_update_timer.singleShot(0.01, self._update_preview)
 
@@ -192,6 +195,8 @@ class NodeEditorSpace(QWidget):
         nm.on_connection_created = self._on_connection_created
         nm.on_connection_destroyed = self._on_connection_destroyed
         nm.on_connection_reordered = self._on_connection_reordered
+        nm.on_pin_folded = self._on_pin_folded
+        nm.on_pin_unfolded = self._on_pin_unfolded
 
         # View to node manager
         v = self._view

@@ -274,6 +274,8 @@ class NodeManager(object):
             self.set_node_name(target_node, pin.name, attempt_till_success=True)
             self.create_connection(target_pin, pin)
 
+            # TODO account for width of node and auto-arrange
+
         pin.is_folded = True
 
         if callable(self.on_pin_folded):
