@@ -33,8 +33,6 @@ class MainWindow(QMainWindow):
         status_bar = QStatusBar(self)
         self.setStatusBar(status_bar)
 
-        self.setWindowTitle(self.project_name_template.format("<No Project>"))
-
         menu_bar = self.menuBar()
 
         self.new_action = QAction("&New", menu_bar,
@@ -124,8 +122,26 @@ class MainWindow(QMainWindow):
 
         self.home_page = None
 
+        self._project_directory = None
         self.project_directory = None
+
         self.hive_finder = HiveFinder()
+
+    @property
+    def project_directory(self):
+        return self._project_directory
+
+    @project_directory.setter
+    def project_directory(self, value):
+        self._project_directory = value
+
+        if value is not None:
+            directory_name = os.path.basename(value)
+        else:
+            directory_name = "<No Project>"
+
+        title = self.project_name_template.format(directory_name)
+        self.setWindowTitle(title)
 
     def goto_help_page(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
@@ -230,7 +246,6 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.open_project_action)
 
         if self.project_directory is not None:
-            print("SHOE")
             self.file_menu.addAction(self.close_project_action)
 
         widget = self.tab_widget.currentWidget()
@@ -291,12 +306,8 @@ class MainWindow(QMainWindow):
         self._close_project()
 
         self.project_directory = directory_path
+
         self.hive_finder.additional_paths = {directory_path, }
-
-        # Rename application title
-        project_name = os.path.basename(directory_path)
-        self.setWindowTitle(self.project_name_template.format(project_name))
-
         self.refresh_project_tree()
 
         self.update_ui_layout()
