@@ -1,11 +1,10 @@
 import weakref
-
-from .qt_gui import *
-from .qt_core import *
-from .socket import Socket
-
 from math import *
 from operator import sub
+
+from .qt_core import *
+from .qt_gui import *
+from .socket import Socket
 
 
 def cartesian_to_polar(x, y):
@@ -54,6 +53,7 @@ class Connection(QGraphicsItem):
 
         if id_ is None:
             id_ = id(self)
+
         self.id = id_
 
         self._rect = QRectF(0, 0, 0, 0)

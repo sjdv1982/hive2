@@ -1,14 +1,12 @@
 import os
 import webbrowser
-
 from functools import partial
 
+from .node_editor import NodeEditorSpace
 from .qt_core import *
 from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
-from .node_editor import NodeEditorSpace
-
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps
 from ..node import NodeTypes
@@ -40,24 +38,24 @@ class MainWindow(QMainWindow):
                         statusTip="Create a new file", triggered=self.add_editor_space)
 
         self.load_action = QAction("&Open...", menu_bar,
-                        shortcut=QKeySequence.Open,
-                        statusTip="Open an existing file", triggered=self.open_file)
+                                   shortcut=QKeySequence.Open,
+                                   statusTip="Open an existing file", triggered=self.open_file)
 
         self.save_action = QAction("&Save", menu_bar,
-                        shortcut=QKeySequence.Save,
-                        statusTip="Save as existing new file", triggered=self.save_file)
+                                   shortcut=QKeySequence.Save,
+                                   statusTip="Save as existing new file", triggered=self.save_file)
 
         self.save_as_action = QAction("&Save As...", menu_bar,
-                        shortcut=QKeySequence.SaveAs,
-                        statusTip="Save as a new file", triggered=self.save_as_file)
+                                      shortcut=QKeySequence.SaveAs,
+                                      statusTip="Save as a new file", triggered=self.save_as_file)
 
         self.file_menu = QMenu("&File")
 
         self.open_project_action = QAction("Open Project", menu_bar,
-                                   statusTip="Open an existing Hive project", triggered=self.open_project)
+                                           statusTip="Open an existing Hive project", triggered=self.open_project)
 
         self.close_project_action = QAction("Close Project", menu_bar,
-                                   statusTip="Close the current Hive project", triggered=self.close_project)
+                                            statusTip="Close the current Hive project", triggered=self.close_project)
 
         self.select_all_action = QAction("Select &All", menu_bar,
                                    shortcut=QKeySequence.SelectAll,
@@ -122,10 +120,10 @@ class MainWindow(QMainWindow):
 
         self.home_page = None
 
-        self._project_directory = None
-        self.project_directory = None
-
         self.hive_finder = HiveFinder()
+
+        self.project_directory = None
+        self.refresh_project_tree()
 
     @property
     def project_directory(self):
@@ -135,11 +133,12 @@ class MainWindow(QMainWindow):
     def project_directory(self, value):
         self._project_directory = value
 
-        if value is not None:
-            directory_name = os.path.basename(value)
+        if value is None:
+            directory_name = "<No project>"
         else:
-            directory_name = "<No Project>"
+            directory_name = os.path.basename(value)
 
+        # Rename project
         title = self.project_name_template.format(directory_name)
         self.setWindowTitle(title)
 
@@ -302,22 +301,18 @@ class MainWindow(QMainWindow):
             return
 
         directory_path = dialogue.selectedFiles()[0]
+        self.close_project()
 
-        self._close_project()
+        # Load HIVES from project
+        self.hive_finder.additional_paths = {directory_path, }
 
+        # Set directory
         self.project_directory = directory_path
 
-        self.hive_finder.additional_paths = {directory_path, }
         self.refresh_project_tree()
-
         self.update_ui_layout()
 
     def close_project(self):
-        self._close_project()
-
-        self.update_ui_layout()
-
-    def _close_project(self):
         # Close open tabs
         while self.tab_widget.count() > 1:
             self.tab_widget.removeTab(1)
@@ -325,9 +320,10 @@ class MainWindow(QMainWindow):
         clear_imported_hivemaps()
 
         self.hive_finder.additional_paths.clear()
-        self.refresh_project_tree()
-
         self.project_directory = None
+
+        self.refresh_project_tree()
+        self.update_ui_layout()
 
     def refresh_project_tree(self):
         self.hive_widget = TreeWidget()
@@ -354,7 +350,7 @@ class MainWindow(QMainWindow):
         called_action = menu.exec_(self.mapToGlobal(event.pos()))
 
         if called_action == edit_action:
-            view = self._open_file(hivemap_file_path)
+            editor = self._open_file(hivemap_file_path)
 
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
@@ -377,8 +373,12 @@ class MainWindow(QMainWindow):
             if not isinstance(widget, NodeEditorSpace):
                 continue
 
+            widget_file_name = widget.file_name
+            if widget_file_name is None:
+                continue
+
             # If already open
-            if file_name == widget.file_name:
+            if os.path.samefile(file_name, widget_file_name):
                 self.tab_widget.setCurrentIndex(index)
                 break
 
@@ -394,35 +394,37 @@ class MainWindow(QMainWindow):
         self.update_ui_layout()
 
     def save_as_file(self):
+        widget = self.tab_widget.currentWidget()
+        assert isinstance(widget, NodeEditorSpace)
+
         dialogue = QFileDialog(self, caption="Save Hivemap")
         dialogue.setDefaultSuffix("hivemap")
         dialogue.setNameFilter(dialogue.tr("Hivemaps (*.hivemap)"))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptSave)
 
-        if dialogue.exec_():
-            file_name = dialogue.selectedFiles()[0]
-            self._save_file(file_name=file_name)
+        if not dialogue.exec_():
+            return
 
-            # Refresh hives
-            if self.project_directory is not None:
-                self.refresh_project_tree()
+        file_name = dialogue.selectedFiles()[0]
 
-    def save_file(self, *, file_name=None):
-        self._save_file(file_name)
-
-    def _save_file(self, file_name=None):
-        widget = self.tab_widget.currentWidget()
-        assert isinstance(widget, NodeEditorSpace)
-
+        was_untitled = widget.file_name is None
         widget.save(file_name=file_name)
 
-        # Newly saved
-        if file_name is not None:
-            # Rename tab
-            name = os.path.basename(file_name)
-            index = self.tab_widget.currentIndex()
-            self.tab_widget.setTabText(index, name)
+        # Rename tab
+        name = os.path.basename(file_name)
+        index = self.tab_widget.currentIndex()
+        self.tab_widget.setTabText(index, name)
 
-            # Update save UI elements now we have a filename
+        # Update save UI elements now we have a filename
+        if was_untitled:
             self.update_ui_layout()
+
+        # Refresh hives
+        if self.project_directory is not None:
+            self.refresh_project_tree()
+
+    def save_file(self):
+        widget = self.tab_widget.currentWidget()
+        assert isinstance(widget, NodeEditorSpace)
+        widget.save()

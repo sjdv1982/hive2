@@ -1,11 +1,10 @@
+from .floating_text import FloatingTextWidget
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .qt_core import *
 from .qt_gui import *
-from .floating_text import FloatingTextWidget
 from .scene import NodeUIScene
 from .utils import create_widget
 from .view import NodeView
-
 from ..inspector import InspectorOption
 from ..node import NodeTypes
 from ..node_manager import NodeManager
@@ -289,14 +288,14 @@ class NodeEditorSpace(QWidget):
         gui_connection.update_path()
 
         # Update preview
-        self._view.add_connection(connection)
+        self._view.add_connection(gui_connection)
 
         self._preview_widget.update_preview()
 
     def _on_connection_destroyed(self, connection):
         # Update preview
         gui_connection = self._connection_to_qt_connection.pop(connection)
-        self._view.remove_connection(connection)
+        self._view.remove_connection(gui_connection)
         gui_connection.on_deleted()
 
         self._preview_widget.update_preview()
@@ -346,16 +345,12 @@ class NodeEditorSpace(QWidget):
         self._node_manager.create_connection(start_pin, end_pin)
 
     def _gui_connection_destroyed(self, gui_connection):
-        start_socket = gui_connection.start_socket
-        end_socket = gui_connection.end_socket
-
-        start_pin = start_socket.parent_socket_row.pin
-        end_pin = end_socket.parent_socket_row.pin
-        self._node_manager.create_connection(start_pin, end_pin)
-
-    def _gui_connection_reordered(self, gui_connection):
         connection = next(c for c, gui_c in self._connection_to_qt_connection.items() if gui_c is gui_connection)
-        self._node_manager.reorder_connection(connection)
+        self._node_manager.delete_connection(connection)
+
+    def _gui_connection_reordered(self, gui_connection, index):
+        connection = next(c for c, gui_c in self._connection_to_qt_connection.items() if gui_c is gui_connection)
+        self._node_manager.reorder_connection(connection, index)
 
     def _gui_node_selected(self, gui_node):
         if gui_node is None:
