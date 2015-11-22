@@ -1,14 +1,13 @@
-from .compatability import next, is_method
+from collections import defaultdict
+from inspect import isfunction, getcallargs
+
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
+from .compatability import next, is_method
 from .connect import connect
-from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_run_hive
+from .mixins import *
 from .tuple_type import tuple_type, types_match
-
-
-from inspect import isfunction, getcallargs
-from collections import defaultdict
 
 
 def generate_bee_name():
@@ -622,7 +621,6 @@ class HiveBuilder(object):
 
                 # Find exportable from child and save to HiveObject instance
                 importable_from_child = child_hive.__class__._hive_exportable_to_parent
-                #child_hive._hive_exported_to_parent.update(importable_from_child)
 
                 # Find bees at set them on parent
                 for bee_name in importable_from_child:
