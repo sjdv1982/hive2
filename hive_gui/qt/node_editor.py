@@ -1,3 +1,5 @@
+import os
+
 from .floating_text import FloatingTextWidget
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .qt_core import *
@@ -8,7 +10,7 @@ from .view import NodeView
 from ..inspector import InspectorOption
 from ..node import NodeTypes
 from ..node_manager import NodeManager
-from ..utils import hivemap_to_builder_body
+from ..utils import hivemap_to_builder_body, import_path_to_module_file_path
 
 
 class DynamicInputDialogue(QDialog):
@@ -404,6 +406,13 @@ class NodeEditorSpace(QWidget):
             node = self._node_manager.create_bee(import_path, params=params)
 
         else:
+            # Check Hive's hivemap isn't currently open
+            if self.file_name is not None:
+                module_import_path = import_path_to_module_file_path(import_path)
+                if os.path.samefile(module_import_path, self.file_name):
+                    QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
+                    return
+
             inspector = self._node_manager.hive_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
             node = self._node_manager.create_hive(import_path, params=params)
@@ -490,6 +499,14 @@ class NodeEditorSpace(QWidget):
                 raise ValueError("Untitled hivemap cannot be saved without filename")
 
         node_manager = self._node_manager
+
+        # Check that we aren't attempting to save-as a hivemap of an existing Node instance
+        for node in node_manager.nodes.values():
+            node_module_file_path = import_path_to_module_file_path(node.import_path)
+            if os.path.samefile(node_module_file_path, file_name):
+                QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced in "
+                                                          "this editor")
+                raise ValueError("Untitled hivemap cannot be saved without filename")
 
         # Export data
         data = node_manager.export()
