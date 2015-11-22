@@ -7,7 +7,7 @@ class TabViewWidget(QTabWidget):
         QTabWidget.__init__(self)
 
         self.setTabsClosable(True)
-        self.tabCloseRequested.connect(self._close_tab)
+        self.tabCloseRequested.connect(self.removeTab)
         self.currentChanged.connect(self._tab_changed)
 
         self.on_inserted = None
@@ -25,12 +25,12 @@ class TabViewWidget(QTabWidget):
 
         return tab
 
-    def _close_tab(self, index):
+    def removeTab(self, index):
         if callable(self.check_tab_closable):
             if not self.check_tab_closable(index):
-                return
-            
-        self.removeTab(index)
+                raise ValueError("Tab close rejected")
+
+        QTabWidget.removeTab(self, index)
 
     def _tab_changed(self, index):
         previous_index = self._current_tab_index

@@ -61,6 +61,9 @@ class MainWindow(QMainWindow):
         self.close_project_action = QAction("Close Project", menu_bar,
                                             statusTip="Close the current Hive project", triggered=self.close_project)
 
+        self.refresh_project_action = QAction("Reload Project", menu_bar,
+                                            statusTip="Reload the current project", triggered=self.reload_project)
+
         self.select_all_action = QAction("Select &All", menu_bar,
                                    shortcut=QKeySequence.SelectAll,
                                    statusTip="Select all nodes", triggered=self.select_all_operation)
@@ -269,6 +272,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.open_project_action)
 
         if self.project_directory is not None:
+            self.file_menu.addAction(self.refresh_project_action)
             self.file_menu.addAction(self.close_project_action)
 
         widget = self.tab_widget.currentWidget()
@@ -325,30 +329,36 @@ class MainWindow(QMainWindow):
             return
 
         directory_path = dialogue.selectedFiles()[0]
-        can_close = self.close_project()
+        self.close_project()
+        self._open_project(directory_path)
 
-        if can_close:
-            # Load HIVES from project
-            self.hive_finder.additional_paths = {directory_path, }
+    def reload_project(self):
+        directory = self.project_directory
+        self.close_project()
+        self._open_project(directory)
 
-            # Set directory
-            self.project_directory = directory_path
+    def _open_project(self, directory_path):
+        # Load HIVES from project
+        self.hive_finder.additional_paths = {directory_path, }
 
-            self.refresh_project_tree()
-            self.update_ui_layout()
+        # Set directory
+        self.project_directory = directory_path
+
+        self.refresh_project_tree()
+        self.update_ui_layout()
 
     def close_project(self):
         # Close open tabs
         while self.tab_widget.count() > 1:
             self.tab_widget.removeTab(1)
 
-        clear_imported_hivemaps()
-
         self.hive_finder.additional_paths.clear()
         self.project_directory = None
 
         self.refresh_project_tree()
         self.update_ui_layout()
+
+        clear_imported_hivemaps()
 
     def refresh_project_tree(self):
         self.hive_widget = TreeWidget()

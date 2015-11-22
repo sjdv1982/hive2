@@ -60,3 +60,5 @@ def clear_imported_hivemaps():
 
     for name in to_remove:
         del sys.modules[name]
+
+    class_from_filepath.cache_clear()
