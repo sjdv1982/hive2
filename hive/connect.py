@@ -83,14 +83,9 @@ def build_connection(source, target):
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
 
-    if False:
-        target._hive_connect_target(source)
-        source._hive_connect_source(target)
-    else:
-        from debug import report2
-        dsource, dtarget = report2.connect(source, target)
-        target._hive_connect_target(dtarget)
-        source._hive_connect_target(dsource)
+    target._hive_connect_target(source)
+    source._hive_connect_source(target)
+
 
 
 class Connection(Bindable):
