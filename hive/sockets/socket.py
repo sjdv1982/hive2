@@ -1,4 +1,4 @@
-from .policies import SingleRequired, SocketPolicyError
+from .policies import SingleRequired, SingleOptional, SocketPolicyError
 from ..manager import memoize, get_building_hive, ContextFactory
 from ..mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable, Closable
 from ..tuple_type import tuple_type
@@ -6,19 +6,16 @@ from ..tuple_type import tuple_type
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Closable):
 
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
-                 bound=None):
+    def __init__(self, func, data_type=None, bound=None, _policy_cls=SingleOptional):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
         self._func = func
+        self._policy_cls = _policy_cls
 
-        self.export_to_parent = export_to_parent
-        self.identifier = identifier
         self.data_type = tuple_type(data_type)
-        self.policy_cls = policy_cls
 
         if bound:
-            self.policy = policy_cls()
+            self.policy = _policy_cls()
 
         else:
             self.policy = None
@@ -37,7 +34,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Closable):
         else:
             func = self._func
 
-        return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
+        return self.__class__(func, self.data_type, run_hive, _policy_cls=self._policy_cls)
 
     def close(self):
         if not self.policy.is_satisfied:
@@ -50,8 +47,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Closable):
 
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent,
-                                  bound=self._bound)
+            return self.__class__(exported, self.data_type, self._bound, _policy_cls=self._policy_cls)
 
         else:
             return self
@@ -92,7 +88,13 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
-        return HiveSocket(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
+        if self.identifier is None:
+            policy_cls = SingleOptional
+
+        else:
+            policy_cls = self.policy_cls
+
+        return HiveSocket(target, self.data_type, _policy_cls=policy_cls)
 
     @memoize
     def export(self):
