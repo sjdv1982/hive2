@@ -1,13 +1,12 @@
-from ..mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
+from .policies import SingleOptional, PluginPolicyError
 from ..manager import get_building_hive, memoize, ContextFactory
+from ..mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable, Closable
 from ..tuple_type import tuple_type
 
-from .policies import SingleRequired, PluginPolicyError
 
+class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
 
-class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
-
-    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
+    def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleOptional, export_to_parent=False,
                  bound=None):
         assert callable(func) or isinstance(func, Callable), func
         self._bound = bound
@@ -56,6 +55,10 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
         return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
 
+    def close(self):
+        if not self.policy.is_satisfied:
+            raise ValueError("Policy not satisfied!")
+
     @memoize
     def export(self):
         # TODO: somehow log the redirection path
@@ -71,7 +74,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False):
+    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleOptional, export_to_parent=False):
         self._hive_object_cls = get_building_hive()
         self._target = target
 

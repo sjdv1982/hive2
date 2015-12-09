@@ -1,11 +1,10 @@
-from ..mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
+from .policies import SingleRequired, SocketPolicyError
 from ..manager import memoize, get_building_hive, ContextFactory
+from ..mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable, Closable
 from ..tuple_type import tuple_type
 
-from .policies import SingleRequired, SocketPolicyError
 
-
-class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
+class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Closable):
 
     def __init__(self, func, identifier=None, data_type=None, policy_cls=SingleRequired, export_to_parent=False,
                  bound=None):
@@ -39,6 +38,10 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
             func = self._func
 
         return self.__class__(func, self.identifier, self.data_type, self.policy_cls, self.export_to_parent, run_hive)
+
+    def close(self):
+        if not self.policy.is_satisfied:
+            raise ValueError("Policy not satisfied!", self.policy)
 
     @memoize
     def export(self):
@@ -86,7 +89,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
     @memoize
     def getinstance(self, hive_object):
         target = self._target
-        if isinstance(target, Bee): 
+        if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
         return HiveSocket(target, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)

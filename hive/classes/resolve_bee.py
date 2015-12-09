@@ -1,5 +1,5 @@
-from ..mixins import Bee, Bindable, Exportable
 from ..manager import memoize, get_building_hive
+from ..mixins import Bee, Bindable, Exportable
 
 
 class BindableResolveBee(Bee, Bindable):
@@ -11,8 +11,12 @@ class BindableResolveBee(Bee, Bindable):
         # For inspection purposes
         self._hive_object_cls = get_building_hive()
 
-        # For supporting multiple-level ResolveBee
-        self._hive_object = unbound_run_hive._hive_object
+        # Support ResolveBees used for hive_objects
+        if hasattr(bee, "_hive_object"):
+            self._hive_object = bee._hive_object
+
+        else:
+            self._hive_object = None
 
     @memoize
     def bind(self, run_hive):
@@ -46,13 +50,12 @@ class ResolveBee(Exportable):
 
     @memoize
     def getinstance(self, redirected_hive_object):
-        unbound_run_hive = self._own_hive_object.getinstance(redirected_hive_object)
-        redirected_hive_object = unbound_run_hive._hive_object
-
+        hive_instantiator = self._own_hive_object.getinstance(redirected_hive_object)
+        redirected_hive_object = hive_instantiator._hive_object
         result = self._bee.getinstance(redirected_hive_object)
 
         if isinstance(result, Bindable):
-            return BindableResolveBee(unbound_run_hive, result)
+            return BindableResolveBee(hive_instantiator, result)
 
         return result
 

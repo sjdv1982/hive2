@@ -1,10 +1,10 @@
-from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
-    Exportable
+from itertools import product
+
 from .classes import HiveBee
 from .manager import get_mode, memoize, register_bee
+from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
+    Exportable
 from .tuple_type import types_match
-
-from itertools import product
 
 
 def find_connection_candidates(sources, targets, require_types=True):
@@ -87,7 +87,6 @@ def build_connection(source, target):
     source._hive_connect_source(target)
 
 
-
 class Connection(Bindable):
 
     def __init__(self, source, target):
@@ -104,6 +103,7 @@ class Connection(Bindable):
             source = source.bind(run_hive)
 
         target = self.target
+
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 

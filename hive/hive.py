@@ -1,14 +1,13 @@
-from .compatability import next, is_method
+from collections import defaultdict
+from inspect import isfunction, getcallargs
+
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
+from .compatability import next, is_method
 from .connect import connect
-from .mixins import *
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_run_hive
+from .mixins import *
 from .tuple_type import tuple_type, types_match
-
-
-from inspect import isfunction, getcallargs
-from collections import defaultdict
 
 
 def generate_bee_name():
@@ -153,14 +152,22 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
         # Is root run hive
         if get_run_hive() is None:
-            pass
+            print("ROOT", id(self._hive_object))
+            self._hive_validate_connections()
 
-            # for child in recursive_run_children(root):
-                #child.validate_policies()
 
     @staticmethod
     def _hive_can_connect_hive(other):
         return isinstance(other, RuntimeHive)
+
+    def _hive_validate_connections(self):
+        for bee_name, bee in self._hive_bee_instances.items():
+            if isinstance(bee, Closable):
+                bee.close()
+
+            elif isinstance(bee, RuntimeHive):
+                print("ENTER", bee_name, id(bee._hive_object))
+                bee._hive_validate_connections()
 
     def _hive_find_connect_sources(self):
         return self._hive_object._hive_find_connect_sources()
@@ -424,13 +431,13 @@ class MetaHivePrimitive:
     _hive_object_cls = None
 
     def __new__(cls, *args, **kwargs):
-        self = cls._hive_object_cls(*args, **kwargs)
+        hive_object = cls._hive_object_cls(*args, **kwargs)
 
         if get_mode() == "immediate":
-            return self.instantiate()
+            return hive_object.instantiate()
 
         else:
-            return self
+            return hive_object
 
 
 class HiveBuilder(object):
@@ -564,7 +571,6 @@ class HiveBuilder(object):
         internals = resolved_hive_object._hive_i
 
         # For children of the root hive, we must connect relative to top-most hive
-
         # This is for the top level (building) hive
         if is_root:
             exported_to_parent = set()
@@ -629,6 +635,7 @@ class HiveBuilder(object):
 
                     for socket_bee in socket_bees:
                         connect(bee, socket_bee)
+                        #print("CONN", bee, socket_bee)
 
             # Find and connect identified sockets with existing plugins
             if bee.implements(Socket) and bee.identifier is not None:
@@ -641,6 +648,7 @@ class HiveBuilder(object):
 
                     for plugin_bee in plugin_bees:
                         connect(plugin_bee, bee)
+                        #print("CONN", bee_source._hive_meta_args_frozen, bee, plugin_bee)
 
         # Get resolve bees instead of raw HiveObject instances (ResolveBees relative to parent)
         if not is_root:
@@ -793,7 +801,7 @@ def meta_hive(name, builder, declarator, cls=None):
 # 4. With remaining args and kwargs, if HIVE is meta hive, construct and return metahive primitive, else:
 #           If in runtime mode, create HiveObject instance and instantiate it
 #           If in build mode, return HiveObject instance.
-# //4.1 The MetaHive primitive exposes a __new__ constructor that performs step 4.
+# 4.1 The MetaHive primitive exposes a __new__ constructor that performs step 4.
 
 #==========Hive build path================
 # Hive building is bottom-up after builder functions, top down before

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import sys
 import os
+import sys
 
 current_directory = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(current_directory + "/" + "..")
@@ -37,25 +37,18 @@ def build_h(cls, i, ex, args, meta_args):
         ex.plug = hive.plugin(cls.print_name, identifier=("some_api", "func"))
 
     if meta_args.i:
-        ex.h = SomeHive(i=meta_args.i-1, root=False, name="<internal>", import_namespace=True)
+        setattr(ex, "h_{}".format(meta_args.i-1), SomeHive(i=meta_args.i-1, root=False, name="<internal>"))
 
     else:
         ex.sock = hive.socket(cls.get_plug, identifier=("some_api", "func"))
 
-    # if is_root and 0:
-    #     hive.connect(ex.plug, get_last(ex, "h").sock)
-
 
 def declare_h(meta_args):
-    meta_args.i = hive.parameter("int", 3)
+    meta_args.i = hive.parameter("int", 2)
     meta_args.root = hive.parameter("bool", True)
 
 SomeHive = hive.dyna_hive("H1", build_h, cls=C, declarator=declare_h)
 
 # This works
-h1 = SomeHive(name="OtherHive")
-
-# This doesn't
-h2 = SomeHive(name="OtherHive2")
-
-#print(h2.h.h.sock is h1.h.h.sock)
+h_2 = SomeHive(name="OtherHive")
+h_3 = SomeHive(name="OtherHive4")
