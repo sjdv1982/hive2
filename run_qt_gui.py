@@ -1,14 +1,12 @@
 # Import PySide classes
-import sys
 import os
-
-from hive_gui.qt.qt_gui import *
-from hive_gui.qt.qt_webkit import *
+import sys
 
 import hive_gui.qt as pyside_gui
 import hive_gui.qt.qdarkstyle as qdarkstyle
-
 from hive_gui.qt.main_window import MainWindow
+from hive_gui.qt.qt_gui import *
+from hive_gui.qt.qt_webkit import *
 
 # Create a Qt application
 app = QApplication(sys.argv)

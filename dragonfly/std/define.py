@@ -1,5 +1,6 @@
-import hive
 import ast
+
+import hive
 
 
 def create_func(expression):
@@ -9,6 +10,9 @@ def func():
     """
 
     body = expression.replace("\n", "\n    ")
+    if not body:
+        body = "pass"
+
     declaration_string = declaration.format(body)
     exec(declaration_string, locals(), globals())
 

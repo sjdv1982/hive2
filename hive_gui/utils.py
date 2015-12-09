@@ -135,7 +135,7 @@ def get_builder_class_args(hive_cls):
     # Construct argument pairs
     for arg_name in arg_names:
         arg_data = {'optional': arg_name in arg_defaults, 'default': arg_defaults.get(arg_name),
-                    'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name)}
+                    'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name, ())}
 
         builder_args[arg_name] = arg_data
 

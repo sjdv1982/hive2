@@ -1,7 +1,7 @@
-import hive
-
-from hive_gui.utils import class_from_hivemap
 from hive_gui.models.model import Hivemap
+
+import hive
+from hive_gui.utils import class_from_hivemap
 
 
 class BoundHiveContainer:
@@ -39,7 +39,6 @@ class _StartupBinderCls:
                 hivemap = Hivemap(data)
                 hive_cls = class_from_hivemap("<hivemap>", hivemap)
                 self.path_to_hive_cls[hivemap_path] = hive_cls
-
 
 
 def build_startup_binder(cls, i, ex, args):

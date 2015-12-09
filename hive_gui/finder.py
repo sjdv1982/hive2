@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import OrderedDict
 from inspect import isclass, getmembers
 
 import dragonfly
@@ -66,7 +67,7 @@ class HiveFinder:
                         sub_modules = sub_modules[component]
 
                     except KeyError:
-                        sub_modules[component] = sub_modules = {}
+                        sub_modules[component] = sub_modules = OrderedDict()
 
                 for name, value in getmembers(module):
                     if name.startswith('_'):

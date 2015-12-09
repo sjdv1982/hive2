@@ -1,10 +1,8 @@
-from .qt_gui import *
-from .qt_core import *
-
-
 from collections import OrderedDict
 from functools import partial
+
 from hive import types_match
+from .qt_gui import *
 
 
 INT_RANGE = -999, 999
@@ -216,7 +214,7 @@ _factories = OrderedDict((
     (("int",), _create_int),
     (("float",), _create_float),
     (("bool",), _create_bool),
-    (("vector"), _create_vector),
+    (("vector",), _create_vector),
     (("colour",), _create_colour)
     ))
 
