@@ -2,7 +2,7 @@ import os
 import sys
 import types
 
-from .utils import class_from_filepath
+from .utils import class_from_filepath, find_source_hivemap
 
 
 class HiveModuleLoader:
@@ -20,6 +20,8 @@ class HiveModuleLoader:
 
             module = types.ModuleType(name, cls.__doc__)
             module.__file__ = self.path
+            module.__loader__ = self
+
             setattr(module, cls.__name__, cls)
             sys.modules[name] = module
 
@@ -28,21 +30,15 @@ class HiveModuleLoader:
 
 class HiveModuleImporter(object):
 
-    def find_module(self, fullname, path=None):
-        paths = list(sys.path)
-        if path:
-            paths.append(path)
+    def find_module(self, full_name, path=None):
+        try:
+            file_path = find_source_hivemap(full_name)
 
-        *split_name, tail = fullname.split(".")
-        name_parts = split_name + ["{}.hivemap".format(tail)]
-        template_file_name = os.path.join('{}', *name_parts)
+        except FileNotFoundError:
+            return
 
-        for directory in paths:
-            file_name = template_file_name.format(directory)
-            if os.path.exists(file_name):
-                return HiveModuleLoader(file_name)
-
-        return None
+        if os.path.exists(file_path):
+            return HiveModuleLoader(file_path)
 
 
 def install_hook():

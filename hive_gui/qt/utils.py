@@ -2,8 +2,8 @@ from collections import OrderedDict
 from functools import partial
 
 from hive import types_match
+from .colour_button import QColorButton
 from .qt_gui import *
-
 
 INT_RANGE = -999, 999
 FLOAT_RANGE = -999.0, 999.0
@@ -149,39 +149,30 @@ def _create_vector():
 
 
 def _create_colour():
-    widget = QWidget()
+    """Create a colour widget to display a restricted set of options
+
+    :param options: permitted option values
+    """
+    widget = QColorButton()
 
     layout = QHBoxLayout()
     layout.setSpacing(0.0)
 
     widget.setLayout(layout)
 
-    # When an individual field is modified
-    def field_changed(i, field_value):
-        controller._on_changed(getter())
-
-    for i in range(3):
-        field = QDoubleSpinBox()
-
-        field.setRange(*FLOAT_RANGE)
-        field.setSingleStep(FLOAT_STEP)
-        field.valueChanged.connect(partial(field_changed, i))
-
-        layout.addWidget(field)
-
-    def setter(value):
-        for i, field_value in enumerate(value):
-            field = layout.itemAt(i).widget()
-            field.setValue(field_value)
+    def setter(colour_rgb):
+        colour = QColor.fromRgb(*colour_rgb)
+        widget.setColor(colour)
 
     def getter():
-        return tuple(layout.itemAt(i).widget().value() for i in range(3))
+        return tuple(widget.color().getRgb())
 
     controller = WidgetController(getter, setter)
     return widget, controller
 
 
 def _create_repr():
+    """Create a UI widget to edit a repr-able value"""
     widget = QLineEdit()
 
     getter = lambda: eval(widget.text())
@@ -195,6 +186,10 @@ def _create_repr():
 
 
 def _create_options(options):
+    """Create a UI combo widget to display a restricted set of options
+
+    :param options: permitted option values
+    """
     widget = QComboBox()
 
     for i, option in enumerate(options):
@@ -219,7 +214,12 @@ _factories = OrderedDict((
     ))
 
 
-def create_widget(data_type=None, options=None):
+def create_widget(data_type=(), options=None):
+    """Create a UI widget to edit a specific value
+
+    :param data_type: data type of value
+    :param options: restrict values to a fixed option set
+    """
     if options is not None:
         return _create_options(options)
 

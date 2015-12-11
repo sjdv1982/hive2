@@ -23,6 +23,13 @@ class HiveFinder:
     def __init__(self, *additional_paths):
         self.root_paths = {dragonfly.__path__[0], }
         self.additional_paths = set(additional_paths)
+        self._added_paths = set()
+
+    def clear(self):
+        for path in self._added_paths:
+            sys.path.remove(path)
+
+        self._added_paths.clear()
 
     def _recurse(self, base_file_path, relative_folder_path, modules):
         """Recursively find hive names from module path
@@ -79,13 +86,22 @@ class HiveFinder:
                 if is_directory and not sub_modules:
                     self._recurse(base_file_path, relative_file_path, modules)
 
+
     def find_hives(self):
+        self.clear()
+
         filesystem = {}
 
-        for root_path in (self.root_paths | self.additional_paths):
-            if root_path not in sys.path:
-                sys.path.append(root_path)
-
+        # Import stdlib modules
+        for root_path in self.root_paths:
             self._recurse(root_path, '', filesystem)
+
+        # Keep track of added paths to sys path
+        for additional_path in self.additional_paths:
+            if additional_path not in sys.path:
+                sys.path.append(additional_path)
+                self._added_paths.add(additional_path)
+
+            self._recurse(additional_path, '', filesystem)
 
         return filesystem

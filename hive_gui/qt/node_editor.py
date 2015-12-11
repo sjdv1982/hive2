@@ -10,7 +10,7 @@ from .view import NodeView
 from ..inspector import InspectorOption
 from ..node import NodeTypes
 from ..node_manager import NodeManager
-from ..utils import hivemap_to_builder_body, import_path_to_module_file_path
+from ..utils import hivemap_to_builder_body, import_path_to_hivemap_path
 
 
 class DynamicInputDialogue(QDialog):
@@ -408,8 +408,14 @@ class NodeEditorSpace(QWidget):
         else:
             # Check Hive's hivemap isn't currently open
             if self.file_name is not None:
-                module_import_path = import_path_to_module_file_path(import_path)
-                if os.path.samefile(module_import_path, self.file_name):
+                # Check we don't have a source file
+                try:
+                    import_path_to_hivemap_path(import_path)
+
+                except ValueError:
+                    pass
+
+                else:
                     QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
                     return
 
@@ -502,8 +508,17 @@ class NodeEditorSpace(QWidget):
 
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
         for node in node_manager.nodes.values():
-            node_module_file_path = import_path_to_module_file_path(node.import_path)
-            if os.path.samefile(node_module_file_path, file_name):
+            if not os.path.exists(file_name):
+                continue
+
+            # If destination file is a hivemap, don't allow
+            try:
+                hivemap_source_path = import_path_to_hivemap_path(node.import_path)
+
+            except ValueError:
+                continue
+
+            if file_name == hivemap_source_path:
                 QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced in "
                                                           "this editor")
                 raise ValueError("Untitled hivemap cannot be saved without filename")

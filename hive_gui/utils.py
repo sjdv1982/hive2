@@ -15,6 +15,7 @@ from inspect import getargspec
 from functools import lru_cache
 from os import path
 from re import sub as re_sub
+import sys
 
 # Factories for types
 type_factories = {}
@@ -194,12 +195,34 @@ def import_from_path(import_path):
     return getattr(module, class_name)
 
 
-def import_path_to_module_file_path(import_path):
-    module_path = import_path.rsplit('.', 1)[0]
-    module_name = module_path.split('.')[0]
-    module = __import__(module_path, fromlist=[module_name])
+def import_path_to_hivemap_path(import_path):
+    module_path, class_name = import_path.rsplit(".", 1)
 
-    return module.__file__
+    try:
+        return find_source_hivemap(module_path)
+
+    except ImportError:
+        raise ValueError
+
+
+def find_source_hivemap(module_path):
+    try:
+        *root_path, module_name = module_path.split(".")
+
+    except ValueError:
+        return
+
+    file_name = "{}.hivemap".format(module_name)
+    template_file_path = path.join(*root_path, file_name)
+
+    # Most of our interesting files are on sys.path, towards the end
+    for directory in reversed(sys.path):
+        file_path = template_file_path.format(directory)
+
+        if path.exists(file_path):
+            return file_path
+
+    raise FileNotFoundError("No hivemap for '{}' exists".format(module_path))
 
 
 def create_hive_object_instance(import_path, params):

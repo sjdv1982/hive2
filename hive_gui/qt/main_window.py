@@ -10,7 +10,7 @@ from .tree import TreeWidget
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps
 from ..node import NodeTypes
-from ..utils import import_path_to_module_file_path
+from ..utils import import_path_to_hivemap_path
 
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
@@ -372,11 +372,12 @@ class MainWindow(QMainWindow):
         self.bee_window.setWidget(self.bee_widget)
         self.bee_widget.load_items(found_bees)
 
-    def show_hive_edit_menu(self, path, event):
+    def show_hive_edit_menu(self, import_path, event):
         # Can only edit .hivemaps
-        hivemap_file_path = import_path_to_module_file_path(path)
+        try:
+            hivemap_file_path = import_path_to_hivemap_path(import_path)
 
-        if not hivemap_file_path.endswith(self.hivemap_extension):
+        except FileNotFoundError:
             return
 
         menu = QMenu(self.hive_widget)
