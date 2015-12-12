@@ -166,7 +166,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                 bee.close()
 
             elif isinstance(bee, RuntimeHive):
-                print("ENTER", bee_name, id(bee._hive_object))
                 bee._hive_validate_connections()
 
     def _hive_find_connect_sources(self):

@@ -64,7 +64,7 @@ class BeeNodeFactory:
 
         node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
 
-        node.add_output("pre_output", ("trigger"), "push", is_virtual=True)
+        node.add_output("pre_output", ("trigger",), "push", is_virtual=True)
         node.add_output("post_output", ("trigger",), "push")
 
         return node

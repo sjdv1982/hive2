@@ -41,10 +41,31 @@ class HiveModuleImporter(object):
             return HiveModuleLoader(file_path)
 
 
+_importer = None
+
+
+def get_hook():
+    return _importer
+
+
 def install_hook():
-    importer = HiveModuleImporter()
-    sys.meta_path.append(importer)
-    return importer
+    global _importer
+    if _importer is not None:
+        raise RuntimeError("Import hook already installed!")
+
+    _importer = HiveModuleImporter()
+    sys.meta_path.append(_importer)
+    return _importer
+
+
+def uninstall_hook():
+    global _importer
+    if _importer is None:
+        raise RuntimeError("Import hook has not yet been installed!")
+
+    sys.meta_path.remove(_importer)
+
+    _importer = None
 
 
 def clear_imported_hivemaps():

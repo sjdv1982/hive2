@@ -213,11 +213,13 @@ def find_source_hivemap(module_path):
         return
 
     file_name = "{}.hivemap".format(module_name)
-    template_file_path = path.join(*root_path, file_name)
+    root_path.append(file_name)
+
+    template_file_path = path.join(*root_path)
 
     # Most of our interesting files are on sys.path, towards the end
     for directory in reversed(sys.path):
-        file_path = template_file_path.format(directory)
+        file_path = path.join(directory, template_file_path)
 
         if path.exists(file_path):
             return file_path
@@ -273,7 +275,8 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     :param builder_name: name of builder function
     """
     bees = {}
-    imports = {"hive", }
+    # Add hive and hive_gui to support declarations and hivemap import machinery
+    imports = {"hive", "hive_gui"}
 
     declaration_body = []
 
@@ -288,7 +291,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
 
         # Add import path to import set
         import_path = spyder_hive.import_path
-        root, *_ = import_path.split(".")
+        root, cls = import_path.rsplit(".", 1)
         imports.add(root)
 
         # Find Hive class and inspect it
@@ -384,7 +387,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     # At this point, wrappers have attribute, modifier, triggerfunc, pullin, pullout, pushin, pushout
     io_definitions = []
 
-    # Define connectons
+    # Define connections
     connectivity_body = []
     for connection in hivemap.connections:
         from_identifier = connection.from_node

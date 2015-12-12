@@ -167,21 +167,26 @@ class Connection(QGraphicsItem):
                 element = simplified_path.elementAt(i)
                 point = QPointF(element.x, element.y)
 
-                if previous_point is not None:
-                    to_position = QVector2D(position - previous_point)
-                    to_end = QVector2D(point - previous_point)
+                previous_point, _previous_point = point, previous_point
 
-                    to_end_length = to_end.length()
-                    projection = QVector2D.dotProduct(to_position, to_end) / to_end_length
+                if _previous_point is None:
+                    continue
 
-                    # Projected point lies within this segment
-                    if 0 <= projection <= to_end_length:
-                        dist_path_sqr = to_position.lengthSquared() - projection ** 2
+                to_position = QVector2D(position - _previous_point)
+                to_end = QVector2D(point - _previous_point)
 
-                        if dist_path_sqr < size_sqr:
-                            return self
+                to_end_length = to_end.length()
+                if not to_end_length:
+                    continue
 
-                previous_point = point
+                projection = QVector2D.dotProduct(to_position, to_end) / to_end_length
+
+                # Projected point lies within this segment
+                if 0 <= projection <= to_end_length:
+                    dist_path_sqr = to_position.lengthSquared() - projection ** 2
+
+                    if dist_path_sqr < size_sqr:
+                        return self
 
     def intersects_line(self, line, path_rect):
         scene_translation = self.start_socket.sceneTransform()

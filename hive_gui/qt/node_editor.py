@@ -266,6 +266,8 @@ class NodeEditorSpace(QWidget):
         gui_node = self._node_to_qt_node[node]
         self._view.set_node_name(gui_node, name)
 
+        self._preview_widget.update_preview()
+
     def _on_connection_created(self, connection):
         output_pin = connection.output_pin
         input_pin = connection.input_pin
@@ -495,11 +497,6 @@ class NodeEditorSpace(QWidget):
 
     def paste(self):
         self._node_manager.paste(self._view.mouse_pos)
-
-    # TODO add check to see if node tree involves a specific node
-    # Get node from filepath
-    # Create insantiation helper - get args as pins from class type
-    # Add meta/arg support to instantiator
 
     def save(self, file_name=None):
         use_existing_file_name = file_name is None

@@ -5,9 +5,6 @@ from inspect import isclass, getmembers
 
 import dragonfly
 import hive
-from .importer import install_hook
-
-install_hook()
 
 
 def _keys_to_dict(keys):
