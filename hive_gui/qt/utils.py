@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from functools import partial
 
 from hive import types_match
 from .colour_button import QColorButton
@@ -18,9 +17,9 @@ class WidgetController:
         self.setter = setter
         self.getter = getter
 
-    def _on_changed(self, value):
+    def _on_changed(self):
         if callable(self.on_changed):
-            self.on_changed(value)
+            self.on_changed(self.getter())
 
     @property
     def value(self):
@@ -44,7 +43,7 @@ def _create_str():
     controller = WidgetController(getter, setter)
 
     def on_changed(value=None):
-        controller._on_changed(getter())
+        controller._on_changed()
 
     widget.textChanged.connect(on_changed)
     controller.__on_changed = on_changed
@@ -62,7 +61,7 @@ def _create_code():
     controller = WidgetController(getter, setter)
 
     def on_changed(value=None):
-        controller._on_changed(getter())
+        controller._on_changed()
 
     widget.textChanged.connect(on_changed)
     controller.__on_changed = on_changed
@@ -79,7 +78,7 @@ def _create_int():
     setter = lambda value: widget.setValue(value)
 
     controller = WidgetController(getter, setter)
-    widget.valueChanged.connect(controller._on_changed)
+    widget.valueChanged.connect(lambda value: controller._on_changed())
 
     return widget, controller
 
@@ -94,7 +93,7 @@ def _create_float():
     setter = lambda value: widget.setValue(value)
 
     controller = WidgetController(getter, setter)
-    widget.valueChanged.connect(controller._on_changed)
+    widget.valueChanged.connect(lambda value: controller._on_changed())
 
     return widget, controller
 
@@ -108,7 +107,7 @@ def _create_bool():
     controller = WidgetController(getter, setter)
 
     def on_changed(value=None):
-        controller._on_changed(getter())
+        controller._on_changed()
 
     widget.stateChanged.connect(on_changed)
     controller.__on_changed = on_changed
@@ -123,15 +122,15 @@ def _create_vector():
     widget.setLayout(layout)
 
     # When an individual field is modified
-    def field_changed(i, field_value):
-        controller._on_changed(getter())
+    def field_changed(field_value):
+        controller._on_changed()
 
     for i in range(3):
         field = QDoubleSpinBox()
 
         field.setRange(*FLOAT_RANGE)
         field.setSingleStep(FLOAT_STEP)
-        field.valueChanged.connect(partial(field_changed, i))
+        field.valueChanged.connect(field_changed)
 
         layout.addWidget(field)
 
@@ -170,7 +169,7 @@ def _create_colour():
     controller = WidgetController(getter, setter)
 
     def on_changed():
-        controller._on_changed(getter())
+        controller._on_changed()
 
     widget.colorChanged.connect(on_changed)
 
@@ -181,11 +180,15 @@ def _create_repr():
     """Create a UI widget to edit a repr-able value"""
     widget = QLineEdit()
 
-    getter = lambda: eval(widget.text())
-    setter = lambda value: widget.setText(repr(value))
+    getter = lambda: print("GET", eval(widget.text()), widget.text()) or eval(widget.text())
+    setter = lambda value: print("SET", repr(value), value) or widget.setText(repr(value))
 
     controller = WidgetController(getter, setter)
-    widget.textChanged.connect(controller._on_changed)
+
+    def text_changed(text):
+        controller._on_changed()
+
+    widget.textChanged.connect(text_changed)
 
     controller.value = None
     return widget, controller
@@ -205,7 +208,7 @@ def _create_options(options):
     setter = lambda value: widget.setCurrentIndex(widget.findData(value))
 
     controller = WidgetController(getter, setter)
-    widget.activated.connect(controller._on_changed)
+    widget.activated.connect(lambda value: controller._on_changed())
     return widget, controller
 
 

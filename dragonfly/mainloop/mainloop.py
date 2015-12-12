@@ -1,11 +1,13 @@
 from __future__ import print_function
 
 import time
+
 import hive
 
 
 class _Mainloop(object):
 
+    @hive.argument_types(max_framerate=('int',))
     def __init__(self, max_framerate=60):
         self._hive = hive.get_run_hive()
         self.max_framerate = max_framerate

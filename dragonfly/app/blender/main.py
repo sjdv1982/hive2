@@ -7,7 +7,6 @@ from ...mainloop import Mainloop as _Mainloop
 
 class _MainloopCls:
 
-    @hive.argument_types(max_framerate=int)
     def __init__(self, max_framerate=60):
         self.bge = __import__("bge")
         self.input_handler = InputHandler()
