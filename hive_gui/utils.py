@@ -2,6 +2,7 @@ import ast
 
 import hive
 from hive.mixins import *
+
 # IO bees
 from hive.hook import Hook
 from hive.entry import Entry

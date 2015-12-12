@@ -45,12 +45,13 @@ class OperationHistory:
     @contextmanager
     def composite_operation(self, name):
         self._in_composite = True
+
         history = AtomicOperationHistory(id_counter=self._id_counter, name=name)
-
         self._history, old_history = history, self._history
-        yield
-        self._history = old_history
 
+        yield
+
+        self._history = old_history
         old_history.push_history(history)
 
         self._in_composite = False
@@ -98,14 +99,9 @@ class AtomicOperationHistory:
 
         else:
             if isinstance(operation, self.__class__):
-                try:
-                    return operation.operation_id
+                return operation.operation_id
 
-                except ValueError:
-                    pass
-
-            else:
-                return operation[-1]
+            return operation[-1]
 
         return self._operation_id
 

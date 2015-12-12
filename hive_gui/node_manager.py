@@ -525,8 +525,16 @@ class NodeManager(object):
             from_node = self.nodes[from_id]
             to_node = self.nodes[to_id]
 
-            from_pin = from_node.outputs[connection.output_name]
-            to_pin = to_node.inputs[connection.input_name]
+            try:
+                from_pin = from_node.outputs[connection.output_name]
+                to_pin = to_node.inputs[connection.input_name]
+
+            except KeyError:
+                print("Unable to find all node pins in connection: {}.{}, {}.{}".format(connection.from_node,
+                                                                                        connection.output_name,
+                                                                                        connection.to_node,
+                                                                                        connection.input_name))
+                continue
 
             self.create_connection(from_pin, to_pin)
 

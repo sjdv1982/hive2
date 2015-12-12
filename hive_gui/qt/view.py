@@ -47,8 +47,8 @@ SELECT_SIZE = 10
 class NodeView(QGraphicsView):
     _panning = False
 
-    def __init__(self):
-        QGraphicsView.__init__(self)
+    def __init__(self, parent=None):
+        QGraphicsView.__init__(self, parent)
 
         self._zoom = 1.0
         self._zoom_increment = 0.05
@@ -104,6 +104,7 @@ class NodeView(QGraphicsView):
         self.on_connection_destroyed = None
         self.on_connection_reordered = None
         self.on_node_selected = None
+        self.on_node_right_click = None
         self.on_dropped_tree_node = None
 
     def on_socket_hover(self, socket, event=None):
@@ -201,6 +202,10 @@ class NodeView(QGraphicsView):
     def gui_on_selected(self, gui_node):
         if callable(self.on_node_selected):
             self.on_node_selected(gui_node)
+
+    def gui_on_right_click(self, gui_node, event):
+        if callable(self.on_node_right_click):
+            self.on_node_right_click(gui_node, event)
 
     def gui_set_selected_nodes(self, items):
         self.scene().clearSelection()

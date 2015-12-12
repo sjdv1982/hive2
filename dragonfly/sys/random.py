@@ -1,6 +1,6 @@
-import hive
-
 from random import Random as RNG
+
+import hive
 
 
 class _RandomCls:
@@ -29,7 +29,7 @@ class _RandomCls:
         return self.rng.randint(self.randint_min, self.randint_max)
 
     def get_randrange(self):
-        return self.rng.randrange(self.randrange_min, self.randrange_max)
+        return self.rng.uniform(self.randrange_min, self.randrange_max)
 
 
 def build_random(cls, i, ex, args):

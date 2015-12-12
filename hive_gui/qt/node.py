@@ -292,6 +292,9 @@ class Node(QGraphicsWidget):
 
         return QGraphicsItem.itemChange(self, change, value)
 
+    def contextMenuEvent(self, event):
+        self.view.gui_on_right_click(self, event)
+
     def onSelected(self):
         if self._deleted:
             return

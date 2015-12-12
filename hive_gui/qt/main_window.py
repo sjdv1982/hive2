@@ -230,6 +230,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.setCurrentIndex(index)
 
         editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
+        editor.do_open_file = self._open_file
         editor.show()
 
         return editor
@@ -377,7 +378,7 @@ class MainWindow(QMainWindow):
         try:
             hivemap_file_path = import_path_to_hivemap_path(import_path)
 
-        except FileNotFoundError:
+        except ValueError:
             return
 
         menu = QMenu(self.hive_widget)

@@ -85,6 +85,8 @@ class NodePreviewView(QGraphicsView):
             if isinstance(item, GUINode):
                 item.on_deleted()
 
+        self.scene().clear()
+
         hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
 
         for node_name, node in sorted(self._node_manager.nodes.items()):
@@ -182,7 +184,7 @@ class NodeEditorSpace(QWidget):
 
         self._node_manager = NodeManager()
 
-        self._view = NodeView()
+        self._view = NodeView(self)
         layout.addWidget(self._view)
 
         self._view.setParent(self)
@@ -205,6 +207,8 @@ class NodeEditorSpace(QWidget):
         self._last_saved_id = None
         self.on_update_is_saved = None
 
+        self.do_open_file = None
+
         # View to node manager
         view = self._view
         view.on_node_moved = self._gui_node_moved
@@ -214,6 +218,7 @@ class NodeEditorSpace(QWidget):
         view.on_connection_reordered = self._gui_connection_reordered
         view.on_node_selected = self._gui_node_selected
         view.on_dropped_tree_node = self._gui_dropped_tree_node
+        view.on_node_right_click = self._gui_node_right_clicked
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -388,6 +393,30 @@ class NodeEditorSpace(QWidget):
         self._configuration_widget.node = node
         self._args_widget.node = node
 
+    def _gui_node_right_clicked(self, gui_node, event):
+        node = gui_node.node
+
+        # Can only edit .hivemaps
+        try:
+            hivemap_file_path = import_path_to_hivemap_path(node.import_path)
+
+        except ValueError:
+            return
+
+        menu = QMenu(self)
+        edit_hivemap_action = menu.addAction("Edit Hivemap")
+
+        #pos = self.mapFrom(self._view, self._view.mapFromScene(event.scenePos()))
+        action = menu.exec_(event.screenPos())
+
+        if action != edit_hivemap_action:
+            return
+
+        if not callable(self.do_open_file):
+            return
+
+        self.do_open_file(hivemap_file_path)
+
     def _gui_node_destroyed(self, gui_node):
         node = gui_node.node
         self._node_manager.delete_node(node)
@@ -558,10 +587,13 @@ class NodeEditorSpace(QWidget):
             print(traceback.format_exc())
             return
 
-        self._docstring_widget.setPlainText(node_manager.docstring)
         self.file_name = file_name
 
+        # Mark pending changes as false
+        self._last_saved_id = self._history_id
+
         self._view.frame_scene_content()
+        self._docstring_widget.setPlainText(node_manager.docstring)
 
     def on_enter(self, docstring_window, folding_window, configuration_window, parameter_window, preview_window):
         docstring_window.setWidget(self._docstring_widget)
