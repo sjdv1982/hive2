@@ -3,7 +3,8 @@ from functools import partial
 
 from hive import types_match
 from .colour_button import QColorButton
-from .qt_gui import *
+from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
+    QColor
 
 INT_RANGE = -999, 999
 FLOAT_RANGE = -999.0, 999.0
@@ -119,8 +120,6 @@ def _create_vector():
     widget = QWidget()
 
     layout = QHBoxLayout()
-    layout.setSpacing(0.0)
-
     widget.setLayout(layout)
 
     # When an individual field is modified
@@ -145,6 +144,7 @@ def _create_vector():
         return tuple(layout.itemAt(i).widget().value() for i in range(3))
 
     controller = WidgetController(getter, setter)
+
     return widget, controller
 
 
@@ -168,6 +168,12 @@ def _create_colour():
         return tuple(widget.color().getRgb())
 
     controller = WidgetController(getter, setter)
+
+    def on_changed():
+        controller._on_changed(getter())
+
+    widget.colorChanged.connect(on_changed)
+
     return widget, controller
 
 

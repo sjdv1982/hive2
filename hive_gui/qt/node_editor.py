@@ -206,14 +206,14 @@ class NodeEditorSpace(QWidget):
         self.on_update_is_saved = None
 
         # View to node manager
-        v = self._view
-        v.on_node_moved = self._gui_node_moved
-        v.on_node_deleted = self._gui_node_destroyed
-        v.on_connection_created = self._gui_connection_created
-        v.on_connection_destroyed = self._gui_connection_destroyed
-        v.on_connection_reordered = self._gui_connection_reordered
-        v.on_node_selected = self._gui_node_selected
-        v.on_dropped_tree_node = self._gui_dropped_tree_node
+        view = self._view
+        view.on_node_moved = self._gui_node_moved
+        view.on_node_deleted = self._gui_node_destroyed
+        view.on_connection_created = self._gui_connection_created
+        view.on_connection_destroyed = self._gui_connection_destroyed
+        view.on_connection_reordered = self._gui_connection_reordered
+        view.on_node_selected = self._gui_node_selected
+        view.on_dropped_tree_node = self._gui_dropped_tree_node
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -410,14 +410,15 @@ class NodeEditorSpace(QWidget):
             if self.file_name is not None:
                 # Check we don't have a source file
                 try:
-                    import_path_to_hivemap_path(import_path)
+                    hivemap_file_path = import_path_to_hivemap_path(import_path)
 
                 except ValueError:
                     pass
 
                 else:
-                    QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
-                    return
+                    if hivemap_file_path == self.file_name:
+                        QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
+                        return
 
             inspector = self._node_manager.hive_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
@@ -495,6 +496,11 @@ class NodeEditorSpace(QWidget):
     def paste(self):
         self._node_manager.paste(self._view.mouse_pos)
 
+    # TODO add check to see if node tree involves a specific node
+    # Get node from filepath
+    # Create insantiation helper - get args as pins from class type
+    # Add meta/arg support to instantiator
+
     def save(self, file_name=None):
         use_existing_file_name = file_name is None
 
@@ -507,21 +513,19 @@ class NodeEditorSpace(QWidget):
         node_manager = self._node_manager
 
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
-        for node in node_manager.nodes.values():
-            if not os.path.exists(file_name):
-                continue
+        if os.path.exists(file_name):
+            for node in node_manager.nodes.values():
+                # If destination file is a hivemap, don't allow
+                try:
+                    hivemap_source_path = import_path_to_hivemap_path(node.import_path)
 
-            # If destination file is a hivemap, don't allow
-            try:
-                hivemap_source_path = import_path_to_hivemap_path(node.import_path)
+                except ValueError:
+                    continue
 
-            except ValueError:
-                continue
-
-            if file_name == hivemap_source_path:
-                QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced in "
-                                                          "this editor")
-                raise ValueError("Untitled hivemap cannot be saved without filename")
+                if file_name == hivemap_source_path:
+                    QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced"
+                                                              "in this editor")
+                    raise ValueError("Untitled hivemap cannot be saved without filename")
 
         # Export data
         data = node_manager.export()

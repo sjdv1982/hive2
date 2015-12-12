@@ -5,9 +5,10 @@ from .qt_gui import *
 
 class TreeWidget(QTreeWidget):
 
-    def __init__(self, parent=None, on_selected=None):
+    def __init__(self, title="", parent=None, on_selected=None):
         QTreeWidget.__init__(self, parent)
         self.setColumnCount(1)
+        self.setHeaderLabel(title)
 
         self._keys = []
         self.all_items = {}

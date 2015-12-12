@@ -24,7 +24,9 @@ class QColorButton(QPushButton):
             self.colorChanged.emit()
 
     def showColorPicker(self):
-        dialogue = QColorDialog(self)
+        dialogue = QColorDialog()
+        dialogue.setCurrentColor(self._colour)
+        dialogue.setOption(QColorDialog.ShowAlphaChannel)
 
         if dialogue.exec_():
             self.setColor(dialogue.currentColor())

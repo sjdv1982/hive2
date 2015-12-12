@@ -201,7 +201,7 @@ def import_path_to_hivemap_path(import_path):
     try:
         return find_source_hivemap(module_path)
 
-    except ImportError:
+    except FileNotFoundError:
         raise ValueError
 
 

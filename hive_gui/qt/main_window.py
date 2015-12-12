@@ -306,10 +306,10 @@ class MainWindow(QMainWindow):
         self.preview_window.setVisible(show_preview)
 
     def on_dropped_hive_node(self, path):
-        view = self.tab_widget.currentWidget()
+        editor = self.tab_widget.currentWidget()
 
-        if isinstance(view, NodeEditorSpace):
-            view.pre_drop_hive(path)
+        if isinstance(editor, NodeEditorSpace):
+            editor.pre_drop_hive(path)
 
     def on_selected_tree_node(self, path, node_type):
         widget = self.tab_widget.currentWidget()
@@ -361,13 +361,13 @@ class MainWindow(QMainWindow):
         clear_imported_hivemaps()
 
     def refresh_project_tree(self):
-        self.hive_widget = TreeWidget()
+        self.hive_widget = TreeWidget(title="Path")
         self.hive_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.HIVE)
         self.hive_window.setWidget(self.hive_widget)
         self.hive_widget.load_items(self.hive_finder.find_hives())
         self.hive_widget.on_right_click = self.show_hive_edit_menu
 
-        self.bee_widget = TreeWidget()
+        self.bee_widget = TreeWidget(title="Path")
         self.bee_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.BEE)
         self.bee_window.setWidget(self.bee_widget)
         self.bee_widget.load_items(found_bees)
@@ -483,3 +483,4 @@ class MainWindow(QMainWindow):
         widget = self.tab_widget.currentWidget()
         assert isinstance(widget, NodeEditorSpace)
         widget.save()
+

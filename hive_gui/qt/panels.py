@@ -86,6 +86,8 @@ class ArgsPanel(QWidget):
         if meta_args:
             meta_arg_data = node.params_info["meta_args"]
 
+            layout.addRow(QLabel("Meta Args:"))
+
             for name, value in meta_args.items():
                 try:
                     inspector_option = meta_arg_data[name]
@@ -111,9 +113,12 @@ class ArgsPanel(QWidget):
                 line = QFrame()
                 line.setFrameShape(QFrame.HLine)
                 line.setFrameShadow(QFrame.Sunken)
+
                 layout.addRow(line)
 
             arg_data = node.params_info["args"]
+
+            layout.addRow(QLabel("Args:"))
 
             for name, value in args.items():
                 # Get data type
@@ -135,13 +140,16 @@ class ArgsPanel(QWidget):
         cls_args = node.params.get('cls_args')
         if cls_args:
             # Divider if required
-            if cls_args or meta_args:
+            if meta_args or args:
                 line = QFrame()
                 line.setFrameShape(QFrame.HLine)
                 line.setFrameShadow(QFrame.Sunken)
                 layout.addRow(line)
 
             cls_arg_data = node.params_info["cls_args"]
+
+            layout.addRow(QLabel("Cls Args:"))
+
             for name, value in cls_args.items():
                 # Get data type
                 inspector_option = cls_arg_data[name]
@@ -204,7 +212,7 @@ class FoldingPanel(QWidget):
                 continue
 
             if self._node_manager.can_fold_pin(pin):
-                button = QPushButton("&Fold")
+                button = QPushButton("Fol&d")
                 on_clicked = partial(self._fold_antenna, pin)
 
                 layout.addRow(self.tr(name), button)

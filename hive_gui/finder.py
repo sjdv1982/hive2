@@ -11,7 +11,7 @@ install_hook()
 
 
 def _keys_to_dict(keys):
-    return {k: None for k in keys}
+    return OrderedDict([(k, None) for k in keys])
 
 
 found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier",
@@ -85,7 +85,6 @@ class HiveFinder:
 
                 if is_directory and not sub_modules:
                     self._recurse(base_file_path, relative_file_path, modules)
-
 
     def find_hives(self):
         self.clear()
