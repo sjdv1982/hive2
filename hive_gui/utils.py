@@ -18,17 +18,18 @@ from re import sub as re_sub
 import sys
 
 # Factories for types
-type_factories = {}
-type_factories["vector"] = lambda: (0.0, 0.0, 0.0)
-type_factories["colour"] = lambda: (0.0, 0.0, 0.0)
-type_factories["str"] = str
-type_factories["bool"] = bool
-type_factories["int"] = int
-type_factories["float"] = float
-type_factories["tuple"] = tuple
-type_factories["list"] = list
-type_factories["dict"] = dict
-type_factories["set"] = set
+type_factories = {
+    "vector": lambda: (0.0, 0.0, 0.0),
+    "colour": lambda: (0.0, 0.0, 0.0),
+    "str": str,
+    "bool": bool,
+    "int": int,
+    "float": float,
+    "tuple": tuple,
+    "list": list,
+    "dict": dict,
+    "set": set,
+}
 
 
 def _eval_spyder_string(type_name, value):
