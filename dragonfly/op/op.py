@@ -1,6 +1,6 @@
-import hive
-
 from operator import add, sub, mul, truediv, mod, eq, or_, not_, and_, gt, lt, ge, le
+
+import hive
 
 
 operators = {'+': add, '-': sub, '*': mul, '/': truediv, '%': mod, '=': eq, '!': not_, '|': or_, '&': and_,
@@ -12,7 +12,7 @@ operator_names = set(operators)
 
 
 def declare_operator(meta_args):
-    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.data_type = hive.parameter("str", ("int",))
     meta_args.operator = hive.parameter("str", "+", options=operator_names)
 
 

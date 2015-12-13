@@ -12,7 +12,7 @@ def build_compose(i, ex, args):
     ex.vector = hive.attribute(("vector",))
     i.vector_out = hive.pull_out(ex.vector)
 
-    for name in ['x', 'y', 'z']:
+    for name in ('x', 'y', 'z'):
         attr = hive.attribute("float")
         setattr(ex, name, attr)
 

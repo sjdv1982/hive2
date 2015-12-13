@@ -17,7 +17,7 @@ class DictCls:
 
 
 def declare_dictionary(meta_args):
-    meta_args.data_type = hive.parameter("str", "int")
+    meta_args.data_type = hive.parameter("str", ("int",))
     meta_args.mode = hive.parameter("str", "get", {"get", "set"})
 
 
