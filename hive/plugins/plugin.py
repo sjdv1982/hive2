@@ -6,15 +6,15 @@ from ..tuple_type import tuple_type
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
 
-    def __init__(self, func, data_type=None, bound=None, _policy_cls=SingleOptional):
+    def __init__(self, func, data_type=None, run_hive=None, _policy_cls=SingleOptional):
         assert callable(func) or isinstance(func, Callable), func
-        self._bound = bound
+        self._run_hive = run_hive
         self._func = func
 
         self.data_type = tuple_type(data_type)
         self._policy_cls = _policy_cls
 
-        if bound:
+        if run_hive:
             self.policy = _policy_cls()
 
         else:
@@ -41,7 +41,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
 
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
         if isinstance(self._func, Bindable):
@@ -62,7 +62,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
         func = self._func
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.data_type, self._bound, _policy_cls=self._policy_cls)
+            return self.__class__(exported, self.data_type, self._run_hive, _policy_cls=self._policy_cls)
 
         else:
             return self

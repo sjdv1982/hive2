@@ -1,14 +1,14 @@
-from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 from .classes import HiveBee
 from .manager import ContextFactory, memoize
+from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 
 
 class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
 
-    def __init__(self, func, bound=None):
+    def __init__(self, func, run_hive=None):
         assert callable(func) or isinstance(func, Callable), func
         self._func = func
-        self._bound = bound
+        self._run_hive = run_hive
 
     def __call__(self):
         self.trigger()
@@ -19,7 +19,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
         func = self._func
@@ -27,7 +27,7 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
         if isinstance(func, Bindable):
             func = func.bind(run_hive)
 
-        return self.__class__(func, bound=run_hive)
+        return self.__class__(func, run_hive=run_hive)
 
     def _hive_trigger_target(self):
         return self.trigger

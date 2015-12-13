@@ -1,15 +1,15 @@
-from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 from .classes import HiveBee
 from .manager import ContextFactory, memoize
+from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
 
 
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
-    def __init__(self, func, bound=None):
+    def __init__(self, func, run_hive=None):
         assert callable(func) and not isinstance(func, Bee), \
             "Modifier function should be a Python callable, got {}".format(func)
         self._func = func
-        self._bound = bound
+        self._run_hive = run_hive
 
     def __call__(self):
         self.trigger()
@@ -19,14 +19,14 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
     def trigger(self):
         # TODO: exception handling hooks
-        self._func(self._bound)
+        self._func(self._run_hive)
         
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
-        return self.__class__(self._func, bound=run_hive)
+        return self.__class__(self._func, run_hive=run_hive)
 
     def _hive_trigger_target(self):
         return self.trigger

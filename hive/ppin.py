@@ -8,19 +8,22 @@ from .tuple_type import types_match
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
-    def __init__(self, target, data_type=None, bound=None, run_hive=None):
+    def __init__(self, target, data_type=None, run_hive=None):
         # Once bound, hive Method object is resolved to a function, not bee
         assert isinstance(target, Stateful) or isinstance(target, Callable) or callable(target), target
 
         if isinstance(target, Stateful):
             data_type = target.data_type
+
+            # If not yet bound, set_value will have None for run hive!
             self._set_value = partial(target._hive_stateful_setter, run_hive)
+
         else:
             self._set_value = target
 
         self.target = target
         self.data_type = data_type
-        self._bound = bound
+
         self._run_hive = run_hive
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
@@ -33,14 +36,14 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
                 
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
         target = self.target
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
+        return self.__class__(target, self.data_type, run_hive=run_hive)
 
 
 class PushIn(PPInBase):
