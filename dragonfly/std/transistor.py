@@ -14,7 +14,6 @@ def build_transistor(i, ex, args, meta_args):
     i.output = hive.push_out(i.in_value)
     ex.output = hive.output(i.output)
 
-    i.trigger = hive.triggerfunc()
     ex.trigger = hive.entry(i.input)
 
     hive.trigger(i.input, i.output)
