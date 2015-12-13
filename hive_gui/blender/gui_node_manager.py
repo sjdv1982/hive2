@@ -1,15 +1,13 @@
-from .types import BlenderHiveNode, INVALID_NODE_NAME, INVALID_NODE_ID
-from .socket_manager import socket_class_manager
-
-from ..gui_node_manager import IGUINodeManager
-from ..sockets import get_colour, get_shape
-
-from contextlib import contextmanager
 from collections import namedtuple
+from contextlib import contextmanager
+from functools import wraps
 from logging import getLogger
 
 from bpy import context
-from functools import wraps
+
+from .socket_manager import socket_class_manager
+from .types import BlenderHiveNode, INVALID_NODE_NAME, INVALID_NODE_ID
+from ..sockets import get_colour, get_shape
 
 PendingOperation = namedtuple("PendingOperation", "type data")
 default_operation = PendingOperation(None, None)
@@ -28,7 +26,7 @@ def wrapper(func, logger):
     return _wrapper
 
 
-class BlenderGUINodeManager(IGUINodeManager):
+class BlenderGUINodeManager:
 
     def __init__(self, blend_manager, node_tree):
         self.node_tree = node_tree

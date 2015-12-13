@@ -16,6 +16,7 @@ found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", 
 
 
 class HiveFinder:
+    """Search utility to find Hive classes in a filesystem"""
 
     def __init__(self, *additional_paths):
         self.root_paths = {dragonfly.__path__[0], }

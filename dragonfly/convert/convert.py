@@ -14,6 +14,10 @@ def declare_convert(meta_args):
     meta_args.conversion = hive.parameter("str", "duck", {"duck", "cast"})
 
 
+def move_value(self):
+    self._value_out = self._value_in
+
+
 def build_convert(i, ex, args, meta_args):
     i.value_in = hive.attribute(meta_args.from_data_type)
     i.value_out = hive.attribute(meta_args.to_data_type)
@@ -47,10 +51,7 @@ def build_convert(i, ex, args, meta_args):
 
     # For duck typing, move value through
     else:
-        def move_value(self):
-            self._value_out = self._value_in
         i.move_value = hive.modifier(move_value)
-
         hive.trigger(i.ppin, i.move_value)
 
 

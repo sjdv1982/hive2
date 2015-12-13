@@ -24,8 +24,7 @@ def build_buffer(i, ex, args, meta_args):
         i.output = hive.push_out(ex.value)
         ex.output = hive.output(i.output)
 
-        i.trigger = hive.triggerable(i.output)
-        ex.trigger = hive.entry(i.trigger)
+        ex.trigger = hive.entry(i.output)
 
     elif meta_args.mode == "pull":
         i.input = hive.pull_in(ex.value)
@@ -34,8 +33,7 @@ def build_buffer(i, ex, args, meta_args):
         i.output = hive.pull_out(ex.value)
         ex.output = hive.output(i.output)
 
-        i.trigger = hive.triggerable(i.input)
-        ex.trigger = hive.entry(i.trigger)
+        ex.trigger = hive.entry(i.input)
 
 
 Buffer = hive.dyna_hive("Buffer", build_buffer, declarator=declare_buffer)
