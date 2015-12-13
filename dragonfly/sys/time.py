@@ -1,8 +1,7 @@
-import hive
 import time
 
-
-from ..event import EventListener
+import hive
+from ..event import EventHandler
 
 
 class TimeClass:
@@ -21,7 +20,7 @@ class TimeClass:
         add_callback(self.on_started)
 
     def set_add_handler(self, add_handler):
-        handler = EventListener(self.on_tick, ("tick",), mode="match")
+        handler = EventHandler(self.on_tick, ("tick",), mode="match")
         add_handler(handler)
 
 

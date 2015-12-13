@@ -4,19 +4,16 @@ import hive
 class DictCls:
 
     def __init__(self):
-        self.dict = {}
+        self.dict = None
         self.key = None
         self.value = None
         self._hive = hive.get_run_hive()
 
     def set_value(self):
-        self._hive.key_in()
-        self._hive.in_value()
-
         self.dict[self.key] = self.value
 
     def get_value(self):
-        self._hive.out_value = self.dict[self.key]
+        self.value = self.dict[self.key]
 
 
 def declare_dictionary(meta_args):
@@ -31,9 +28,6 @@ def build_dictionary(cls, i, ex, args, meta_args):
     i.dict_in = hive.pull_in(ex.dict)
     ex.dict_in = hive.antenna(i.dict_in)
 
-    i.dict_out = hive.pull_out(ex.dict)
-    ex.dict_out = hive.output(i.dict_out)
-
     ex.key = hive.property(cls, "key", "id")
     i.key_in = hive.pull_in(ex.key)
     ex.key_in = hive.antenna(i.key_in)
@@ -47,7 +41,8 @@ def build_dictionary(cls, i, ex, args, meta_args):
         i.set_value = hive.triggerable(cls.set_value)
 
         hive.trigger(i.in_value, i.key_in)
-        hive.trigger(i.in_value, i.set_value)
+        hive.trigger(i.key_in, i.dict_in)
+        hive.trigger(i.dict_in, i.set_value)
 
     elif meta_args.mode == "get":
         i.out_value = hive.pull_out(i.value)
@@ -57,7 +52,8 @@ def build_dictionary(cls, i, ex, args, meta_args):
 
         # Before outputting, update key
         hive.trigger(i.out_value, i.key_in, pretrigger=True)
-        hive.trigger(i.out_value, i.get_value, pretrigger=True)
+        hive.trigger(i.key_in, i.dict_in)
+        hive.trigger(i.dict_in, i.get_value)
 
 
 Dictionary = hive.dyna_hive("Dictionary", build_dictionary, declare_dictionary, DictCls)

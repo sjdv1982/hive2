@@ -47,7 +47,7 @@
 #
 # print(debug.report.stack, ostack)
 
-from dragonfly.event.event import EventListener, EventHive
+from dragonfly.event.event import EventHandler, EventHive
 
 
 class MyHiveCls:
@@ -57,7 +57,7 @@ class MyHiveCls:
 
     def get_handler(self, add_handler):
         leader = ("tick",)
-        handler = EventListener(self.on_tick, leader, 1, mode="trigger")
+        handler = EventHandler(self.on_tick, leader, 1, mode="trigger")
         add_handler(handler)
 
     def on_tick(self):

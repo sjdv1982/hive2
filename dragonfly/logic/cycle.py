@@ -16,9 +16,9 @@ def build_cycle(i, ex, args):
     def cycle(self):
         self.counter += 1
 
-        if self.counter >= self.period_in:
-            self.counter -= self.period_in
-            self.output()
+        if self.counter >= self.period:
+            self.counter -= self.period
+            self._output()
 
     i.trigger = hive.modifier(cycle)
     hive.trigger(i.period_in, i.trigger)

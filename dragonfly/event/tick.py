@@ -1,6 +1,6 @@
 import hive
 
-from .event import EventListener
+from .event import EventHandler
 
 
 class _TickCls:
@@ -9,7 +9,7 @@ class _TickCls:
         self._hive = hive.get_run_hive()
 
     def set_add_handler(self, add_handler):
-        handler = EventListener(self._hive._on_tick, ("tick",), mode="match")
+        handler = EventHandler(self._hive._on_tick, ("tick",), mode="match")
         add_handler(handler)
 
 

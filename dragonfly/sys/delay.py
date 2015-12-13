@@ -1,6 +1,6 @@
 import hive
 
-from ..event import EventListener
+from ..event import EventHandler
 
 
 class _DelayCls:
@@ -25,7 +25,7 @@ class _DelayCls:
 
         if self._listener is None:
             # Create and register listener
-            self._listener = listener = EventListener(self.on_tick, ("tick",), mode="match")
+            self._listener = listener = EventHandler(self.on_tick, ("tick",), mode="match")
             self.add_handler(listener)
 
         self._counter = self.delay

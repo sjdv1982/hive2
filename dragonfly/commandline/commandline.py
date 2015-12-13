@@ -1,7 +1,9 @@
 import threading
-from .getch import change_termios, restore_termios, raw_input
+
 import hive as h
-        
+from .getch import change_termios, restore_termios, raw_input
+
+
 class commandlineclass(object):
     command = None
     def __init__(self):

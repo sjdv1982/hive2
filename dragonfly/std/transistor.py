@@ -15,13 +15,9 @@ def build_transistor(i, ex, args, meta_args):
     ex.output = hive.output(i.output)
 
     i.trigger = hive.triggerfunc()
+    ex.trigger = hive.entry(i.input)
 
-    def on_triggered(h):
-        h.input.pull()
-        h.output.push()
-
-    i.modifier = hive.modifier(on_triggered)
-    ex.trigger = hive.entry(i.modifier)
+    hive.trigger(i.input, i.output)
 
 
 Transistor = hive.dyna_hive("Transistor", build_transistor, declare_transistor)

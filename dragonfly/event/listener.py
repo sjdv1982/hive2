@@ -1,6 +1,6 @@
 import hive
 
-from .event import EventListener
+from .event import EventHandler
 
 
 class _ListenerCls:
@@ -17,7 +17,7 @@ class _ListenerCls:
         self._hive._on_event()
 
     def set_add_handler(self, add_handler):
-        handler = EventListener(self.on_event, self.event, mode=self.mode)
+        handler = EventHandler(self.on_event, self.event, mode=self.mode)
         add_handler(handler)
 
 

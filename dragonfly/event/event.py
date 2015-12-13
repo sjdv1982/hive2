@@ -1,5 +1,5 @@
-from hive.plugins import MultipleOptional
 import hive
+from hive.plugins import MultipleOptional
 
 
 def match_leader(event, leader):
@@ -11,7 +11,7 @@ def match_leader(event, leader):
     return event[len(leader):]
 
 
-class EventListener:
+class EventHandler:
 
     def __init__(self, callback, pattern, priority=0, mode='leader'):
         self.callback = callback
@@ -59,8 +59,8 @@ class EventManager:
         self.handlers.sort()
 
     def handle_event(self, event):
-        for listener in self.handlers:
-            listener(event)
+        for handler in self.handlers:
+            handler(event)
 
 
 def event_builder(cls, i, ex, args):

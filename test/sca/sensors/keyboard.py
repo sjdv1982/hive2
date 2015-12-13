@@ -1,6 +1,6 @@
 import hive
 
-from dragonfly.event import EventListener
+from dragonfly.event import EventHandler
 
 
 class Keyboard_:
@@ -17,12 +17,12 @@ class Keyboard_:
             self._hive.trig_out()
 
     def add_listener(self, func):
-        listener = EventListener(self.on_key, ("event", "keyboard", "pressed"))
+        listener = EventHandler(self.on_key, ("event", "keyboard", "pressed"))
         func(listener)
 
 
 def build_keyboard(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_handler"))
+    ex.on_event = hive.socket(cls.add_single_listener, identifier=("event", "add_handler"))
     i.on_tick = hive.triggerfunc()
 
     ex.name = hive.attribute(("str",), "<Sensor>")

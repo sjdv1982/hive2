@@ -1,6 +1,6 @@
 import hive
 
-from ..event import EventListener
+from ..event import EventHandler
 
 
 class Mouse_:
@@ -23,15 +23,15 @@ class Mouse_:
         self._hive._on_moved()
 
     def add_listener(self, func):
-        button_listener = EventListener(self.on_button, ("mouse", "pressed"))
-        moved_listener = EventListener(self.on_moved, ("mouse", "move"))
+        button_listener = EventHandler(self.on_button, ("mouse", "pressed"))
+        moved_listener = EventHandler(self.on_moved, ("mouse", "move"))
 
         func(button_listener)
         func(moved_listener)
 
 
 def build_mouse(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.add_listener, identifier=("event", "add_listener"))
+    ex.on_event = hive.socket(cls.add_single_listener, identifier=("event", "add_listener"))
     i.on_tick = hive.triggerfunc()
 
     ex.button = hive.property(cls, "button", "str")
