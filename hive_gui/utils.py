@@ -366,9 +366,9 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
         elif import_path == "hive.modifier":
             code = args['code']
             code_body = "\n    ".join(code.split("\n"))
-            statement = """def {}(self):\n    {}""".format(identifier, code_body)
-            declaration_body.extend(statement.split("\n"))
-            declaration_body.append("i.{0} = hive.modifier({0})\n".format(identifier))
+            statement = """def {}(self):\n    {}\n""".format(identifier, code_body)
+            declaration_body[:0] = statement.split("\n")
+            declaration_body.append("i.{0} = hive.modifier({0})".format(identifier))
 
         elif import_path == "hive.triggerfunc":
             declaration_body.append("i.{} = hive.triggerfunc()".format(identifier))
@@ -489,33 +489,35 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
 
     if docstring:
         body_declaration_statement += \
-'''"""{}"""'''.format(docstring)
+'''"""{}
+"""'''.format(docstring)
 
     if declaration_body:
         body_declaration_statement += \
-"""
-# Declarations
+"""# Declarations
 {}
+
 """.format("\n".join(declaration_body))
 
     if connectivity_body:
         body_declaration_statement += \
-"""
-# Connectivity
+"""# Connectivity
 {}
+
 """.format("\n".join(connectivity_body))
 
     if io_body:
         body_declaration_statement += \
-"""
-# IO
+"""# IO
 {}
+
 """.format("\n".join(io_body))
 
     if imports:
         import_statement = \
 """# Imports
-{}""".format("\n".join(["import {}".format(x) for x in imports]))
+{}
+""".format("\n".join(["import {}".format(x) for x in imports]))
     else:
         import_statement = ""
 
