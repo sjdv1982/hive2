@@ -532,7 +532,6 @@ class HiveBuilder(object):
             setattr(internals, bee_name, bee)
 
         # TODO: auto-remove connections/triggers for which the source/target has been deleted
-        # TODO: sockets and plugins, take options into account for namespaces
 
         # Build runtime hive class
         run_hive_class_dict = {"__doc__": cls.__doc__}
@@ -604,6 +603,9 @@ class HiveBuilder(object):
             if not bee.implements(HiveObject):
                 continue
 
+            if not bee._hive_allow_import_namespace:
+                continue
+
             child_hives.add(bee)
 
         # Find internal hives
@@ -611,6 +613,9 @@ class HiveBuilder(object):
             bee = getattr(internals, bee_name)
 
             if not bee.implements(HiveObject):
+                continue
+
+            if not bee._hive_allow_import_namespace:
                 continue
 
             child_hives.add(bee)
@@ -634,7 +639,6 @@ class HiveBuilder(object):
 
                     for socket_bee in socket_bees:
                         connect(bee, socket_bee)
-                        #print("CONN", bee, socket_bee)
 
             # Find and connect identified sockets with existing plugins
             if bee.implements(Socket) and bee.identifier is not None:
@@ -647,7 +651,6 @@ class HiveBuilder(object):
 
                     for plugin_bee in plugin_bees:
                         connect(plugin_bee, bee)
-                        #print("CONN", bee_source._hive_meta_args_frozen, bee, plugin_bee)
 
         # Get resolve bees instead of raw HiveObject instances (ResolveBees relative to parent)
         if not is_root:
@@ -655,9 +658,6 @@ class HiveBuilder(object):
 
         # Now export to child hives
         for child in child_hives:
-            if not child._hive_allow_import_namespace:
-                continue
-
             cls._hive_build_connectivity(child, plugin_map, socket_map, is_root=False)
 
     @classmethod

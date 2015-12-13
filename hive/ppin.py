@@ -1,10 +1,9 @@
-from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
-from .classes import HiveBee, Pusher
+from functools import partial
+
+from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
+from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
 from .tuple_type import types_match
-
-
-import debug
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
@@ -15,8 +14,10 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
         if isinstance(target, Stateful):
             data_type = target.data_type
+            self._set_value = partial(target._hive_stateful_setter, run_hive)
+        else:
+            self._set_value = target
 
-        self._is_stateful = isinstance(target, Stateful)
         self.target = target
         self.data_type = data_type
         self._bound = bound
@@ -49,11 +50,7 @@ class PushIn(PPInBase):
         # TODO: exception handling hooks
         self._pretrigger.push()
 
-        if self._is_stateful:
-            self.target._hive_stateful_setter(self._run_hive, value)
-
-        else:
-            self.target(value)
+        self._set_value(value)
 
         self._trigger.push()
 
@@ -80,11 +77,7 @@ class PullIn(PPInBase, TriggerTarget):
         self._pretrigger.push()
         value = self._pull_callback()
 
-        if self._is_stateful:
-            self.target._hive_stateful_setter(self._run_hive, value)
-
-        else:
-            self.target(value)
+        self._set_value(value)
 
         self._trigger.push()
 

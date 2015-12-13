@@ -38,7 +38,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Closable):
 
     def close(self):
         if not self.policy.is_satisfied:
-            raise ValueError("Policy not satisfied!", self.policy)
+            raise ValueError("Policy not satisfied for {}!".format(self._hive_bee_name), self.policy)
 
     @memoize
     def export(self):
