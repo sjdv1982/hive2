@@ -12,19 +12,20 @@ class _MainloopCls:
         self.input_handler = InputHandler()
 
         self._hive = hive.get_run_hive()
+        self._read_event = None
 
     def on_tick(self):
-        self.read_event(("pre_tick",))
+        self._read_event(("pre_tick",))
 
         self.bge.logic.NextFrame()
         self.input_handler.update_events()
 
-        self.read_event(("tick",))
+        self._read_event(("tick",))
 
     def set_event_dispatcher(self, func):
         # Dispatch events from input handler to event manager
         self.input_handler.add_listener(func)
-        self.read_event = func
+        self._read_event = func
 
     def add_listener(self, func):
         # Add input handler
@@ -32,6 +33,7 @@ class _MainloopCls:
         func(listener)
 
     def stop(self):
+        self._read_event(("quit",))
         self._hive.stop()
 
 
