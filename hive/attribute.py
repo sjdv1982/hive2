@@ -1,12 +1,14 @@
 from weakref import WeakKeyDictionary
 
-from .mixins import Stateful, Exportable, Bindable
 from .manager import ContextFactory, get_building_hive, memoize
+from .mixins import Stateful, Exportable, Bindable, Parameter
 from .tuple_type import tuple_type
 
 
 class Attribute(Stateful, Bindable, Exportable):
-    """Akin to property, but is not stored on the run_hive"""
+    """Stateful data store object"""
+
+    export_only = False
 
     def __init__(self, data_type=None, start_value=None):
         self._hive_object_cls = get_building_hive()
@@ -28,7 +30,12 @@ class Attribute(Stateful, Bindable, Exportable):
 
     @memoize
     def bind(self, run_hive):
-        self._values[run_hive] = self.start_value
+        start_value = self.start_value
+
+        if isinstance(start_value, Parameter):
+            start_value = start_value.get_runtime_value(run_hive)
+
+        self._values[run_hive] = start_value
         return self
 
 

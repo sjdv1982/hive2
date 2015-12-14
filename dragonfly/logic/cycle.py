@@ -1,27 +1,30 @@
 import hive
 
-from ..std import Buffer
-
 
 def build_cycle(i, ex, args):
-    ex.b_period = Buffer("int", 0)
-    ex.period = hive.antenna(ex.b_period.input)
-
+    """Emit trigger to trig_out when N triggers to trig_in are received, where N = period_in"""
+    ex.period = hive.attribute("int", 0)
     ex.counter = hive.attribute("int", 0)
-    ex.input = hive.entry(ex.b_period.trigger)
+
+    i.period_in = hive.pull_in(ex.period)
+    i.counter_out = hive.pull_out(ex.counter)
+
+    ex.index = hive.output(i.counter_out)
+    ex.period_in = hive.antenna(i.period_in)
+    ex.trig_in = hive.entry(i.period_in)
 
     def cycle(self):
         self.counter += 1
 
-        if self.counter >= self.b_period.value:
-            self.counter -= self.b_period.value
-            self.output()
+        if self.counter >= self.period:
+            self.counter -= self.period
+            self._output()
 
     i.trigger = hive.modifier(cycle)
-    hive.trigger(ex.b_period.output, i.trigger)
+    hive.trigger(i.period_in, i.trigger)
 
     i.output = hive.triggerfunc()
-    ex.output = hive.hook(i.output)
+    ex.trig_out = hive.hook(i.output)
 
 
 Cycle = hive.hive("Cycle", build_cycle)

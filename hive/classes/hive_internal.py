@@ -7,7 +7,9 @@ class HiveInternals(object):
     def __init__(self, hive_object_cls):
         assert hive_object_cls is not None
         self._hive_object_cls = hive_object_cls
+
         self._bee_names = set()
+        self._ordered_bee_names = []
 
     def __setattr__(self, name, value):
         if name in SPECIAL_NAMES:
@@ -38,7 +40,10 @@ class HiveInternals(object):
             raise AttributeError("HiveInternals (i) attribute '%s' cannot contain a Bee built by a different hive" %
                                  name)
 
-        self._bee_names.add(name)
+        if name not in self._bee_names:
+            self._bee_names.add(name)
+            self._ordered_bee_names.append(name)
+
         value._hive_bee_name = (name,)
 
         object.__setattr__(self, name, value)
@@ -48,17 +53,19 @@ class HiveInternals(object):
             raise AttributeError("HiveInternals (ex) has no attribute '%s" % name)
 
         self._bee_names.remove(name)
+        self._ordered_bee_names.remove(name)
+
         object.__delattr__(self, name)
 
     def __bool__(self):
-        return bool(self._bee_names)
+        return bool(self._ordered_bee_names)
 
     def __dir__(self):
-        return self._bee_names
+        return self._ordered_bee_names
 
     def __iter__(self):
-        return iter(self._bee_names)
+        return iter(self._ordered_bee_names)
 
     def __repr__(self):
-        member_pairs = ("{} = {}".format(k, getattr(self, k)) for k in self._bee_names)
+        member_pairs = ("{} = {}".format(k, getattr(self, k)) for k in self._ordered_bee_names)
         return "<HiveInternals (i)>\n\t{}".format("\n\t".join(member_pairs))

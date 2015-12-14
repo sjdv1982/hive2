@@ -1,5 +1,6 @@
 from .manager import get_building_hive, get_mode, get_run_hive
-from .hive import hive, HiveBuilder, RuntimeHive, HiveObject
+from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
+from .tuple_type import types_match
 
 #i primitives
 from .triggerfunc import triggerfunc
@@ -7,7 +8,6 @@ from .triggerable import triggerable
 from .modifier import modifier #(akin to triggerable, but receives run_hive as self)
 from .ppin import push_in, pull_in
 from .ppout import push_out, pull_out
-from .variable import variable
 
 #connection primitives
 from .connect import connect
@@ -20,17 +20,15 @@ from .attribute import attribute
 #ex primitives
 from .entry import entry
 from .hook import hook
-from .socket import socket
-from . import socket_policies
-from .plugin import plugin
-from . import plugin_policies
+from .sockets import socket
+from .plugins import plugin
 from .antenna import antenna
 from .output import output
 
+#plugin socket policies
+from . import plugins
+from . import sockets
+
 #args primitives
 from .parameter import parameter
-
-# TODO: NO autosocket! instead, add a name argument to sockets and plugins, and an optional "autosocket" argument to HiveObject.__init__
-# TODO: autosocket default policy (for parent and for children) on args object
-#    - if there are named sockets, a policy towards the parent MUST be defined
-#    - a policy towards the children is optional     
+from .annotations import argument_options, argument_types, get_argument_options, get_argument_types

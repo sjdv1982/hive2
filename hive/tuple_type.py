@@ -26,13 +26,10 @@ def types_match(data_type_a, data_type_b, allow_none=True):
     :param data_type_a: tuple type of first item
     :param data_type_b: tuple type of second item
     """
-    if data_type_a is None or data_type_b is None:
+    if not (data_type_a and data_type_b):
         return allow_none
 
     else:
-        assert isinstance(data_type_a, tuple), data_type_a
-        assert isinstance(data_type_b, tuple), data_type_b
-
         for type_a, type_b in zip(data_type_a, data_type_b):
             if type_a != type_b:
                 return False

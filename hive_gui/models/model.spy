@@ -1,26 +1,46 @@
-Type BeeInstanceParameter {
+Type InstanceParameter {
   String identifier
   String data_type
   String value
 }
 
 
-Type Bee {
+Type BaseNode {
   String identifier
   String import_path
-  BeeInstanceParameterArray args
-
   Coordinate2D position = Coordinate2D(0, 0)
-  *String doc_string
+
+  InstanceParameterArray meta_args = []
+  InstanceParameterArray args = []
+
+  StringArray folded_pins = []
 }
 
 
-Type BeeConnection {
-  String from_bee
+Type HelperNode:BaseNode{
+
+}
+
+
+Type BeeNode:BaseNode{
+}
+
+
+Type HiveNode:BaseNode{
+  # Instantiation data
+  InstanceParameterArray cls_args = []
+}
+
+
+Type Connection {
+  String from_node
   String output_name
 
-  String to_bee
+  String to_node
   String input_name
+
+  # For trigger connections
+  Bool is_trigger
 }
 
 
@@ -31,8 +51,10 @@ Type Parameter {
 
 
 Type Hivemap {
-  BeeArray bees = []
-  ParameterArray args = []
-  BeeConnectionArray connections = []
+  HiveNodeArray hives = []
+  BeeNodeArray bees = []
+  HelperNodeArray helpers = []
+
+  ConnectionArray connections = []
   String docstring = ""
 }

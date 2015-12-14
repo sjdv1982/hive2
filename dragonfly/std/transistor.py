@@ -1,26 +1,22 @@
 import hive
 
 
-def declare_transistor(args):
-    args.data_type = hive.parameter("str", "int")
+def declare_transistor(meta_args):
+    meta_args.data_type = hive.parameter("tuple", ("int",))
 
 
-def build_transistor(i, ex, args):
-    i.in_value = hive.variable(args.data_type)
+def build_transistor(i, ex, args, meta_args):
+    """Convert a pull output into a push output using a trigger input"""
+    i.in_value = hive.attribute(meta_args.data_type)
     i.input = hive.pull_in(i.in_value)
     ex.input = hive.antenna(i.input)
 
     i.output = hive.push_out(i.in_value)
     ex.output = hive.output(i.output)
 
-    i.trigger = hive.triggerfunc()
+    ex.trigger = hive.entry(i.input)
 
-    def on_triggered(h):
-        h.input.pull()
-        h.output.push()
-
-    i.modifier = hive.modifier(on_triggered)
-    ex.trigger = hive.entry(i.modifier)
+    hive.trigger(i.input, i.output)
 
 
-Transistor = hive.hive("Transistor", build_transistor, declarator=declare_transistor)
+Transistor = hive.dyna_hive("Transistor", build_transistor, declare_transistor)

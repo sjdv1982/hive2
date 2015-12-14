@@ -1,33 +1,40 @@
-from .mixins import Antenna, Output, Stateful, Bee, Bindable, Exportable, Callable, ConnectSource, ConnectTarget, \
-    TriggerSource, TriggerTarget, Socket, Plugin
-from .classes import HiveBee, Pusher
+from functools import partial
+
+from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
+from .mixins import Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, ConnectTarget, \
+    TriggerSource, TriggerTarget, Socket, Plugin
 from .tuple_type import types_match
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
-    def __init__(self, target, data_type, bound=None, run_hive=None):
-        if not bound:
-            assert isinstance(target, Stateful) or target.implements(Callable), target
 
-        self._stateful = isinstance(target, Stateful)
+    def __init__(self, target, data_type, run_hive=None):
+        is_stateful = isinstance(target, Stateful)
+        assert is_stateful or callable(target) or target.implements(Callable), target
+
+        if is_stateful:
+            self._get_value = partial(target._hive_stateful_getter, run_hive)
+
+        else:
+            self._get_value = target
+
         self.target = target
         self.data_type = data_type
-        self._bound = bound
         self._run_hive = run_hive
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
                 
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
         target = self.target
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return self.__class__(target, self.data_type, bound=run_hive, run_hive=run_hive)
+        return self.__class__(target, self.data_type, run_hive=run_hive)
 
     def _hive_trigger_source(self, func):
         self._trigger.add_target(func)
@@ -42,13 +49,9 @@ class PullOut(PPOutBase):
     def pull(self):
         # TODO: exception handling hooks
         self._pretrigger.push()
-        if self._stateful:
-            value = self.target._hive_stateful_getter(self._run_hive)
-
-        else:
-            value = self.target()
-
+        value = self._get_value()
         self._trigger.push()
+
         return value
 
     def _hive_is_connectable_source(self, target):
@@ -69,22 +72,16 @@ class PullOut(PPOutBase):
 class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     mode = "push"
 
-    def __init__(self, target, data_type, bound=None, run_hive=None):
-        PPOutBase.__init__(self, target, data_type, bound, run_hive)
-        self._targets = []
+    def __init__(self, target, data_type, run_hive=None):
+        PPOutBase.__init__(self, target, data_type, run_hive)
 
-    def __call__(self):
-        self.push()
+        self._targets = []
 
     def push(self):
         # TODO: exception handling hooks
         self._pretrigger.push()
 
-        if self._stateful:
-            value = self.target._hive_stateful_getter(self._run_hive)
-
-        else:
-            value = self.target()
+        value = self._get_value()
 
         for target in self._targets:
             target(value)
@@ -111,19 +108,23 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         if not isinstance(source, Plugin):
             raise TypeError("Source does not implement Plugin: {}".format(source))
 
-    def _hive_connect_target(self, source):
-        self._targets.append(source.plugin)
+    def _hive_connect_target(self, target):
+        self._targets.append(target.plugin)
             
     def _hive_trigger_target(self):
         return self.push
+
+    __call__ = push
 
 
 class PPOutBee(Output, ConnectSource, TriggerSource):
     mode = None
 
-    def __init__(self, target):        
-        assert isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable) # TODO: nice error message
-        if isinstance(target, Stateful) or isinstance(target, Output):
+    def __init__(self, target):
+        is_stateful_or_output = isinstance(target, (Stateful, Output))
+        assert is_stateful_or_output or target.implements(Callable) # TODO: nice error message
+
+        if is_stateful_or_output:
             self.data_type = target.data_type
 
         else:
@@ -167,26 +168,16 @@ class PullOutBee(PPOutBee):
 
 
 def push_out(target):
-    # TODO: nice error message
-    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
-
     if get_mode() == "immediate":
-        assert is_valid_bee or callable(target)
         return PushOut(target)
 
     else:
-        assert is_valid_bee, target
         return PushOutBee(target)
 
 
 def pull_out(target):
-    # TODO: nice error message
-    is_valid_bee = isinstance(target, Stateful) or isinstance(target, Output) or target.implements(Callable)
-
     if get_mode() == "immediate":
-        assert is_valid_bee or callable(target), target
         return PullOut(target)
 
     else:
-        assert is_valid_bee, target
         return PullOutBee(target)

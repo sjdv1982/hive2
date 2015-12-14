@@ -1,72 +1,104 @@
 import os
-import hive
-
+import sys
+from collections import OrderedDict
 from inspect import isclass, getmembers
 
+import dragonfly
+import hive
 
-def recurse(base_import_path, modules):
-    """Recursively find hive names from module path
 
-    Write to dict the qualified name of the package, with a set of Hive class names
+def _keys_to_dict(keys):
+    return OrderedDict([(k, None) for k in keys])
 
-    E.g "dragonfly/std/buffer/Buffer" -> {"dragonfly": {"std": {"Buffer", }}}
 
-    :param base_import_path: base path to import module
-    :param modules: dict to write to
-    """
-    # Find filepath of base path
-    _split_base_path = base_import_path.split('.')
-    _root_mod = __import__(base_import_path, fromlist=[_split_base_path[-1]])
-    root_path = os.path.dirname(_root_mod.__file__)
+found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier",
+                                     "pull_in", "pull_out", "push_in", "push_out"])}
 
-    # Find all members
-    for file_name in os.listdir(root_path):
-        if file_name.startswith("_"):
-            continue
 
-        file_path = os.path.join(root_path, file_name)
-        if file_name.endswith(".py"):
+class HiveFinder:
+    """Search utility to find Hive classes in a filesystem"""
 
-            module_name = file_name[:-3]
-            import_path = base_import_path + "." + module_name
+    def __init__(self, *additional_paths):
+        self.root_paths = {dragonfly.__path__[0], }
+        self.additional_paths = set(additional_paths)
+        self._added_paths = set()
 
-            module = __import__(import_path, fromlist=[module_name])
+    def clear(self):
+        for path in self._added_paths:
+            sys.path.remove(path)
 
-            # Find submodule dict
-            sub_modules = modules
+        self._added_paths.clear()
 
-            *component_path, package_name, module_name = import_path.split('.')
-            for component in component_path:
+    def _recurse(self, base_file_path, relative_folder_path, modules):
+        """Recursively find hive names from module path
+
+        Write to dict the qualified name of the package, with a set of Hive class names
+
+        E.g "dragonfly/std/buffer/Buffer" -> {"dragonfly": {"std": {"Buffer", }}}
+
+        :param base_import_path: base path to import module
+        :param modules: dict to write to
+        """
+        current_folder_path = os.path.join(base_file_path, relative_folder_path)
+        base_folder_name = os.path.basename(base_file_path)
+
+        # Find all members
+        for file_name in os.listdir(current_folder_path):
+            if file_name.startswith("_"):
+                continue
+
+            current_file_path = os.path.join(current_folder_path, file_name)
+            relative_file_path = os.path.join(relative_folder_path, file_name)
+            name, extension = os.path.splitext(file_name)
+
+            is_directory = os.path.isdir(current_file_path)
+
+            if is_directory or extension[1:] in {'py', 'hivemap'}:
+                module_file_path = os.path.join(base_folder_name, relative_folder_path, name)
+                import_path = module_file_path.replace(os.path.sep, ".")
+
                 try:
-                    sub_modules = sub_modules[component]
+                    module = __import__(import_path, fromlist=[name])
 
-                except KeyError:
-                    sub_modules[component] = sub_modules = {}
+                except ImportError:
+                    print("Couldn't import {}".format(import_path))
+                    continue
 
-            # Get set of hive names
-            try:
-                hive_set = sub_modules[package_name]
+                # Find submodule dict
+                sub_modules = modules
 
-            except KeyError:
-                hive_set = sub_modules[package_name] = set()
+                for component in import_path.split('.'):
+                    try:
+                        sub_modules = sub_modules[component]
 
-            for name, value in getmembers(module):
-                if isclass(value) and issubclass(value, hive.HiveBuilder):
+                    except KeyError:
+                        sub_modules[component] = sub_modules = OrderedDict()
 
-                    hive_set.add(name)
+                for name, value in getmembers(module):
+                    if name.startswith('_'):
+                        continue
 
-        elif os.path.isdir(file_path):
-            import_path = base_import_path + "." + file_name
-            recurse(import_path, modules)
+                    if isclass(value) and issubclass(value, hive.HiveBuilder):
+                        sub_modules[name] = None
 
+                if is_directory and not sub_modules:
+                    self._recurse(base_file_path, relative_file_path, modules)
 
-def get_bee_names():
-    return ()
+    def find_hives(self):
+        self.clear()
 
-# TODO add import hook / callback / list for injecting additional hives
+        filesystem = {}
 
+        # Import stdlib modules
+        for root_path in self.root_paths:
+            self._recurse(root_path, '', filesystem)
 
-def get_hives():
-    modules = {}
-    recurse("dragonfly", modules)
-    return modules
+        # Keep track of added paths to sys path
+        for additional_path in self.additional_paths:
+            if additional_path not in sys.path:
+                sys.path.append(additional_path)
+                self._added_paths.add(additional_path)
+
+            self._recurse(additional_path, '', filesystem)
+
+        return filesystem

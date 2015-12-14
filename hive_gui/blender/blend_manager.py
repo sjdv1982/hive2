@@ -8,10 +8,13 @@ from .node_menu_manager import node_menu_manager, HiveNodeMenu
 
 from ..node_manager import NodeManager
 
-from ..finder import get_hives, recurse
-hives = get_hives()
+from ..finder import get_hives
 
-recurse("test.sca", hives)
+import dragonfly
+import test.sca as test_sca
+import sparta
+
+hives = get_hives(test_sca, dragonfly, sparta)
 
 
 class BlendManager:
@@ -21,34 +24,39 @@ class BlendManager:
 
         self._gui_node_managers = {}
 
-        root_menu = node_menu_manager.create_menu("Hives")
-        self.init_node_menu(hives, root_menu)
+        menu = node_menu_manager.create_menu("Hives")
+        self.init_node_menu(hives, menu)
 
         # TODO fix deleting node trees
 
-    def init_node_menu(self, hive_dict, menu):
-        if isinstance(hive_dict, (list, set)):
-            menu.children.append(hive_dict)
-            return
-
-        for name, child_dict in hive_dict.items():
-            if menu.full_path:
-                full_path = menu.full_path + "." + name
+    def init_node_menu(self, hive_dict, parent_menu=None):
+        for name, children in hive_dict.items():
+            if parent_menu.full_path:
+                full_path = parent_menu.full_path + "." + name
 
             else:
                 full_path = name
 
+            # E.g dragonfly / sca
             sub_menu = HiveNodeMenu(name, full_path)
-            menu.children.append(sub_menu)
 
-            self.init_node_menu(child_dict, sub_menu)
+            # Add to parent
+            if parent_menu is not None:
+                parent_menu.children.append(sub_menu)
+
+            for child in children:
+                if isinstance(child, dict):
+                    self.init_node_menu(child, sub_menu)
+
+                else:
+                    sub_menu.children.append(child)
 
     def get_gui_manager_for_node_tree(self, node_tree):
-        return self._gui_node_managers[node_tree.unique_id]
+        return self._gui_node_managers[node_tree.as_pointer()]
 
     def get_gui_manager_for_node(self, gui_node):
         """Find the node tree interface for a given blender node"""
-        for unique_id, interface in self._gui_node_managers.items():
+        for interface in self._gui_node_managers.values():
             node_tree = interface.node_tree
 
             for node in node_tree.nodes.values():
@@ -76,7 +84,7 @@ class BlendManager:
         self._gui_node_managers.clear()
 
     def pre_saved(self):
-        for unique_id, gui_manager in self._gui_node_managers.items():
+        for gui_manager in self._gui_node_managers.values():
             node_tree = gui_manager.node_tree
 
             node_manager = gui_manager.node_manager
@@ -107,13 +115,11 @@ class BlendManager:
 
             except KeyError:
                 # Assign unique ID
-                unique_id = node_tree.unique_id = repr(node_tree.as_pointer())
-
                 gui_node_manager = BlenderGUINodeManager(self, node_tree)
                 node_manager = NodeManager(gui_node_manager)
 
                 gui_node_manager.node_manager = node_manager
-                self._gui_node_managers[unique_id] = gui_node_manager
+                self._gui_node_managers[node_tree.as_pointer()] = gui_node_manager
 
                 self.reload_node_tree_from_source(node_tree)
 
@@ -146,10 +152,10 @@ class BlendManager:
 
         # Add new
         for text_block_name in text_block_paths:
-            hive_map_name = text_block_name[:-len(".hivemap")]
+            hivemap_name = text_block_name[:-len(".hivemap")]
 
             # Node tree doesn't exist
-            if hive_map_name not in data.node_groups:
+            if hivemap_name not in data.node_groups:
                 # Delete text
                 text_block = data.texts[text_block_name]
                 data.texts.remove(text_block)

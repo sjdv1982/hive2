@@ -1,15 +1,13 @@
-from .types import BlenderHiveNode, LOCATION_DIVISOR, INVALID_NODE_NAME, INVALID_NODE_ID
-from .socket_manager import socket_class_manager
-
-from ..gui_node_manager import IGUINodeManager
-from ..sockets import get_colour, get_socket_type_for_mode
-
-from contextlib import contextmanager
 from collections import namedtuple
+from contextlib import contextmanager
+from functools import wraps
 from logging import getLogger
 
 from bpy import context
-from functools import wraps
+
+from .socket_manager import socket_class_manager
+from .types import BlenderHiveNode, INVALID_NODE_NAME, INVALID_NODE_ID
+from ..sockets import get_colour, get_shape
 
 PendingOperation = namedtuple("PendingOperation", "type data")
 default_operation = PendingOperation(None, None)
@@ -28,7 +26,7 @@ def wrapper(func, logger):
     return _wrapper
 
 
-class BlenderGUINodeManager(IGUINodeManager):
+class BlenderGUINodeManager:
 
     def __init__(self, blend_manager, node_tree):
         self.node_tree = node_tree
@@ -73,7 +71,7 @@ class BlenderGUINodeManager(IGUINodeManager):
 
     def gui_get_parameter_values(self, gui_node):
         node = self.unique_id_to_node[gui_node.unique_id]
-        return node.info['args']
+        return node.post_init_info
 
     def create_connection(self, output, input):
         if self.internal_operation.type == "create_connection":
@@ -119,21 +117,23 @@ class BlenderGUINodeManager(IGUINodeManager):
         gui_node = self.node_tree.nodes.new(BlenderHiveNode.bl_idname)
         gui_node.label = name = node.name
 
-        # Setup inputs
-        for pin_name, pin in node.inputs.items():
-            socket_colour = get_colour(pin.data_type)
-            socket_type = get_socket_type_for_mode(pin.mode)
-            socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            socket = gui_node.inputs.new(socket_cls.bl_idname, pin_name)
-            socket.colour = socket.default_colour
+        # Setup inputs and outputs
+        for i, pin_name in enumerate(node.pin_order):
+            try:
+                pin = node.inputs[pin_name]
+                io_collection = gui_node.inputs
 
-        # Setup outputs
-        for pin_name, pin in node.outputs.items():
+            except KeyError:
+                pin = node.outputs[pin_name]
+                io_collection = gui_node.outputs
+
             socket_colour = get_colour(pin.data_type)
-            socket_type = get_socket_type_for_mode(pin.mode)
+            socket_type = get_shape(pin.mode)
             socket_cls = socket_class_manager.get_socket(socket_type, socket_colour)
-            socket = gui_node.outputs.new(socket_cls.bl_idname, pin_name)
+            socket = io_collection.new(socket_cls.bl_idname, pin_name)
             socket.colour = socket.default_colour
+            socket.link_limit = 99
+            socket.row = (i + 1)
 
         node_id = repr(gui_node.as_pointer())
         gui_node.unique_id = node_id
@@ -161,7 +161,16 @@ class BlenderGUINodeManager(IGUINodeManager):
                 self._logger.error("Couldn't find Blender GUI node to delete: {}".format(node))
                 return
 
-    def rename_node(self, node, name):
+    def fold_pin(self, pin):
+        pass
+
+    def unfold_pin(self, pin):
+        pass
+
+    def reorder_connection(self, output, input, index):
+        pass
+
+    def set_node_name(self, node, name):
         gui_node = self.get_gui_node_from_node(node)
         gui_node.label = name
 
@@ -181,12 +190,12 @@ class BlenderGUINodeManager(IGUINodeManager):
         for link in to_remove:
             self.node_tree.links.remove(link)
 
-    def set_position(self, node, position):
+    def set_node_position(self, node, position):
         if self.internal_operation.type == "set_position":
             return
 
         gui_node = self.get_gui_node_from_node(node)
-        gui_node.location = position[0] * 100, position[1] * 100
+        gui_node.location = position
 
     def gui_on_freed(self, gui_node):
         try:
@@ -262,7 +271,7 @@ class BlenderGUINodeManager(IGUINodeManager):
             print("Pasting from clipboard, source nodes won't be there")
 
     def gui_post_pasted(self):
-        position = context.space_data.cursor_location / LOCATION_DIVISOR
+        position = context.space_data.cursor_location
         self.node_manager.paste(position)
         print("PASTE")
 
@@ -312,7 +321,6 @@ class BlenderGUINodeManager(IGUINodeManager):
     def gui_get_socket_colour(self, socket):
         try:
             colour = self.socket_colours[socket.as_pointer()]
-            print(colour, "CUST")
             return colour
         except KeyError:
             return socket.default_colour
@@ -338,17 +346,17 @@ class BlenderGUINodeManager(IGUINodeManager):
             # Update label
             if node.name != gui_node.label:
                 try:
-                    self.node_manager.rename_node(node, gui_node.label)
+                    self.node_manager.set_node_name(node, gui_node.label)
 
                 except ValueError:
                     gui_node.label = node.name
 
             # Update position
             gui_node_position = gui_node.location
-            node_position = tuple(gui_node_position / LOCATION_DIVISOR)
+            node_position = tuple(gui_node_position)
 
             with self.internal_operation_from("set_position"):
-                self.node_manager.set_position(node, node_position)
+                self.node_manager.set_node_position(node, node_position)
 
         for gui_node in to_delete:
             self.node_tree.nodes.remove(gui_node)

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>Home</title>
+
+        <style>
+            /* body {
+                background-color: linen;
+            }
+
+            h1 {
+                color: maroon;
+                margin-left: 40px;
+            }
+            */
+            .centered {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                text-align: center;
+            }
+            p{
+                color: #8A8A8A;
+                font-family: agency;
+            }
+            h2{
+                color: #8A8A8A;
+                font-family: agency;
+            }
+        </style>
+    </head>
+    <body>
+        <img src="%LOCALDIR%/images/hive.png" width="256" height="256", class="centered"></img>
+        <div class="centered">
+            <p>The <b>Hives</b> tree-view panel  can be used to add Hive nodes to the current editor space</p>
+            <p>Use the File menu to <u>o</u>pen, <u>s</u>ave or create <u>n</u>ew hive maps</p>
+            <hr></hr>
+            <h2>Projects</h2>
+            <p>Hive files can be collated under a project. The hives tree-view panel shows hive-maps from the current project.</p>
+            <p>Use the <i>Open Project</i> File menu option to change the current project. Existing project files will be closed.</p>
+            <hr></hr>
+            <h2>Folding</h2>
+            <img src="%LOCALDIR%/images/folding.png" height="200", class="centered"></img>
+            <p>Pull-in pins can be folded in to use an internal variable hive. Folded pins can be unfolded to expose these variables.</p>
+            <hr></hr>
+            <h2>Cut Connections</h2>
+            <img src="%LOCALDIR%/images/cut.png" height="200", class="centered"></img>
+            <p>Holding CTRL + LEFT MOUSE and dragging the cursor will draw a red slice line.
+                Connections intersecting with this slice will be deleted.</p>
+            <hr></hr>
+            <h2>Reorder Connections</h2>
+            <img src="%LOCALDIR%/images/reorder.png" height="200", class="centered"></img>
+            <p>Hovering over an output socket will show the indices of each connection.
+                Sockets are connected from lowest to highest index, which is important for push connections.
+                Select a connection and press [+] or [-] to change the connection index.
+            </p>
+        </div>
+    </body>
+    </body>
+</html>

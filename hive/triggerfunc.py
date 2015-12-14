@@ -1,6 +1,6 @@
-from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable, Exportable
 from .classes import HiveBee, Pusher
 from .manager import ContextFactory, memoize
+from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable
 
 
 class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
@@ -8,9 +8,9 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
 
     data_type = ("trigger",)
 
-    def __init__(self, func=None, bound=None):
+    def __init__(self, func=None, run_hive=None):
         assert callable(func) or func is None or isinstance(func, Callable), func
-        self._bound = bound
+        self._run_hive = run_hive
         self._func = func
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
@@ -43,14 +43,14 @@ class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
         
     @memoize
     def bind(self, run_hive):
-        if self._bound:
+        if self._run_hive:
             return self
 
         func = self._func
         if isinstance(func, Bindable):
             func = func.bind(run_hive)
 
-        return self.__class__(func, bound=run_hive)
+        return self.__class__(func, run_hive=run_hive)
 
 
 class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
@@ -58,11 +58,13 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
     data_type = ("trigger",)
 
     def __init__(self, func=None):
-        HiveBee.__init__(self, None, func)
+        super().__init__()
+
+        self._func = func
 
     @memoize
     def getinstance(self, hive_object):
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee): 
             func = func.getinstance(hive_object)
 
@@ -72,7 +74,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
         if Bee.implements(self, cls):
             return True
 
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee):
             return func.implements(cls)
 

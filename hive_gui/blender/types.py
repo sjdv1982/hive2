@@ -3,12 +3,11 @@ from nodeitems_utils import NodeCategory
 
 from .text_area import BlenderTextArea
 
-from ..sockets import colours, SocketTypes
-from ..utils import import_from_path
+from ..utils import import_from_path,
 
 blend_manager = None
 
-LOCATION_DIVISOR = 100
+LOCATION_DIVISOR = 1
 INVALID_NODE_NAME = "<invalid>"
 INVALID_NODE_ID = INVALID_NODE_TREE_ID = "<none>"
 
@@ -44,11 +43,7 @@ class BlenderHiveNode(types.Node):
 
     @property
     def gui_node_manager(self):
-        return blend_manager.get_gui_manager_for_node(self)
-
-    @property
-    def node_tree(self):
-        return self.gui_node_manager.node_tree
+        return blend_manager.get_gui_manager_for_node_tree(self.id_data)
 
     def copy(self, node):
         self.gui_node_manager.gui_on_copied(node, self)
@@ -62,8 +57,8 @@ class BlenderHiveNode(types.Node):
         for name, data in parameters.items():
             value = data['value']
 
-            row = layout.row()
-            row.label(name)
+            row = layout.row(align=True)
+            row.label("{}:".format(name))
 
             row.label(repr(value))
 
@@ -85,11 +80,12 @@ class BlenderHiveSocket(types.NodeSocket):
         return self.node.gui_node_manager.gui_get_socket_colour(self)
 
 
-enum_data_types = [("str", "str", "String"), ("bool", "bool", "Bool"), ("int", "int", "Int"),
+enum_data_types = [("str", "str", "String"),
+                   ("bool", "bool", "Bool"), ("int", "int", "Int"),
                    ("float", "float", "Float")]
 
 
-class ArgumentGroup(types.PropertyGroup):
+class ParameterGroup(types.PropertyGroup):
     name = props.StringProperty(name="Name")
     data_type = props.EnumProperty(items=enum_data_types)
 
@@ -97,8 +93,6 @@ class ArgumentGroup(types.PropertyGroup):
     value_int = props.IntProperty()
     value_bool = props.BoolProperty()
     value_float = props.FloatProperty()
-
-    active = props.BoolProperty(name="Active")
 
     @property
     def value(self):
@@ -109,10 +103,18 @@ class ArgumentGroup(types.PropertyGroup):
         setattr(self, "value_{}".format(self.data_type), value)
 
 
+utils.register_class(ParameterGroup)
+
+
+class ArgumentGroup(types.PropertyGroup):
+    name = props.StringProperty(name="Name")
+    value_repr = props.StringProperty()
+
+
 utils.register_class(ArgumentGroup)
 
 
-class HIVE_UL_arguments(types.UIList):
+class HIVE_UL_parameters(types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         data_type = item.data_type
@@ -121,7 +123,14 @@ class HIVE_UL_arguments(types.UIList):
         prop_row = layout.row()
         prop_row.prop(item, "value_{}".format(data_type), text="")
 
-        layout.prop(item, "active", text="")
+
+class HIVE_UL_arguments(types.UIList):
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        layout.label(text=item.name.replace("_", " ").title())
+
+        prop_row = layout.row()
+        prop_row.prop(item, "value_repr", text="")
 
 
 class NODE_OT_ConfigHiveNode(types.Operator):
@@ -133,17 +142,25 @@ class NODE_OT_ConfigHiveNode(types.Operator):
     arguments_index = props.IntProperty()
     arguments = props.CollectionProperty(type=ArgumentGroup)
 
+    parameters_index = props.IntProperty()
+    parameters = props.CollectionProperty(type=ParameterGroup)
+
     def draw(self, context):
         layout = self.layout
+        layout.label("Parameters")
+        layout.template_list("HIVE_UL_parameters", "", self, "parameters", self, "parameters_index")
+
+        layout.label("Class Arguments")
         layout.template_list("HIVE_UL_arguments", "", self, "arguments", self, "arguments_index")
 
     def execute(self, context):
         params = {}
-        for argument in self.arguments:
-            if not argument.active:
-                continue
 
-            params[argument.name] = argument.value
+        for parameter in self.parameters:
+            params[parameter.name] = parameter.value
+
+        for argument in self.arguments:
+            params[argument.name] = eval(argument.value_repr)
 
         add_hive_node(context, self.import_path, params)
 
@@ -151,16 +168,18 @@ class NODE_OT_ConfigHiveNode(types.Operator):
 
     def invoke(self, context, event):
         hive_cls = import_from_path(self.import_path)
-        hive_args = hive_cls._hive_args
+        init_info = get_pre_init_info(hive_cls)
 
-        for name in hive_args:
-            parameter = getattr(hive_args, name)
-            base_type = parameter.data_type[0]
-
-            argument = self.arguments.add()
-            argument.data_type = base_type
+        for name, info in init_info['parameters'].items():
+            argument = self.parameters.add()
+            argument.data_type = info['data_type'][0]
             argument.name = name
-            argument.value = parameter.start_value
+            argument.value = info['start_value']
+
+        for name, info in init_info['cls_args'].items():
+            argument = self.arguments.add()
+            argument.name = name
+            argument.value_repr = ''
 
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -172,7 +191,7 @@ def add_hive_node(context, import_path, params=None):
     gui_node_manager = blend_manager.get_gui_manager_for_node_tree(node_tree)
     node_manager = gui_node_manager.node_manager
 
-    node = node_manager.create_node(import_path, params)
+    node = node_manager.create_hive(import_path, params)
     gui_node = gui_node_manager.get_gui_node_from_node(node)
 
     # Select this node
@@ -183,7 +202,7 @@ def add_hive_node(context, import_path, params=None):
 
     mouse_x, mouse_y = context.space_data.cursor_location
     position = mouse_x / LOCATION_DIVISOR, mouse_y / LOCATION_DIVISOR
-    node_manager.set_position(node, position)
+    node_manager.set_node_position(node, position)
 
     # Invoke translation
     ops.transform.translate('INVOKE_DEFAULT')
@@ -201,14 +220,9 @@ class NODE_OT_AddHiveNode(types.Operator):
 
     def execute(self, context):
         hive_cls = import_from_path(self.import_path)
+        init_info = get_pre_init_info(hive_cls)
 
-        # Build args if not built
-        if hive_cls._hive_args is None:
-            hive_cls._hive_build_args_wrapper()
-
-        hive_args = hive_cls._hive_args
-
-        if not hive_args:
+        if not (init_info['parameters'] or init_info['cls_args']):
             add_hive_node(context, self.import_path)
 
         else:
@@ -250,13 +264,13 @@ class NODE_OT_GrabHiveNode(types.Operator):
             mouse_x, mouse_y = context.space_data.cursor_location
 
             position = mouse_x / LOCATION_DIVISOR, mouse_y / LOCATION_DIVISOR
-            node_manager.set_position(node, position)
+            node_manager.set_node_position(node, position)
 
         elif event.type in ('LEFTMOUSE', 'RETURN'):
             return {'FINISHED'}
 
         elif event.type == 'RIGHTMOUSE':
-            node_manager.set_position(node, (0, 0))
+            node_manager.set_node_position(node, (0, 0))
             return {'FINISHED'}
 
         elif event.type == 'ESC':
@@ -332,8 +346,8 @@ def draw_hive_menu(self, context):
 
 
 _classes = (HiveNodeTree, BlenderHiveNode, BlenderHiveSocket, NODE_OT_AddHiveNode, NODE_OT_GrabHiveNode,
-            HIVE_UL_arguments, NODE_OT_ConfigHiveNode, NODE_OT_SynchroniseTextBlocks, HiveNodeTreeToolsMenu,
-            NODE_OT_ShowDocstring)
+            HIVE_UL_arguments, HIVE_UL_parameters, NODE_OT_ConfigHiveNode, NODE_OT_SynchroniseTextBlocks,
+            HiveNodeTreeToolsMenu, NODE_OT_ShowDocstring)
 
 
 def register():
