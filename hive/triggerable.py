@@ -4,6 +4,7 @@ from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, 
 
 
 class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
+    """Callable Python snippet"""
 
     def __init__(self, func, run_hive=None):
         assert callable(func) or isinstance(func, Callable), func
@@ -41,13 +42,16 @@ class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
 
 
 class TriggerableBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
+    """Callable Python snippet"""
 
     def __init__(self, func):
-        HiveBee.__init__(self, None, func)
+        super().__init__()
+
+        self._func = func
 
     @memoize
     def getinstance(self, hive_object):
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee): 
             func = func.getinstance(hive_object)
 

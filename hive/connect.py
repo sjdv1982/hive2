@@ -1,3 +1,4 @@
+from collections import namedtuple
 from itertools import product
 
 from .classes import HiveBee
@@ -5,6 +6,8 @@ from .manager import get_mode, memoize, register_bee
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
     Exportable
 from .tuple_type import types_match
+
+ConnectionCandidate = namedtuple("ConnectionCandidate", ("bee_name", "data_type"))
 
 
 def find_connection_candidates(sources, targets, require_types=True):
@@ -30,16 +33,19 @@ def find_connection_candidates(sources, targets, require_types=True):
 
     return candidates
 
+# TODO allow multiple connections when they're all unique!
 
-def connect_hives(source, target):
-    if not source._hive_can_connect_hive(target):
+
+def find_connections_between_hives(source_hive, target_hive):
+    """Find a connection between two hives"""
+    if not source_hive._hive_can_connect_hive(target_hive):
         raise ValueError("Both hives must be either Hive runtimes or Hive objects")
 
     # Find source hive ConnectSources
-    connect_sources = source._hive_find_connect_sources()
+    connect_sources = source_hive._hive_find_connect_sources()
 
     # Find target hive ConnectSources
-    connect_targets = target._hive_find_connect_targets()
+    connect_targets = target_hive._hive_find_connect_targets()
 
     # First try: match candidates with named data_type
     candidates = find_connection_candidates(connect_sources, connect_targets)
@@ -51,13 +57,13 @@ def connect_hives(source, target):
         raise ValueError("No matching connections found")
 
     elif len(candidates) > 1:
-        candidate_names = [(a.attrib, b.attrib) for a, b in candidates]
-        raise TypeError("Multiple matches found between {} and {}: {}".format(source, target, candidate_names))
+        candidate_names = [(a.bee_name, b.bee_name) for a, b in candidates]
+        raise TypeError("Multiple matches found between {} and {}: {}".format(source_hive, target_hive, candidate_names))
 
     source_candidate, target_candidate = candidates[0]
 
-    source_bee = getattr(source, source_candidate.attrib)
-    target_bee = getattr(target, target_candidate.attrib)
+    source_bee = getattr(source_hive, source_candidate.bee_name)
+    target_bee = getattr(target_hive, target_candidate.bee_name)
 
     return source_bee, target_bee
 
@@ -69,7 +75,7 @@ def build_connection(source, target):
 
     # Find appropriate bees to connect within respective hives
     if hive_source and hive_target:
-        source, target = connect_hives(source, target)
+        source, target = find_connections_between_hives(source, target)
 
     else: 
         if hive_source:
@@ -78,8 +84,7 @@ def build_connection(source, target):
         elif hive_target:
             target = target._hive_get_connect_target(source)
 
-
-    # will raise an Exception if incompatible:
+    # raises an Exception if incompatible
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
 
@@ -113,14 +118,18 @@ class Connection(Bindable):
 class ConnectionBee(HiveBee):
 
     def __init__(self, source, target):
-        HiveBee.__init__(self, None, source, target)
+        super().__init__()
+
+        self.source = source
+        self.target = target
 
     def __repr__(self):
         return "<ConnectionBee\n\t{}\n\t{}>".format(*self.args)
 
     @memoize
     def getinstance(self, hive_object):
-        source, target = self.args
+        source = self.source
+        target = self.target
 
         if isinstance(source, Bee):
             if isinstance(source, Exportable):

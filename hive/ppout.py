@@ -8,6 +8,7 @@ from .tuple_type import types_match
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
+
     def __init__(self, target, data_type, run_hive=None):
         is_stateful = isinstance(target, Stateful)
         assert is_stateful or callable(target) or target.implements(Callable), target

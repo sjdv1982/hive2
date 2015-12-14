@@ -4,6 +4,7 @@ from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, 
 
 
 class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
+    """Callable Python snippet which is passed the current run hive"""
 
     def __init__(self, func, run_hive=None):
         assert callable(func) and not isinstance(func, Bee), \
@@ -40,26 +41,29 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
 
 
 class ModifierBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
+    """Callable Python snippet which is passed the current run hive"""
 
     def __init__(self, func):
-        HiveBee.__init__(self, None, func)
+        super().__init__()
+
+        self._func = func
 
     def __repr__(self):
-        return "<Modifier: {}>".format(self.args[0])
+        return "<Modifier: {}>".format(self._func)
 
     @memoize
     def getinstance(self, hive_object):
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee): 
             func = func.getinstance(hive_object)
 
         return Modifier(func)
 
     def implements(self, cls):
-        if HiveBee.implements(self, cls):
+        if Bee.implements(self, cls):
             return True
 
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee):
             return func.implements(cls)
 

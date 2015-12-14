@@ -1,12 +1,12 @@
 from weakref import WeakKeyDictionary
 
-from .mixins import Stateful, Exportable, Bindable, Parameter
 from .manager import ContextFactory, get_building_hive, memoize
+from .mixins import Stateful, Exportable, Bindable, Parameter
 from .tuple_type import tuple_type
 
 
 class Attribute(Stateful, Bindable, Exportable):
-    """Akin to property, but is not stored on the run_hive"""
+    """Stateful data store object"""
 
     export_only = False
 

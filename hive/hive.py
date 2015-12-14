@@ -3,7 +3,7 @@ from inspect import isfunction, getcallargs
 
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
 from .compatability import next, is_method
-from .connect import connect
+from .connect import connect, ConnectionCandidate
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_run_hive
 from .mixins import *
@@ -38,18 +38,17 @@ class HiveMethodWrapper(object):
     def __setattr__(self, attr):
         raise AttributeError("HiveMethodWrapper of class '{}' is read-only".format(self._cls.__name__))
 
-
-class Generic(object):
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def __str__(self):
-        return str(self.__dict__)
+    def __repr__(self):
+        self_cls = object.__getattribute__(self, "__class__")
+        wrapped_cls = object.__getattribute__(self, "_cls")
+        return "{}({})".format(self_cls.__name__, wrapped_cls)
 
 
 class RuntimeHiveInstantiator(Bindable):
-    """Instantiator bee of runtime hives"""
+    """Instantiator Bee to instantiate runtime hives.
+
+     Create a new RuntimeHive for a HiveObject instance when bound to parent hive.
+     """
 
     def __init__(self, hive_object):
         # TODO, maybe setattr for bee.getinstance(hive_object) in hive ex/i wrappers
@@ -152,7 +151,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
         # Is root run hive
         if get_run_hive() is None:
-            print("ROOT", id(self._hive_object))
             self._hive_validate_connections()
 
 
@@ -230,12 +228,12 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         self._hive_allow_export_namespace = kwargs.pop("export_namespace", True)
 
         # Take out args parameters
-        args, kwargs, arg_values = self._hive_args.extract_from_args(args, kwargs)
-        self._hive_args_frozen = self._hive_args.freeze(arg_values)
+        remaining_args, remaining_kwargs, arg_wrapper_values = self._hive_args.extract_from_args(args, kwargs)
+        self._hive_args_frozen = self._hive_args.freeze(arg_wrapper_values)
 
         # Args to instantiate builder-class instances
-        self._hive_builder_args = args
-        self._hive_builder_kwargs = kwargs
+        self._hive_builder_args = remaining_args
+        self._hive_builder_kwargs = remaining_kwargs
             
         # Used to check calling signature of builderclass.__init__
         init_plus_args = (None,) + self._hive_builder_args
@@ -243,7 +241,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
             if builder_cls is not None and isfunction(builder_cls.__init__):
-
                 try:
                     getcallargs(builder_cls.__init__, *init_plus_args, **self._hive_builder_kwargs)
 
@@ -254,15 +251,16 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         with hive_mode_as("build"):
             external_bees = self.__class__._hive_ex
             for bee_name in external_bees:
-                exportable = getattr(external_bees, bee_name)
+                bee = getattr(external_bees, bee_name)
 
-                target = exportable.export()
+                target = bee.export()
                 resolve_bee = ResolveBee(target, self)
 
                 setattr(self, bee_name, resolve_bee)
 
     @memoize
     def getinstance(self, parent_hive_object):
+        """Return a RuntimeHiveInstantiator for this parent hive_object"""
         return RuntimeHiveInstantiator(self)
 
     def instantiate(self):
@@ -290,6 +288,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         for bee_name in dir(external_bees):
             bee = getattr(external_bees, bee_name)
             exported_bee = bee.export()
+
             if isinstance(exported_bee, TriggerTarget):
                 trigger_targets.append(bee_name)
 
@@ -338,7 +337,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             if not exported_bee.implements(ConnectSource):
                 continue
 
-            candidate = Generic(attrib=bee_name, data_type=exported_bee.data_type)
+            candidate = ConnectionCandidate(bee_name, exported_bee.data_type)
             connect_sources.append(candidate)
 
         return connect_sources
@@ -356,7 +355,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
             if not exported_bee.implements(ConnectTarget):
                 continue
 
-            candidate = Generic(attrib=bee_name, data_type=exported_bee.data_type)
+            candidate = ConnectionCandidate(bee_name, exported_bee.data_type)
             connect_targets.append(candidate)
 
         return connect_targets
@@ -378,18 +377,18 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         elif len(connect_sources) > 1:
             raise TypeError("Multiple connection sources found for {}: {}".format(target, connect_sources))
 
-        return connect_sources[0].attrib
+        return connect_sources[0].bee_name
             
     @classmethod
     def _hive_find_connect_target(cls, source):
         """Find and return the name of a suitable connect target within this hive
-
+F
         :param source: source to connect to
         """
         assert source.implements(ConnectSource)
         source_data_type = tuple_type(source.data_type)
 
-        connect_targets = [c for c in cls._hive_find_connect_targets() if types_match(c.data_type,source_data_type)]
+        connect_targets = [c for c in cls._hive_find_connect_targets() if types_match(c.data_type, source_data_type)]
 
         if not connect_targets:
             raise TypeError("No matching connections found for {}".format(source))
@@ -397,7 +396,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         elif len(connect_targets) > 1:            
             raise TypeError("Multiple connection targets found for {}: {}".format(source, connect_targets))
 
-        return connect_targets[0].attrib
+        return connect_targets[0].bee_name
 
     def _hive_get_trigger_target(self):
         """Return single external bee that supported TriggerTarget interface"""

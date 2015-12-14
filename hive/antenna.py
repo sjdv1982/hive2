@@ -1,8 +1,9 @@
-from .mixins import Bee, Antenna, Exportable
 from .manager import get_building_hive, ContextFactory
+from .mixins import Bee, Antenna, Exportable
 
 
 class HiveAntenna(Antenna, Exportable):
+    """Exportable proxy for Antenna bees"""
 
     def __init__(self, target):
         assert isinstance(target, Bee), target

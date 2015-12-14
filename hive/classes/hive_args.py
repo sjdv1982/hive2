@@ -1,6 +1,5 @@
-
-from ..mixins import Parameter
 from .. compatability import next
+from ..mixins import Parameter
 
 
 class FrozenHiveArgs(object):
@@ -144,7 +143,6 @@ class HiveArgs(object):
                                          .format(param_name, self._name))
                     else:
                         arg_value = parameter.start_value
-                        print("SET START", param_name, arg_value)
 
             else:
                 # If not in kwargs and we're using kwargs, provide attempt for default

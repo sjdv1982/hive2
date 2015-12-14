@@ -1,5 +1,5 @@
-from .mixins import Parameter
 from .manager import ContextFactory, memoize
+from .mixins import Parameter
 from .tuple_type import tuple_type
 
 
@@ -19,7 +19,6 @@ class HiveParameter(Parameter):
 
     @memoize
     def get_runtime_value(self, run_hive):
-        #TODO if we allow declarators to define bees, this needs to be extended to meta_args and _hive_meta_args_frozen
         return getattr(run_hive._hive_object._hive_args_frozen, self._hive_parameter_name)
 
 

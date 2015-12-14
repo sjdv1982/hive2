@@ -58,11 +58,13 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
     data_type = ("trigger",)
 
     def __init__(self, func=None):
-        HiveBee.__init__(self, None, func)
+        super().__init__()
+
+        self._func = func
 
     @memoize
     def getinstance(self, hive_object):
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee): 
             func = func.getinstance(hive_object)
 
@@ -72,7 +74,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
         if Bee.implements(self, cls):
             return True
 
-        func, = self.args
+        func = self._func
         if isinstance(func, Bee):
             return func.implements(cls)
 
