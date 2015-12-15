@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import sys
 import os
+import sys
 
 current_directory = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(current_directory + "/" + "..")

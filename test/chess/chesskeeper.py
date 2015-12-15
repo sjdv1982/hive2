@@ -478,4 +478,4 @@ def build_chesskeeper(cls, i, ex, args):
     ex.prop_move = prop_move
     ex.p_format_move = h.plugin(cls.format_move)
 
-chessboard = h.hive("chessboard", build_chessboard, chessboard)
+chessboard = h.hive("chessboard", build_chesskeeper, chesskeeper)

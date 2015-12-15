@@ -1,6 +1,7 @@
 import os
 import sys
 from collections import OrderedDict
+from fnmatch import fnmatch
 from inspect import isclass, getmembers
 
 import dragonfly
@@ -11,15 +12,18 @@ def _keys_to_dict(keys):
     return OrderedDict([(k, None) for k in keys])
 
 
+_hive_lib_dir = os.path.dirname(dragonfly.__path__[0])
 found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier",
                                      "pull_in", "pull_out", "push_in", "push_out"])}
+
+ROBOTS_TEXT = "robots.txt"
 
 
 class HiveFinder:
     """Search utility to find Hive classes in a filesystem"""
 
     def __init__(self, *additional_paths):
-        self.root_paths = {dragonfly.__path__[0], }
+        self.root_paths = {_hive_lib_dir, }
         self.additional_paths = set(additional_paths)
         self._added_paths = set()
 
@@ -40,10 +44,18 @@ class HiveFinder:
         :param modules: dict to write to
         """
         current_folder_path = os.path.join(base_file_path, relative_folder_path)
-        base_folder_name = os.path.basename(base_file_path)
+        all_file_names = set(os.listdir(current_folder_path))
+
+        # Allow hiding of files from HIVE gui
+        if ROBOTS_TEXT in all_file_names:
+            with open(os.path.join(current_folder_path, ROBOTS_TEXT)) as robots:
+                lines = [l.strip() for l in robots]
+
+            all_file_names = {path for line in lines for path in all_file_names if fnmatch(path, line)}
+            print("Restricted search to {}".format(all_file_names))
 
         # Find all members
-        for file_name in os.listdir(current_folder_path):
+        for file_name in all_file_names:
             if file_name.startswith("_"):
                 continue
 
@@ -52,16 +64,16 @@ class HiveFinder:
             name, extension = os.path.splitext(file_name)
 
             is_directory = os.path.isdir(current_file_path)
-
             if is_directory or extension[1:] in {'py', 'hivemap'}:
-                module_file_path = os.path.join(base_folder_name, relative_folder_path, name)
+                module_file_path = os.path.join(relative_folder_path, name)
                 import_path = module_file_path.replace(os.path.sep, ".")
 
                 try:
                     module = __import__(import_path, fromlist=[name])
 
-                except ImportError:
+                except ImportError as err:
                     print("Couldn't import {}".format(import_path))
+                    print(err)
                     continue
 
                 # Find submodule dict

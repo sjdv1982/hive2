@@ -14,7 +14,6 @@ def connect(source, target):
         def _hive_trigger_source(self):
             print("TRIG SOURCE")
 
-        def _hive_
 
 
 def push(source, target, data_type, value):
