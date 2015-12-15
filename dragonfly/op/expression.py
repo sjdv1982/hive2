@@ -1,7 +1,6 @@
-import hive
 import ast
 
-from math import *
+import hive
 
 namespace = ("sqrt",)
 

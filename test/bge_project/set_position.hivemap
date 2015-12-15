@@ -1,0 +1,213 @@
+Hivemap (
+  hives = HiveNodeArray (
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'position',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = 375.0,
+        y = -171.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_pos',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = 360.0,
+        y = -136.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'position',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'trig',
+      import_path = 'hive.entry',
+      position = Coordinate2D (
+        x = 163.0,
+        y = 26.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'object',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = 534.0,
+        y = -17.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_obj',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = 534.0,
+        y = 16.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'object',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'do_set_pos',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = 726.0,
+        y = -125.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self._object.worldPosition = self._position',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'obj',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = 160.0,
+        y = -72.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pos',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = 164.0,
+        y = -154.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'pull_pos',
+      output_name = 'post_update',
+      to_node = 'pull_obj',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'trig',
+      output_name = 'output',
+      to_node = 'pull_pos',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'pull_obj',
+      output_name = 'post_update',
+      to_node = 'do_set_pos',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'obj',
+      output_name = 'antenna',
+      to_node = 'pull_obj',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pos',
+      output_name = 'antenna',
+      to_node = 'pull_pos',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+  ),
+  docstring = 'Set position of object to given vector',
+)
