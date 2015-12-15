@@ -75,8 +75,7 @@ class InputHandler:
             self.broadcast_event(event)
 
         # Broadcast mouse pos
-        mouse_pos = tuple(self.mouse.position)
+        mouse_pos = self.mouse.position[0], 1 - self.mouse.position[1]
         if mouse_pos != self._mouse_pos:
             self._mouse_pos = mouse_pos
-
             self.broadcast_event(("mouse", "move", mouse_pos))

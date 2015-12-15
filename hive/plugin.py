@@ -25,6 +25,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
     def _hive_connect_source(self, target):
         pass
+
     @memoize
     def bind(self, run_hive):
         if self._run_hive:

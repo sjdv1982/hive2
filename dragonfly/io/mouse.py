@@ -22,21 +22,22 @@ class Mouse_:
         self.pos_x, self.pos_y = leader[0]
         self._hive._on_moved()
 
-    def add_listener(self, func):
+    def set_add_handler(self, add_handler):
         button_listener = EventHandler(self.on_button, ("mouse", "pressed"))
         moved_listener = EventHandler(self.on_moved, ("mouse", "move"))
 
-        func(button_listener)
-        func(moved_listener)
+        add_handler(button_listener)
+        add_handler(moved_listener)
 
 
 def build_mouse(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.add_single_listener, identifier=("event", "add_listener"))
+    ex.on_event = hive.socket(cls.set_add_handler, identifier=("event", "add_handler"))
     i.on_tick = hive.triggerfunc()
 
     ex.button = hive.property(cls, "button", "str")
+    args.button = hive.parameter("str", "left", options={"left", "middle", "right"})
 
-    i.button_in = hive.pull_in(ex.button)
+    i.button_in = hive.push_in(ex.button)
     ex.button_in = hive.antenna(i.button_in)
 
     i.on_pressed = hive.triggerfunc()

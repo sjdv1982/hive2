@@ -1,8 +1,15 @@
+# Imports
 import sys
 
-# Add the hive2 directory to sys.path
 import bge
+
+# Add the hive2 directory to sys.path
 sys.path.append(bge.logic.expandPath("//../../"))
+
+import hive
+import dragonfly
+from dragonfly.app.blender.input_handler import InputHandler
+
 
 try:
     import bpy
@@ -16,24 +23,31 @@ else:
 
     bpy.app.handlers.game_post[:] = [del_hook]
 
-# Imports
-import hive
+
+# Import hivemap
+from some_bge_demo import SomeBgeDemo as TestHive
 
 
 class MyHive_:
     
     def __init__(self):
         self._read_event = None
+
+        self.input_handler = InputHandler()
     
     def set_read_event(self, read_event):
         self._read_event = read_event
+        self.input_handler.add_listener(read_event)
+
+        self.read_event(("start",))
     
     def read_event(self, event):
         self._read_event(event)
 
+    def tick(self):
+        self.input_handler.update_events()
+        self.read_event(("tick",))
 
-# Import hivemap
-from some_bge_demo import SomeBgeDemo as TestHive
 
 def build_my_hive(cls, i, ex, args):
     ex.get_read_event = hive.socket(cls.set_read_event)
@@ -43,29 +57,15 @@ def build_my_hive(cls, i, ex, args):
     ex.event_in = hive.antenna(i.read_event)
     
     i.hive = TestHive()
+
+    i.tick = hive.triggerable(cls.tick)
+    ex.tick = hive.entry(i.tick)
  
  
-# Add support to manually pass events to the hive without using a mainloop 
-import dragonfly
+# Add support to manually pass events to the hive without using a mainloop
 MyHive = dragonfly.event.EventHive.extend("Events", build_my_hive, builder_cls=MyHive_)
-
-
-import bge
-
 my_hive = MyHive()
-my_hive.event_in.push(("start",))
+
 
 def tick():
-    new_events = []
-    done_events = []
-    
-    for event, event_state in bge.logic.keyboard.active_events.items():
-        event_name = bge.events.EventToString(event).lower().replace("key", "")
-        
-        if event_state == bge.logic.KX_INPUT_JUST_ACTIVATED:
-            my_hive.event_in.push(("keyboard", "pressed", event_name))
-            
-        elif event_state == bge.logic.KX_INPUT_JUST_RELEASED:
-            my_hive.event_in.push(("keyboard", "released", event_name))
-                
-    my_hive.event_in.push(("tick",))
+    my_hive.tick()
