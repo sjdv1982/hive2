@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from hive import validation_enabled_as
 from .utils import import_from_path, get_builder_class_args
 
 
@@ -167,31 +168,32 @@ class HiveNodeInspector:
         return wrapper_options
 
     def _inspect_generator(self, import_path):
-        # Import and prepare hive
-        hive_cls = import_from_path(import_path)
+        with validation_enabled_as(False):
+            # Import and prepare hive
+            hive_cls = import_from_path(import_path)
 
-        # Prepare args wrapper
-        hive_cls._hive_build_meta_args_wrapper()
+            # Prepare args wrapper
+            hive_cls._hive_build_meta_args_wrapper()
 
-        meta_args_wrapper = hive_cls._hive_meta_args
-        if meta_args_wrapper:
-            meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
+            meta_args_wrapper = hive_cls._hive_meta_args
+            if meta_args_wrapper:
+                meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
 
-            # Create HiveObject class
-            _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
+                # Create HiveObject class
+                _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
 
-        else:
-            hive_object_cls = hive_cls._hive_build(())
+            else:
+                hive_object_cls = hive_cls._hive_build(())
 
-        args_wrapper = hive_object_cls._hive_args
-        if args_wrapper:
-            yield ("args", self._scrape_wrapper(args_wrapper))
+            args_wrapper = hive_object_cls._hive_args
+            if args_wrapper:
+                yield ("args", self._scrape_wrapper(args_wrapper))
 
-        builder_args = get_builder_class_args(hive_cls)
-        if builder_args:
-            # Convert options into InspectorOptions
-            options = OrderedDict()
-            for name, data in builder_args.items():
-                options[name] = InspectorOption(data["data_type"], data["default"], data["options"])
+            builder_args = get_builder_class_args(hive_cls)
+            if builder_args:
+                # Convert options into InspectorOptions
+                options = OrderedDict()
+                for name, data in builder_args.items():
+                    options[name] = InspectorOption(data["data_type"], data["default"], data["options"])
 
-            yield ("cls_args", options)
+                yield ("cls_args", options)
