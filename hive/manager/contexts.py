@@ -20,6 +20,17 @@ def set_validation_enabled(validate):
     _validation_enabled = validate
 
 
+@contextmanager
+def validation_enabled_as(validate):
+    previous_validation_state = get_validation_enabled()
+    try:
+        set_mode(validate)
+        yield
+
+    finally:
+        set_validation_enabled(previous_validation_state)
+
+
 def get_mode():
     return _mode
 

@@ -1,5 +1,6 @@
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
-from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled
+from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled, \
+    validation_enabled_as
 from .tuple_type import types_match
 #i primitives
 from .triggerfunc import triggerfunc
@@ -19,11 +20,14 @@ from .attribute import attribute
 #ex primitives
 from .entry import entry
 from .hook import hook
-from .sockets import socket, policies as socket_policies
-from .plugins import plugin, policies as plugin_policies
+from .socket import socket
+from .plugin import plugin
+from .policies import SingleOptional, SingleRequired, MultipleOptional, MultipleRequired
 from .antenna import antenna
 from .output import output
 
 #args primitives
 from .parameter import parameter
 from .annotations import argument_options, argument_types, get_argument_options, get_argument_types
+
+from .exception import HiveException

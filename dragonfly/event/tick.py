@@ -18,8 +18,7 @@ def build_tick(cls, i, ex, args):
     i.on_tick = hive.triggerfunc()
     ex.on_tick = hive.hook(i.on_tick)
 
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"),
-                                     policy=hive.socket_policies.SingleRequired())
+    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"), policy=hive.SingleRequired)
 
 
 Tick = hive.hive("Tick", build_tick, cls=_TickCls)

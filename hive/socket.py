@@ -1,7 +1,7 @@
+from .manager import memoize, get_building_hive, ContextFactory
+from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
 from .policies import SingleOptional
-from ..manager import memoize, get_building_hive, ContextFactory
-from ..mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
-from ..tuple_type import tuple_type
+from .tuple_type import tuple_type
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
@@ -61,7 +61,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self.data_type = tuple_type(data_type)
 
         if policy is None:
-            policy = SingleOptional()
+            policy = SingleOptional
 
         self.policy = policy
 

@@ -1,3 +1,5 @@
+from hive import validation_enabled_as
+
 from .node import Node, NodeTypes, MimicFlags
 from .utils import create_hive_object_instance, get_io_info
 
@@ -106,7 +108,10 @@ class HiveNodeFactory:
     """Create HIve nodes from import paths"""
     @staticmethod
     def new(name, import_path, params, param_info):
-        hive_object = create_hive_object_instance(import_path, params)
+        # Allow GUI to instantiate hives without connectivity validation
+        with validation_enabled_as(False):
+            hive_object = create_hive_object_instance(import_path, params)
+
         io_info = get_io_info(hive_object)
 
         # Warning later on, the args and cls_args of hive_object might not correspond to params
