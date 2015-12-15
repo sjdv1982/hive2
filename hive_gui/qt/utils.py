@@ -239,7 +239,7 @@ _factories = OrderedDict((
     (("bool",), _create_bool),
     (("vector",), _create_vector),
     (("colour",), _create_colour),
-    (("tuple",), _create_tuple)
+   # (("tuple",), _create_tuple)
     ))
 
 
