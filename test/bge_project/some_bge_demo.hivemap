@@ -28,7 +28,7 @@ Hivemap (
     ),
     HiveNode (
       identifier = 'motion_0',
-      import_path = 'bge_api.motion.Motion',
+      import_path = 'motion.Motion',
       position = Coordinate2D (
         x = 337.0147058823529,
         y = -195.5,
@@ -114,7 +114,7 @@ Hivemap (
     ),
     HiveNode (
       identifier = 'get_current_object_1',
-      import_path = 'bge_api.get_current_object.GetCurrentObject',
+      import_path = 'get_current_object.GetCurrentObject',
       position = Coordinate2D (
         x = 29.0,
         y = -496.0,
@@ -234,7 +234,7 @@ Hivemap (
     ),
     HiveNode (
       identifier = 'in_place_edit_0',
-      import_path = 'bge_api.in_place_edit.InPlaceEdit',
+      import_path = 'in_place_edit.InPlaceEdit',
       position = Coordinate2D (
         x = -19.2352941176471,
         y = 62.41176470588236,
@@ -252,7 +252,7 @@ Hivemap (
     ),
     HiveNode (
       identifier = 'in_place_edit_1',
-      import_path = 'bge_api.in_place_edit.InPlaceEdit',
+      import_path = 'in_place_edit.InPlaceEdit',
       position = Coordinate2D (
         x = -40.29411764705878,
         y = -202.58823529411754,
