@@ -92,7 +92,7 @@ class HiveFinder:
                     if name.startswith('_'):
                         continue
 
-                    if isclass(value) and issubclass(value, hive.HiveBuilder):
+                    if isclass(value) and issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder:
                         sub_modules[name] = None
 
                 if is_directory and not sub_modules:
