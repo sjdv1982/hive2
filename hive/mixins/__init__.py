@@ -34,12 +34,6 @@ class Callable(Bee):
     pass
 
 
-class Closable(Bee):
-
-    def close(self):
-        raise NotImplementedError
-
-
 class Exportable(Bee):
     export_only = True
 

@@ -5,7 +5,7 @@ from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Metho
 from .compatability import next, is_method
 from .connect import connect, ConnectionCandidate
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
-    memoize, get_run_hive, get_validation_enabled
+    memoize, get_validation_enabled
 from .mixins import *
 from .tuple_type import tuple_type, types_match
 
@@ -149,22 +149,9 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     self._bee_names.append(bee_name)
                     setattr(self, bee_name, instance)
 
-        # Is root run hive
-        if get_run_hive() is None:
-            self._hive_validate_connections()
-
-
     @staticmethod
     def _hive_can_connect_hive(other):
         return isinstance(other, RuntimeHive)
-
-    def _hive_validate_connections(self):
-        for bee_name, bee in self._hive_bee_instances.items():
-            if isinstance(bee, Closable):
-                bee.close()
-
-            elif isinstance(bee, RuntimeHive):
-                bee._hive_validate_connections()
 
     def _hive_find_connect_sources(self):
         return self._hive_object._hive_find_connect_sources()
