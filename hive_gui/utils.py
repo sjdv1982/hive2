@@ -203,11 +203,11 @@ def import_from_path(import_path):
         raise ImportError from err
 
 
-def import_path_to_hivemap_path(import_path):
+def import_path_to_hivemap_path(import_path, additional_paths=None):
     module_path, class_name = import_path.rsplit(".", 1)
 
     try:
-        return find_source_hivemap(module_path)
+        return find_source_hivemap(module_path, additional_paths)
 
     except FileNotFoundError:
         raise ValueError

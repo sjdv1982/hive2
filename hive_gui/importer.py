@@ -39,7 +39,7 @@ class HiveModuleImporter(object):
     @contextmanager
     def temporary_relative_context(self, *paths):
         _old_paths = self._additional_paths
-        self._additional_paths = paths
+        self._additional_paths = _old_paths + list(paths)
         yield
         self._additional_paths = _old_paths
 

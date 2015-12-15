@@ -10,7 +10,7 @@ from .view import NodeView
 from ..inspector import InspectorOption
 from ..node import NodeTypes
 from ..node_manager import NodeManager
-from ..utils import hivemap_to_builder_body, import_path_to_hivemap_path
+from ..utils import hivemap_to_builder_body
 
 
 class DynamicInputDialogue(QDialog):
@@ -208,6 +208,7 @@ class NodeEditorSpace(QWidget):
         self.on_update_is_saved = None
 
         self.do_open_file = None
+        self.get_project_directory = None
 
         # View to node manager
         view = self._view
@@ -396,9 +397,12 @@ class NodeEditorSpace(QWidget):
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
 
+        if not callable(self.get_hivemap_path):
+            return
+
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = import_path_to_hivemap_path(node.import_path)
+            hivemap_file_path = self.get_hivemap_path(node.import_path)
 
         except ValueError:
             return
@@ -440,16 +444,17 @@ class NodeEditorSpace(QWidget):
             # Check Hive's hivemap isn't currently open
             if self.file_name is not None:
                 # Check we don't have a source file
-                try:
-                    hivemap_file_path = import_path_to_hivemap_path(import_path)
+                if callable(self.get_hivemap_path):
+                    try:
+                        hivemap_file_path = self.get_hivemap_path(import_path)
 
-                except ValueError:
-                    pass
+                    except ValueError:
+                        pass
 
-                else:
-                    if hivemap_file_path == self.file_name:
-                        QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
-                        return
+                    else:
+                        if hivemap_file_path == self.file_name:
+                            QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
+                            return
 
             inspector = self._node_manager.hive_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
@@ -539,11 +544,11 @@ class NodeEditorSpace(QWidget):
         node_manager = self._node_manager
 
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
-        if os.path.exists(file_name):
+        if os.path.exists(file_name) and callable(self.get_hivemap_path):
             for node in node_manager.nodes.values():
                 # If destination file is a hivemap, don't allow
                 try:
-                    hivemap_source_path = import_path_to_hivemap_path(node.import_path)
+                    hivemap_source_path = self.get_hivemap_path(node.import_path)
 
                 except ValueError:
                     continue

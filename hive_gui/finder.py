@@ -1,5 +1,4 @@
 import os
-import sys
 from collections import OrderedDict
 from fnmatch import fnmatch
 from inspect import isclass, getmembers
@@ -25,26 +24,24 @@ class HiveFinder:
     def __init__(self, *additional_paths):
         self.root_paths = {_hive_lib_dir, }
         self.additional_paths = set(additional_paths)
-        self._added_paths = set()
 
-    def clear(self):
-        for path in self._added_paths:
-            sys.path.remove(path)
+    def _recurse(self, base_file_path, relative_folder_path, modules=None):
+        """Recursively find hive names from module path.
 
-        self._added_paths.clear()
+        Write to dict the qualified name of the package, with a set of Hive class names.
+        Root values (Hives) are identified by None values.
 
-    def _recurse(self, base_file_path, relative_folder_path, modules):
-        """Recursively find hive names from module path
+        E.g "dragonfly/std/buffer/Buffer" -> {"dragonfly": {"std": {"Buffer": None}}}
 
-        Write to dict the qualified name of the package, with a set of Hive class names
-
-        E.g "dragonfly/std/buffer/Buffer" -> {"dragonfly": {"std": {"Buffer", }}}
-
-        :param base_import_path: base path to import module
-        :param modules: dict to write to
+        :param base_file_path: base file path from which search was initialised
+        :param relative_folder_path: relative file path to base_file_path of current search
+        :param modules: dictionary of modules to write to
         """
         current_folder_path = os.path.join(base_file_path, relative_folder_path)
         all_file_names = set(os.listdir(current_folder_path))
+
+        if modules is None:
+            modules = {}
 
         # Allow hiding of files from HIVE gui
         if ROBOTS_TEXT in all_file_names:
@@ -68,7 +65,6 @@ class HiveFinder:
                 module_file_path = os.path.join(relative_folder_path, name)
                 import_path = module_file_path.replace(os.path.sep, ".")
 
-                print("pre_do_import", import_path, name)
                 try:
                     module = __import__(import_path, fromlist=[name])
 
@@ -98,21 +94,17 @@ class HiveFinder:
                 if is_directory and not sub_modules:
                     self._recurse(base_file_path, relative_file_path, modules)
 
-    def find_hives(self):
-        self.clear()
+        return modules
 
-        filesystem = {}
+    def find_hives(self):
+        tree = {}
 
         # Import stdlib modules
         for root_path in self.root_paths:
-            self._recurse(root_path, '', filesystem)
+            self._recurse(root_path, '', tree)
 
         # Keep track of added paths to sys path
         for additional_path in self.additional_paths:
-            if additional_path not in sys.path:
-                sys.path.append(additional_path)
-                self._added_paths.add(additional_path)
+            self._recurse(additional_path, '', tree)
 
-            self._recurse(additional_path, '', filesystem)
-
-        return filesystem
+        return tree
