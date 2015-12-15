@@ -1,44 +1,62 @@
 import os
 import sys
 import types
+from contextlib import contextmanager
 
 from .utils import class_from_filepath, find_source_hivemap
 
 
 class HiveModuleLoader:
 
-    def __init__(self, path):
+    def __init__(self, path, context):
         self.path = path
+        self.context = context
 
     def load_module(self, name):
-        if name not in sys.modules:
-            try:
-                cls = class_from_filepath(self.path)
+        with self.context:
+            if name not in sys.modules:
+                try:
+                    cls = class_from_filepath(self.path)
 
-            except Exception as exc:
-                raise ImportError from exc
+                except Exception as exc:
+                    raise ImportError from exc
 
-            module = types.ModuleType(name, cls.__doc__)
-            module.__file__ = self.path
-            module.__loader__ = self
+                module = types.ModuleType(name, cls.__doc__)
+                module.__file__ = self.path
+                module.__loader__ = self
 
-            setattr(module, cls.__name__, cls)
-            sys.modules[name] = module
+                setattr(module, cls.__name__, cls)
+                sys.modules[name] = module
 
-        return sys.modules[name]
+            return sys.modules[name]
 
 
 class HiveModuleImporter(object):
 
-    def find_module(self, full_name, path=None):
-        try:
-            file_path = find_source_hivemap(full_name)
+    def __init__(self):
+        self._additional_paths = []
 
-        except FileNotFoundError:
+    @contextmanager
+    def temporary_relative_context(self, *paths):
+        _old_paths = self._additional_paths
+        self._additional_paths = _old_paths + list(paths)
+        yield
+        self._additional_paths = _old_paths
+
+    def find_module(self, full_name, path=None):
+        additional_paths = reversed(self._additional_paths)
+
+        try:
+            file_path = find_source_hivemap(full_name, additional_paths)
+
+        except (FileNotFoundError, ValueError):
             return
 
-        if os.path.exists(file_path):
-            return HiveModuleLoader(file_path)
+        # Allow relative imports to this module using temporary import context
+        directory = os.path.dirname(file_path)
+        context = self.temporary_relative_context(directory)
+
+        return HiveModuleLoader(file_path, context=context)
 
 
 _importer = None

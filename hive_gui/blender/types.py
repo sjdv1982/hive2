@@ -2,8 +2,7 @@ from bpy import types, utils, props, ops
 from nodeitems_utils import NodeCategory
 
 from .text_area import BlenderTextArea
-
-from ..utils import import_from_path,
+from ..utils import import_from_path
 
 blend_manager = None
 
@@ -352,7 +351,6 @@ _classes = (HiveNodeTree, BlenderHiveNode, BlenderHiveSocket, NODE_OT_AddHiveNod
 
 def register():
     global blend_manager
-    from .blend_manager import blend_manager
 
     for cls in _classes:
         utils.register_class(cls)

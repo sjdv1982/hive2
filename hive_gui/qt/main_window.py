@@ -8,7 +8,7 @@ from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from ..finder import found_bees, HiveFinder
-from ..importer import clear_imported_hivemaps
+from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
 from ..utils import import_path_to_hivemap_path
 
@@ -131,6 +131,8 @@ class MainWindow(QMainWindow):
         self.hive_finder = HiveFinder()
 
         self.project_directory = None
+        self._project_context = None
+
         self.refresh_project_tree()
 
     @property
@@ -158,6 +160,15 @@ class MainWindow(QMainWindow):
             return self.untitled_file_name
 
         return os.path.basename(file_name)
+
+    def _get_hivemap_path_in_project(self, import_path):
+        if self.project_directory:
+            additional_paths = [self.project_directory]
+
+        else:
+            additional_paths = []
+
+        return import_path_to_hivemap_path(import_path, additional_paths)
 
     def goto_help_page(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
@@ -231,6 +242,7 @@ class MainWindow(QMainWindow):
 
         editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
         editor.do_open_file = self._open_file
+        editor.get_hivemap_path = self._get_hivemap_path_in_project
         editor.show()
 
         return editor
@@ -345,6 +357,11 @@ class MainWindow(QMainWindow):
         # Set directory
         self.project_directory = directory_path
 
+        # Enter import context
+        assert self._project_context is None, "Import context should be None!"
+        self._project_context = get_hook().temporary_relative_context(directory_path)
+        self._project_context.__enter__()
+
         self.refresh_project_tree()
         self.update_ui_layout()
 
@@ -355,6 +372,10 @@ class MainWindow(QMainWindow):
 
         self.hive_finder.additional_paths.clear()
         self.project_directory = None
+
+        if self._project_context:
+            self._project_context.__close__()
+            self._project_context = None
 
         self.refresh_project_tree()
         self.update_ui_layout()
@@ -376,7 +397,7 @@ class MainWindow(QMainWindow):
     def show_hive_edit_menu(self, import_path, event):
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = import_path_to_hivemap_path(import_path)
+            hivemap_file_path = self._get_hivemap_path_in_project(import_path)
 
         except ValueError:
             return

@@ -14,6 +14,7 @@ from .models import model
 from collections import OrderedDict
 from inspect import getargspec
 from functools import lru_cache
+from itertools import chain
 from os import path
 from re import sub as re_sub
 import sys
@@ -194,25 +195,26 @@ def import_from_path(import_path):
     sub_module_name = module_parts[-1]
 
     module = __import__(import_path, fromlist=[sub_module_name])
-    return getattr(module, class_name)
+
+    try:
+        return getattr(module, class_name)
+
+    except AttributeError as err:
+        raise ImportError from err
 
 
-def import_path_to_hivemap_path(import_path):
+def import_path_to_hivemap_path(import_path, additional_paths=None):
     module_path, class_name = import_path.rsplit(".", 1)
 
     try:
-        return find_source_hivemap(module_path)
+        return find_source_hivemap(module_path, additional_paths)
 
     except FileNotFoundError:
         raise ValueError
 
 
-def find_source_hivemap(module_path):
-    try:
-        *root_path, module_name = module_path.split(".")
-
-    except ValueError:
-        return
+def find_source_hivemap(module_path, additional_paths=()):
+    *root_path, module_name = module_path.split(".")
 
     file_name = "{}.hivemap".format(module_name)
     root_path.append(file_name)
@@ -220,7 +222,7 @@ def find_source_hivemap(module_path):
     template_file_path = path.join(*root_path)
 
     # Most of our interesting files are on sys.path, towards the end
-    for directory in reversed(sys.path):
+    for directory in chain(additional_paths, reversed(sys.path)):
         file_path = path.join(directory, template_file_path)
 
         if path.exists(file_path):

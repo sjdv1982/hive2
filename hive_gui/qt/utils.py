@@ -3,7 +3,7 @@ from collections import OrderedDict
 from hive import types_match
 from .colour_button import QColorButton
 from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
-    QColor
+    QColor, QToolButton, QIcon, QPixmap
 
 INT_RANGE = -999, 999
 FLOAT_RANGE = -999.0, 999.0
@@ -61,6 +61,7 @@ def _create_code():
     controller = WidgetController(getter, setter)
 
     def on_changed(value=None):
+        widget.setCurrentFont(QFont("Consolas"))
         controller._on_changed()
 
     widget.textChanged.connect(on_changed)
@@ -212,6 +213,24 @@ def _create_options(options):
     return widget, controller
 
 
+def _create_tuple():
+    widget = QWidget()
+    layout = QHBoxLayout()
+    widget.setLayout(layout)
+
+    button = QToolButton(widget)
+    icon = QIcon()
+    icon.addPixmap(QPixmap(":/images/icons/ellipsis.png"))
+    button.setIcon(icon)
+  #  button.setText("...")
+    button.show()
+
+    layout.addWidget(button)
+
+    controller = WidgetController(lambda: (), lambda x: None)
+    return widget, controller
+
+
 _factories = OrderedDict((
     (("str", "code"), _create_code),
     (("str",), _create_str),
@@ -219,7 +238,8 @@ _factories = OrderedDict((
     (("float",), _create_float),
     (("bool",), _create_bool),
     (("vector",), _create_vector),
-    (("colour",), _create_colour)
+    (("colour",), _create_colour),
+   # (("tuple",), _create_tuple)
     ))
 
 

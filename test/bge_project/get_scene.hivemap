@@ -1,0 +1,111 @@
+Hivemap (
+  hives = HiveNodeArray (
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'scene_out',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = -56.0,
+        y = -260.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'get_scene',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = -146.0,
+        y = -119.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'import bge\n\nscene = bge.logic.getCurrentScene()\nself._scene = scene',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'scene',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -306.0,
+        y = -246.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('scene',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_out_0',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -386.0,
+        y = -187.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'scene',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('scene',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'pull_out_0',
+      output_name = 'value',
+      to_node = 'scene_out',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out_0',
+      output_name = 'pre_output',
+      to_node = 'get_scene',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+  ),
+  docstring = 'Get the current BGE scene',
+)
