@@ -5,7 +5,7 @@ from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Metho
 from .compatability import next, is_method
 from .connect import connect, ConnectionCandidate
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
-    memoize, get_run_hive
+    memoize, get_run_hive, get_validation_enabled
 from .mixins import *
 from .tuple_type import tuple_type, types_match
 
@@ -507,6 +507,9 @@ class HiveBuilder(object):
             if is_root:
                 cls._hive_build_connectivity(hive_object_cls)
 
+                if get_validation_enabled():
+                    cls._hive_validate_connectivity(hive_object_cls)
+
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
 
@@ -637,7 +640,13 @@ class HiveBuilder(object):
                     socket_bees = socket_map[identifier]
 
                     for socket_bee in socket_bees:
+                        bee.policy.pre_filled()
+                        socket_bee.policy.pre_filled()
+
                         connect(bee, socket_bee)
+
+                        bee.policy.on_filled()
+                        socket_bee.policy.on_filled()
 
             # Find and connect identified sockets with existing plugins
             if bee.implements(Socket) and bee.identifier is not None:
@@ -649,7 +658,13 @@ class HiveBuilder(object):
                     plugin_bees = plugin_map[identifier]
 
                     for plugin_bee in plugin_bees:
+                        plugin_bee.policy.pre_filled()
+                        bee.policy.pre_filled()
+
                         connect(plugin_bee, bee)
+
+                        plugin_bee.policy.on_filled()
+                        bee.policy.on_filled()
 
         # Get resolve bees instead of raw HiveObject instances (ResolveBees relative to parent)
         if not is_root:
@@ -658,6 +673,57 @@ class HiveBuilder(object):
         # Now export to child hives
         for child in child_hives:
             cls._hive_build_connectivity(child, plugin_map, socket_map, is_root=False)
+
+    @classmethod
+    def _hive_validate_connectivity(cls, hive_object_cls, is_root=True):
+
+        """Connect plugins and sockets together by identifier.
+
+        If children allow importing of namespace, pass namespace to children.
+        """
+        externals = hive_object_cls._hive_ex
+        internals = hive_object_cls._hive_i
+        child_hives = set()
+
+        # Find external hives
+        for bee_name in externals:
+            bee = getattr(externals, bee_name)
+
+            if not bee.implements(HiveObject):
+                continue
+
+            if not bee._hive_allow_import_namespace:
+                continue
+
+            child_hives.add(bee)
+
+        # Find internal hives
+        for bee_name in internals:
+            bee = getattr(internals, bee_name)
+
+            if not bee.implements(HiveObject):
+                continue
+
+            if not bee._hive_allow_import_namespace:
+                continue
+
+            child_hives.add(bee)
+
+        # Find sockets and plugins that are exportable
+        for bee_name in externals:
+            bee = getattr(externals, bee_name)
+
+            # Find and connect identified plugins with existing sockets
+            if bee.implements(Plugin) and bee.identifier is not None:
+                bee.policy.validate()
+
+            # Find and connect identified sockets with existing plugins
+            if bee.implements(Socket) and bee.identifier is not None:
+                bee.policy.validate()
+
+        # Now export to child hives
+        for child in child_hives:
+            cls._hive_validate_connectivity(child, is_root=False)
 
     @classmethod
     def _hive_build_namespace(cls, hive_object_cls):

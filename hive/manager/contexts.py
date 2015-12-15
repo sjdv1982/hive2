@@ -8,6 +8,16 @@ _mode = "immediate"
 _building_hive = None
 _run_hive = None
 _bees = []
+_validation_enabled = True
+
+
+def get_validation_enabled():
+    return _validation_enabled
+
+
+def set_validation_enabled(validate):
+    global _validation_enabled
+    _validation_enabled = validate
 
 
 def get_mode():

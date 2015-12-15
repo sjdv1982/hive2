@@ -20,6 +20,14 @@ class PluginPolicy:
     def is_satisfied(self):
         raise NotImplemented
 
+    def pre_filled(self):
+        if self.is_satisfied:
+            raise PluginPolicyError("Policy forbids further connections")
+
+    def validate(self):
+        if not self.is_satisfied:
+            raise PluginPolicyError("Policy was not satisfied")
+
 
 class SingleRequired(PluginPolicy):
 

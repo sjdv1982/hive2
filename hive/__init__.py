@@ -1,7 +1,6 @@
-from .manager import get_building_hive, get_mode, get_run_hive
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
+from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled
 from .tuple_type import types_match
-
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
@@ -20,14 +19,10 @@ from .attribute import attribute
 #ex primitives
 from .entry import entry
 from .hook import hook
-from .sockets import socket
-from .plugins import plugin
+from .sockets import socket, policies as socket_policies
+from .plugins import plugin, policies as plugin_policies
 from .antenna import antenna
 from .output import output
-
-#plugin socket policies
-from . import plugins
-from . import sockets
 
 #args primitives
 from .parameter import parameter

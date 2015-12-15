@@ -1,3 +1,3 @@
-from .policies import Optional, Required, MultipleRequired, MultipleOptional
+from .policies import SingleOptional, SingleRequired, MultipleRequired, MultipleOptional
 from .socket import socket
 

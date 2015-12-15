@@ -13,22 +13,30 @@ class SocketPolicy:
     def __init__(self):
         self._counter = 0
 
-    def on_filled(self):
-        self._counter += 1
-
     @property
     def is_satisfied(self):
         raise NotImplementedError
 
+    def on_filled(self):
+        self._counter += 1
 
-class Required(SocketPolicy):
+    def pre_filled(self):
+        if self.is_satisfied:
+            raise SocketPolicyError("Policy forbids further connections")
+
+    def validate(self):
+        if not self.is_satisfied:
+            raise SocketPolicyError("Policy was not satisfied")
+
+
+class SingleRequired(SocketPolicy):
 
     @property
     def is_satisfied(self):
         return self._counter == 1
 
 
-class Optional(SocketPolicy):
+class SingleOptional(SocketPolicy):
 
     @property
     def is_satisfied(self):
