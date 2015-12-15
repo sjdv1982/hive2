@@ -22,8 +22,11 @@ def build_dot(i, ex, args):
     i.pull_result = hive.pull_out(i.result)
     ex.result = hive.output(i.pull_result)
 
-    i.calculate = hive.modifier(i.dot_modifier)
-    hive.trigger(i.pull_result, i.calculate, pretrigger=True)
+    i.calculate = hive.modifier(dot_modifier)
+
+    hive.trigger(i.pull_result, i.pull_a, pretrigger=True)
+    hive.trigger(i.pull_a, i.pull_b)
+    hive.trigger(i.pull_b, i.calculate)
 
 
 Dot = hive.hive("Dot", build_dot)
