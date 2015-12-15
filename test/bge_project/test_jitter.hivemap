@@ -1,0 +1,420 @@
+Hivemap (
+  hives = HiveNodeArray (
+    HiveNode (
+      identifier = 'z_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -371.0,
+        y = -259.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'float',
+          value = '0.0',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'compose_0',
+      import_path = 'dragonfly.vector.Compose',
+      position = Coordinate2D (
+        x = -110.17543859649118,
+        y = -427.54385964912274,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'z_in',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'local_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -34.0,
+        y = -154.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'buffer_0',
+      import_path = 'dragonfly.std.Buffer',
+      position = Coordinate2D (
+        x = -42.0,
+        y = -140.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'push',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'property_name_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -77.0,
+        y = 2.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = 'moveable',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'get_scene_0',
+      import_path = 'bge_api.get_scene.GetScene',
+      position = Coordinate2D (
+        x = -654.5263157894738,
+        y = -277.1052631578948,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'motion_0',
+      import_path = 'bge_api.motion.Motion',
+      position = Coordinate2D (
+        x = 203.0,
+        y = -154.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'local_in',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'tick_0',
+      import_path = 'dragonfly.event.Tick',
+      position = Coordinate2D (
+        x = -637.0,
+        y = 13.736842105263122,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'scene_0',
+      import_path = 'bge_api.scene.Scene',
+      position = Coordinate2D (
+        x = -659.5789473684208,
+        y = -212.52631578947376,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'for_each_0',
+      import_path = 'dragonfly.gen.ForEach',
+      position = Coordinate2D (
+        x = -344.9473684210527,
+        y = -98.9473684210526,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'range_max_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -664.0,
+        y = -362.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'float',
+          value = '0.2',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'test_prop_0',
+      import_path = 'bge_api.test_prop.TestProp',
+      position = Coordinate2D (
+        x = -146.0,
+        y = -50.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'property_name_in',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'random_0',
+      import_path = 'dragonfly.sys.Random',
+      position = Coordinate2D (
+        x = -467.0,
+        y = -456.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'range_min_in',
+        'range_max_in',
+      ),
+      cls_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'seed',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+      ),
+    ),
+    HiveNode (
+      identifier = 'range_min_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -671.0,
+        y = -411.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'float',
+          value = '-0.2',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+  ),
+  bees = BeeNodeArray (
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'z_in',
+      output_name = 'value_out',
+      to_node = 'compose_0',
+      input_name = 'z_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'compose_0',
+      output_name = 'vector_out',
+      to_node = 'motion_0',
+      input_name = 'loc_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'local_in',
+      output_name = 'value_out',
+      to_node = 'motion_0',
+      input_name = 'local_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'buffer_0',
+      output_name = 'output',
+      to_node = 'motion_0',
+      input_name = 'object_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'property_name_in',
+      output_name = 'value_out',
+      to_node = 'test_prop_0',
+      input_name = 'property_name_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'get_scene_0',
+      output_name = 'scene_out',
+      to_node = 'scene_0',
+      input_name = 'scene_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'tick_0',
+      output_name = 'on_tick',
+      to_node = 'for_each_0',
+      input_name = 'trig_in',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'scene_0',
+      output_name = 'objects_out',
+      to_node = 'for_each_0',
+      input_name = 'iterable',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'for_each_0',
+      output_name = 'value_out',
+      to_node = 'buffer_0',
+      input_name = 'input',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'for_each_0',
+      output_name = 'value_out',
+      to_node = 'test_prop_0',
+      input_name = 'object_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'range_max_in',
+      output_name = 'value_out',
+      to_node = 'random_0',
+      input_name = 'range_max_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'test_prop_0',
+      output_name = 'has_property_trig',
+      to_node = 'buffer_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'random_0',
+      output_name = 'range_out',
+      to_node = 'compose_0',
+      input_name = 'x_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'random_0',
+      output_name = 'range_out',
+      to_node = 'compose_0',
+      input_name = 'y_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'range_min_in',
+      output_name = 'value_out',
+      to_node = 'random_0',
+      input_name = 'range_min_in',
+      is_trigger = False,
+    ),
+  ),
+  docstring = '',
+)

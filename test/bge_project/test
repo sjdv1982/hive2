@@ -1,0 +1,11 @@
+Hivemap (
+  hives = HiveNodeArray (
+  ),
+  bees = BeeNodeArray (
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+  ),
+  docstring = '',
+)
