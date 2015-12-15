@@ -1,0 +1,385 @@
+Hivemap (
+  hives = HiveNodeArray (
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'pull_out_0',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -102.0,
+        y = -357.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'name',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'obj_name',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -83.0,
+        y = -393.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = 'name',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'position',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 95.0,
+        y = -169.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'modifier_0',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = 74.0,
+        y = -300.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self.object.pull()\nself._obj_name = self._obj.name',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_out_1',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -84.0,
+        y = -151.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'obj_pos',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'obj',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -291.0,
+        y = -386.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'object',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = -504.0,
+        y = -310.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'obj_pos',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -77.0,
+        y = -180.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_in_0',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = -334.0,
+        y = -352.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'obj',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'obj_orientation',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -67.0,
+        y = -13.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('matrix',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'orientation',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 98.0,
+        y = 5.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'modifier_2',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = 106.0,
+        y = 65.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self.object.pull()\nself._obj_orientation = self._obj.worldOrientation',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'name',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 98.0,
+        y = -370.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'modifier_1',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = 71.0,
+        y = -98.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self.object.pull()\nself._obj_pos = self._obj.worldPosition',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_out_2',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -68.0,
+        y = 33.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'obj_orientation',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('matrix',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'pull_out_0',
+      output_name = 'value',
+      to_node = 'name',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out_0',
+      output_name = 'pre_output',
+      to_node = 'modifier_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'pull_out_1',
+      output_name = 'value',
+      to_node = 'position',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out_1',
+      output_name = 'pre_output',
+      to_node = 'modifier_1',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'object',
+      output_name = 'antenna',
+      to_node = 'pull_in_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out_2',
+      output_name = 'value',
+      to_node = 'orientation',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out_2',
+      output_name = 'pre_output',
+      to_node = 'modifier_2',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+  ),
+  docstring = '',
+)

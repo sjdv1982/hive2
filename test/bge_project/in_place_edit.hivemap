@@ -4,29 +4,8 @@ Hivemap (
       identifier = 'transistor_0',
       import_path = 'dragonfly.std.Transistor',
       position = Coordinate2D (
-        x = -256.0,
-        y = -281.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('float',)",
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'transistor_2',
-      import_path = 'dragonfly.std.Transistor',
-      position = Coordinate2D (
-        x = -233.0,
-        y = -68.0,
+        x = -190.0,
+        y = -240.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
@@ -74,6 +53,27 @@ Hivemap (
       ),
     ),
     HiveNode (
+      identifier = 'transistor_2',
+      import_path = 'dragonfly.std.Transistor',
+      position = Coordinate2D (
+        x = -199.0,
+        y = -64.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
       identifier = 'op_1',
       import_path = 'dragonfly.op.Op',
       position = Coordinate2D (
@@ -107,44 +107,6 @@ Hivemap (
   ),
   bees = BeeNodeArray (
     BeeNode (
-      identifier = 'sub_value',
-      import_path = 'hive.antenna',
-      position = Coordinate2D (
-        x = -520.0,
-        y = -79.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'push_in_0',
-      import_path = 'hive.push_in',
-      position = Coordinate2D (
-        x = -3.0,
-        y = -304.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('float',)",
-        ),
-        InstanceParameter (
-          identifier = 'attribute_name',
-          data_type = 'str',
-          value = 'value',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
       identifier = 'pull_out_0',
       import_path = 'hive.pull_out',
       position = Coordinate2D (
@@ -153,29 +115,15 @@ Hivemap (
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('float',)",
-        ),
-        InstanceParameter (
           identifier = 'attribute_name',
           data_type = 'str',
           value = 'value',
         ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'do_add',
-      import_path = 'hive.entry',
-      position = Coordinate2D (
-        x = -532.0,
-        y = -227.0,
-      ),
-      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
       ),
       args = InstanceParameterArray (
       ),
@@ -212,25 +160,11 @@ Hivemap (
       ),
     ),
     BeeNode (
-      identifier = 'output_0',
-      import_path = 'hive.output',
-      position = Coordinate2D (
-        x = 438.0,
-        y = -488.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'add_value',
+      identifier = 'sub_value',
       import_path = 'hive.antenna',
       position = Coordinate2D (
-        x = -532.0,
-        y = -315.0,
+        x = -520.0,
+        y = -79.0,
       ),
       meta_args = InstanceParameterArray (
       ),
@@ -253,24 +187,76 @@ Hivemap (
       folded_pins = StringArray (
       ),
     ),
+    BeeNode (
+      identifier = 'push_in_0',
+      import_path = 'hive.push_in',
+      position = Coordinate2D (
+        x = -52.0,
+        y = -265.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'value',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('float',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'add_value',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = -532.0,
+        y = -315.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'do_add',
+      import_path = 'hive.entry',
+      position = Coordinate2D (
+        x = -532.0,
+        y = -227.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'output_0',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 438.0,
+        y = -488.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
   ),
   helpers = HelperNodeArray (
   ),
   connections = ConnectionArray (
-    Connection (
-      from_node = 'sub_value',
-      output_name = 'antenna',
-      to_node = 'op_1',
-      input_name = 'b',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'transistor_0',
-      output_name = 'output',
-      to_node = 'push_in_0',
-      input_name = 'value',
-      is_trigger = False,
-    ),
     Connection (
       from_node = 'pull_out_0',
       output_name = 'value',
@@ -293,31 +279,10 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'do_add',
-      output_name = 'output',
-      to_node = 'transistor_0',
-      input_name = 'trigger',
-      is_trigger = True,
-    ),
-    Connection (
-      from_node = 'transistor_2',
-      output_name = 'output',
-      to_node = 'push_in_0',
-      input_name = 'value',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'add_value',
+      from_node = 'sub_value',
       output_name = 'antenna',
-      to_node = 'op_0',
+      to_node = 'op_1',
       input_name = 'b',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'op_0',
-      output_name = 'c',
-      to_node = 'transistor_0',
-      input_name = 'input',
       is_trigger = False,
     ),
     Connection (
@@ -328,10 +293,45 @@ Hivemap (
       is_trigger = True,
     ),
     Connection (
+      from_node = 'add_value',
+      output_name = 'antenna',
+      to_node = 'op_0',
+      input_name = 'b',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'transistor_0',
+      output_name = 'result',
+      to_node = 'push_in_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'do_add',
+      output_name = 'output',
+      to_node = 'transistor_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'op_0',
+      output_name = 'result',
+      to_node = 'transistor_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'transistor_2',
+      output_name = 'result',
+      to_node = 'push_in_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
       from_node = 'op_1',
-      output_name = 'c',
+      output_name = 'result',
       to_node = 'transistor_2',
-      input_name = 'input',
+      input_name = 'value',
       is_trigger = False,
     ),
   ),

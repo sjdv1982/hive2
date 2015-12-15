@@ -1,6 +1,32 @@
 Hivemap (
   hives = HiveNodeArray (
     HiveNode (
+      identifier = 'value_1',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 0.0,
+        y = 0.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
       identifier = 'switch_0',
       import_path = 'dragonfly.logic.Switch',
       position = Coordinate2D (
@@ -22,11 +48,11 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'variable_0',
+      identifier = 'value_0',
       import_path = 'dragonfly.std.Variable',
       position = Coordinate2D (
-        x = -42.0,
-        y = -226.0,
+        x = 0.0,
+        y = 0.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
@@ -47,34 +73,22 @@ Hivemap (
       cls_args = InstanceParameterArray (
       ),
     ),
-    HiveNode (
-      identifier = 'value',
-      import_path = 'dragonfly.std.Variable',
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'stop_in',
+      import_path = 'hive.entry',
       position = Coordinate2D (
-        x = -45.0,
-        y = 18.0,
+        x = -399.42105263157896,
+        y = -243.05263157894734,
       ),
       meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('bool',)",
-        ),
       ),
       args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'bool',
-          value = 'False',
-        ),
       ),
       folded_pins = StringArray (
       ),
-      cls_args = InstanceParameterArray (
-      ),
     ),
-  ),
-  bees = BeeNodeArray (
     BeeNode (
       identifier = 'pull_out_0',
       import_path = 'hive.pull_out',
@@ -84,15 +98,107 @@ Hivemap (
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'running',
+        ),
+        InstanceParameter (
           identifier = 'data_type',
           data_type = 'tuple',
           value = "('bool',)",
         ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'start_in',
+      import_path = 'hive.entry',
+      position = Coordinate2D (
+        x = -399.8947368421052,
+        y = -331.36842105263156,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'trig_out',
+      import_path = 'hive.hook',
+      position = Coordinate2D (
+        x = 210.0,
+        y = -249.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'do_stop',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = -125.0,
+        y = -244.0,
+      ),
+      meta_args = InstanceParameterArray (
         InstanceParameter (
           identifier = 'attribute_name',
           data_type = 'str',
           value = 'running',
         ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+    ),
+    BeeNode (
+      identifier = 'do_start',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = -129.0,
+        y = -347.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'running',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+    ),
+    BeeNode (
+      identifier = 'trig_in',
+      import_path = 'hive.entry',
+      position = Coordinate2D (
+        x = -370.0,
+        y = -106.0,
+      ),
+      meta_args = InstanceParameterArray (
       ),
       args = InstanceParameterArray (
       ),
@@ -128,121 +234,15 @@ Hivemap (
       folded_pins = StringArray (
       ),
     ),
-    BeeNode (
-      identifier = 'do_stop',
-      import_path = 'hive.pull_in',
-      position = Coordinate2D (
-        x = -125.0,
-        y = -244.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('bool',)",
-        ),
-        InstanceParameter (
-          identifier = 'attribute_name',
-          data_type = 'str',
-          value = 'running',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'value',
-      ),
-    ),
-    BeeNode (
-      identifier = 'stop_in',
-      import_path = 'hive.entry',
-      position = Coordinate2D (
-        x = -399.42105263157896,
-        y = -243.05263157894734,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'trig_out',
-      import_path = 'hive.hook',
-      position = Coordinate2D (
-        x = 210.0,
-        y = -249.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'trig_in',
-      import_path = 'hive.entry',
-      position = Coordinate2D (
-        x = -370.0,
-        y = -106.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'do_start',
-      import_path = 'hive.pull_in',
-      position = Coordinate2D (
-        x = -129.0,
-        y = -347.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('bool',)",
-        ),
-        InstanceParameter (
-          identifier = 'attribute_name',
-          data_type = 'str',
-          value = 'running',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'value',
-      ),
-    ),
-    BeeNode (
-      identifier = 'start_in',
-      import_path = 'hive.entry',
-      position = Coordinate2D (
-        x = -399.8947368421052,
-        y = -331.36842105263156,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
   ),
   helpers = HelperNodeArray (
   ),
   connections = ConnectionArray (
     Connection (
-      from_node = 'switch_0',
-      output_name = 'true',
-      to_node = 'trig_out',
-      input_name = 'output',
+      from_node = 'stop_in',
+      output_name = 'output',
+      to_node = 'do_stop',
+      input_name = 'trigger',
       is_trigger = True,
     ),
     Connection (
@@ -253,22 +253,15 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'stop_in',
+      from_node = 'start_in',
       output_name = 'output',
-      to_node = 'do_stop',
+      to_node = 'do_start',
       input_name = 'trigger',
       is_trigger = True,
     ),
     Connection (
-      from_node = 'variable_0',
-      output_name = 'value_out',
-      to_node = 'do_start',
-      input_name = 'value',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'value',
-      output_name = 'value_out',
+      from_node = 'value_1',
+      output_name = 'value',
       to_node = 'do_stop',
       input_name = 'value',
       is_trigger = False,
@@ -281,11 +274,18 @@ Hivemap (
       is_trigger = True,
     ),
     Connection (
-      from_node = 'start_in',
-      output_name = 'output',
-      to_node = 'do_start',
-      input_name = 'trigger',
+      from_node = 'switch_0',
+      output_name = 'true',
+      to_node = 'trig_out',
+      input_name = 'output',
       is_trigger = True,
+    ),
+    Connection (
+      from_node = 'value_0',
+      output_name = 'value',
+      to_node = 'do_start',
+      input_name = 'value',
+      is_trigger = False,
     ),
   ),
   docstring = 'Run a task every tick, whilst active.',

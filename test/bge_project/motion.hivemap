@@ -3,65 +3,22 @@ Hivemap (
   ),
   bees = BeeNodeArray (
     BeeNode (
-      identifier = 'loc',
-      import_path = 'hive.attribute',
-      position = Coordinate2D (
-        x = 206.0,
-        y = -114.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('vector',)",
-        ),
-      ),
-      args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'export',
-          data_type = 'bool',
-          value = 'True',
-        ),
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'tuple',
-          value = '(0.0, 0.0, 0.0)',
-        ),
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'loc_in',
-      import_path = 'hive.antenna',
-      position = Coordinate2D (
-        x = -376.0,
-        y = -148.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'pull_loc',
+      identifier = 'pull_is_local',
       import_path = 'hive.pull_in',
       position = Coordinate2D (
-        x = 176.0,
-        y = -87.0,
+        x = 126.0,
+        y = 91.0,
       ),
       meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('vector',)",
-        ),
         InstanceParameter (
           identifier = 'attribute_name',
           data_type = 'str',
-          value = 'loc',
+          value = 'local',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
         ),
       ),
       args = InstanceParameterArray (
@@ -78,14 +35,14 @@ Hivemap (
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('KX_GameObject',)",
-        ),
-        InstanceParameter (
           identifier = 'attribute_name',
           data_type = 'str',
           value = 'object',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
         ),
       ),
       args = InstanceParameterArray (
@@ -94,15 +51,102 @@ Hivemap (
       ),
     ),
     BeeNode (
-      identifier = 'local_in',
+      identifier = 'local',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = 175.0,
+        y = 68.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('bool',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'bool',
+          value = 'True',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'object_in',
       import_path = 'hive.antenna',
       position = Coordinate2D (
-        x = -381.0,
-        y = -77.0,
+        x = -383.0,
+        y = -215.0,
       ),
       meta_args = InstanceParameterArray (
       ),
       args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'object',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -9.0,
+        y = -217.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('KX_GameObject',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'loc',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = 206.0,
+        y = -114.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'True',
+        ),
       ),
       folded_pins = StringArray (
       ),
@@ -127,36 +171,22 @@ Hivemap (
       ),
     ),
     BeeNode (
-      identifier = 'object_in',
-      import_path = 'hive.antenna',
-      position = Coordinate2D (
-        x = -383.0,
-        y = -215.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-    ),
-    BeeNode (
-      identifier = 'pull_is_local',
+      identifier = 'pull_loc',
       import_path = 'hive.pull_in',
       position = Coordinate2D (
-        x = 126.0,
-        y = 91.0,
+        x = 176.0,
+        y = -87.0,
       ),
       meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('bool',)",
-        ),
         InstanceParameter (
           identifier = 'attribute_name',
           data_type = 'str',
-          value = 'local',
+          value = 'loc',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
         ),
       ),
       args = InstanceParameterArray (
@@ -165,59 +195,29 @@ Hivemap (
       ),
     ),
     BeeNode (
-      identifier = 'local',
-      import_path = 'hive.attribute',
+      identifier = 'local_in',
+      import_path = 'hive.antenna',
       position = Coordinate2D (
-        x = 175.0,
-        y = 68.0,
+        x = -381.0,
+        y = -77.0,
       ),
       meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('bool',)",
-        ),
       ),
       args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'export',
-          data_type = 'bool',
-          value = 'True',
-        ),
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'bool',
-          value = 'True',
-        ),
       ),
       folded_pins = StringArray (
       ),
     ),
     BeeNode (
-      identifier = 'object',
-      import_path = 'hive.attribute',
+      identifier = 'loc_in',
+      import_path = 'hive.antenna',
       position = Coordinate2D (
-        x = -9.0,
-        y = -217.0,
+        x = -376.0,
+        y = -148.0,
       ),
       meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('KX_GameObject',)",
-        ),
       ),
       args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'export',
-          data_type = 'bool',
-          value = 'False',
-        ),
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'NoneType',
-          value = 'None',
-        ),
       ),
       folded_pins = StringArray (
       ),
@@ -226,13 +226,6 @@ Hivemap (
   helpers = HelperNodeArray (
   ),
   connections = ConnectionArray (
-    Connection (
-      from_node = 'loc_in',
-      output_name = 'antenna',
-      to_node = 'pull_loc',
-      input_name = 'value',
-      is_trigger = False,
-    ),
     Connection (
       from_node = 'push_in_0',
       output_name = 'post_update',
@@ -255,6 +248,13 @@ Hivemap (
       is_trigger = True,
     ),
     Connection (
+      from_node = 'object_in',
+      output_name = 'antenna',
+      to_node = 'push_in_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
       from_node = 'local_in',
       output_name = 'antenna',
       to_node = 'pull_is_local',
@@ -262,9 +262,9 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'object_in',
+      from_node = 'loc_in',
       output_name = 'antenna',
-      to_node = 'push_in_0',
+      to_node = 'pull_loc',
       input_name = 'value',
       is_trigger = False,
     ),

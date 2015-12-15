@@ -1,6 +1,6 @@
 import os
 from collections import OrderedDict
-from fnmatch import fnmatch
+from fnmatch import filter
 from inspect import isclass, getmembers
 
 import dragonfly
@@ -38,18 +38,20 @@ class HiveFinder:
         :param modules: dictionary of modules to write to
         """
         current_folder_path = os.path.join(base_file_path, relative_folder_path)
-        all_file_names = set(os.listdir(current_folder_path))
+        all_file_names = os.listdir(current_folder_path)
 
         if modules is None:
-            modules = {}
+            modules = OrderedDict()
 
         # Allow hiding of files from HIVE gui
         if ROBOTS_TEXT in all_file_names:
             with open(os.path.join(current_folder_path, ROBOTS_TEXT)) as robots:
                 lines = [l.strip() for l in robots]
 
-            all_file_names = {path for line in lines for path in all_file_names if fnmatch(path, line)}
+            all_file_names = [filename for pattern in lines for filename in filter(all_file_names, pattern)]
             print("Restricted search to {}".format(all_file_names))
+
+        all_file_names.sort()
 
         # Find all members
         for file_name in all_file_names:
@@ -92,7 +94,7 @@ class HiveFinder:
                 except KeyError:
                     sub_modules[component] = sub_modules = OrderedDict()
 
-            for name, value in getmembers(module):
+            for name, value in sorted(getmembers(module)):
                 if name.startswith('_'):
                     continue
 
@@ -105,7 +107,7 @@ class HiveFinder:
         return modules
 
     def find_hives(self):
-        tree = {}
+        tree = OrderedDict()
 
         # Import stdlib modules
         for root_path in self.root_paths:

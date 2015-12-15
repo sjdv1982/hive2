@@ -24,11 +24,11 @@ def build_cross(i, ex, args):
     ex.b = hive.antenna(pull_b)
 
     i.result = hive.attribute("vector")
-    pull_result = hive.pull_out(i.result)
-    ex.result = hive.output(pull_result)
+    i.pull_result = hive.pull_out(i.result)
+    ex.result = hive.output(i.pull_result)
 
     calculate = hive.modifier(cross_modifier)
-    hive.trigger(pull_result, calculate, pretrigger=True)
+    hive.trigger(i.pull_result, calculate, pretrigger=True)
 
 
 Cross = hive.hive("Cross", build_cross)

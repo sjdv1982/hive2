@@ -1,0 +1,373 @@
+Hivemap (
+  hives = HiveNodeArray (
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'modifier_0',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = -341.0,
+        y = -273.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self._x, self._y, self._z = self._matrix_obj.col',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'matrix_obj',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -352.0,
+        y = -420.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('matrix',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_y',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -179.0,
+        y = -249.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'y',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'matrix',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = -522.0,
+        y = -356.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'y_axis',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 23.0,
+        y = -241.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_in_0',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = -386.0,
+        y = -361.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'matrix',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('matrix',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_x',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -186.0,
+        y = -359.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'x',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'x',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -74.0,
+        y = -369.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_z',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = -165.0,
+        y = -91.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'z',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'x_axis',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 16.0,
+        y = -338.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'call_get_and_set',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = 63.0,
+        y = -2.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self.matrix.pull()',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'y',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -73.0,
+        y = -255.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'z_axis',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 43.0,
+        y = -128.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'z',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -62.0,
+        y = -94.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('vector',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.0, 0.0)',
+        ),
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'pull_y',
+      output_name = 'value',
+      to_node = 'y_axis',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_y',
+      output_name = 'pre_output',
+      to_node = 'call_get_and_set',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'matrix',
+      output_name = 'antenna',
+      to_node = 'pull_in_0',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_in_0',
+      output_name = 'post_update',
+      to_node = 'modifier_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'pull_x',
+      output_name = 'value',
+      to_node = 'x_axis',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_x',
+      output_name = 'pre_output',
+      to_node = 'call_get_and_set',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'pull_z',
+      output_name = 'value',
+      to_node = 'z_axis',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_z',
+      output_name = 'pre_output',
+      to_node = 'call_get_and_set',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+  ),
+  docstring = 'matrix-to-axis-vect',
+)

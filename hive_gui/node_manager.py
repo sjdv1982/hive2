@@ -126,8 +126,20 @@ class NodeManager(object):
             params = {}
 
         name = self._unique_name_from_import_path(import_path)
-        param_info = self.hive_node_inspector.inspect_configured(import_path, params)
-        node = self.hive_node_factory.new(name, import_path, params, param_info)
+
+        try:
+            param_info = self.hive_node_inspector.inspect_configured(import_path, params)
+
+        except Exception:
+            print("Failed to inspect '{}'".format(import_path))
+            raise
+
+        try:
+            node = self.hive_node_factory.new(name, import_path, params, param_info)
+
+        except Exception:
+            print("Failed to instantiate '{}'".format(import_path))
+            raise
 
         self._add_node(node)
         return node
@@ -541,7 +553,12 @@ class NodeManager(object):
         # Fold folded pins
         for node, spyder_node in node_to_spyder_node.items():
             for pin_name in spyder_node.folded_pins:
-                pin = node.inputs[pin_name]
+                try:
+                    pin = node.inputs[pin_name]
+                except KeyError:
+                    print("Couldn't find pin {}.{} to fold".format(node.name, pin_name))
+                    continue
+
                 self.fold_pin(pin)
 
         return nodes

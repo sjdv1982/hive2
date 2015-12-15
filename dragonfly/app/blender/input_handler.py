@@ -1,9 +1,10 @@
 import string
 
-named_keyboard_mapping = dict(ZERO='0', ONE='1', TWO='2', THREE='3', FOUR='4', FIVE='5', SIX='6', SEVEN='7', EIGHT='8', NINE='9',
-                              ACCENTGRAVE='`', BACKSLASH='\\', COMMA=',', PERIOD='.', DEL='DELETE', MINUS='-', PLUS='+',
-                              LEFTBRACKET='[', RIGHTBRACKET=']', ESC='ESCAPE', END='END', INSERT='INSERT', PAUSE='PAUSE',
-                              SEMICOLON=';', SLASH='/', SPACE='SPACE', TAB='TAB', QUOTE="'", PAGEDOWN='PAGEDOWN', PAGEUP='PAGEUP',
+named_keyboard_mapping = dict(ZERO='0', ONE='1', TWO='2', THREE='3', FOUR='4', FIVE='5', SIX='6', SEVEN='7', EIGHT='8',
+                              NINE='9', ACCENTGRAVE='`', BACKSLASH='\\', COMMA=',', PERIOD='.', DEL='DELETE', MINUS='-',
+                              PLUS='+', LEFTBRACKET='[', RIGHTBRACKET=']', ESC='ESCAPE', END='END', INSERT='INSERT',
+                              PAUSE='PAUSE', SEMICOLON=';', SLASH='/', SPACE='SPACE', TAB='TAB', QUOTE="'",
+                              PAGEDOWN='PAGEDOWN', PAGEUP='PAGEUP',
                               )
 named_keyboard_mapping.update({k: k for k in string.ascii_uppercase})
 
@@ -60,6 +61,7 @@ class InputHandler:
         for key_code, status in self.mouse.events.items():
             try:
                 key_name = self.mouse_map[key_code]
+
             except KeyError:
                 continue
 

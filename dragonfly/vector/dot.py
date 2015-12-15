@@ -12,18 +12,18 @@ def build_dot(i, ex, args):
     i.a = hive.attribute("vector")
     i.b = hive.attribute("vector")
 
-    pull_a = hive.pull_in(i.a)
-    pull_b = hive.pull_in(i.b)
+    i.pull_a = hive.pull_in(i.a)
+    i.pull_b = hive.pull_in(i.b)
 
-    ex.a = hive.antenna(pull_a)
-    ex.b = hive.antenna(pull_b)
+    ex.a = hive.antenna(i.pull_a)
+    ex.b = hive.antenna(i.pull_b)
 
     i.result = hive.attribute("float")
-    pull_result = hive.pull_out(i.result)
-    ex.result = hive.output(pull_result)
+    i.pull_result = hive.pull_out(i.result)
+    ex.result = hive.output(i.pull_result)
 
-    calculate = hive.modifier(dot_modifier)
-    hive.trigger(pull_result, calculate, pretrigger=True)
+    i.calculate = hive.modifier(i.dot_modifier)
+    hive.trigger(i.pull_result, i.calculate, pretrigger=True)
 
 
 Dot = hive.hive("Dot", build_dot)
