@@ -24,7 +24,7 @@ def set_validation_enabled(validate):
 def validation_enabled_as(validate):
     previous_validation_state = get_validation_enabled()
     try:
-        set_mode(validate)
+        set_validation_enabled(validate)
         yield
 
     finally:

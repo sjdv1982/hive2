@@ -60,39 +60,47 @@ class HiveFinder:
             relative_file_path = os.path.join(relative_folder_path, file_name)
             name, extension = os.path.splitext(file_name)
 
+            # Ignore hidden directories
             is_directory = os.path.isdir(current_file_path)
-            if is_directory or extension[1:] in {'py', 'hivemap'}:
-                module_file_path = os.path.join(relative_folder_path, name)
-                import_path = module_file_path.replace(os.path.sep, ".")
-
-                try:
-                    module = __import__(import_path, fromlist=[name])
-
-                except ImportError as err:
-                    print("Couldn't import {}".format(import_path))
-                    import traceback
-                    traceback.print_exc()
+            if is_directory:
+                if name.startswith('.'):
                     continue
 
-                # Find submodule dict
-                sub_modules = modules
+            # Ignore invalid file types
+            elif extension[1:] not in {'py', 'hivemap'}:
+                continue
 
-                for component in import_path.split('.'):
-                    try:
-                        sub_modules = sub_modules[component]
+            module_file_path = os.path.join(relative_folder_path, name)
+            import_path = module_file_path.replace(os.path.sep, ".")
 
-                    except KeyError:
-                        sub_modules[component] = sub_modules = OrderedDict()
+            try:
+                module = __import__(import_path, fromlist=[name])
 
-                for name, value in getmembers(module):
-                    if name.startswith('_'):
-                        continue
+            except ImportError as err:
+                print("Couldn't import {}".format(import_path))
+                import traceback
+                traceback.print_exc()
+                continue
 
-                    if isclass(value) and issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder:
-                        sub_modules[name] = None
+            # Find submodule dict
+            sub_modules = modules
 
-                if is_directory and not sub_modules:
-                    self._recurse(base_file_path, relative_file_path, modules)
+            for component in import_path.split('.'):
+                try:
+                    sub_modules = sub_modules[component]
+
+                except KeyError:
+                    sub_modules[component] = sub_modules = OrderedDict()
+
+            for name, value in getmembers(module):
+                if name.startswith('_'):
+                    continue
+
+                if isclass(value) and issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder:
+                    sub_modules[name] = None
+
+            if is_directory and not sub_modules:
+                self._recurse(base_file_path, relative_file_path, modules)
 
         return modules
 
