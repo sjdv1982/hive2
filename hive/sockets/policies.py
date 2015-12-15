@@ -13,30 +13,22 @@ class SocketPolicy:
     def __init__(self):
         self._counter = 0
 
-    def pre_filled(self):
-        pass
-
     def on_filled(self):
         self._counter += 1
 
-    is_satisfied = True
+    @property
+    def is_satisfied(self):
+        raise NotImplementedError
 
 
-class _SingleSocketPolicy(SocketPolicy):
-
-    def pre_filled(self):
-        if self._counter:
-            raise SocketPolicyError("Socket already filled, requires single plugin")
-
-
-class SingleRequired(_SingleSocketPolicy):
+class Required(SocketPolicy):
 
     @property
     def is_satisfied(self):
         return self._counter == 1
 
 
-class SingleOptional(_SingleSocketPolicy):
+class Optional(SocketPolicy):
 
     @property
     def is_satisfied(self):
@@ -51,5 +43,5 @@ class MultipleRequired(SocketPolicy):
 
 
 class MultipleOptional(SocketPolicy):
-    pass
+    is_satisfied = True
 

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import sys
 import os
+import sys
 
 current_directory = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(current_directory + "/" + "..")
@@ -57,9 +57,7 @@ class House(object):
 
 
 def build_house(cls, i, ex, args):
-    print("BUILD")
-    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("get", "house"), data_type="float",
-                                 policy_cls=hive.plugins.MultipleOptional)
+    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("get", "house"), data_type="float")
 
     # Auto connect
     i.filler = FillerHive()

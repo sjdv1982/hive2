@@ -1,24 +1,17 @@
-from .policies import SingleOptional, PluginPolicyError
+from .policies import MultipleOptional
 from ..manager import get_building_hive, memoize, ContextFactory
-from ..mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable, Closable
+from ..mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
 from ..tuple_type import tuple_type
 
 
-class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
+class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
 
-    def __init__(self, func, data_type=None, run_hive=None, _policy_cls=SingleOptional):
+    def __init__(self, func, data_type=None, run_hive=None):
         assert callable(func) or isinstance(func, Callable), func
         self._run_hive = run_hive
         self._func = func
 
         self.data_type = tuple_type(data_type)
-        self._policy_cls = _policy_cls
-
-        if run_hive:
-            self.policy = _policy_cls()
-
-        else:
-            self.policy = None
 
     def __repr__(self):
         return "<Plugin: {}>".format(self._func)
@@ -30,15 +23,8 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
         if not isinstance(target, Socket):
             raise ValueError("Plugin target must be a subclass of Socket")
 
-        try:
-            self.policy.pre_donated()
-
-        except PluginPolicyError as err:
-            raise PluginPolicyError("{}\n\tSocket: {}\n\tPlugin: {}".format(err, target, self))
-
     def _hive_connect_source(self, target):
-        self.policy.on_donated()
-
+        pass
     @memoize
     def bind(self, run_hive):
         if self._run_hive:
@@ -50,11 +36,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
         else:
             func = self._func
 
-        return self.__class__(func, self.data_type, run_hive, _policy_cls=self._policy_cls)
-
-    def close(self):
-        if not self.policy.is_satisfied:
-            raise ValueError("Policy not satisfied for {}!".format(self._hive_bee_name), self.policy)
+        return self.__class__(func, self.data_type, run_hive)
 
     @memoize
     def export(self):
@@ -62,7 +44,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
         func = self._func
         if isinstance(func, Exportable):
             exported = func.export()
-            return self.__class__(exported, self.data_type, self._run_hive, _policy_cls=self._policy_cls)
+            return self.__class__(exported, self.data_type, self._run_hive)
 
         else:
             return self
@@ -70,7 +52,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Closable):
 
 class HivePluginBee(Plugin, ConnectSource, Exportable):
 
-    def __init__(self, target, identifier=None, data_type=None, policy_cls=SingleOptional, export_to_parent=False):
+    def __init__(self, target, identifier=None, data_type=None, policy=None, export_to_parent=False):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
@@ -78,7 +60,10 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self.identifier = identifier
         self.data_type = tuple_type(data_type)
 
-        self.policy_cls = policy_cls
+        if policy is None:
+            policy = MultipleOptional()
+
+        self.policy = policy
 
     def __repr__(self):
         return "<Plugin: {}>".format(self._target)
@@ -89,7 +74,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         if isinstance(target, Bee):
             target = target.getinstance(hive_object)
 
-        return HivePlugin(target, self.data_type, _policy_cls=self.policy_cls)
+        return HivePlugin(target, self.data_type)
 
     @memoize
     def export(self):
@@ -98,7 +83,7 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
 
         if isinstance(target, Exportable):
             exported = target.export()
-            return self.__class__(exported, self.identifier, self.data_type, self.policy_cls, self.export_to_parent)
+            return self.__class__(exported, self.identifier, self.data_type, self.policy, self.export_to_parent)
 
         else:
             return self

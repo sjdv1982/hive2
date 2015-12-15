@@ -16,27 +16,19 @@ class PluginPolicy:
     def on_donated(self):
         self._counter += 1
 
-    def pre_donated(self):
-        pass
-
-    is_satisfied = True
-
-
-class _SinglePluginPolicy(PluginPolicy):
-
-    def pre_donated(self):
-        if self._counter:
-            raise PluginPolicyError("Plugin already donated")
+    @property
+    def is_satisfied(self):
+        raise NotImplemented
 
 
-class SingleRequired(_SinglePluginPolicy):
+class SingleRequired(PluginPolicy):
 
     @property
     def is_satisfied(self):
         return self._counter == 1
 
 
-class SingleOptional(_SinglePluginPolicy):
+class SingleOptional(PluginPolicy):
 
     @property
     def is_satisfied(self):
@@ -52,5 +44,5 @@ class MultipleRequired(PluginPolicy):
 
 class MultipleOptional(PluginPolicy):
 
-    pass
+    is_satisfied = True
 
