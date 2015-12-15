@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
         self.project_directory = None
 
         if self._project_context:
-            self._project_context.__close__()
+            self._project_context.__exit__(None, None, None)
             self._project_context = None
 
         self.refresh_project_tree()
