@@ -495,7 +495,7 @@ class HiveBuilder(object):
             if is_root:
                 tracked_policies = []
 
-                cls._hive_build_connectivity(hive_object_cls, tracked_policies=tracked_policies)
+                cls._hive_build_connectivity(hive_object_cls, tracked_policies)
 
                 if get_validation_enabled():
                     for bee, policy in tracked_policies:
@@ -557,7 +557,7 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
-    def _hive_build_connectivity(cls, resolved_hive_object, plugin_map=None, socket_map=None, tracked_policies=None,
+    def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies, plugin_map=None, socket_map=None,
                                  is_root=True):
 
         """Connect plugins and sockets together by identifier.
@@ -692,7 +692,7 @@ class HiveBuilder(object):
 
         # Now export to child hives
         for child in child_hives:
-            cls._hive_build_connectivity(child, plugin_map, socket_map, tracked_policies, is_root=False)
+            cls._hive_build_connectivity(child, tracked_policies, plugin_map, socket_map, is_root=False)
 
     @classmethod
     def _hive_build_namespace(cls, hive_object_cls):
