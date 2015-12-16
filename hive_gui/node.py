@@ -129,7 +129,7 @@ class IOPin(object):
             target_node = target_pin.node
 
             # If is not the correct type (variable)
-            if target_node.import_path != VARIABLE_IMPORT_PATH:
+            if target_node.import_path != FOLD_NODE_IMPORT_PATH:
                 return False
 
             # If other pin is in use else where

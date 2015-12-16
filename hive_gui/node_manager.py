@@ -1,12 +1,11 @@
-from traceback import format_exc
-
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import OperationHistory
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
-from .node import NodeTypes, FOLD_NODE_IMPORT_PATH
-from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier, \
+from .node import FOLD_NODE_IMPORT_PATH
+from .node_io import HiveMapIO
+from .utils import start_value_from_type, is_identifier, \
     camelcase_to_underscores
 
 
@@ -304,10 +303,6 @@ class NodeManager(object):
 
         self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
 
-    def _paste_pre_connect(self, nodes):
-        if callable(self.on_pasted_pre_connect):
-            self.on_pasted_pre_connect(nodes)
-
     def to_string(self):
         hivemap = self.export_hivemap()
         return str(hivemap)
@@ -322,9 +317,10 @@ class NodeManager(object):
         self.load_hivemap(hivemap)
 
     def export_hivemap(self):
-        hivemap = self._write_hivemap(self.nodes.values())
-        hivemap.docstring = self.docstring
-        return hivemap
+        hivemap_io = HiveMapIO()
+        hivemap_io.save(self, docstring=self.docstring)
+
+        return hivemap_io.hivemap
 
     def load_hivemap(self, hivemap):
         with self.history.composite_operation("load"):
@@ -332,8 +328,10 @@ class NodeManager(object):
             for node in list(self.nodes.values()):
                 self.delete_node(node)
 
-            self.docstring = hivemap.docstring
-            self._read_hivemap(hivemap)
+            hivemap_io = HiveMapIO(hivemap)
+            data = hivemap_io.load(self)
+
+            self.docstring = data['docstring']
 
     def cut(self, nodes):
         with self.history.composite_operation("cut"):
@@ -359,7 +357,10 @@ class NodeManager(object):
                     target_node = target_pin.node
                     with_folded_nodes.add(target_node)
 
-        self._clipboard = self._write_hivemap(with_folded_nodes)
+        hivemap_io = HiveMapIO()
+        hivemap_io.save(self, nodes=with_folded_nodes)
+
+        self._clipboard = hivemap_io
 
     def paste(self, position):
         """Paste nodes from clipboard
@@ -367,193 +368,28 @@ class NodeManager(object):
         :param position: position of target center of mass of nodes
         """
         with self.history.composite_operation("paste"):
-            nodes = self._read_hivemap(self._clipboard)
+            data = self._clipboard.load(self)
+            nodes = data['nodes']
 
-            if nodes:
-                # Find midpoint
-                average_x = 0.0
-                average_y = 0.0
+            if not nodes:
+                return
 
-                for node in nodes:
-                    average_x += node.position[0]
-                    average_y += node.position[1]
+            # Find midpoint
+            average_x = 0.0
+            average_y = 0.0
 
-                average_x /= len(nodes)
-                average_y /= len(nodes)
+            for node in nodes:
+                average_x += node.position[0]
+                average_y += node.position[1]
 
-                # Displacement to the center
-                offset_x = position[0] - average_x
-                offset_y = position[1] - average_y
+            average_x /= len(nodes)
+            average_y /= len(nodes)
 
-                # Move nodes to mouse position
-                for node in nodes:
-                    position = node.position[0] + offset_x, node.position[1] + offset_y
-                    self.set_node_position(node, position)
+            # Displacement to the center
+            offset_x = position[0] - average_x
+            offset_y = position[1] - average_y
 
-    @staticmethod
-    def _write_hivemap(nodes):
-        hivemap = model.Hivemap()
-
-        node_names = set()
-
-        for node in nodes:
-            # Get node params
-            params = node.params
-
-            # Write to Bee
-            meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
-            arg_array = dict_to_parameter_array(params.get('args', {}))
-
-            folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
-
-            # Serialise HiveNode instance
-            if node.node_type == NodeTypes.HIVE:
-                cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
-
-                spyder_hive = model.HiveNode(identifier=node.name, import_path=node.import_path, position=node.position,
-                                             meta_args=meta_arg_array, args=arg_array, cls_args=cls_arg_array,
-                                             folded_pins=folded_pins)
-
-                hivemap.hives.append(spyder_hive)
-
-            # Serialise Bee instance
-            elif node.node_type == NodeTypes.BEE:
-                spyder_bee = model.BeeNode(identifier=node.name, import_path=node.import_path, position=node.position,
-                                           meta_args=meta_arg_array, args=arg_array, folded_pins=folded_pins)
-                hivemap.bees.append(spyder_bee)
-
-            # Keep track of copied nodes
-            node_names.add(node.name)
-
-        for node in nodes:
-            node_name = node.name
-
-            for pin_name, pin in node.outputs.items():
-                for connection in pin.connections:
-                    target_pin = connection.input_pin
-                    target_node_name = target_pin.node.name
-
-                    # Omit connections that aren't in the copied nodes
-                    if target_node_name not in node_names:
-                        continue
-
-                    is_trigger = connection.is_trigger
-                    spyder_connection = model.Connection(node_name, pin_name, target_node_name, target_pin.name,
-                                                         is_trigger)
-                    hivemap.connections.append(spyder_connection)
-
-        return hivemap
-
-    def _read_hivemap(self, hivemap):
-        if hivemap is None:
-            return []
-
-        # Create nodes
-        # Mapping from original ID to new ID
-        nodes = []
-        id_to_node_name = {}
-        node_to_spyder_hive_node = {}
-        node_to_spyder_node = {}
-
-        # Load IO bees
-        for spyder_bee in hivemap.bees:
-            import_path = spyder_bee.import_path
-
-            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
-            args = parameter_array_to_dict(spyder_bee.args)
-
-            params = {"meta_args": meta_args, "args": args}
-
-            try:
-                node = self.create_bee(import_path, params)
-
-            except Exception as err:
-                print("Unable to create node {}".format(spyder_bee.identifier))
-                print(format_exc())
-                continue
-
-            node_to_spyder_node[node] = spyder_bee
-
-        # Load hives
-        for spyder_hive in hivemap.hives:
-            import_path = spyder_hive.import_path
-
-            meta_args = parameter_array_to_dict(spyder_hive.meta_args)
-            args = parameter_array_to_dict(spyder_hive.args)
-            cls_args = parameter_array_to_dict(spyder_hive.cls_args)
-
-            params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
-
-            try:
-                node = self.create_hive(import_path, params)
-
-            except Exception as err:
-                print("Unable to create node {}".format(spyder_hive.identifier))
-                print(format_exc())
-                continue
-
-            node_to_spyder_node[node] = spyder_hive
-
-            # Specific mapping for Spyder HiveNodes only.
-            node_to_spyder_hive_node[node] = spyder_hive
-
-        # Attempt to set common data between IO bees and Hives
-        for node, spyder_node in node_to_spyder_node.items():
-            # Try to use original name
-            try:
-                self.set_node_name(node, spyder_node.identifier)
-
-            except ValueError:
-                print("Failed to use original name")
-                pass
-
-            # Set original position
-            self.set_node_position(node, (spyder_node.position.x, spyder_node.position.y))
-
-            # Map original copied ID to new allocated ID
-            id_to_node_name[spyder_node.identifier] = node.name
-            nodes.append(node)
-
-        # Pre connectivity step (Blender hack)
-        self._paste_pre_connect(nodes)
-
-        # Recreate connections
-        for connection in hivemap.connections:
-            try:
-                from_id = id_to_node_name[connection.from_node]
-                to_id = id_to_node_name[connection.to_node]
-
-            except KeyError:
-                print("Unable to find all nodes in connection: {}, {}".format(connection.from_node, connection.to_node))
-                continue
-
-            from_node = self.nodes[from_id]
-            to_node = self.nodes[to_id]
-
-            try:
-                from_pin = from_node.outputs[connection.output_name]
-                to_pin = to_node.inputs[connection.input_name]
-
-            except KeyError:
-                print("Unable to find all node pins in connection: {}.{}, {}.{}".format(connection.from_node,
-                                                                                        connection.output_name,
-                                                                                        connection.to_node,
-                                                                                        connection.input_name))
-                continue
-
-            self.create_connection(from_pin, to_pin)
-
-        # Fold folded pins
-        for node, spyder_node in node_to_spyder_node.items():
-
-            for pin_name in spyder_node.folded_pins:
-                try:
-                    pin = node.inputs[pin_name]
-
-                except KeyError:
-                    print("Couldn't find pin {}.{} to fold".format(node.name, pin_name))
-                    continue
-
-                self.fold_pin(pin)
-
-        return nodes
+            # Move nodes to mouse position
+            for node in nodes:
+                position = node.position[0] + offset_x, node.position[1] + offset_y
+                self.set_node_position(node, position)

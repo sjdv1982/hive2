@@ -211,7 +211,7 @@ class FoldingPanel(QWidget):
             if pin.mode != "pull":
                 continue
 
-            if self._node_manager.is_foldable(pin):
+            if pin.is_foldable:
                 button = QPushButton("Fol&d")
                 on_clicked = partial(self._fold_antenna, pin)
 
