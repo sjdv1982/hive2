@@ -68,10 +68,11 @@ class HiveMapIO:
 
         # Create nodes
         # Mapping from original ID to new ID
-        nodes = []
         id_to_node_name = {}
         node_to_spyder_hive_node = {}
         node_to_spyder_node = {}
+
+        created_nodes = {}
 
         # Load IO bees
         for spyder_bee in hivemap.bees:
@@ -117,20 +118,16 @@ class HiveMapIO:
 
         # Attempt to set common data between IO bees and Hives
         for node, spyder_node in node_to_spyder_node.items():
-            # Try to use original name
-            try:
-                node_manager.set_node_name(node, spyder_node.identifier)
-
-            except ValueError:
-                print("Failed to use original name")
-                pass
+            # Try to use original name, otherwise make unique
+            node_manager.set_node_name(node, spyder_node.identifier, attempt_till_success=True)
 
             # Set original position
             node_manager.set_node_position(node, (spyder_node.position.x, spyder_node.position.y))
 
             # Map original copied ID to new allocated ID
-            id_to_node_name[spyder_node.identifier] = node.name
-            nodes.append(node)
+            node_name = node.name
+            id_to_node_name[spyder_node.identifier] = node_name
+            created_nodes[node_name] = node
 
         # Recreate connections
         for connection in hivemap.connections:
@@ -142,8 +139,8 @@ class HiveMapIO:
                 print("Unable to find all nodes in connection: {}, {}".format(connection.from_node, connection.to_node))
                 continue
 
-            from_node = node_manager.nodes[from_id]
-            to_node = node_manager.nodes[to_id]
+            from_node = created_nodes[from_id]
+            to_node = created_nodes[to_id]
 
             try:
                 from_pin = from_node.outputs[connection.output_name]
@@ -168,4 +165,4 @@ class HiveMapIO:
 
                 node_manager.fold_pin(pin)
 
-        return dict(nodes=nodes, docstring=hivemap.docstring)
+        return dict(nodes=created_nodes, docstring=hivemap.docstring)

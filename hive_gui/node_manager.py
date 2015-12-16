@@ -369,10 +369,12 @@ class NodeManager(object):
         """
         with self.history.composite_operation("paste"):
             data = self._clipboard.load(self)
-            nodes = data['nodes']
+            node_map = data['nodes']
 
-            if not nodes:
+            if not node_map:
                 return
+
+            names, nodes = zip(*node_map.items())
 
             # Find midpoint
             average_x = 0.0

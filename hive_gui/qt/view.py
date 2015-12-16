@@ -35,6 +35,7 @@
 from __future__ import print_function, absolute_import
 
 import functools
+from operator import attrgetter
 
 from .floating_text import FloatingTextWidget
 from .qt_core import *
@@ -43,6 +44,8 @@ from .scene import NodeUIScene
 from ..node import Node, NodeTypes, MimicFlags
 
 SELECT_SIZE = 10
+
+get_name = attrgetter("name")
 
 
 class NodePreviewView(QGraphicsView):
@@ -77,7 +80,7 @@ class NodePreviewView(QGraphicsView):
 
         hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
 
-        for node_name, node in sorted(self._node_manager.nodes.items()):
+        for name, node in sorted(self._node_manager.nodes.items()):
             # If an input IO bee
             if node.import_path in {"hive.antenna", "hive.entry"}:
                 pin = next(iter(node.outputs.values()))
@@ -88,7 +91,7 @@ class NodePreviewView(QGraphicsView):
                     continue
 
                 remote_pin = connection.input_pin
-                input_pin = hive_node.add_input(node_name, mimic_flags=MimicFlags.SHAPE | MimicFlags.COLOUR)
+                input_pin = hive_node.add_input(name, mimic_flags=MimicFlags.SHAPE | MimicFlags.COLOUR)
                 input_pin.mimic_other_pin(remote_pin)
 
             # If an output IO bee
@@ -101,7 +104,7 @@ class NodePreviewView(QGraphicsView):
                     continue
 
                 remote_pin = connection.output_pin
-                output_pin = hive_node.add_output(node_name, mimic_flags=MimicFlags.SHAPE|MimicFlags.COLOUR)
+                output_pin = hive_node.add_output(name, mimic_flags=MimicFlags.SHAPE|MimicFlags.COLOUR)
                 output_pin.mimic_other_pin(remote_pin)
 
         gui_node = GUINode(hive_node, self)
