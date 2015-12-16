@@ -40,8 +40,81 @@ from .floating_text import FloatingTextWidget
 from .qt_core import *
 from .qt_gui import *
 from .scene import NodeUIScene
+from ..node import Node, NodeTypes, MimicFlags
 
 SELECT_SIZE = 10
+
+
+class NodePreviewView(QGraphicsView):
+
+    def __init__(self, node_manager):
+        QGraphicsView.__init__(self)
+
+        self.setScene(NodeUIScene())
+        self._preview_update_timer = QTimer(self)
+        self._node_manager = node_manager
+
+    def on_socket_hover(self, socket, event=None):
+        pass
+
+    def gui_on_hover_exit(self, node):
+        pass
+
+    def gui_on_hover_enter(self, node):
+        pass
+
+    def update_preview(self):
+        self._preview_update_timer.singleShot(0.01, self._update_preview)
+
+    def _update_preview(self):
+        from .node import Node as GUINode
+
+        for item in self.scene().items():
+            if isinstance(item, GUINode):
+                item.on_deleted()
+
+        self.scene().clear()
+
+        hive_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
+
+        for node_name, node in sorted(self._node_manager.nodes.items()):
+            # If an input IO bee
+            if node.import_path in {"hive.antenna", "hive.entry"}:
+                pin = next(iter(node.outputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.input_pin
+                input_pin = hive_node.add_input(node_name, mimic_flags=MimicFlags.SHAPE | MimicFlags.COLOUR)
+                input_pin.mimic_other_pin(remote_pin)
+
+            # If an output IO bee
+            if node.import_path in {"hive.output", "hive.hook"}:
+                pin = next(iter(node.inputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.output_pin
+                output_pin = hive_node.add_output(node_name, mimic_flags=MimicFlags.SHAPE|MimicFlags.COLOUR)
+                output_pin.mimic_other_pin(remote_pin)
+
+        gui_node = GUINode(hive_node, self)
+        self.scene().addItem(gui_node)
+        new_center = self.scene().center = QPointF(self.scene().itemsBoundingRect().center())
+        self.centerOn(new_center)
+
+    # Disable events
+    def mousePressEvent(self, event):
+        return
+
+    def mouseReleaseEvent(self, event):
+        return
 
 
 class NodeView(QGraphicsView):

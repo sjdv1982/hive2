@@ -257,36 +257,21 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     docstring = hivemap.docstring
 
     if docstring:
-        body_declaration_statement += \
-'''"""{}
-"""'''.format(docstring)
+        new_line = "\n" if "\n" in docstring else ""
+        body_declaration_statement += '"""{}{}"""\n'.format(docstring, new_line)
 
     if declaration_body:
-        body_declaration_statement += \
-"""# Declarations
-{}
-
-""".format("\n".join(declaration_body))
+        body_declaration_statement += "# Declarations\n{}\n\n".format("\n".join(declaration_body))
 
     if connectivity_body:
-        body_declaration_statement += \
-"""# Connectivity
-{}
-
-""".format("\n".join(connectivity_body))
+        body_declaration_statement += "# Connectivity\n{}\n\n".format("\n".join(connectivity_body))
 
     if io_body:
-        body_declaration_statement += \
-"""# IO
-{}
-
-""".format("\n".join(io_body))
+        body_declaration_statement += "# IO\n{}\n\n".format("\n".join(io_body))
 
     if imports:
-        import_statement = \
-"""# Imports
-{}
-""".format("\n".join(["import {}".format(x) for x in imports]))
+        import_statement = "# Imports\n{}\n".format("\n".join(["import {}".format(x) for x in imports]))
+
     else:
         import_statement = ""
 
@@ -297,12 +282,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     else:
         function_body = body_declaration_statement.replace("\n", "\n    ")
 
-    declaration_statement = \
-"""{}
-
-def {}(i, ex, args):
-    {}
-""".format(import_statement, builder_name, function_body)
+    declaration_statement = "{}\n\ndef {}(i, ex, args):\n    {}\n".format(import_statement, builder_name, function_body)
     return declaration_statement
 
 
