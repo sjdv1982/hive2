@@ -1,18 +1,14 @@
 from bpy import app, data, types, props
 
-
-from .text_area import BlenderTextAreaManager
-from .types import HiveNodeTree
+import dragonfly
+import sparta
+import test.sca as test_sca
 from .gui_node_manager import BlenderGUINodeManager
 from .node_menu_manager import node_menu_manager, HiveNodeMenu
-
-from ..node_manager import NodeManager
-
+from .text_area import BlenderTextAreaManager
+from .types import HiveNodeTree
 from ..finder import get_hives
-
-import dragonfly
-import test.sca as test_sca
-import sparta
+from ..node_manager import NodeManager
 
 hives = get_hives(test_sca, dragonfly, sparta)
 
@@ -78,7 +74,7 @@ class BlendManager:
             pass
 
         else:
-            gui_manager.node_manager.load(text_block.as_string())
+            gui_manager.node_manager.from_string(text_block.as_string())
 
     def on_loaded(self):
         self._gui_node_managers.clear()
@@ -92,7 +88,7 @@ class BlendManager:
             text_block_name = "{}.hivemap".format(node_tree.name)
             text_block = data.texts[text_block_name]
 
-            text_block.from_string(node_manager.export())
+            text_block.from_string(node_manager.to_string())
 
         print("Saved texts")
 
@@ -137,14 +133,14 @@ class BlendManager:
                     # Couldn't migrate, create
                     else:
                         text_block = data.texts.new(resource_path)
-                        text_block.from_string(node_manager.export())
+                        text_block.from_string(node_manager.to_string())
 
                         print("Unexpected: Create text block for {}".format(resource_path))
 
                 # Couldn't find original text block
                 else:
                     text_block = data.texts.new(resource_path)
-                    text_block.from_string(node_manager.export())
+                    text_block.from_string(node_manager.to_string())
 
                     print("Create text block for {}".format(resource_path))
 

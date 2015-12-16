@@ -1,9 +1,10 @@
-from .connection import ConnectionType
-from .sockets import get_colour, get_shape
-from .iterable_view import ListView
-
 from collections import OrderedDict
+
 from hive.tuple_type import types_match
+from .iterable_view import ListView
+from .sockets import get_colour, get_shape
+
+FOLD_NODE_IMPORT_PATH = "dragonfly.std.Variable"
 
 
 class MimicFlags(object):
@@ -103,6 +104,39 @@ class IOPin(object):
     @property
     def mimic_flags(self):
         return self._mimic_flags
+
+    @property
+    def is_foldable(self):
+        # Only hives support folding
+        if self.is_virtual:
+            return False
+
+        if self.is_folded:
+            return False
+
+        if self.io_type != "input":
+            return False
+
+        if self.mode != "pull":
+            return False
+
+        if not self.connections:
+            return True
+
+        if len(self.connections) == 1:
+            target_connection = next(iter(self.connections))
+            target_pin = target_connection.output_pin
+            target_node = target_pin.node
+
+            # If is not the correct type (variable)
+            if target_node.import_path != VARIABLE_IMPORT_PATH:
+                return False
+
+            # If other pin is in use else where
+            if len(target_pin.connections) == 1:
+                return True
+
+        return False
 
     def can_connect_to(self, other_pin, is_source):
         # Custom validator

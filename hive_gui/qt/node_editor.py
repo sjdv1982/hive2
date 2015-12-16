@@ -559,7 +559,7 @@ class NodeEditorSpace(QWidget):
                     raise ValueError("Untitled hivemap cannot be saved without filename")
 
         # Export data
-        data = node_manager.export()
+        data = node_manager.to_string()
         with open(file_name, "w") as f:
             f.write(data)
 
@@ -584,7 +584,7 @@ class NodeEditorSpace(QWidget):
         node_manager = self._node_manager
 
         try:
-            node_manager.load(data)
+            node_manager.from_string(data)
 
         except Exception as err:
             print("Error during loading")

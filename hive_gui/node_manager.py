@@ -5,7 +5,7 @@ from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import OperationHistory
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
-from .node import NodeTypes
+from .node import NodeTypes, FOLD_NODE_IMPORT_PATH
 from .utils import start_value_from_type, dict_to_parameter_array, parameter_array_to_dict, is_identifier, \
     camelcase_to_underscores
 
@@ -38,14 +38,12 @@ class NodeManager(object):
         self.hive_node_factory = HiveNodeFactory()
 
         self.hive_node_inspector = HiveNodeInspector()
-        self.bee_node_inspector = BeeNodeInspector(self)
+        self.bee_node_inspector = BeeNodeInspector(self._find_attributes)
 
         self.docstring = ""
         self.nodes = {}
-        self._clipboard = None
 
-        # Hard coded paths for useful node types
-        self.variable_import_path = "dragonfly.std.Variable"
+        self._clipboard = None
 
         self.on_node_created = None
         self.on_node_destroyed = None
@@ -66,23 +64,14 @@ class NodeManager(object):
         as_variable = camelcase_to_underscores(obj_name)
         return _get_unique_name(self.nodes, as_variable)
 
-    def create_connection(self, output_pin, input_pin):
-        # Check pin isn't folded
-        if input_pin.is_folded:
-            raise NodeConnectionError("Cannot connect to a folded pin")
-
-        # Check connection is permitted
-        result = Connection.is_valid_between(output_pin, input_pin)
-
-        if result == ConnectionType.INVALID:
-            raise NodeConnectionError("Can't connect {} to {}".format(output_pin, input_pin))
-
-        is_trigger = result == ConnectionType.TRIGGER
-        connection = Connection(output_pin, input_pin, is_trigger=is_trigger)
-        # Must call connection.connect()
-        self._add_connection(connection)
+    def _find_attributes(self):
+        return {name: node for name, node in self.nodes.items() if node.import_path == "hive.attribute"}
 
     def _add_connection(self, connection):
+        """Connect connection and push to history.
+
+        :param connection: connection to connect
+        """
         self.history.push_operation(self._add_connection, (connection,),
                                     self.delete_connection, (connection,))
 
@@ -96,7 +85,32 @@ class NodeManager(object):
         input_pin = connection.input_pin
         print("Create connection", output_pin.name, output_pin.node, input_pin.name, input_pin.node)
 
+    def create_connection(self, output_pin, input_pin):
+        """Create connection between two pins.
+
+        :param output_pin: output pin from which the connection originates
+        :param input_pin: input pin at which the connection is completed
+        """
+        # Check pin isn't folded
+        if input_pin.is_folded:
+            raise NodeConnectionError("Cannot connect to a folded pin")
+
+        # Check connection is permitted
+        result = Connection.is_valid_between(output_pin, input_pin)
+
+        if result == ConnectionType.INVALID:
+            raise NodeConnectionError("Can't connect {} to {}".format(output_pin, input_pin))
+
+        connection = Connection(output_pin, input_pin, is_trigger=(result == ConnectionType.TRIGGER))
+
+        # Must call connection.connect()
+        self._add_connection(connection)
+
     def delete_connection(self, connection):
+        """Delete connection and write to history.
+
+        :param connection: connection object
+        """
         # Ask GUI to perform connection
         if callable(self.on_connection_destroyed):
             self.on_connection_destroyed(connection)
@@ -109,6 +123,11 @@ class NodeManager(object):
                                     self._add_connection, (connection,))
 
     def reorder_connection(self, connection, index):
+        """Change connection order relative to other connections for the output pin.
+
+        :param connection: connection object
+        :param index: new connection index
+        """
         output_pin = connection.output_pin
         old_index = output_pin.connections.index(connection)
 
@@ -121,7 +140,35 @@ class NodeManager(object):
         self.history.push_operation(self.reorder_connection, (connection, index),
                                     self.reorder_connection, (connection, old_index))
 
+    def _add_node(self, node):
+        """Add node to node dict and write to history.
+
+        :param node: node to add
+        """
+        self.nodes[node.name] = node
+
+        if callable(self.on_node_created):
+            self.on_node_created(node)
+
+        for pin in node.inputs.values():
+            assert not pin.is_folded, (pin.name, pin.node)
+
+        self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
+
+    def create_bee(self, import_path, params=None):
+        """Create a bee node with the given import path"""
+        if params is None:
+            params = {}
+
+        name = self._unique_name_from_import_path(import_path)
+        param_info = self.bee_node_inspector.inspect_configured(import_path, params)
+        node = self.bee_node_factory.new(name, import_path, params, param_info)
+
+        self._add_node(node)
+        return node
+
     def create_hive(self, import_path, params=None):
+        """Create a hive node with the given path"""
         if params is None:
             params = {}
 
@@ -143,28 +190,6 @@ class NodeManager(object):
 
         self._add_node(node)
         return node
-
-    def create_bee(self, import_path, params=None):
-        if params is None:
-            params = {}
-
-        name = self._unique_name_from_import_path(import_path)
-        param_info = self.bee_node_inspector.inspect_configured(import_path, params)
-        node = self.bee_node_factory.new(name, import_path, params, param_info)
-
-        self._add_node(node)
-        return node
-
-    def _add_node(self, node):
-        self.nodes[node.name] = node
-
-        if callable(self.on_node_created):
-            self.on_node_created(node)
-
-        for pin in node.inputs.values():
-            assert not pin.is_folded, (pin.name, pin.node)
-
-        self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
 
     def delete_node(self, node):
         # Remove connections
@@ -243,40 +268,8 @@ class NodeManager(object):
         self.history.push_operation(self.set_node_position, (node, position),
                                     self.set_node_position, (node, old_position))
 
-    def can_fold_pin(self, pin):
-        # Only hives support folding
-        if pin.is_virtual:
-            return False
-
-        if pin.is_folded:
-            return False
-
-        if pin.io_type != "input":
-            return False
-
-        if pin.mode != "pull":
-            return False
-
-        if not pin.connections:
-            return True
-
-        if len(pin.connections) == 1:
-            target_connection = next(iter(pin.connections))
-            target_pin = target_connection.output_pin
-            target_node = target_pin.node
-
-            # If is not the correct type (variable)
-            if target_node.import_path != self.variable_import_path:
-                return False
-
-            # If other pin is in use else where
-            if len(target_pin.connections) == 1:
-                return True
-
-        return False
-
     def fold_pin(self, pin):
-        assert self.can_fold_pin(pin)
+        assert pin.is_foldable
 
         # Create variable
         if not pin.connections:
@@ -285,7 +278,7 @@ class NodeManager(object):
                           args=dict(start_value=start_value_from_type(pin.data_type)))
 
             # Create variable node, attempt to call it same as pin
-            target_node = self.create_hive(self.variable_import_path, params)
+            target_node = self.create_hive(FOLD_NODE_IMPORT_PATH, params)
             target_pin = next(iter(target_node.outputs.values()))
 
             self.set_node_name(target_node, pin.name, attempt_till_success=True)
@@ -315,11 +308,11 @@ class NodeManager(object):
         if callable(self.on_pasted_pre_connect):
             self.on_pasted_pre_connect(nodes)
 
-    def export(self):
+    def to_string(self):
         hivemap = self.export_hivemap()
         return str(hivemap)
 
-    def load(self, data):
+    def from_string(self, data):
         # Validate type
         if not isinstance(data, str):
             raise TypeError("Loaded data should be a string type, not {}".format(type(data)))
@@ -329,7 +322,7 @@ class NodeManager(object):
         self.load_hivemap(hivemap)
 
     def export_hivemap(self):
-        hivemap = self._write(self.nodes.values())
+        hivemap = self._write_hivemap(self.nodes.values())
         hivemap.docstring = self.docstring
         return hivemap
 
@@ -340,7 +333,7 @@ class NodeManager(object):
                 self.delete_node(node)
 
             self.docstring = hivemap.docstring
-            self._read(hivemap)
+            self._read_hivemap(hivemap)
 
     def cut(self, nodes):
         with self.history.composite_operation("cut"):
@@ -366,7 +359,7 @@ class NodeManager(object):
                     target_node = target_pin.node
                     with_folded_nodes.add(target_node)
 
-        self._clipboard = self._write(with_folded_nodes)
+        self._clipboard = self._write_hivemap(with_folded_nodes)
 
     def paste(self, position):
         """Paste nodes from clipboard
@@ -374,7 +367,7 @@ class NodeManager(object):
         :param position: position of target center of mass of nodes
         """
         with self.history.composite_operation("paste"):
-            nodes = self._read(self._clipboard)
+            nodes = self._read_hivemap(self._clipboard)
 
             if nodes:
                 # Find midpoint
@@ -398,7 +391,7 @@ class NodeManager(object):
                     self.set_node_position(node, position)
 
     @staticmethod
-    def _write(nodes):
+    def _write_hivemap(nodes):
         hivemap = model.Hivemap()
 
         node_names = set()
@@ -451,13 +444,13 @@ class NodeManager(object):
 
         return hivemap
 
-    def _read(self, hivemap):
+    def _read_hivemap(self, hivemap):
         if hivemap is None:
             return []
 
         # Create nodes
         # Mapping from original ID to new ID
-        nodes = set()
+        nodes = []
         id_to_node_name = {}
         node_to_spyder_hive_node = {}
         node_to_spyder_node = {}
@@ -519,7 +512,7 @@ class NodeManager(object):
 
             # Map original copied ID to new allocated ID
             id_to_node_name[spyder_node.identifier] = node.name
-            nodes.add(node)
+            nodes.append(node)
 
         # Pre connectivity step (Blender hack)
         self._paste_pre_connect(nodes)
@@ -552,9 +545,11 @@ class NodeManager(object):
 
         # Fold folded pins
         for node, spyder_node in node_to_spyder_node.items():
+
             for pin_name in spyder_node.folded_pins:
                 try:
                     pin = node.inputs[pin_name]
+
                 except KeyError:
                     print("Couldn't find pin {}.{} to fold".format(node.name, pin_name))
                     continue
