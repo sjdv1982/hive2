@@ -269,7 +269,7 @@ class Node(QGraphicsWidget):
 
         self._socket_rows.clear()
 
-    def hoverEnterEvent(self):
+    def hoverEnterEvent(self, event):
         self.view.gui_on_hover_enter(self)
 
     def hoverLeaveEvent(self, event):
@@ -367,6 +367,7 @@ class Node(QGraphicsWidget):
 
                 y_pos += height
 
+                socket_row.update()
                 attributeWidth = socket_row.boundingRect().width()
                 if attributeWidth > width:
                     width = attributeWidth
