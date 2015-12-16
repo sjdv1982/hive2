@@ -367,7 +367,6 @@ class Node(QGraphicsWidget):
 
                 y_pos += height
 
-                socket_row.update()
                 attributeWidth = socket_row.boundingRect().width()
                 if attributeWidth > width:
                     width = attributeWidth

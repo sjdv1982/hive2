@@ -34,9 +34,7 @@
 
 from __future__ import print_function, absolute_import
 
-import weakref
 from .qt_gui import *
-from .qt_core import *
 
 
 class NodeUIScene(QGraphicsScene):
@@ -49,7 +47,6 @@ class NodeUIScene(QGraphicsScene):
         self._first_time_entering = True
 
         self.zoom = 1.0
-        self.center_pos = QPointF(0.0, 0.0)
 
         self._grid_pen.setWidth(1)
 

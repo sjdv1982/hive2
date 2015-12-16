@@ -54,6 +54,9 @@ class NodePreviewView(QGraphicsView):
 
         self.setScene(NodeUIScene())
         self._preview_update_timer = QTimer(self)
+        self.setSceneRect(-5000, -5000, 10000, 10000)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
     def on_socket_hover(self, socket, event=None):
         pass
@@ -78,7 +81,7 @@ class NodePreviewView(QGraphicsView):
 
         gui_node = GUINode(node, self)
         self.scene().addItem(gui_node)
-        new_center = self.scene().center = QPointF(self.scene().itemsBoundingRect().center())
+        new_center = QPointF(self.scene().itemsBoundingRect().center())
         self.centerOn(new_center)
 
     # Disable events
@@ -335,7 +338,7 @@ class NodeView(QGraphicsView):
 
         self.zoom = new_scene.zoom
 
-        new_center = QPointF(new_scene.center_pos)
+        new_center = QPointF()
 
         self.centerOn(new_center)
         self._current_center_point = new_center
@@ -370,7 +373,6 @@ class NodeView(QGraphicsView):
     @center.setter
     def center(self, center_point):
         self._current_center_point = center_point
-        self.scene().center = center_point
         self.centerOn(self._current_center_point)
 
     def _find_connection_at(self, position, size):
