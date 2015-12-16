@@ -1,8 +1,8 @@
 from traceback import format_exc
 
+from .code_generator import dict_to_parameter_array, parameter_array_to_dict
 from .models import model
 from .node import NodeTypes
-from .utils import dict_to_parameter_array, parameter_array_to_dict
 
 
 class HiveMapIO:

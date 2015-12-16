@@ -7,10 +7,10 @@ from .qt_gui import *
 from .scene import NodeUIScene
 from .utils import create_widget
 from .view import NodeView
+from ..code_generator import hivemap_to_builder_body
 from ..inspector import InspectorOption
 from ..node import NodeTypes
 from ..node_manager import NodeManager
-from ..utils import hivemap_to_builder_body
 
 
 class DynamicInputDialogue(QDialog):

@@ -3,7 +3,8 @@ import sys
 import types
 from contextlib import contextmanager
 
-from .utils import class_from_filepath, find_source_hivemap
+from .code_generator import class_from_filepath
+from .utils import find_source_hivemap
 
 
 class HiveModuleLoader:
