@@ -269,7 +269,7 @@ class Node(QGraphicsWidget):
 
         self._socket_rows.clear()
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self):
         self.view.gui_on_hover_enter(self)
 
     def hoverLeaveEvent(self, event):
@@ -305,7 +305,7 @@ class Node(QGraphicsWidget):
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-            self.view.gui_on_deselected(self)
+            self.viewde.gui_on_sselfted(None)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()

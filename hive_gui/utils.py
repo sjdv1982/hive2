@@ -216,18 +216,12 @@ def find_source_hivemap(module_path, additional_paths=()):
     raise FileNotFoundError("No hivemap for '{}' exists".format(module_path))
 
 
-def create_hive_object_instance(import_path, params):
+def create_hive_object_instance(hive_cls, params):
     """Import Hive class from import path, and instantiate it using parameter dictionary
 
-    :param import_path: path to import Hive class
+    :param hive_cls: Hive class object
     :param params: parameter dictionary (meta_args, args and cls_args)
     """
-    try:
-        hive_cls = import_from_path(import_path)
-
-    except (ImportError, AttributeError):
-        raise ValueError("Invalid import path: {}".format(import_path))
-
     try:
         # Get HiveObject class
         meta_args = params.get("meta_args", {})

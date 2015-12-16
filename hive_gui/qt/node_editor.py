@@ -8,7 +8,7 @@ from .utils import create_widget
 from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_builder_body
 from ..inspector import InspectorOption
-from ..node import NodeTypes
+from ..node import Node, MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
 
@@ -85,7 +85,7 @@ class PreviewWidget(QWidget):
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
 
-        self._preview_view = NodePreviewView(node_manager)
+        self._preview_view = NodePreviewView()
         self._layout.addWidget(self._preview_view)
 
         self._node_manager = node_manager
@@ -101,7 +101,37 @@ class PreviewWidget(QWidget):
         dialogue.show()
 
     def update_preview(self):
-        self._preview_view.update_preview()
+        # Instead of creating a hive object and then using get_io_info, this is more lightweight
+        preview_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
+
+        for node_name, node in sorted(self._node_manager.nodes.items()):
+            # If an input IO bee
+            if node.import_path in {"hive.antenna", "hive.entry"}:
+                pin = next(iter(node.outputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.input_pin
+                input_pin = preview_node.add_input(node_name, mimic_flags=MimicFlags.SHAPE | MimicFlags.COLOUR)
+                input_pin.mimic_other_pin(remote_pin)
+
+            # If an output IO bee
+            if node.import_path in {"hive.output", "hive.hook"}:
+                pin = next(iter(node.inputs.values()))
+                try:
+                    connection = next(iter(pin.connections))
+
+                except StopIteration:
+                    continue
+
+                remote_pin = connection.output_pin
+                output_pin = preview_node.add_output(node_name, mimic_flags=MimicFlags.SHAPE | MimicFlags.COLOUR)
+                output_pin.mimic_other_pin(remote_pin)
+
+        self._preview_view.preview_node(preview_node)
 
 
 class NodeEditorSpace(QWidget):
