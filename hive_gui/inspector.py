@@ -24,6 +24,7 @@ def no_inspector():
 
 
 class BeeNodeInspector:
+    """Inspect bee nodes for configurable parameters"""
 
     def __init__(self, find_attributes):
         self.find_attributes = find_attributes
@@ -37,6 +38,11 @@ class BeeNodeInspector:
         return inspector()
 
     def inspect_configured(self, import_path, params):
+        """Associate inspection options with assigned values.
+
+        :param import_path: import path of bee
+        :param params: assigned parameters for each inspection stage
+        """
         inspector = self.inspect(import_path)
         param_info = {}
 
@@ -116,6 +122,7 @@ class BeeNodeInspector:
 
 
 class HiveNodeInspector:
+    """Inspect Hive nodes for configurable parameters"""
 
     def inspect(self, import_path):
         """Inspect the UI attribute available for a hive with the given import path
@@ -125,6 +132,11 @@ class HiveNodeInspector:
         return self._inspect_generator(import_path)
 
     def inspect_configured(self, import_path, params):
+        """Associate inspection options with assigned values.
+
+        :param import_path: import path of Hive class
+        :param params: assigned parameters for each inspection stage
+        """
         inspector = self.inspect(import_path)
         param_info = {}
 
@@ -167,6 +179,12 @@ class HiveNodeInspector:
         return wrapper_options
 
     def _inspect_generator(self, import_path):
+        """An iterable inspection-stage generator.
+
+        Yields each inspection stage as a name, OrderedDict pair.
+
+        :param import_path: import path of Hive class
+        """
         with validation_enabled_as(False):
             # Import and prepare hive
             hive_cls = import_from_path(import_path)
