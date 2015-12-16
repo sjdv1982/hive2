@@ -64,6 +64,7 @@ class NodeView(QGraphicsView):
         self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
         self.setMouseTracking(True)
 
         QShortcut(QKeySequence("Delete"), self, self._on_del_key)
@@ -93,6 +94,8 @@ class NodeView(QGraphicsView):
         self.setScene(NodeUIScene())
 
         self.focused_socket = None
+        self.hovered_node = None
+
         self.type_info_widget = FloatingTextWidget(anchor="corner") # TODO
         self.type_info_widget.setZValue(1e4)
         self.scene().addItem(self.type_info_widget)
@@ -104,6 +107,7 @@ class NodeView(QGraphicsView):
         self.on_connection_destroyed = None
         self.on_connection_reordered = None
         self.on_node_selected = None
+        self.on_node_deselected = None
         self.on_node_right_click = None
         self.on_dropped_tree_node = None
 
@@ -203,9 +207,19 @@ class NodeView(QGraphicsView):
         if callable(self.on_node_selected):
             self.on_node_selected(gui_node)
 
+    def gui_on_deselected(self, gui_node):
+        if callable(self.on_node_deselected):
+            self.on_node_deselected(gui_node)
+
     def gui_on_right_click(self, gui_node, event):
         if callable(self.on_node_right_click):
             self.on_node_right_click(gui_node, event)
+
+    def gui_on_hover_enter(self, node):
+        self.hovered_node = node
+
+    def gui_on_hover_exit(self, node):
+        self.hovered_node = None
 
     def gui_set_selected_nodes(self, items):
         self.scene().clearSelection()
@@ -339,44 +353,53 @@ class NodeView(QGraphicsView):
         return intersected
 
     def mousePressEvent(self, mouseEvent):
-        if mouseEvent.modifiers() == Qt.ShiftModifier:
+        # Handle pan event
+        if mouseEvent.button() == Qt.MiddleButton:
             self._last_pan_point = mouseEvent.pos()
             self.setCursor(Qt.ClosedHandCursor)
             self._panning = True
 
-        elif mouseEvent.modifiers() == Qt.ControlModifier:
-            self._cut_start_position = self.mapToScene(mouseEvent.pos())
+        # Handle augmented selection
+        elif mouseEvent.button() == Qt.LeftButton:
+            if mouseEvent.modifiers() == Qt.ShiftModifier:
+                if self.hovered_node:
+                    self.hovered_node.setSelected(not self.hovered_node.isSelected())
 
-            # Create visible path
-            if self._draw_path_item is None:
-                self._draw_path_item = self.scene().addPath(QPainterPath())
-                color = QColor(255, 0, 0)
-                pen = QPen(color)
-                self._draw_path_item.setPen(pen)
-                self._draw_path_item.setVisible(True)
+            # Handle connection deletion
+            elif mouseEvent.modifiers() == Qt.ControlModifier:
+                self._cut_start_position = self.mapToScene(mouseEvent.pos())
 
-        else:
-            scene_pos = self.mapToScene(mouseEvent.pos())
-            connection = self._find_connection_at(scene_pos, SELECT_SIZE)
+                # Create visible path
+                if self._draw_path_item is None:
+                    self._draw_path_item = self.scene().addPath(QPainterPath())
+                    color = QColor(255, 0, 0)
+                    pen = QPen(color)
+                    self._draw_path_item.setPen(pen)
+                    self._draw_path_item.setVisible(True)
 
-            # If found connection
-            if connection is not None:
-                for connection_ in self._connections:
-                    connection_.set_selected(False)
+            # Select connection
+            elif mouseEvent.modifiers() == Qt.NoModifier:
+                scene_pos = self.mapToScene(mouseEvent.pos())
+                connection = self._find_connection_at(scene_pos, SELECT_SIZE)
 
-                # Set selected
-                connection.set_selected(True)
-                self._active_connection = connection
+                # If found connection
+                if connection is not None:
+                    for connection_ in self._connections:
+                        connection_.set_selected(False)
 
-            # Unselect current
-            else:
-                connection = self._active_connection
-                if connection:
-                    connection.set_selected(False)
-                    self._active_connection = None
+                    # Set selected
+                    connection.set_selected(True)
+                    self._active_connection = connection
 
-            QGraphicsView.mousePressEvent(self, mouseEvent)
-            self.update()
+                # Unselect current
+                else:
+                    connection = self._active_connection
+                    if connection:
+                        connection.set_selected(False)
+                        self._active_connection = None
+
+                QGraphicsView.mousePressEvent(self, mouseEvent)
+                self.update()
 
     def mouseMoveEvent(self, mouseEvent):
         if self._panning:
