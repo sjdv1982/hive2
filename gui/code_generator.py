@@ -47,7 +47,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
     """
     bees = {}
     # Add hive and hive_gui to support declarations and hivemap import machinery
-    imports = {"hive", "hive_gui"}
+    imports = {"hive", "gui"}
 
     declaration_body = []
 
