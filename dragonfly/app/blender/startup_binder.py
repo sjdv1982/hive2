@@ -1,7 +1,7 @@
-from hive_gui.models.model import Hivemap
+from gui.models.model import Hivemap
 
 import hive
-from hive_gui.code_generator import class_from_hivemap
+from gui.code_generator import class_from_hivemap
 
 
 class BoundHiveContainer:

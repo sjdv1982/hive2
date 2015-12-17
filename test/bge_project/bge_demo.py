@@ -17,7 +17,7 @@ except ImportError:
     pass
 
 else:
-    import hive_gui.importer as importer
+    import gui.importer as importer
     def del_hook(ctx):
         importer.uninstall_hook()
 
