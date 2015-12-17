@@ -134,6 +134,10 @@ class MainWindow(QMainWindow):
 
         self.refresh_project_tree()
 
+    def closeEvent(self, event):
+        self.close_open_tabs()
+        event.accept()
+
     @property
     def project_directory(self):
         return self._project_directory
@@ -364,10 +368,13 @@ class MainWindow(QMainWindow):
         self.refresh_project_tree()
         self.update_ui_layout()
 
-    def close_project(self):
-        # Close open tabs
+    def close_open_tabs(self):
         while self.tab_widget.count() > 1:
             self.tab_widget.removeTab(1)
+
+    def close_project(self):
+        # Close open tabs
+        self.close_open_tabs()
 
         self.hive_finder.additional_paths.clear()
         self.project_directory = None
