@@ -134,6 +134,11 @@ class MainWindow(QMainWindow):
 
         self.refresh_project_tree()
 
+        icon = QIcon()
+        file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
+        icon.addFile(file_path)
+        self.setWindowIcon(icon)
+
     def closeEvent(self, event):
         self.close_open_tabs()
         event.accept()
