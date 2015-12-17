@@ -399,34 +399,38 @@ class NodeView(QGraphicsView):
 
         return intersected
 
-    def mousePressEvent(self, mouseEvent):
+    def mousePressEvent(self, event):
         # Handle pan event
-        if mouseEvent.button() == Qt.MiddleButton:
-            self._last_pan_point = mouseEvent.pos()
+        if event.button() == Qt.MiddleButton or \
+                (event.button() == Qt.LeftButton and event.modifiers() == Qt.AltModifier):
+            self._last_pan_point = event.pos()
             self.setCursor(Qt.ClosedHandCursor)
             self._panning = True
 
         # Handle augmented selection
-        elif mouseEvent.button() == Qt.LeftButton:
-            if mouseEvent.modifiers() == Qt.ShiftModifier:
+        elif event.button() == Qt.LeftButton:
+            if event.modifiers() == Qt.ShiftModifier:
                 if self.hovered_node:
                     self.hovered_node.setSelected(not self.hovered_node.isSelected())
 
             # Handle connection deletion
-            elif mouseEvent.modifiers() == Qt.ControlModifier:
-                self._cut_start_position = self.mapToScene(mouseEvent.pos())
+            elif event.modifiers() == Qt.ControlModifier:
+                self._cut_start_position = self.mapToScene(event.pos())
 
                 # Create visible path
                 if self._draw_path_item is None:
                     self._draw_path_item = self.scene().addPath(QPainterPath())
+
                     color = QColor(255, 0, 0)
                     pen = QPen(color)
                     self._draw_path_item.setPen(pen)
                     self._draw_path_item.setVisible(True)
 
+                self.setCursor(Qt.CrossCursor)
+
             # Select connection
-            elif mouseEvent.modifiers() == Qt.NoModifier:
-                scene_pos = self.mapToScene(mouseEvent.pos())
+            elif event.modifiers() == Qt.NoModifier:
+                scene_pos = self.mapToScene(event.pos())
                 connection = self._find_connection_at(scene_pos, SELECT_SIZE)
 
                 # If found connection
@@ -445,7 +449,7 @@ class NodeView(QGraphicsView):
                         connection.set_selected(False)
                         self._active_connection = None
 
-                QGraphicsView.mousePressEvent(self, mouseEvent)
+                QGraphicsView.mousePressEvent(self, event)
                 self.update()
 
     def mouseMoveEvent(self, mouseEvent):
@@ -491,6 +495,7 @@ class NodeView(QGraphicsView):
 
             # Hide debug path
             self._draw_path_item.setPath(QPainterPath())
+            self.setCursor(Qt.ArrowCursor)
 
         else:
             QGraphicsView.mouseReleaseEvent(self, mouseEvent)
