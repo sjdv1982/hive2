@@ -767,29 +767,71 @@ class HiveBuilder(object):
         return args, kwargs, cls._hive_build(meta_arg_values)
 
     @classmethod
-    def extend(cls, name, builder, builder_cls=None, declarator=None, is_dyna_hive=False):
-        """Extend HiveObject with an additional builder (and builder class)
+    def extend(cls, name, builder, builder_cls=None, declarator=None, is_dyna_hive=None):
+        """Extend HiveBuilder with an additional builder (and builder class)
 
         :param name: name of new hive class
         :param builder: optional function used to build hive
         :param builder_cls: optional Python class to bind to hive
         :param declarator: optional declarator to establish parameters
+        :param is_dyna_hive: optional flag to use dyna-hive instantiation path. If omitted (None), inherit
         """
-        if builder_cls is not None:
-            assert issubclass(builder_cls, object), "cls must be a new-style Python class, e.g. class SomeHive(object): ..."
 
-        # Add new builder function
-        builders = cls._builders + ((builder, builder_cls),)
-
-        # Add new declarator
         if declarator is not None:
-            declarators = cls._declarators + (declarator,)
+            declarators = (declarator,)
 
         else:
-            declarators = cls._declarators
+            declarators = ()
+
+        builder_pairs = ((builder, builder_cls),)
+
+        return cls.constuct(name, builder_pairs, declarators, is_dyna_hive, bases=(cls,))
+
+    @staticmethod
+    def construct(name, builder, builder_cls=None, declarator=None, is_dyna_hive=None, bases=None):
+        """Construct a HiveBuilder from a builder function.
+
+        :param name: name of new hive class
+        :param builder: optional function used to build hive
+        :param builder_cls: optional Python class to bind to hive
+        :param declarator: optional declarator to establish parameters
+        :param is_dyna_hive: optional flag to use dyna-hive instantiation path. If omitted (None), inherit
+        :param bases: optional tuple of base classes to use
+        """
+        # Validate builders
+        if builder_cls is not None:
+            if not issubclass(builder_cls, object):
+                raise TypeError("cls must be a new-style Python class, e.g. class SomeHive(object): ...")
+
+        if bases is None:
+            bases = (HiveBuilder,)
+
+        # Validate base classes
+        for base_cls in bases:
+            if not issubclass(base_cls, HiveBuilder):
+                raise TypeError("Expected HiveBuilder subclass, received '{}'".format(base_cls.__name__))
+
+        # Find base class declarators and builders
+        base_declarators = tuple(declarator for hive_cls in bases for declarator in hive_cls._declarators)
+        base_builders = tuple(builder for hive_cls in bases for builder in hive_cls._builders)
+        base_is_dyna_hive = any(hive_cls._is_dyna_hive for hive_cls in bases)
+
+        # Add builder
+        builders = base_builders + ((builder, builder_cls),)
+
+        # Add declarator
+        if declarator is not None:
+            declarators = base_declarators + (declarator,)
+
+        else:
+            declarators = base_declarators
 
         # Build docstring
-        docstring = "\n".join([f.__doc__ for f, c in builders if f.__doc__ is not None])
+        docstring = "\n".join([builder.__doc__ for builder, build_cls in builders if builder.__doc__ is not None])
+
+        # If not provided, inherit from base classes
+        if is_dyna_hive is None:
+            is_dyna_hive = base_is_dyna_hive
 
         if is_dyna_hive:
             assert declarators, "cannot set is_dyna_hive to True without declarators"
@@ -802,29 +844,21 @@ class HiveBuilder(object):
             "_is_dyna_hive": is_dyna_hive,
         }
 
-        return type(name, (cls,), class_dict)
+        return type(name, bases, class_dict)
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder, cls=None):
-    if cls is not None:
-        assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
-
-    return HiveBuilder.extend(name, builder, cls)
+def hive(name, builder, cls=None, bases=None):
+    return HiveBuilder.construct(name, builder, cls, bases=bases)
 
 
-def dyna_hive(name, builder, declarator, cls=None):
-    if cls is not None:
-        assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
-
-    return HiveBuilder.extend(name, builder, cls, declarator=declarator, is_dyna_hive=True)
+def dyna_hive(name, builder, declarator, cls=None, bases=None):
+    return HiveBuilder.construct(name, builder, cls, declarator=declarator, is_dyna_hive=True, bases=bases)
 
 
-def meta_hive(name, builder, declarator, cls=None):
-    if cls is not None:
-        assert issubclass(cls, object), "cls must be a new-style Python class, e.g. class cls(object): ..."
+def meta_hive(name, builder, declarator, cls=None, bases=None):
+    return HiveBuilder.construct(name, builder, cls, declarator=declarator, is_dyna_hive=False, bases=bases)
 
-    return HiveBuilder.extend(name, builder, cls, declarator=declarator)
 
 #==========Hive construction path=========
 # 1. Take args and kwargs for construction call.
