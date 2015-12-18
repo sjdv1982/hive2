@@ -488,7 +488,12 @@ class HiveBuilder(object):
                 if is_meta_hive:
                     builder_args = builder_args + (frozen_meta_args,)
 
-                builder(*builder_args)
+                try:
+                    builder(*builder_args)
+
+                except Exception:
+                    print("Unable to invoke builder '{}'".format(builder))
+                    raise
 
             cls._hive_build_namespace(hive_object_cls)
 
@@ -776,16 +781,7 @@ class HiveBuilder(object):
         :param declarator: optional declarator to establish parameters
         :param is_dyna_hive: optional flag to use dyna-hive instantiation path. If omitted (None), inherit
         """
-
-        if declarator is not None:
-            declarators = (declarator,)
-
-        else:
-            declarators = ()
-
-        builder_pairs = ((builder, builder_cls),)
-
-        return cls.constuct(name, builder_pairs, declarators, is_dyna_hive, bases=(cls,))
+        return cls.construct(name, builder, builder_cls, declarator, is_dyna_hive, bases=(cls,))
 
     @staticmethod
     def construct(name, builder, builder_cls=None, declarator=None, is_dyna_hive=None, bases=None):

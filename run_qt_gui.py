@@ -1,4 +1,5 @@
 # Import PySide classes
+import ctypes
 import os
 import sys
 
@@ -13,6 +14,10 @@ if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
+
+    # Fix for windows tray icon
+    app_id = 'hive2.hive2.1.0'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     window = MainWindow()
     window.resize(1024, 768)
