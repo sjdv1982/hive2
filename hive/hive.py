@@ -564,7 +564,6 @@ class HiveBuilder(object):
     @classmethod
     def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies, plugin_map=None, socket_map=None,
                                  is_root=True):
-
         """Connect plugins and sockets together by identifier.
 
         If children allow importing of namespace, pass namespace to children.
@@ -784,7 +783,7 @@ class HiveBuilder(object):
         return cls.construct(name, builder, builder_cls, declarator, is_dyna_hive, bases=(cls,))
 
     @staticmethod
-    def construct(name, builder, builder_cls=None, declarator=None, is_dyna_hive=None, bases=None):
+    def construct(name, builder, builder_cls=None, declarator=None, is_dyna_hive=None, bases=()):
         """Construct a HiveBuilder from a builder function.
 
         :param name: name of new hive class
@@ -799,7 +798,7 @@ class HiveBuilder(object):
             if not issubclass(builder_cls, object):
                 raise TypeError("cls must be a new-style Python class, e.g. class SomeHive(object): ...")
 
-        if bases is None:
+        if not bases:
             bases = (HiveBuilder,)
 
         # Validate base classes
@@ -844,15 +843,15 @@ class HiveBuilder(object):
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder, cls=None, bases=None):
+def hive(name, builder, cls=None, bases=()):
     return HiveBuilder.construct(name, builder, cls, bases=bases)
 
 
-def dyna_hive(name, builder, declarator, cls=None, bases=None):
+def dyna_hive(name, builder, declarator, cls=None, bases=()):
     return HiveBuilder.construct(name, builder, cls, declarator=declarator, is_dyna_hive=True, bases=bases)
 
 
-def meta_hive(name, builder, declarator, cls=None, bases=None):
+def meta_hive(name, builder, declarator, cls=None, bases=()):
     return HiveBuilder.construct(name, builder, cls, declarator=declarator, is_dyna_hive=False, bases=bases)
 
 

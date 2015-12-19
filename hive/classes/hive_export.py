@@ -13,8 +13,7 @@ class HiveExportables(object):
 
     def __setattr__(self, name, value):
         if name in SPECIAL_NAMES:
-            raise AttributeError("HiveExportables (ex) special attribute '%s' cannot be assigned to"
-                                 % name)
+            raise AttributeError("HiveExportables (ex) special attribute '{}' cannot be assigned to".format(name))
 
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)
@@ -26,18 +25,20 @@ class HiveExportables(object):
             return
 
         if not isinstance(value, Bee):
-            raise TypeError("HiveExportables (i) attribute '%s' must be a Bee, not '%s'" % (name,    value.__class__))
+            raise TypeError("HiveExportables (i) attribute '{}' must be a Bee, not '{}'"
+                            .format((name, value.__class__)))
 
         if not isinstance(value, Exportable):
-            raise TypeError("HiveExportables (ex) attribute must be an Exportable, not '%s'" % value.__class__)
+            raise TypeError("HiveExportables (ex) attribute must be an Exportable, not '%s'".format(value.__class__))
 
         if value._hive_object_cls is None:
             raise AttributeError("HiveExportables (ex) attribute '%s' must contain a Bee built by '%s' (or one of its b"
-                                 "ase classes), but the Bee was not built by any hive" % (name, self._hive_object_cls.__name__))
+                                 "ase classes), but the Bee was not built by any hive"
+                                 .format(name, self._hive_object_cls.__name__))
 
         if value._hive_object_cls is not self._hive_object_cls:
-            raise AttributeError("HiveExportables (ex) attribute '%s' cannot contain a Bee built by a different hive" %
-                                 name)
+            raise AttributeError("HiveExportables (ex) attribute '%s' cannot contain a Bee built by a different hive"
+                                 .format(name))
 
         if name not in self._bee_names:
             self._bee_names.add(name)
