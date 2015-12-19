@@ -8,34 +8,53 @@ from ..event import bind_info as event_bind_info
 bind_infos = (event_bind_info,)
 
 
+def import_from_path(import_path):
+    split_path = import_path.split(".")
+    *module_parts, class_name = split_path
+    import_path = ".".join(module_parts)
+    sub_module_name = module_parts[-1]
+
+    module = __import__(import_path, fromlist=[sub_module_name])
+
+    try:
+        return getattr(module, class_name)
+
+    except AttributeError as err:
+        raise ImportError from err
+
+
 class FrozenDict:
+    """Immutable, ordered dictionary object"""
 
     def __init__(self, data):
-        self._dict = OrderedDict()
+        if not isinstance(data, OrderedDict):
+            raise TypeError("data must be instance of OrderedDict")
 
-        for key in sorted(data.keys()):
-            self._dict[key] = data[key]
+        self._dict = dict(data)
+        self._items = tuple(data.items())
+        self._keys, self._values = zip(*self._items)
+        self._hash = hash((self._keys, self._values))
 
     def __getitem__(self, item):
         return self._dict[item]
 
     def __hash__(self):
-        return hash(tuple(self._dict.items()))
+        return self._hash
 
     def keys(self):
-        return self._dict.keys()
+        return self._keys
 
     def items(self):
-        return self._dict.items()
+        return self._items
 
     def values(self):
-        return self._dict.values()
+        return self._values
 
     def __len__(self):
-        return len(self._dict)
+        return len(self._keys)
 
     def __iter__(self):
-        return iter(self._dict)
+        return iter(self._keys)
 
 
 class BindEnvironmentClass:
@@ -53,8 +72,7 @@ def declare_build_environment(meta_args):
 
 
 def build_bind_environment(cls, i, ex, args, meta_args):
-    from gui.utils import import_from_path
-
+    """Provides sockets and plugins to new embedded hive instance"""
     ex.hive = import_from_path(meta_args.bind_configuration.cls_import_path)(**meta_args.args)
     ex.get_bind_id = hive.plugin(cls.get_bind_id, identifier=("bind", "get_identifier"))
 
@@ -75,7 +93,7 @@ class InstantiatorCls:
         self.bind_id = None
         self.args = None
 
-    def _get_context(self):
+    def _create_context(self):
         plugins = {}
         for getter in self._plugin_getters:
             plugins.update(getter())
@@ -91,27 +109,43 @@ class InstantiatorCls:
         return BindContext(plugins, sockets, config)
 
     def add_get_plugins(self, get_plugins):
+        """Add plugin context source
+
+        :param get_plugins: plugins context getter
+        """
         self._plugin_getters.append(get_plugins)
 
     def add_get_sockets(self, get_sockets):
+        """Add socket context source
+
+        :param get_sockets: sockets context getter
+        """
         self._socket_getters.append(get_sockets)
 
     def add_get_config(self, get_config):
+        """Add config context source
+
+        :param get_config: config context getter
+        """
         self._config_getters.append(get_config)
 
     def instantiate(self):
         if self._context is None:
-            self._context = self._get_context()
+            self._context = self._create_context()
 
         context = self._context
 
+        # Pull a new bind ID and args dict
         self._hive.bind_id()
         self._hive.args()
 
-        # If this is build at build time, then it won't perform matchmaking
         bind_configuration = self._hive._hive_object._hive_meta_args_frozen
-        args = FrozenDict(self.args)
-        bind_class = self.bind_meta_class(bind_configuration=bind_configuration, args=args)
+
+        args = self.args
+        as_ordered_dict = OrderedDict(((k, args[k]) for k in sorted(args)))
+        frozen_args = FrozenDict(as_ordered_dict)
+
+        bind_class = self.bind_meta_class(bind_configuration=bind_configuration, args=frozen_args)
 
         self.last_created = bind_class(context, bind_id=self.bind_id).hive
 
@@ -123,6 +157,8 @@ def declare_instantiator(meta_args):
 def build_instantiator(cls, i, ex, args, meta_args):
     """Instantiates a Hive class at runtime"""
     bind_bases = tuple((b_i.environment_hive for b_i in bind_infos if b_i.is_enabled(meta_args)))
+
+    # If this is built now, then it won't perform matchmaking, so use meta hive
     bind_meta_class = hive.meta_hive("BindEnvironment", build_bind_environment, declare_build_environment,
                                      cls=BindEnvironmentClass, bases=tuple(bind_bases))
 
