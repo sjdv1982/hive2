@@ -12,7 +12,7 @@ def match_leader(event, leader):
 
 class EventHandler:
 
-    def __init__(self, callback, pattern, priority=0, mode='leader'):
+    def __init__(self, callback, pattern=None, priority=0, mode='leader'):
         self.callback = callback
         self.pattern = pattern
         self.priority = priority

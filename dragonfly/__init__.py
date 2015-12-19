@@ -1,4 +1,5 @@
 from . import app
+from . import bind
 from . import commandline
 from . import convert
 from . import event

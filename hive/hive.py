@@ -497,6 +497,7 @@ class HiveBuilder(object):
 
             cls._hive_build_namespace(hive_object_cls)
 
+            # TODO support separate hives building that aren't connected but instantiated inside hive
             if is_root:
                 tracked_policies = []
 
