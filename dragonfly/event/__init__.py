@@ -1,3 +1,4 @@
+from .add_head import AddHead
 from .bind import BindEvent, bind_info
 from .dispatch import Dispatch
 from .event import EventHandler, EventHive, EventManager

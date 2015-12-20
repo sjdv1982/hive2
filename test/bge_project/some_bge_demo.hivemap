@@ -1,80 +1,43 @@
 Hivemap (
   hives = HiveNodeArray (
     HiveNode (
-      identifier = 'dispatch_0',
-      import_path = 'dragonfly.event.Dispatch',
+      identifier = 'add_head_0',
+      import_path = 'dragonfly.event.AddHead',
       position = Coordinate2D (
-        x = 267.7777777777777,
-        y = -209.9999999999999,
+        x = 126.0,
+        y = -317.0,
       ),
       meta_args = InstanceParameterArray (
       ),
       args = InstanceParameterArray (
       ),
       folded_pins = StringArray (
-        'event',
+        'head',
+        'leader',
       ),
       cls_args = InstanceParameterArray (
       ),
     ),
     HiveNode (
-      identifier = 'listener_0',
-      import_path = 'dragonfly.event.Listener',
+      identifier = 'args',
+      import_path = 'dragonfly.std.Variable',
       position = Coordinate2D (
-        x = 18.888888888888882,
-        y = -167.77777777777771,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'mode',
-          data_type = 'str',
-          value = 'leader',
-        ),
-        InstanceParameter (
-          identifier = 'event',
-          data_type = 'tuple',
-          value = "('some_leader', 'event')",
-        ),
-      ),
-    ),
-    HiveNode (
-      identifier = 'transistor_0',
-      import_path = 'dragonfly.std.Transistor',
-      position = Coordinate2D (
-        x = 122.22222222222216,
-        y = -66.66666666666664,
+        x = 0.0,
+        y = 0.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
           identifier = 'data_type',
           data_type = 'tuple',
-          value = "('str',)",
+          value = "('dict',)",
         ),
       ),
       args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'value',
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'print_0',
-      import_path = 'dragonfly.io.Print',
-      position = Coordinate2D (
-        x = 316.66666666666646,
-        y = -67.77777777777776,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'dict',
+          value = '{}',
+        ),
       ),
       folded_pins = StringArray (
       ),
@@ -82,11 +45,11 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'keyboard_0',
+      identifier = 'do_bind',
       import_path = 'dragonfly.io.Keyboard',
       position = Coordinate2D (
-        x = 46.66666666666664,
-        y = -306.6666666666665,
+        x = -115.0,
+        y = -228.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
@@ -108,24 +71,51 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'event',
-      import_path = 'dragonfly.std.Variable',
+      identifier = 'instantiator_0',
+      import_path = 'dragonfly.instance.Instantiator',
       position = Coordinate2D (
-        x = 235.5555555555555,
-        y = 62.22222222222223,
+        x = 277.0,
+        y = -126.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'tuple',
-          value = "('tuple',)",
+          identifier = 'event_dispatch_mode',
+          data_type = 'str',
+          value = 'by_leader',
+        ),
+        InstanceParameter (
+          identifier = 'cls_import_path',
+          data_type = 'str',
+          value = 'test_hive.TestHive',
+        ),
+        InstanceParameter (
+          identifier = 'bind_event',
+          data_type = 'bool',
+          value = 'True',
         ),
       ),
       args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'args',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'generator_0',
+      import_path = 'dragonfly.gen.Generator',
+      position = Coordinate2D (
+        x = 39.0,
+        y = 57.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'tuple',
-          value = "('some_leader', 'event')",
+          identifier = 'generator_body',
+          data_type = 'str',
+          value = 'i = 0\n\nwhile True:\n    yield "proc_{}".format(i)\n    i += 1',
         ),
       ),
       folded_pins = StringArray (
@@ -134,7 +124,7 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'value',
+      identifier = 'head',
       import_path = 'dragonfly.std.Variable',
       position = Coordinate2D (
         x = 0.0,
@@ -151,7 +141,117 @@ Hivemap (
         InstanceParameter (
           identifier = 'start_value',
           data_type = 'str',
-          value = 'Pressed Recv',
+          value = '',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'next_0',
+      import_path = 'dragonfly.gen.Next',
+      position = Coordinate2D (
+        x = 85.0,
+        y = 107.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'buffer_0',
+      import_path = 'dragonfly.std.Buffer',
+      position = Coordinate2D (
+        x = 47.0,
+        y = -19.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'pull',
+        ),
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = '',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'dispatch_0',
+      import_path = 'dragonfly.event.Dispatch',
+      position = Coordinate2D (
+        x = 262.7777777777777,
+        y = -343.9999999999999,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'tick_0',
+      import_path = 'dragonfly.event.Tick',
+      position = Coordinate2D (
+        x = 123.0,
+        y = -380.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'leader',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -73.0,
+        y = 59.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('tuple', 'event')",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = "('tick',)",
         ),
       ),
       folded_pins = StringArray (
@@ -166,38 +266,73 @@ Hivemap (
   ),
   connections = ConnectionArray (
     Connection (
-      from_node = 'listener_0',
-      output_name = 'on_event',
-      to_node = 'transistor_0',
-      input_name = 'trigger',
-      is_trigger = True,
-    ),
-    Connection (
-      from_node = 'transistor_0',
-      output_name = 'result',
-      to_node = 'print_0',
-      input_name = 'value_in',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'keyboard_0',
-      output_name = 'on_pressed',
-      to_node = 'dispatch_0',
-      input_name = 'trig',
-      is_trigger = True,
-    ),
-    Connection (
-      from_node = 'event',
-      output_name = 'value',
+      from_node = 'add_head_0',
+      output_name = 'event',
       to_node = 'dispatch_0',
       input_name = 'event',
       is_trigger = False,
     ),
     Connection (
-      from_node = 'value',
+      from_node = 'args',
       output_name = 'value',
-      to_node = 'transistor_0',
+      to_node = 'instantiator_0',
+      input_name = 'args',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'do_bind',
+      output_name = 'on_pressed',
+      to_node = 'buffer_0',
+      input_name = 'from_string',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'do_bind',
+      output_name = 'on_pressed',
+      to_node = 'instantiator_0',
+      input_name = 'create',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'generator_0',
+      output_name = 'generator_out',
+      to_node = 'next_0',
+      input_name = 'generator',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'head',
+      output_name = 'value',
+      to_node = 'add_head_0',
+      input_name = 'head',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'next_0',
+      output_name = 'value',
+      to_node = 'buffer_0',
       input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'buffer_0',
+      output_name = 'cached_value',
+      to_node = 'instantiator_0',
+      input_name = 'bind_id',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'tick_0',
+      output_name = 'on_tick',
+      to_node = 'dispatch_0',
+      input_name = 'trig',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'leader',
+      output_name = 'value',
+      to_node = 'add_head_0',
+      input_name = 'leader',
       is_trigger = False,
     ),
   ),

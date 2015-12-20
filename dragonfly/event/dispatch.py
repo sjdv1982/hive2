@@ -18,7 +18,7 @@ class DispatchClass:
 
 
 def build_dispatch(cls, i, ex, args):
-    i.event = hive.property(cls, "event", "tuple")
+    i.event = hive.property(cls, "event", ("tuple", "event"))
     i.pull_event = hive.pull_in(i.event)
     ex.event = hive.antenna(i.pull_event)
 

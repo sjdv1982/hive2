@@ -305,7 +305,7 @@ class Node(QGraphicsWidget):
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-            self.viewde.gui_on_sselfted(None)
+            self.view.gui_on_selected(None)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()
