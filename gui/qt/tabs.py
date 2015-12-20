@@ -28,7 +28,7 @@ class TabViewWidget(QTabWidget):
     def removeTab(self, index):
         if callable(self.check_tab_closable):
             if not self.check_tab_closable(index):
-                raise ValueError("Tab close rejected")
+                raise PermissionError("Tab close rejected")
 
         QTabWidget.removeTab(self, index)
 

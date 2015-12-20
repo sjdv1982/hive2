@@ -12,6 +12,7 @@ from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
 from ..utils import import_path_to_hivemap_path
 
+
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
     "right": Qt.RightDockWidgetArea,
@@ -140,8 +141,12 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(icon)
 
     def closeEvent(self, event):
-        self.close_open_tabs()
-        event.accept()
+        try:
+            self.close_open_tabs()
+        except PermissionError:
+            event.ignore()
+        else:
+            event.accept()
 
     @property
     def project_directory(self):

@@ -32,7 +32,13 @@ class FrozenDict:
 
         self._dict = dict(data)
         self._items = tuple(data.items())
-        self._keys, self._values = zip(*self._items)
+
+        if self._items:
+            self._keys, self._values = zip(*self._items)
+
+        else:
+            self._keys = self._values = ()
+
         self._hash = hash((self._keys, self._values))
 
     def __getitem__(self, item):
