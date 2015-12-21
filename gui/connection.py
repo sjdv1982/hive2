@@ -53,14 +53,17 @@ class Connection:
         if source.is_virtual and target.is_virtual:
             return ConnectionType.INVALID
 
-        # Output pin triggers input BY push
-        if not source.is_trigger:
-            if source.mode == "push" and target.is_trigger:
+        # Output triggers can only trigger "triggers"
+        if source.is_trigger:
+            if target.is_trigger:
                 return ConnectionType.TRIGGER
 
-        # Output pin triggers input pin TO pull
-        elif target.mode == "pull":
-            return ConnectionType.TRIGGER
+            return ConnectionType.INVALID
+
+        # Output pin triggers input BY push
+        else:
+            if source.mode == "push" and target.is_trigger:
+                return ConnectionType.TRIGGER
 
         # Ask each pin to validate connection
         if not source.can_connect_to(target, is_source=True):
@@ -72,8 +75,5 @@ class Connection:
         if not types_match(source.data_type, target.data_type, allow_none=True):
             return ConnectionType.INVALID
 
-        # If valid connection
-        if source.is_trigger and target.is_trigger:
-            return ConnectionType.TRIGGER
-
+        # Types valid and both
         return ConnectionType.VALID

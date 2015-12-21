@@ -24,7 +24,7 @@ def build_buffer(i, ex, args, meta_args):
         i.push_cached_value = hive.push_out(i.cached_value)
         ex.cached_value = hive.output(i.push_cached_value)
 
-        ex.push = hive.entry(i.output)
+        ex.push = hive.entry(i.push_cached_value)
 
     elif meta_args.mode == "pull":
         i.pull_value = hive.pull_in(i.cached_value)
