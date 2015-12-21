@@ -11,20 +11,20 @@ class EventEnvironmentClass:
         self._leader = bind_id,
         self._handlers = []
 
-        self._add_handler = context.plugins['event']['add_handler']
-        self._remove_handler = context.plugins['event']['remove_handler']
+        self._main_add_handler = context.plugins['event']['add_handler']
+        self._main_remove_handler = context.plugins['event']['remove_handler']
 
         self._hive = hive.get_run_hive()
 
         configuration = self._hive._hive_object._hive_meta_args_frozen.bind_configuration
 
         if configuration.event_dispatch_mode == 'by_leader':
-            handler = EventHandler(self.handle_event, self._leader)
+            self._main_handler = EventHandler(self.handle_event, self._leader)
 
         else:
-            handler = EventHandler(self.handle_event, None)
+            self._main_handler = EventHandler(self.handle_event, None)
 
-        self._add_handler(handler)
+        self._main_add_handler(self._main_handler)
 
     def add_handler(self, handler):
         self._handlers.append(handler)
@@ -36,16 +36,24 @@ class EventEnvironmentClass:
         for handler in self._handlers:
             handler(event)
 
+    def on_closed(self):
+        """Disconnect from external event stream"""
+        self._main_remove_handler(self._main_handler)
+
 
 def declare_event_environment(meta_args):
     pass
 
 
 def build_event_environment(cls, i, ex, args, meta_args):
+    """Runtime event environment for instantiated hive.
+
+    Provides appropriate sockets and plugins for event interface
+    """
     ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"))
     ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"))
     ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"))
-
+    ex.event_closer = hive.plugin(cls.on_closed, identifier=("bind", "add_closer"), policy=hive.SingleRequired)
 
 EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
                                   cls=EventEnvironmentClass)

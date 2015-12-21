@@ -67,6 +67,20 @@ class BindEnvironmentClass:
 
     def __init__(self, context, bind_id):
         self.bind_id = bind_id
+        self._alive = True
+        self._closers = []
+
+    def add_closer(self, closer):
+        self._closers.append(closer)
+
+    def close(self):
+        if not self._alive:
+            raise RuntimeError("Hive already closed")
+        for closer in self._closers:
+            closer()
+
+        self._closers.clear()
+        self._alive = False
 
     def get_bind_id(self):
         return self.bind_id
@@ -81,6 +95,10 @@ def build_bind_environment(cls, i, ex, args, meta_args):
     """Provides sockets and plugins to new embedded hive instance"""
     ex.hive = import_from_path(meta_args.bind_configuration.cls_import_path)(**meta_args.args)
     ex.get_bind_id = hive.plugin(cls.get_bind_id, identifier=("bind", "get_identifier"))
+    ex.get_closers = hive.socket(cls.add_closer, identifier=("bind", "add_closer"), policy=hive.MultipleOptional)
+
+    i.do_close = hive.triggerable(cls.close)
+    ex.close = hive.entry(i.do_close)
 
 
 class InstantiatorCls:
@@ -153,7 +171,7 @@ class InstantiatorCls:
 
         bind_class = self.bind_meta_class(bind_configuration=bind_configuration, args=frozen_args)
 
-        self.last_created = bind_class(context, bind_id=self.bind_id).hive
+        self.last_created = bind_class(context, bind_id=self.bind_id)
 
 
 def declare_instantiator(meta_args):

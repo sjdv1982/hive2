@@ -8,10 +8,10 @@ import dragonfly
 
 
 def build_some_instance(i, ex, args):
-    args.some_param = hive.parameter("int")
-    i.some_var = hive.attribute("int", args.some_param)
+    args.name = hive.parameter("str")
+    i.some_var = hive.attribute("str", args.name)
     ex.on_tick = dragonfly.event.Tick()
-    i.mod = hive.modifier(lambda self: print(self._some_var))
+    i.mod = hive.modifier(lambda self: print(self, self._some_var))
     hive.connect(ex.on_tick, i.mod)
 
 
@@ -22,10 +22,13 @@ sys.modules['this.that'] = type("", (), {'other': SomeHive})
 
 def build_my_hive(i, ex, args):
     ex.events = EventHive()
-    ex.instantiator = Instantiator(cls_import_path="this.that.other")
+
+    # Create instantiator, but don't add events by leader
+    ex.instantiator = Instantiator(cls_import_path="this.that.other",
+                                   event_dispatch_mode='all')
 
     # Create args dict
-    i.args = Variable("dict", {'some_param': 12})
+    i.args = Variable("dict", {'name': 'a'})
     hive.connect(i.args, ex.instantiator)
 
     # Create bind id getter
@@ -39,15 +42,18 @@ MyHive = hive.hive("MyHive", build_my_hive)
 my_hive = MyHive()
 
 my_hive.instantiator.create()
-instance = my_hive.instantiator.last_created
+a = my_hive.instantiator.last_created
 
-# Push some event to first hive instance
-print("For hive 1, expect 12")
-my_hive.events.read_event.plugin()((0, "tick",))
-
-print("Now hive 2, expect 99")
-
-my_hive._args.data['some_param'] = 99
+my_hive._args.data['name'] = 'b'
 my_hive.instantiator.create()
+b = my_hive.instantiator.last_created
 
-my_hive.events.read_event.plugin()((1, "tick",))
+my_hive._args.data['name'] = 'c'
+my_hive.instantiator.create()
+c = my_hive.instantiator.last_created
+
+my_hive.events.read_event.plugin()(("tick",))
+print("Closing A!")
+a.close()
+
+my_hive.events.read_event.plugin()(("tick",))
