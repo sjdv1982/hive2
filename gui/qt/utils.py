@@ -181,8 +181,8 @@ def _create_repr():
     """Create a UI widget to edit a repr-able value"""
     widget = QLineEdit()
 
-    getter = lambda: print("GET", eval(widget.text()), widget.text()) or eval(widget.text())
-    setter = lambda value: print("SET", repr(value), value) or widget.setText(repr(value))
+    getter = lambda: eval(widget.text())
+    setter = lambda value: widget.setText(repr(value))
 
     controller = WidgetController(getter, setter)
 
