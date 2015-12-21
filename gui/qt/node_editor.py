@@ -180,7 +180,7 @@ class NodeEditorSpace(QWidget):
         view.on_connection_destroyed = self._gui_connection_destroyed
         view.on_connection_reordered = self._gui_connection_reordered
         view.on_node_selected = self._gui_node_selected
-        view.on_dropped_tree_node = self._gui_dropped_tree_node
+        view.on_dropped_tree_node = self.on_dropped_node
         view.on_node_right_click = self._gui_node_right_clicked
 
         self._node_to_qt_node = {}
@@ -391,7 +391,7 @@ class NodeEditorSpace(QWidget):
         node = gui_node.node
         self._node_manager.set_node_position(node, position)
 
-    def _gui_dropped_tree_node(self, position):
+    def on_dropped_node(self, position):
         if not self._pending_dropped_node:
             return
 
@@ -468,6 +468,18 @@ class NodeEditorSpace(QWidget):
             inspection_info[stage_name] = stage_options
 
         return params
+
+    def add_hive_node_at_mouse(self, import_path):
+        self.pre_drop_node(import_path, NodeTypes.HIVE)
+
+        # Get mouse position
+        cursor = QCursor()
+        q_position = cursor.pos()
+        q_position = self._view.mapFromGlobal(q_position)
+        q_position = self._view.mapToScene(q_position)
+        position = q_position.x(), q_position.y()
+
+        self.on_dropped_node(position)
 
     def pre_drop_node(self, import_path, node_type):
         self._pending_dropped_node = import_path, node_type

@@ -23,6 +23,17 @@ area_classes = {
 # TODO throw unsaved warning when closing tabs
 
 
+def dict_to_delimited(data, delimiter, name_path=()):
+    for name, value in data.items():
+        new_name_path = name_path + (name,)
+
+        if isinstance(value, dict):
+            yield from dict_to_delimited(value, delimiter, new_name_path)
+
+        elif value is None:
+            yield '.'.join(new_name_path)
+
+
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
     hivemap_extension = ".hivemap"
@@ -65,6 +76,9 @@ class MainWindow(QMainWindow):
         self.refresh_project_action = QAction("Reload Project", menu_bar,
                                             statusTip="Reload the current project", triggered=self.reload_project)
 
+        self.insert_action = QAction("&Insert", menu_bar, shortcut=QKeySequence(self.tr(".", "  Insert from path")),
+                                     statusTip="Insert node from path", triggered=self.insert_from_path)
+
         self.select_all_action = QAction("Select &All", menu_bar,
                                    shortcut=QKeySequence.SelectAll,
                                    statusTip="Select all nodes", triggered=self.select_all_operation)
@@ -88,6 +102,7 @@ class MainWindow(QMainWindow):
         self.paste_action = QAction("&Paste", menu_bar,
                                    shortcut=QKeySequence.Paste,
                                    statusTip="Paste selected nodes", triggered=self.paste_operation)
+
 
         self.edit_menu = QMenu("&Edit")
 
@@ -288,6 +303,7 @@ class MainWindow(QMainWindow):
         show_args = True
         show_bees = True
         show_preview = True
+        show_insert = False
 
         menu_bar = self.menuBar()
         menu_bar.clear()
@@ -303,10 +319,12 @@ class MainWindow(QMainWindow):
 
         widget = self.tab_widget.currentWidget()
 
-        if isinstance(widget, NodeEditorSpace):
+        file_is_open = isinstance(widget, NodeEditorSpace)
+        if file_is_open:
             show_save_as = True
             show_save = widget.file_name is not None
             show_edit = True
+            show_insert = True
 
         self.save_action.setVisible(show_save)
         self.save_as_action.setVisible(show_save_as)
@@ -316,6 +334,9 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addAction(self.save_action)
         self.file_menu.addAction(self.save_as_action)
+
+        if show_insert:
+            self.file_menu.addAction(self.insert_action)
 
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
@@ -331,12 +352,6 @@ class MainWindow(QMainWindow):
         self.parameter_window.setVisible(show_args)
         self.preview_window.setVisible(show_preview)
 
-    def on_dropped_hive_node(self, path):
-        editor = self.tab_widget.currentWidget()
-
-        if isinstance(editor, NodeEditorSpace):
-            editor.pre_drop_hive(path)
-
     def on_selected_tree_node(self, path, node_type):
         widget = self.tab_widget.currentWidget()
 
@@ -344,6 +359,41 @@ class MainWindow(QMainWindow):
             return
 
         widget.pre_drop_node(path, node_type)
+
+    def insert_from_path(self):
+        dialogue = QDialog(self)
+        layout = QHBoxLayout()
+        dialogue.setLayout(layout)
+
+        editor = QLineEdit()
+        layout.addWidget(editor)
+
+        completer = QCompleter()
+        completer.setCompletionMode(QCompleter.InlineCompletion)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+
+        editor.setCompleter(completer)
+
+        model = QStringListModel()
+        completer.setModel(model)
+
+        completion_paths = list(dict_to_delimited(self.hive_finder.find_hives(), '.'))
+        model.setStringList(completion_paths)
+
+        def on_return():
+            widget = self.tab_widget.currentWidget()
+
+            if not isinstance(widget, NodeEditorSpace):
+                return
+
+            widget.add_hive_node_at_mouse(editor.text())
+            dialogue.close()
+
+        editor.returnPressed.connect(on_return)
+
+        dialogue.setWindowTitle("Add Hive From Path")
+        dialogue.setAttribute(Qt.WA_DeleteOnClose)
+        dialogue.exec_()
 
     def open_project(self):
         dialogue = QFileDialog(self, caption="Open Hive Project")
