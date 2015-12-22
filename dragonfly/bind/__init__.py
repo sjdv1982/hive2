@@ -1,1 +1,2 @@
-from .bind import BindInfo, BindContext
+from .classes import BindInfo, BindContext
+from .instance import Instantiator
