@@ -101,7 +101,7 @@ class ArgsPanel(QWidget):
 
                 widget, controller = create_widget(data_type)
                 widget.setEnabled(False)
-                controller.value = repr(value)
+                controller.value = value
 
                 layout.addRow(self.tr(name), widget)
 

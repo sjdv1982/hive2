@@ -59,7 +59,7 @@ EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, d
                                   cls=EventEnvironmentClass)
 
 
-class EventCls:
+class EventBindClass:
 
     def __init__(self):
         self._hive = hive.get_run_hive()
@@ -96,7 +96,7 @@ def build_bind(cls, i, ex, args, meta_args):
     ex.event_get_config = hive.plugin(cls.get_config, identifier=("bind", "get_config"))
 
 
-BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=declare_bind, cls=EventCls)
+BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=declare_bind, cls=EventBindClass)
 
 
 def is_enabled(meta_args):
