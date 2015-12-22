@@ -208,7 +208,10 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.args = hive.antenna(i.pull_args)
 
     ex.create = hive.entry(i.do_instantiate)
-    ex.last_created = hive.property(cls, "last_created", "object")
+
+    ex.last_created_hive = hive.property(cls, "last_created", "object")
+    i.pull_last_created = hive.pull_out(ex.last_created_hive)
+    ex.last_created = hive.output(i.pull_last_created)
 
     ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier=("bind", "get_plugins"),
                                      policy=hive.MultipleOptional)

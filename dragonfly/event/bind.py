@@ -18,7 +18,7 @@ class EventEnvironmentClass:
 
         configuration = self._hive._hive_object._hive_meta_args_frozen.bind_configuration
 
-        if configuration.event_dispatch_mode == 'by_leader':
+        if configuration.bind_event == 'by_leader':
             self._main_handler = EventHandler(self.handle_event, self._leader)
 
         else:
@@ -64,30 +64,33 @@ class EventBindClass:
     def __init__(self):
         self._hive = hive.get_run_hive()
 
-        self._add_handler = None
-        self._remove_handler = None
+        self._plugins = {}
 
     def set_add_handler(self, add_handler):
-        self._add_handler = add_handler
+        self._plugins['add_handler'] = add_handler
 
     def set_remove_handler(self, remove_handler):
-        self._remove_handler = remove_handler
+        self._plugins['remove_handler'] = remove_handler
 
     def get_plugins(self):
-        return {'event': {'add_handler': self._add_handler, 'remove_handler': self._remove_handler}}
+        return {'event': self._plugins}
 
     def get_config(self):
-        dispatch_mode = self._hive._hive_object._hive_meta_args_frozen.event_dispatch_mode
-        return {'event': {'dispatch_mode': dispatch_mode}}
+        meta_args = self._hive._hive_object._hive_meta_args_frozen
+        bind_event = meta_args.bind_event
+        return {'event': {'bind_event': bind_event}}
+
+
+def is_enabled(meta_args):
+    return meta_args.bind_event != 'none'
 
 
 def declare_bind(meta_args):
-    meta_args.bind_event = hive.parameter("bool", True)
-    meta_args.event_dispatch_mode = hive.parameter("str", 'by_leader', {'by_leader', 'all'})
+    meta_args.bind_event = hive.parameter("str", 'by_leader', {'none', 'by_leader', 'all'})
 
 
 def build_bind(cls, i, ex, args, meta_args):
-    if not meta_args.bind_event:
+    if not is_enabled(meta_args):
         return
 
     ex.event_set_add_handler = hive.socket(cls.set_add_handler, identifier=("event", "add_handler"))
@@ -97,10 +100,6 @@ def build_bind(cls, i, ex, args, meta_args):
 
 
 BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=declare_bind, cls=EventBindClass)
-
-
-def is_enabled(meta_args):
-    return meta_args.bind_event
 
 
 bind_info = BindInfo("event", is_enabled, BindEvent, EventEnvironment)
