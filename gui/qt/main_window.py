@@ -378,7 +378,7 @@ class MainWindow(QMainWindow):
 
         completer = QCompleter()
         completer.setCompletionMode(QCompleter.InlineCompletion)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setCaseSensitivity(Qt.CaseSensitive)
 
         editor.setCompleter(completer)
 

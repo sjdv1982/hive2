@@ -30,7 +30,7 @@ class IOPin(object):
         # Mimicking pins
         if mode == "any":
             if not -1 < max_connections <= 1:
-               max_connections = 1
+                max_connections = 1
 
             mimic_flags |= MimicFlags.SHAPE
 

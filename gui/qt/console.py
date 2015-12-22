@@ -54,10 +54,10 @@ class QConsole(QWidget):
 Hive GUI console.
 
 Available modules:
---------------------
-editor - current node editor
-window - main window
---------------------
+------------------------------
+ editor - current node editor
+ window - main window
+------------------------------
 """
         self.display_widget.setText(self._text)
         self._prefix = prefix

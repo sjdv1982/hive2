@@ -24,7 +24,7 @@ def build_my_hive(i, ex, args):
     ex.events = EventHive()
 
     # Create instantiator, but don't add events by leader
-    ex.instantiator = Instantiator(event_dispatch_mode='all')
+    ex.instantiator = Instantiator(bind_event='all')
 
     # Create args dict
     i.import_path = Variable("str", "this.that.other")
@@ -45,15 +45,15 @@ MyHive = hive.hive("MyHive", build_my_hive)
 my_hive = MyHive()
 
 my_hive.instantiator.create()
-a = my_hive.instantiator.last_created
+a = my_hive.instantiator.last_created_hive
 
 my_hive._args.data['name'] = 'b'
 my_hive.instantiator.create()
-b = my_hive.instantiator.last_created
+b = my_hive.instantiator.last_created_hive
 
 my_hive._args.data['name'] = 'c'
 my_hive.instantiator.create()
-c = my_hive.instantiator.last_created
+c = my_hive.instantiator.last_created_hive
 
 my_hive.events.read_event.plugin()(("tick",))
 print("Closing A!")

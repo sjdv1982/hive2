@@ -1,7 +1,6 @@
 import ast
 
 import hive
-from hive.mixins import *
 
 # IO bees
 from hive.hook import Hook
@@ -146,21 +145,23 @@ def get_io_info(hive_object):
         # Find IO pins
         exported_bee = bee.export()
 
-        if exported_bee.implements(ConnectTarget):
+        if isinstance(bee, HiveAntenna):
             storage_target = inputs
-
-        elif exported_bee.implements(ConnectSource):
-            storage_target = outputs
-
-        else:
-            continue
-
-        # Find data type and IO mode
-        if isinstance(bee, (HiveAntenna, HiveOutput)):
             data_type = exported_bee.data_type
             mode = exported_bee.mode
 
-        elif isinstance(bee, (Hook, Entry)):
+        elif isinstance(bee, HiveOutput):
+            storage_target = outputs
+            data_type = exported_bee.data_type
+            mode = exported_bee.mode
+
+        elif isinstance(bee, Hook):
+            storage_target = outputs
+            data_type = ("trigger",)
+            mode = "push"
+
+        elif isinstance(bee, Entry):
+            storage_target = inputs
             data_type = ("trigger",)
             mode = "push"
 
