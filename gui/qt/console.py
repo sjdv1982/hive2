@@ -1,7 +1,10 @@
+from collections import deque
 from contextlib import redirect_stdout, contextmanager
 from code import InteractiveConsole
 from io import StringIO
 import sys
+
+from .qt_core import *
 
 from .qt_gui import *
 
@@ -18,7 +21,7 @@ def redirect_stderr(stream):
 
 class QConsole(QWidget):
 
-    def __init__(self, prefix='>>>', local_dict=None):
+    def __init__(self, prefix='>>>', local_dict=None, max_history=15):
         super().__init__()
 
         self.layout = QVBoxLayout()
@@ -42,6 +45,9 @@ class QConsole(QWidget):
 
         self.local_dict = local_dict
         self.console = InteractiveConsole(local_dict)
+        self._history = deque(maxlen=max_history)
+        self._max_history = max_history
+        self._current_command = -1
         self._text = """
 Hive GUI console.
 
@@ -54,8 +60,26 @@ window - main window
         self.display_widget.setText(self._text)
         self._prefix = prefix
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Up:
+            self._current_command -= 1
+
+        elif event.key() == Qt.Key_Down:
+            self._current_command += 1
+
+        else:
+            return
+
+        self._current_command = max(-len(self._history), min(self._current_command, -1))
+
+        if not self._history:
+            return
+
+        self.input_widget.setText(self._history[self._current_command])
+
     def _on_return(self):
         command = self.input_widget.text()
+        self._history.append(command)
         self.input_widget.setText("")
 
         string_stream = StringIO()
