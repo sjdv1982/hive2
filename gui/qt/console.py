@@ -84,8 +84,9 @@ window - main window
 
     def _on_return(self):
         command = self.input_widget.text()
+
         self._history.append(command)
-        self._current_command = -1
+        self._current_command = 0
         self.input_widget.setText("")
 
         string_stream = StringIO()
