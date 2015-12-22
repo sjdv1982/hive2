@@ -24,12 +24,15 @@ def build_my_hive(i, ex, args):
     ex.events = EventHive()
 
     # Create instantiator, but don't add events by leader
-    ex.instantiator = Instantiator(cls_import_path="this.that.other",
-                                   event_dispatch_mode='all')
+    ex.instantiator = Instantiator(event_dispatch_mode='all')
+
+    # Create args dict
+    i.import_path = Variable("str", "this.that.other")
+    hive.connect(i.import_path, ex.instantiator.import_path)
 
     # Create args dict
     i.args = Variable("dict", {'name': 'a'})
-    hive.connect(i.args, ex.instantiator)
+    hive.connect(i.args, ex.instantiator.args)
 
     # Create bind id getter
     i.bind_id_getter = Next(("str", "id"))

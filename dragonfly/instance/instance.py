@@ -88,12 +88,13 @@ class BindEnvironmentClass:
 
 def declare_build_environment(meta_args):
     meta_args.bind_configuration = hive.parameter("object")
+    meta_args.import_path = hive.parameter("str")
     meta_args.args = hive.parameter("frozen_dict")
 
 
 def build_bind_environment(cls, i, ex, args, meta_args):
     """Provides sockets and plugins to new embedded hive instance"""
-    ex.hive = import_from_path(meta_args.bind_configuration.cls_import_path)(**meta_args.args)
+    ex.hive = import_from_path(meta_args.import_path)(**meta_args.args)
     ex.get_bind_id = hive.plugin(cls.get_bind_id, identifier=("bind", "get_identifier"))
     ex.get_closers = hive.socket(cls.add_closer, identifier=("bind", "add_closer"), policy=hive.MultipleOptional)
 
@@ -114,7 +115,10 @@ class InstantiatorCls:
 
         self.last_created = None
         self.bind_meta_class = None
+
+        # Runtime attributes
         self.bind_id = None
+        self.import_path = None
         self.args = None
 
     def _create_context(self):
@@ -162,20 +166,18 @@ class InstantiatorCls:
         # Pull a new bind ID and args dict
         self._hive.bind_id()
         self._hive.args()
+        self._hive.import_path()
 
         bind_configuration = self._hive._hive_object._hive_meta_args_frozen
-
+        import_path = self.import_path
         args = self.args
         as_ordered_dict = OrderedDict(((k, args[k]) for k in sorted(args)))
         frozen_args = FrozenDict(as_ordered_dict)
 
-        bind_class = self.bind_meta_class(bind_configuration=bind_configuration, args=frozen_args)
+        bind_class = self.bind_meta_class(bind_configuration=bind_configuration, args=frozen_args,
+                                          import_path=import_path)
 
         self.last_created = bind_class(context, bind_id=self.bind_id)
-
-
-def declare_instantiator(meta_args):
-    meta_args.cls_import_path = hive.parameter("str")
 
 
 def build_instantiator(cls, i, ex, args, meta_args):
@@ -190,10 +192,17 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
 
+    # Get bind ID
     i.bind_id = hive.property(cls, "bind_id", ("str", "id"))
     i.pull_bind_id = hive.pull_in(i.bind_id)
     ex.bind_id = hive.antenna(i.pull_bind_id)
 
+    # Get import path
+    i.import_path = hive.property(cls, "import_path", "str")
+    i.pull_import_path = hive.pull_in(i.import_path)
+    ex.import_path = hive.antenna(i.pull_import_path)
+
+    # Get args dict
     i.args = hive.property(cls, "args", "dict")
     i.pull_args = hive.pull_in(i.args)
     ex.args = hive.antenna(i.pull_args)
@@ -208,5 +217,5 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.add_get_config = hive.socket(cls.add_get_config, identifier=("bind", "get_config"), policy=hive.MultipleOptional)
 
 
-Instantiator = hive.dyna_hive("Instantiator", builder=build_instantiator, declarator=declare_instantiator,
-                              cls=InstantiatorCls, bases=tuple(i.bind_hive for i in bind_infos))
+Instantiator = hive.hive("Instantiator", builder=build_instantiator, cls=InstantiatorCls,
+                         bases=tuple(i.bind_hive for i in bind_infos))
