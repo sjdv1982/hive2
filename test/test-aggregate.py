@@ -20,9 +20,18 @@ def build_c(i, ex, args):
     ex.c = hive.entry(i.mod_c)
 
 C = hive.hive("C", build_c, bases=(A, B))
+D = C.extend("D")
 
 c = C()
+print("c.a()")
 c.a()
+
+print("\nc.b()")
 c.b()
-print("C")
+
+print("\nc.C()")
 c.c()
+
+d = D()
+print("\nd.c()")
+d.c()
