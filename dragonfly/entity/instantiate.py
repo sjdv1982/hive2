@@ -1,10 +1,9 @@
 from ..event import bind_info as event_bind_info
 from ..entity import bind_info as entity_bind_info
-from ..instance import Instantiator as _Instantiator
+from ..bind import Instantiator as _Instantiator
 
 
 bind_infos = (event_bind_info, entity_bind_info)
-
 
 
 def build_entity_instantiate(i, ex, args, meta_args):

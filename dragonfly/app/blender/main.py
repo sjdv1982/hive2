@@ -1,6 +1,9 @@
 import hive
+
 from .input_handler import InputHandler
 from .startup_binder import StartupBinder
+from .scene import Scene
+
 from ...event import EventHive, EventHandler
 from ...mainloop import Mainloop as _Mainloop
 
@@ -13,6 +16,8 @@ class _MainloopCls:
 
         self._hive = hive.get_run_hive()
         self._read_event = None
+
+        self._scenes = {s.name: Scene()}
 
     def on_tick(self):
         self._read_event(("pre_tick",))
