@@ -202,6 +202,10 @@ class NodeEditorSpace(QWidget):
     def has_unsaved_changes(self):
         return self._last_saved_id != self._history_id
 
+    @property
+    def node_manager(self):
+        return self._node_manager
+
     def _on_node_history_update(self, history):
         self._history_id = history.operation_id
 

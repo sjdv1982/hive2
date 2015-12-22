@@ -33,12 +33,14 @@ class QConsole(QWidget):
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.display_widget)
+        self.scroll_area.setAlignment(Qt.AlignBottom)
 
         self.input_widget = QLineEdit(self)
         self.layout.addWidget(self.scroll_area)
         self.layout.addWidget(self.input_widget)
 
         self.input_widget.returnPressed.connect(self._on_return)
+        self.scroll_area.verticalScrollBar().rangeChanged.connect(self._on_range_changed)
 
         if local_dict is None:
             local_dict = {}
@@ -77,17 +79,25 @@ window - main window
 
         self.input_widget.setText(self._history[self._current_command])
 
+    def _on_range_changed(self):
+        self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+
     def _on_return(self):
         command = self.input_widget.text()
         self._history.append(command)
+        self._current_command = -1
         self.input_widget.setText("")
 
         string_stream = StringIO()
 
-        with redirect_stdout(string_stream), redirect_stderr(string_stream):
-            print(self._prefix, command)
-            self.console.push(command)
+        try:
+            with redirect_stdout(string_stream), redirect_stderr(string_stream):
+                print(self._prefix, command)
+                self.console.push(command)
 
-        self._text += string_stream.getvalue()
-        self.display_widget.setText(self._text)
+        finally:
+            self._text += string_stream.getvalue()
+            self.display_widget.setText(self._text)
+            self.display_widget.update()
+            self.scroll_area.update()
 
