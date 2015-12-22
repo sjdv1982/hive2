@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
         self.parameter_window = self.create_subwindow("Parameters", "right")
         self.folding_window = self.create_subwindow("Folding", "right")
         self.preview_window = self.create_subwindow("Preview", "left")
-        self.console_window = self.create_subwindow("Console", "bottom")
+        self.console_window = self.create_subwindow("Console", "right")
 
         self.console_widget = QConsole()
         self.console_widget.local_dict['editor'] = None
