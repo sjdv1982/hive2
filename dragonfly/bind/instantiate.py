@@ -154,12 +154,16 @@ class InstantiatorCls:
         self.last_created = bind_class(context, bind_id=self.bind_id)
 
 
+def declare_instantiator(meta_args):
+    pass
+
+
 def build_instantiator(cls, i, ex, args, meta_args):
     """Instantiates a Hive class at runtime"""
     # If this is built now, then it won't perform matchmaking, so use meta hive
     bind_meta_class = hive.meta_hive("BindEnvironment", build_bind_environment, declare_build_environment,
                                      cls=BindEnvironmentClass)
-    i.bind_meta_class.start_value = hive.property(cls, "bind_meta_class", "object", bind_meta_class)
+    i.bind_meta_class = hive.property(cls, "bind_meta_class", "object", bind_meta_class)
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
 
@@ -186,4 +190,4 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.add_get_config = hive.socket(cls.add_get_config, identifier=("bind", "get_config"), policy=hive.MultipleOptional)
 
 
-Instantiator = hive.hive("Instantiator", builder=build_instantiator, cls=InstantiatorCls)
+Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorCls)

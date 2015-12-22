@@ -1,6 +1,6 @@
 import hive
 
-from ..instance import Instantiator
+from .instantiate import Instantiator
 
 
 class SpawnClass:
@@ -50,6 +50,7 @@ def build_spawn(cls, i, ex, args):
     hive.connect(i.pull_entity, i.instantiator.entity)
 
     # Get last created
+    ex.hive_class = hive.antenna(i.instantiator.hive_class)
     ex.hive_last_created = hive.output(i.instantiator.last_created)
 
     # Finally instantiate

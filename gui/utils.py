@@ -70,7 +70,7 @@ def is_identifier(identifier):
     return True
 
 
-def start_value_from_type(data_type):
+def start_value_from_type(data_type, allow_none=False):
     """Attempt to return a unique "starting value" for a given data type"""
     if not data_type:
         return None
@@ -80,7 +80,7 @@ def start_value_from_type(data_type):
     if base_type in type_factories:
         return type_factories[base_type]()
 
-    elif base_type == "object":
+    elif allow_none:
         return None
 
     raise TypeError(data_type)
