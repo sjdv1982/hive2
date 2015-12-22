@@ -1,7 +1,6 @@
 import hive
 
 from ..instance import Instantiator
-from ..std import Variable
 
 
 class SpawnClass:
@@ -12,11 +11,13 @@ class SpawnClass:
         self.entity_class = None
         self.spawn_id = None
 
+        self.entity_last_created = None
+
     def set_spawn_entity(self, spawn_entity):
         self._spawn_entity = spawn_entity
 
     def do_spawn_entity(self):
-        self._spawn_entity(self.entity_class, self.spawn_id)
+        self.entity_last_created = self._spawn_entity(self.entity_class, self.spawn_id)
 
 
 def build_spawn(cls, i, ex, args):
@@ -42,12 +43,11 @@ def build_spawn(cls, i, ex, args):
     hive.trigger(i.trigger, i.pull_spawn_id, pretrigger=True)
 
     i.pull_out_spawn_id = hive.pull_out(i.spawn_id)
-    i.args = Variable("dict", {})
 
     # Process instantiator
     i.instantiator = Instantiator()
-    hive.connect(i.args, i.instantiator.args)
     hive.connect(i.pull_out_spawn_id, i.instantiator.bind_id)
+    hive.connect(i.pull_entity, i.instantiator.entity)
 
     # Get last created
     ex.hive_last_created = hive.output(i.instantiator.last_created)
