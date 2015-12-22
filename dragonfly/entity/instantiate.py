@@ -1,5 +1,6 @@
+from .bind import bind_info as entity_bind_info
+
 from ..event import bind_info as event_bind_info
-from ..entity import bind_info as entity_bind_info
 from ..bind import Instantiator as _Instantiator
 
 
