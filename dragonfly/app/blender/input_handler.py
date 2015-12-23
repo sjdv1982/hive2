@@ -2,13 +2,13 @@ import string
 
 named_keyboard_mapping = dict(ZERO='0', ONE='1', TWO='2', THREE='3', FOUR='4', FIVE='5', SIX='6', SEVEN='7', EIGHT='8',
                               NINE='9', ACCENTGRAVE='`', BACKSLASH='\\', COMMA=',', PERIOD='.', DEL='DELETE', MINUS='-',
-                              PLUS='+', LEFTBRACKET='[', RIGHTBRACKET=']', ESC='ESCAPE', END='END', INSERT='INSERT',
-                              PAUSE='PAUSE', SEMICOLON=';', SLASH='/', SPACE='SPACE', TAB='TAB', QUOTE="'",
-                              PAGEDOWN='PAGEDOWN', PAGEUP='PAGEUP',
+                              PLUS='+', LEFTBRACKET='[', RIGHTBRACKET=']', ESC='ESCAPE', END='end', INSERT='insert',
+                              PAUSE='pause', SEMICOLON=';', SLASH='/', SPACE='space', TAB='tab', QUOTE="'",
+                              PAGEDOWN='page_down', PAGEUP='page_up',
                               )
-named_keyboard_mapping.update({k: k for k in string.ascii_uppercase})
+named_keyboard_mapping.update({k: k.lower() for k in string.ascii_uppercase})
 
-named_mouse_mapping = dict(LEFTMOUSE='LEFT', MIDDLEMOUSE='MIDDLE', RIGHTMOUSE='RIGHT')
+named_mouse_mapping = dict(LEFTMOUSE='left', MIDDLEMOUSE='middle', RIGHTMOUSE='right')
 
 
 class InputHandler:

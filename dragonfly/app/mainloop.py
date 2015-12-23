@@ -17,23 +17,23 @@ class _Mainloop(object):
 
         # Callbacks
         self._startup_callbacks = []
-        self._exit_callbacks = []
+        self._stop_callbacks = []
 
     def add_startup_callback(self, callback):
         self._startup_callbacks.append(callback)
 
-    def add_exit_callback(self, callback):
-        self._exit_callbacks.append(callback)
+    def add_stop_callback(self, callback):
+        self._stop_callbacks.append(callback)
 
     def run(self):
         for callback in self._startup_callbacks:
             callback()
 
         accumulator = 0.0
-        last_time = time.monotonic()
+        last_time = time.clock()
 
         while self._running:
-            current_time = time.monotonic()
+            current_time = time.clock()
             elapsed_time = current_time - last_time
             last_time = current_time
 
@@ -48,7 +48,7 @@ class _Mainloop(object):
     def stop(self):
         self._running = False
 
-        for callback in self._exit_callbacks:
+        for callback in self._stop_callbacks:
             callback()
 
     def tick(self):
@@ -66,8 +66,8 @@ def build_mainloop(cls, i, ex, args):
     ex.max_framerate = hive.property(cls, "max_framerate")
 
     # Startup / End callback
-    ex.add_startup_callback = hive.plugin(cls.add_startup_callback, ("callback", "startup"))
-    ex.add_exit_callback = hive.plugin(cls.add_exit_callback, ("callback", "exit"))
+    ex.add_startup_callback = hive.socket(cls.add_startup_callback, ("callback", "start"), policy=hive.MultipleOptional)
+    ex.add_stop_callback = hive.socket(cls.add_stop_callback, ("callback", "stop"), policy=hive.MultipleOptional)
 
 
 Mainloop = hive.hive("mainloop", build_mainloop, _Mainloop)

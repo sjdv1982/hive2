@@ -3,11 +3,11 @@ from . import bind
 from . import commandline
 from . import convert
 from . import event
+from . import entity
 from . import gen
 from . import helpers
 from . import io
 from . import logic
-from . import mainloop
 from . import op
 from . import std
 from . import sys

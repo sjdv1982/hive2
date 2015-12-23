@@ -1,3 +1,4 @@
-import spyder
+from dragonfly.app.panda3d import Mainloop
 
-print(dir(spyder))
+main = Mainloop()
+main.run()

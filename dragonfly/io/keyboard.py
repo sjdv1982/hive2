@@ -25,14 +25,14 @@ class Keyboard_:
         self.is_pressed = False
         self._hive._on_released()
 
-    def get_pattern(self, state):
-        return "keyboard", state, self.key.upper()
+    def _get_pattern(self, state):
+        return "keyboard", state, self.key
 
     def add_single_listener(self, add_handler):
-        self._pressed_listener = EventHandler(self._on_single_key_pressed, self.get_pattern("pressed"), mode='match')
+        self._pressed_listener = EventHandler(self._on_single_key_pressed, self._get_pattern("pressed"), mode='match')
         add_handler(self._pressed_listener)
 
-        self._released_listener = EventHandler(self._on_single_key_released, self.get_pattern("released"), mode='match')
+        self._released_listener = EventHandler(self._on_single_key_released, self._get_pattern("released"), mode='match')
         add_handler(self._released_listener)
 
     def add_any_listener(self, add_handler):
@@ -51,8 +51,8 @@ class Keyboard_:
         self._hive.key_released.push()
 
     def change_listener_keys(self):
-        self._pressed_listener.pattern = self.get_pattern("pressed")
-        self._released_listener.pattern = self.get_pattern("released")
+        self._pressed_listener.pattern = self._get_pattern("pressed")
+        self._released_listener.pattern = self._get_pattern("released")
 
 
 def declare_keyboard(meta_args):

@@ -71,12 +71,12 @@ class BindEnvironmentClass:
 
 def declare_build_environment(meta_args):
     meta_args.bind_meta_args = hive.parameter("object")
-    meta_args.import_path = hive.parameter("str")
+    meta_args.hive_class = hive.parameter("class")
 
 
 def build_bind_environment(cls, i, ex, args, meta_args):
     """Provides sockets and plugins to new embedded hive instance"""
-    ex.hive = meta_args.hive_cls()
+    ex.hive = meta_args.hive_class()
     ex.get_bind_id = hive.plugin(cls.get_bind_id, identifier=("bind", "get_identifier"))
     ex.get_closers = hive.socket(cls.add_closer, identifier=("bind", "add_closer"), policy=hive.MultipleOptional)
 
@@ -172,7 +172,6 @@ def build_instantiator(cls, i, ex, args, meta_args):
     i.pull_bind_id = hive.pull_in(i.bind_id)
     ex.bind_id = hive.antenna(i.pull_bind_id)
 
-    # Get import path
     i.hive_class = hive.property(cls, "hive_class", "class")
     i.pull_hive_class = hive.pull_in(i.hive_class)
     ex.hive_class = hive.antenna(i.pull_hive_class)

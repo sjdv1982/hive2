@@ -79,5 +79,5 @@ my_hive = MyHive()
 event = ("tick",)
 my_hive.read_event.plugin()(event)
 
-from dragonfly.mainloop.mainloop import Mainloop
+from dragonfly.app.mainloop import Mainloop
 m = Mainloop(max_framerate=12.0)
