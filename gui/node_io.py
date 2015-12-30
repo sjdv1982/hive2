@@ -150,7 +150,13 @@ class HiveMapIO:
                 print("Unable to find all node pins in connection: {}.{}, {}.{}"
                       .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
                 continue
-            node_manager.create_connection(from_pin, to_pin)
+
+            try:
+                node_manager.create_connection(from_pin, to_pin)
+            except Exception:
+                print("Unable to create connection between {}.{}, {}.{}"
+                      .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
+                print(format_exc())
 
         # Fold folded pins
         for node, spyder_node in node_to_spyder_node.items():

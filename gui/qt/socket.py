@@ -34,11 +34,10 @@
 
 from __future__ import print_function, absolute_import
 
-import copy
 import weakref
+
 from .qt_gui import *
 from .qt_core import *
-
 from ..sockets import SocketTypes
 from ..node_manager import NodeConnectionError
 
@@ -133,6 +132,7 @@ class Socket(QGraphicsItem):
         # Update all paths
         for _connection in self._connections:
             _connection.update_path()
+            print("UPDATE PATHS")
 
     def get_index_info(self, connection):
         index = self._connections.index(connection)

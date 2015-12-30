@@ -15,7 +15,7 @@ def build_import(i, ex, args):
 
     i.import_path = hive.attribute("str")
     i.pull_import_path = hive.pull_in(i.import_path)
-    ex.import_path = hive.antenna(i.import_path)
+    ex.import_path = hive.antenna(i.pull_import_path)
 
     i.module = hive.attribute("module")
     i.pull_module = hive.pull_out(i.module)

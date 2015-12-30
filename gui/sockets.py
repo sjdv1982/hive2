@@ -18,7 +18,7 @@ def get_colour(data_type):
     if data_type:
         base_type = data_type[0]
 
-        if base_type == "object":
+        if base_type == "entity":
             return colours[0]
 
         elif base_type == "trigger":

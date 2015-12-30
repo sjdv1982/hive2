@@ -1,3 +1,5 @@
+from keyword import iskeyword
+
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import OperationHistory
@@ -9,12 +11,25 @@ from .utils import start_value_from_type, is_identifier, \
     camelcase_to_underscores
 
 
+def _sanitise_variable(variable_name):
+    variable_name = variable_name.lstrip('_')
+
+    while not is_identifier(variable_name) or iskeyword(variable_name):
+        variable_name = "{}_".format(variable_name)
+
+    return variable_name
+
+
 def _get_unique_name(existing_names, base_name):
     """Find unique value of base name which may have a number appended to the end
 
     :param existing_names: names currently in use
     :param base_name: base of name to use
     """
+    # Return name without number if possible
+    if base_name not in existing_names:
+        return base_name
+
     i = 0
     while True:
         name = "{}_{}".format(base_name, i)
@@ -61,6 +76,8 @@ class NodeManager(object):
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
         as_variable = camelcase_to_underscores(obj_name)
+
+        as_variable = _sanitise_variable(as_variable)
         return _get_unique_name(self.nodes, as_variable)
 
     def _find_attributes(self):
@@ -221,6 +238,9 @@ class NodeManager(object):
     def set_node_name(self, node, name, attempt_till_success=False):
         if not is_identifier(name):
             raise ValueError("Name must be valid python identifier: {}".format(name))
+
+        if iskeyword(name):
+            raise ValueError("Name cannot be python keyword: {}".format(name))
 
         if self.nodes.get(name, node) is not node:
             # Try till we succeed

@@ -35,15 +35,16 @@ class InputHandlerClass:
                                                                  ("mouse", "released", remapped_name)))
 
         self._mouse_pos = None
-        self._read_event = None
+        self.event = None
 
-        self.listeners = set()
+        self._hive = hive.get_run_hive()
 
     def set_read_event(self, read_event):
         self._read_event = read_event
 
     def broadcast_event(self, event):
-        self._read_event(event)
+        self.event = event
+        self._hive.event()
 
     def update(self):
         if base.mouseWatcherNode.hasMouse():
@@ -58,10 +59,12 @@ class InputHandlerClass:
 
 
 def build_input_handler(cls, i, ex, args):
-    ex.get_read_event = hive.socket(cls.set_read_event, identifier=("event", "process"))
-
     i.update = hive.triggerable(cls.update)
     ex.update = hive.entry(i.update)
+
+    i.event = hive.property(cls, "event", "tuple")
+    i.push_event = hive.push_out(i.event)
+    ex.event = hive.output(i.push_event)
 
 
 InputHandler = hive.hive("InputHandler", build_input_handler, InputHandlerClass)

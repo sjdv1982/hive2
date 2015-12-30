@@ -49,6 +49,17 @@ class EventManager:
     def __init__(self):
         self.handlers = []
 
+        self.event_in = None
+
+    def on_started(self):
+        self.handle_event(("start",))
+
+    def on_stopped(self):
+        self.handle_event(("stop",))
+
+    def on_event_in(self):
+        self.handle_event(self.event_in)
+
     def add_handler(self, handler):
         self.handlers.append(handler)
         self.handlers.sort()
@@ -66,6 +77,18 @@ def event_builder(cls, i, ex, args):
     ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"), export_to_parent=True)
     ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"), export_to_parent=True)
     ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"), export_to_parent=True)
+
+    # Send startup and stop events
+    ex.on_stopped = hive.plugin(cls.on_stopped, identifier=("on_stopped",))
+    ex.on_started = hive.plugin(cls.on_started, identifier=("on_started",))
+
+    # Allow events to be pushed in
+    i.event_in = hive.property(cls, 'event_in', 'tuple')
+    i.push_event = hive.push_in(i.event_in)
+    ex.event_in = hive.antenna(i.push_event)
+
+    i.on_event_in = hive.triggerable(cls.on_event_in)
+    hive.trigger(i.push_event, i.on_event_in)
 
 
 EventHive = hive.hive("EventHive", event_builder, EventManager)

@@ -1,72 +1,39 @@
-from collections import OrderedDict
-
 import hive
-from dragonfly.bind import BindContext
 
-
-class FrozenDict:
-    """Immutable, ordered dictionary object"""
-
-    def __init__(self, data):
-        if not isinstance(data, OrderedDict):
-            raise TypeError("data must be instance of OrderedDict")
-
-        self._dict = dict(data)
-        self._items = tuple(data.items())
-
-        if self._items:
-            self._keys, self._values = zip(*self._items)
-
-        else:
-            self._keys = self._values = ()
-
-        self._hash = hash((self._keys, self._values))
-
-    def __getitem__(self, item):
-        return self._dict[item]
-
-    def __hash__(self):
-        return self._hash
-
-    def keys(self):
-        return self._keys
-
-    def items(self):
-        return self._items
-
-    def values(self):
-        return self._values
-
-    def __len__(self):
-        return len(self._keys)
-
-    def __iter__(self):
-        return iter(self._keys)
+from .classes import BindContext
 
 
 class BindEnvironmentClass:
 
-    def __init__(self, context, bind_id):
-        self.bind_id = bind_id
+    def __init__(self, context):
+        self._on_stopped = []
+        self._on_started = []
 
-        self._alive = True
-        self._closers = []
+        self.state = 'init'
 
-    def add_closer(self, closer):
-        self._closers.append(closer)
+    def add_on_started(self, on_started):
+        self._on_started.append(on_started)
 
-    def close(self):
-        if not self._alive:
-            raise RuntimeError("Hive already closed")
+    def add_on_stopped(self, on_stopped):
+        self._on_stopped.append(on_stopped)
 
-        for closer in self._closers:
-            closer()
+    def start(self):
+        if self.state != 'init':
+            raise RuntimeError("Hive is already running")
 
-        self._closers.clear()
-        self._alive = False
+        self.state = 'running'
 
-    def get_bind_id(self):
-        return self.bind_id
+        for callback in self._on_started:
+            callback()
+
+    def stop(self):
+        if self.state != 'running':
+            raise RuntimeError("Hive is already stopped")
+
+        self.state = 'stopped'
+
+        for callback in self._on_stopped:
+            callback()
 
 
 def declare_build_environment(meta_args):
@@ -77,11 +44,27 @@ def declare_build_environment(meta_args):
 def build_bind_environment(cls, i, ex, args, meta_args):
     """Provides sockets and plugins to new embedded hive instance"""
     ex.hive = meta_args.hive_class()
-    ex.get_bind_id = hive.plugin(cls.get_bind_id, identifier=("bind", "get_identifier"))
-    ex.get_closers = hive.socket(cls.add_closer, identifier=("bind", "add_closer"), policy=hive.MultipleOptional)
 
-    i.do_close = hive.triggerable(cls.close)
-    ex.close = hive.entry(i.do_close)
+    # Startup / End callback
+    ex.get_on_started = hive.socket(cls.add_on_started, identifier=("on_started",), policy=hive.MultipleOptional)
+    ex.get_on_stopped = hive.socket(cls.add_on_stopped, identifier=("on_stopped",), policy=hive.MultipleOptional)
+
+    i.on_started = hive.triggerable(cls.start)
+    i.on_stopped = hive.triggerable(cls.stop)
+
+    ex.on_started = hive.entry(i.on_started)
+    ex.on_stopped = hive.entry(i.on_stopped)
+
+    i.state = hive.property(cls, 'state', 'str')
+    i.pull_state = hive.pull_out(i.state)
+    ex.state = hive.output(i.pull_state)
+
+# TODO (s)
+# Close should be subscribed by event to send stop event
+# Stop is local, quit is global
+# Make panels scrollable!
+# When send start / stop events? Who? how deal with binding?
+# Add scheduling?
 
 
 class InstantiatorCls:
@@ -95,12 +78,14 @@ class InstantiatorCls:
         self._sockets = None
 
         self._hive = hive.get_run_hive()
+        self._active_hives = []
+
+        self._bind_class_creation_callbacks = []
 
         self.last_created = None
         self.bind_meta_class = None
 
         # Runtime attributes
-        self.bind_id = None
         self.hive_class = None
 
     def _create_context(self):
@@ -141,21 +126,43 @@ class InstantiatorCls:
         """
         self._config_getters.append(get_config)
 
+    def add_on_created(self, on_created):
+        self._bind_class_creation_callbacks.append(on_created)
+
+    def forget_hive(self, child_hive):
+        """Forget child hive when it is stopped"""
+        self._active_hives.remove(child_hive)
+
+    def on_stopped(self):
+        """Stop all child hives if instantiator is stopped"""
+        for child_hive in self._active_hives[:]:
+            child_hive.on_stopped()
+
     def instantiate(self):
         context = self._create_context()
 
         # Pull a new bind ID and args dict
-        self._hive.bind_id()
         self._hive.hive_class()
 
         bind_meta_args = self._hive._hive_object._hive_meta_args_frozen
         bind_class = self.bind_meta_class(bind_meta_args=bind_meta_args, hive_class=self.hive_class)
 
-        self.last_created = bind_class(context, bind_id=self.bind_id)
+        self.last_created = environment_hive = bind_class(context)
+
+        # Notify bind classes of new hive instance (environment_hive)
+        for callback in self._bind_class_creation_callbacks:
+            callback(environment_hive)
+
+        # Deregister hive if it is stopped
+        on_stopped = hive.plugin(lambda: self.forget_hive(environment_hive))
+        hive.connect(on_stopped, environment_hive.get_on_stopped)
+
+        environment_hive.on_started()
+        self._active_hives.append(environment_hive)
 
 
 def declare_instantiator(meta_args):
-    pass
+    meta_args.bind_process = hive.parameter("str", 'dependent', {'dependent', 'independent'})
 
 
 def build_instantiator(cls, i, ex, args, meta_args):
@@ -167,11 +174,6 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
 
-    # Get bind ID
-    i.bind_id = hive.property(cls, "bind_id", ("str", "id"))
-    i.pull_bind_id = hive.pull_in(i.bind_id)
-    ex.bind_id = hive.antenna(i.pull_bind_id)
-
     i.hive_class = hive.property(cls, "hive_class", "class")
     i.pull_hive_class = hive.pull_in(i.hive_class)
     ex.hive_class = hive.antenna(i.pull_hive_class)
@@ -182,11 +184,18 @@ def build_instantiator(cls, i, ex, args, meta_args):
     i.pull_last_created = hive.pull_out(ex.last_created_hive)
     ex.last_created = hive.output(i.pull_last_created)
 
+    # Bind class plugin
+    ex.on_created = hive.socket(cls.add_on_created, identifier=("bind", "on_created"), policy=hive.MultipleOptional)
+
     ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier=("bind", "get_plugins"),
                                      policy=hive.MultipleOptional)
     ex.add_get_sockets = hive.socket(cls.add_get_plugins, identifier=("bind", "get_sockets"),
                                      policy=hive.MultipleOptional)
     ex.add_get_config = hive.socket(cls.add_get_config, identifier=("bind", "get_config"), policy=hive.MultipleOptional)
 
+    # Bind instantiator
+    if meta_args.bind_process == 'dependent':
+        # Add startup and stop callbacks
+        ex.on_stopped = hive.plugin(cls.on_stopped, identifier=("on_stopped",))
 
 Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorCls)

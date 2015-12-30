@@ -6,9 +6,7 @@ from ..bind import BindInfo
 
 class EventEnvironmentClass:
 
-    def __init__(self, context, bind_id):
-        self._identifier = bind_id
-        self._leader = bind_id,
+    def __init__(self, context):
         self._handlers = []
 
         self._main_add_handler = context.plugins['event']['add_handler']
@@ -16,9 +14,11 @@ class EventEnvironmentClass:
 
         self._hive = hive.get_run_hive()
 
-        forward_events = context.config['event']['forward_events']
+        event_config = context.config['event']
+        forward_events = event_config['forward_events']
 
         if forward_events == 'by_leader':
+            self._leader = event_config['leader']
             self._main_handler = EventHandler(self.handle_event, self._leader)
 
         else:
@@ -53,7 +53,8 @@ def build_event_environment(cls, i, ex, args, meta_args):
     ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"))
     ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"))
     ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"))
-    ex.event_closer = hive.plugin(cls.on_closed, identifier=("bind", "add_closer"), policy=hive.SingleRequired)
+
+    ex.event_on_stopped = hive.plugin(cls.on_closed, identifier=("on_stopped",), policy=hive.SingleOptional)
 
 
 EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
@@ -66,6 +67,7 @@ class EventBindClass:
         self._hive = hive.get_run_hive()
 
         self._plugins = {}
+        self.leader = None
 
     def set_add_handler(self, add_handler):
         self._plugins['add_handler'] = add_handler
@@ -79,11 +81,16 @@ class EventBindClass:
     def get_config(self):
         meta_args = self._hive._hive_object._hive_meta_args_frozen
         forward_events = meta_args.forward_events
-        return {'event': {'forward_events': forward_events}}
 
+        this_config = {'forward_events': forward_events}
+        config = {'event': this_config}
 
-def is_enabled(meta_args):
-    return meta_args.forward_events != 'none'
+        if forward_events == 'by_leader':
+            # Pull leader
+            self._hive.leader()
+            this_config["leader"] = self.leader
+
+        return config
 
 
 def declare_bind(meta_args):
@@ -91,11 +98,17 @@ def declare_bind(meta_args):
 
 
 def build_bind(cls, i, ex, args, meta_args):
-    if not is_enabled(meta_args):
+    if meta_args.forward_events == 'none':
         return
+
+    if meta_args.forward_events == "by_leader":
+        i.event_leader = hive.property(cls, "leader", "tuple")
+        i.pull_event_leader = hive.pull_in(i.event_leader)
+        ex.event_leader = hive.antenna(i.pull_event_leader)
 
     ex.event_set_add_handler = hive.socket(cls.set_add_handler, identifier=("event", "add_handler"))
     ex.event_set_remove_handler = hive.socket(cls.set_remove_handler, identifier=("event", "remove_handler"))
+
     ex.event_get_plugins = hive.plugin(cls.get_plugins, identifier=("bind", "get_plugins"))
     ex.event_get_config = hive.plugin(cls.get_config, identifier=("bind", "get_config"))
 
@@ -103,4 +116,11 @@ def build_bind(cls, i, ex, args, meta_args):
 BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=declare_bind, cls=EventBindClass)
 
 
-bind_info = BindInfo("event", is_enabled, BindEvent, EventEnvironment)
+def get_environments(meta_args):
+    if meta_args.forward_events != 'none':
+        return EventEnvironment,
+
+    return ()
+
+
+bind_info = BindInfo("event", BindEvent, get_environments)

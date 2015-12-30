@@ -3,34 +3,26 @@ from __future__ import print_function
 import time
 
 import hive
+from ..sys.process import Process
 
 
 class _Mainloop(object):
 
-    @hive.argument_types(max_framerate=('int',))
-    def __init__(self, max_framerate=60):
+    @hive.argument_types(tick_rate=('int',))
+    def __init__(self, tick_rate=60):
         self._hive = hive.get_run_hive()
-        self.max_framerate = max_framerate
+        self.tick_rate = tick_rate
 
         self._running = True
         self._listeners = []
 
-        # Callbacks
-        self._startup_callbacks = []
-        self._stop_callbacks = []
-
-    def add_startup_callback(self, callback):
-        self._startup_callbacks.append(callback)
-
-    def add_stop_callback(self, callback):
-        self._stop_callbacks.append(callback)
-
     def run(self):
-        for callback in self._startup_callbacks:
-            callback()
+        self._hive.on_started()
 
         accumulator = 0.0
         last_time = time.clock()
+
+        time_step = 1.0 / self.tick_rate
 
         while self._running:
             current_time = time.clock()
@@ -41,15 +33,17 @@ class _Mainloop(object):
                 elapsed_time = 0.25
 
             accumulator += elapsed_time
-            while accumulator > (1. / self.max_framerate):
-                accumulator -= 1. / self.max_framerate
+            while accumulator > time_step:
+                accumulator -= time_step
                 self.tick()
+
+        self._hive.on_stopped()
+
+    def get_tick_rate(self):
+        return self.tick_rate
 
     def stop(self):
         self._running = False
-
-        for callback in self._stop_callbacks:
-            callback()
 
     def tick(self):
         self._hive.tick()
@@ -63,11 +57,9 @@ def build_mainloop(cls, i, ex, args):
     ex.tick = hive.hook(i.tick)
     ex.run = hive.entry(i.run)
     ex.stop = hive.entry(i.stop)
-    ex.max_framerate = hive.property(cls, "max_framerate")
 
-    # Startup / End callback
-    ex.add_startup_callback = hive.socket(cls.add_startup_callback, ("callback", "start"), policy=hive.MultipleOptional)
-    ex.add_stop_callback = hive.socket(cls.add_stop_callback, ("callback", "stop"), policy=hive.MultipleOptional)
+    ex.get_tick_rate = hive.plugin(cls.get_tick_rate, identifier=("app", "get_tick_rate"))
+    ex.quit = hive.plugin(cls.stop, identifier=("app", "quit"))
 
 
-Mainloop = hive.hive("mainloop", build_mainloop, _Mainloop)
+Mainloop = Process.extend("Mainloop", build_mainloop, _Mainloop)

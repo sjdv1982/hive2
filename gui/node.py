@@ -1,6 +1,7 @@
-from collections import OrderedDict, KeysView
+from collections import OrderedDict
 
 from hive.tuple_type import types_match
+from .list_view import ListView
 from .sockets import get_colour, get_shape
 
 FOLD_NODE_IMPORT_PATH = "dragonfly.std.Variable"
@@ -52,7 +53,7 @@ class IOPin(object):
         self._max_connections = max_connections
 
         # Read only view
-        self.connections = KeysView(self._connections)
+        self.connections = ListView(self._connections)
 
         # Callbacks
         self.on_connected = None

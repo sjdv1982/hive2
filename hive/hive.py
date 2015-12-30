@@ -659,6 +659,7 @@ class HiveBuilder(object):
 
                         except MatchmakingPolicyError:
                             print("An error occurred during matchmaking for socket {}, {}".format(bee_name, identifier))
+                            print(socket_bee)
                             raise
 
             # Find and connect identified sockets with existing plugins

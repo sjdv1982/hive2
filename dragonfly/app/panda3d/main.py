@@ -1,7 +1,7 @@
 import hive
 
 from .input_handler import InputHandler
-#from .scene import Scene, Instantiator
+from .entity_api import EntityAPI
 
 from ..mainloop import Mainloop as _Mainloop
 from ...event import EventHive, EventHandler
@@ -14,22 +14,15 @@ class MainloopClass:
 
         self.base = ShowBase()
         self._hive = hive.get_run_hive()
+
         self._read_event = None
-
-        self._scenes = {}
-        self.bind_id = None
-
-    def on_start(self):
-        self._read_event(("start",))
-
-    def on_stop(self):
-        self._read_event(("stop",))
+        self._add_handler = None
 
     def on_tick(self):
         self._read_event(("pre_tick",))
 
         base.taskMgr.step()
-        self._hive._input_handler.update()
+        self._hive._input_manager.update()
 
         self._read_event(("tick",))
 
@@ -37,37 +30,28 @@ class MainloopClass:
         # Dispatch events from input handler to event manager
         self._read_event = func
 
-    def add_handler(self, add_handler):
+    def set_add_handler(self, add_handler):
         # Add input handler
-        handler = EventHandler(self.stop, ("keyboard", "pressed", "escape"), mode='match')
-        add_handler(handler)
+        self._add_handler = add_handler
 
-    def stop(self):
-        self._hive.stop()
-        self._read_event(("quit",))
+    def on_started(self):
+        handler = EventHandler(self._hive.stop, ("keyboard", "pressed", "escape"), mode='match')
+        self._add_handler(handler)
 
 
 def build_mainloop(cls, i, ex, args):
-    i.event_manager = EventHive()
-    i.input_handler = InputHandler()
+    i.event_manager = EventHive(export_namespace=True)
+    i.input_manager = InputHandler(export_namespace=True)
+    i.entity_api = EntityAPI(export_namespace=True)
 
-    # Scene instantiator
-    # i.scene_instantiator = Instantiator(forward_events='all')
-    # i.scene_hive_class = Variable("class", Scene)
-    # hive.connect(i.scene_hive_class, i.scene_instantiator.hive_class)
-
-    # i.bind_id = hive.property(cls, "bind_id", ("str", "id"))
-    # i.pull_bind_id = hive.pull_out(i.bind_id)
-    # hive.connect(i.pull_bind_id, i.scene_instantiator.bind_id)
+    hive.connect(i.input_manager.event, i.event_manager.event_in)
 
     # Get read event
     ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, ("event", "process"))
-    ex.get_add_handler = hive.socket(cls.add_handler, ("event", "add_handler"))
+    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
 
-    ex.do_quit = hive.plugin(cls.stop, ("quit",))
-
-    ex.add_on_startup = hive.plugin(cls.on_start, identifier=("callback", "start"))
-    ex.add_on_stopped = hive.plugin(cls.on_stop, identifier=("callback", "stop"))
+    # Add startup and stop callbacks
+    ex.main_on_started = hive.plugin(cls.on_started, identifier=("on_started",))
 
     i.on_tick = hive.triggerable(cls.on_tick)
     hive.trigger(i.tick, i.on_tick)

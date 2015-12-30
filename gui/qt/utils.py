@@ -148,6 +148,10 @@ def _create_vector():
     return widget, controller
 
 
+def _create_euler():
+    return _create_vector()
+
+
 def _create_colour():
     """Create a colour widget to display a restricted set of options
 
@@ -238,8 +242,8 @@ _factories = OrderedDict((
     (("float",), _create_float),
     (("bool",), _create_bool),
     (("vector",), _create_vector),
+    (("euler",), _create_euler),
     (("colour",), _create_colour),
-   # (("tuple",), _create_tuple)
     ))
 
 

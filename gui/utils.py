@@ -19,6 +19,7 @@ import sys
 type_factories = {
     "vector": lambda: (0.0, 0.0, 0.0),
     "colour": lambda: (0.0, 0.0, 0.0),
+    "euler": lambda: (0.0, 0.0, 0.0),
     "str": str,
     "bool": bool,
     "int": int,
