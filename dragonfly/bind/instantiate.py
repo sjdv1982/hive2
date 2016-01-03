@@ -46,8 +46,8 @@ def build_bind_environment(cls, i, ex, args, meta_args):
     ex.hive = meta_args.hive_class()
 
     # Startup / End callback
-    ex.get_on_started = hive.socket(cls.add_on_started, identifier=("on_started",), policy=hive.MultipleOptional)
-    ex.get_on_stopped = hive.socket(cls.add_on_stopped, identifier=("on_stopped",), policy=hive.MultipleOptional)
+    ex.get_on_started = hive.socket(cls.add_on_started, identifier="on_started", policy=hive.MultipleOptional)
+    ex.get_on_stopped = hive.socket(cls.add_on_stopped, identifier="on_stopped", policy=hive.MultipleOptional)
 
     i.on_started = hive.triggerable(cls.start)
     i.on_stopped = hive.triggerable(cls.stop)
@@ -185,17 +185,17 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.last_created = hive.output(i.pull_last_created)
 
     # Bind class plugin
-    ex.on_created = hive.socket(cls.add_on_created, identifier=("bind", "on_created"), policy=hive.MultipleOptional)
+    ex.on_created = hive.socket(cls.add_on_created, identifier="bind.on_created", policy=hive.MultipleOptional)
 
-    ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier=("bind", "get_plugins"),
+    ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins",
                                      policy=hive.MultipleOptional)
-    ex.add_get_sockets = hive.socket(cls.add_get_plugins, identifier=("bind", "get_sockets"),
+    ex.add_get_sockets = hive.socket(cls.add_get_sockets, identifier="bind.get_sockets",
                                      policy=hive.MultipleOptional)
-    ex.add_get_config = hive.socket(cls.add_get_config, identifier=("bind", "get_config"), policy=hive.MultipleOptional)
+    ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
 
     # Bind instantiator
     if meta_args.bind_process == 'dependent':
         # Add startup and stop callbacks
-        ex.on_stopped = hive.plugin(cls.on_stopped, identifier=("on_stopped",))
+        ex.on_stopped = hive.plugin(cls.on_stopped, identifier="on_stopped")
 
 Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorCls)

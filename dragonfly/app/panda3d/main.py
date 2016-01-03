@@ -47,11 +47,11 @@ def build_mainloop(cls, i, ex, args):
     hive.connect(i.input_manager.event, i.event_manager.event_in)
 
     # Get read event
-    ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, ("event", "process"))
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
+    ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, "event.process")
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
     # Add startup and stop callbacks
-    ex.main_on_started = hive.plugin(cls.on_started, identifier=("on_started",))
+    ex.main_on_started = hive.plugin(cls.on_started, identifier="on_started")
 
     i.on_tick = hive.triggerable(cls.on_tick)
     hive.trigger(i.tick, i.on_tick)

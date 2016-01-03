@@ -58,8 +58,8 @@ def build_mainloop(cls, i, ex, args):
     ex.run = hive.entry(i.run)
     ex.stop = hive.entry(i.stop)
 
-    ex.get_tick_rate = hive.plugin(cls.get_tick_rate, identifier=("app", "get_tick_rate"))
-    ex.quit = hive.plugin(cls.stop, identifier=("app", "quit"))
+    ex.get_tick_rate = hive.plugin(cls.get_tick_rate, identifier="app.get_tick_rate")
+    ex.quit = hive.plugin(cls.stop, identifier="app.quit")
 
 
 Mainloop = Process.extend("Mainloop", build_mainloop, _Mainloop)

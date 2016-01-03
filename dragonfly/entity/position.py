@@ -53,7 +53,7 @@ def build_position(cls, i, ex, args, meta_args):
     i.position = hive.property(cls, "position", "vector")
 
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.do_get_entity)
 
     else:
@@ -78,14 +78,12 @@ def build_position(cls, i, ex, args, meta_args):
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
-            ex.get_get_position = hive.socket(cls.set_get_position, identifier=("entity", "position", "get",
-                                                                                "absolute"))
+            ex.get_get_position = hive.socket(cls.set_get_position, identifier="entity.position.get.absolute")
 
             i.do_get_position = hive.triggerable(cls.do_get_position)
 
         else:
-            ex.get_get_position = hive.socket(cls.set_get_position, identifier=("entity", "position", "get",
-                                                                                "relative"))
+            ex.get_get_position = hive.socket(cls.set_get_position, identifier="entity.position.get.relative")
             i.do_get_position = hive.triggerable(cls.do_get_relative_position)
             hive.trigger(i.pull_position, i.pull_other_entity, pretrigger=True)
 
@@ -99,13 +97,11 @@ def build_position(cls, i, ex, args, meta_args):
 
     else:
         if coordinate_system == 'absolute':
-            ex.get_set_position = hive.socket(cls.set_set_position, identifier=("entity", "position", "set",
-                                                                                "absolute"))
+            ex.get_set_position = hive.socket(cls.set_set_position, identifier="entity.position.set.absolute")
             i.do_set_position = hive.triggerable(cls.do_set_position)
 
         else:
-            ex.get_set_position = hive.socket(cls.set_set_position, identifier=("entity", "position", "set",
-                                                                                "relative"))
+            ex.get_set_position = hive.socket(cls.set_set_position, identifier="entity.position.set.relative")
             i.do_set_position = hive.triggerable(cls.do_set_relative_position)
             hive.trigger(i.pull_position, i.pull_other_entity)
 

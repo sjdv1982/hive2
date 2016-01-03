@@ -106,38 +106,30 @@ def build_entity_environment(cls, i, ex, args, meta_args):
     Provides appropriate sockets and plugins for event interface
     """
     if meta_args.bind_meta_args.bind_entity == "bound":
-        ex.get_bound_entity = hive.plugin(cls.get_bound_entity, identifier=("entity", "get_bound"))
+        ex.get_bound_entity = hive.plugin(cls.get_bound_entity, identifier="entity.get_bound")
 
-    ex.get_entity = hive.plugin(cls.get_entity, identifier=("entity", "get"))
+    ex.get_entity = hive.plugin(cls.get_entity, identifier="entity.get")
 
-    ex.get_position_absolute = hive.plugin(cls.get_position_absolute, identifier=("entity", "position", "get",
-                                                                                  "absolute"))
-    ex.get_position_relative = hive.plugin(cls.get_position_relative, identifier=("entity", "position", "get",
-                                                                                  "relative"))
-    ex.set_position_absolute = hive.plugin(cls.set_position_absolute, identifier=("entity", "position", "set",
-                                                                                  "absolute"))
-    ex.set_position_relative = hive.plugin(cls.set_position_relative, identifier=("entity", "position", "set",
-                                                                                  "relative"))
+    ex.get_position_absolute = hive.plugin(cls.get_position_absolute, identifier="entity.position.get.absolute")
+    ex.get_position_relative = hive.plugin(cls.get_position_relative, identifier="entity.position.get.relative")
+    ex.set_position_absolute = hive.plugin(cls.set_position_absolute, identifier="entity.position.set.absolute")
+    ex.set_position_relative = hive.plugin(cls.set_position_relative, identifier="entity.position.set.relative")
 
-    ex.get_orientation_absolute = hive.plugin(cls.get_orientation_absolute, identifier=("entity", "orientation", "get",
-                                                                                        "absolute"))
-    ex.get_orientation_relative = hive.plugin(cls.get_orientation_relative, identifier=("entity", "orientation", "get",
-                                                                                        "relative"))
-    ex.set_orientation_absolute = hive.plugin(cls.set_orientation_absolute, identifier=("entity", "orientation", "set",
-                                                                                        "absolute"))
-    ex.set_orientation_relative = hive.plugin(cls.set_orientation_relative, identifier=("entity", "orientation", "set",
-                                                                                        "relative"))
+    ex.get_orientation_absolute = hive.plugin(cls.get_orientation_absolute, identifier="entity.orientation.get.absolute")
+    ex.get_orientation_relative = hive.plugin(cls.get_orientation_relative, identifier="entity.orientation.get.relative")
+    ex.set_orientation_absolute = hive.plugin(cls.set_orientation_absolute, identifier="entity.orientation.set.absolute")
+    ex.set_orientation_relative = hive.plugin(cls.set_orientation_relative, identifier="entity.orientation.set.relative")
 
-    ex.get_parent = hive.plugin(cls.get_parent, identifier=("entity", "parent", "get"))
-    ex.set_parent = hive.plugin(cls.set_parent, identifier=("entity", "parent", "set"))
+    ex.get_parent = hive.plugin(cls.get_parent, identifier="entity.parent.get")
+    ex.set_parent = hive.plugin(cls.set_parent, identifier="entity.parent.set")
 
-    ex.get_tag = hive.plugin(cls.get_tag, identifier=("entity", "tag", "get"))
-    ex.set_tag = hive.plugin(cls.set_tag, identifier=("entity", "tag", "set"))
+    ex.get_tag = hive.plugin(cls.get_tag, identifier="entity.tag.get")
+    ex.set_tag = hive.plugin(cls.set_tag, identifier="entity.tag.set")
 
-    ex.destroy_entity = hive.plugin(cls.destroy_entity, identifier=("entity", "destroy"))
-    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier=("entity", "spawn"))
+    ex.destroy_entity = hive.plugin(cls.destroy_entity, identifier="entity.destroy")
+    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier="entity.spawn")
 
-    ex.register_destructor = hive.plugin(cls.register_destructor, identifier=("entity", "register_destructor"))
+    ex.register_destructor = hive.plugin(cls.register_destructor, identifier="entity.register_destructor")
 
 
 
@@ -230,46 +222,46 @@ def build_bind(cls, i, ex, args, meta_args):
     if bind_mode == 'none':
         return
 
-    ex.entity_get_entity = hive.socket(cls.set_get_entity, identifier=("entity", "get"))
+    ex.entity_get_entity = hive.socket(cls.set_get_entity, identifier="entity.get")
 
     ex.entity_get_position_absolute = hive.socket(cls.set_get_position_absolute,
-                                                  identifier=("entity", "position", "get", "absolute"))
+                                                  identifier="entity.position.get.absolute")
     ex.entity_get_position_relative = hive.socket(cls.set_get_position_relative,
-                                                  identifier=("entity", "position", "get", "relative"))
+                                                  identifier="entity.position.get.relative")
 
     ex.entity_set_position_absolute = hive.socket(cls.set_set_position_absolute,
-                                                  identifier=("entity", "position", "set", "absolute"))
+                                                  identifier="entity.position.set.absolute")
     ex.entity_set_position_relative = hive.socket(cls.set_set_position_relative,
-                                                  identifier=("entity", "position", "set", "relative"))
+                                                  identifier="entity.position.set.relative")
 
     ex.entity_get_orientation_absolute = hive.socket(cls.set_get_orientation_absolute,
-                                                     identifier=("entity", "orientation", "get", "absolute"))
+                                                     identifier="entity.orientation.get.absolute")
     ex.entity_get_orientation_relative = hive.socket(cls.set_get_orientation_relative,
-                                                     identifier=("entity", "orientation", "get", "relative"))
+                                                     identifier="entity.orientation.get.relative")
 
     ex.entity_set_orientation_absolute = hive.socket(cls.set_set_orientation_absolute,
-                                                     identifier=("entity", "orientation", "set", "absolute"))
+                                                     identifier="entity.orientation.set.absolute")
     ex.entity_set_orientation_relative = hive.socket(cls.set_set_orientation_relative,
-                                                     identifier=("entity", "orientation", "set", "relative"))
+                                                     identifier="entity.orientation.set.relative")
 
-    ex.entity_get_parent = hive.socket(cls.set_get_parent, identifier=("entity", "parent", "get"))
-    ex.entity_set_parent = hive.socket(cls.set_set_parent, identifier=("entity", "parent", "set"))
+    ex.entity_get_parent = hive.socket(cls.set_get_parent, identifier="entity.parent.get")
+    ex.entity_set_parent = hive.socket(cls.set_set_parent, identifier="entity.parent.set")
 
-    ex.entity_get_tag = hive.socket(cls.set_get_tag, identifier=("entity", "tag", "get"))
-    ex.entity_set_tag = hive.socket(cls.set_set_tag, identifier=("entity", "tag", "set"))
+    ex.entity_get_tag = hive.socket(cls.set_get_tag, identifier="entity.tag.get")
+    ex.entity_set_tag = hive.socket(cls.set_set_tag, identifier="entity.tag.set")
 
     ex.entity_get_register_hive_destructor = hive.socket(cls.set_register_hive_destructor,
-                                                         identifier=("entity", "register_destructor"))
-    ex.entity_destroy = hive.socket(cls.set_destroy_entity, identifier=("entity", "destroy"))
-    ex.entity_spawn = hive.socket(cls.set_spawn_entity, identifier=("entity", "spawn"))
+                                                         identifier="entity.register_destructor")
+    ex.entity_destroy = hive.socket(cls.set_destroy_entity, identifier="entity.destroy")
+    ex.entity_spawn = hive.socket(cls.set_spawn_entity, identifier="entity.spawn")
 
     if bind_mode == 'bound':
         i.entity = hive.property(cls, "entity", "entity")
         i.pull_entity = hive.pull_in(i.entity)
         ex.entity = hive.antenna(i.pull_entity)
 
-    ex.entity_get_plugins = hive.plugin(cls.get_plugins, identifier=("bind", "get_plugins"))
-    ex.entity_get_config = hive.plugin(cls.get_config, identifier=("bind", "get_config"))
+    ex.entity_get_plugins = hive.plugin(cls.get_plugins, identifier="bind.get_plugins")
+    ex.entity_get_config = hive.plugin(cls.get_config, identifier="bind.get_config")
 
 
 BindEntity = hive.dyna_hive("BindEntity", build_bind, declarator=declare_bind, cls=EntityCls)

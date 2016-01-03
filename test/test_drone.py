@@ -25,7 +25,7 @@ class DroneCls:
 
 
 def build_drone(cls, i, ex, args):
-    ex.plug = hive.plugin(cls.print_name, identifier=("some_api", "func"), export_to_parent=True)
+    ex.plug = hive.plugin(cls.print_name, identifier="some_api.func", export_to_parent=True)
 
 
 Drone = hive.hive("Drone", build_drone, cls=DroneCls)
@@ -39,7 +39,7 @@ class HiveCls:
 
 def build_h(cls, i, ex, args):
     ex.drone = Drone(import_namespace=True)
-    ex.sock = hive.socket(cls.get_plugin, identifier=("some_api", "func"))
+    ex.sock = hive.socket(cls.get_plugin, identifier="some_api.func")
 
 
 Hive = hive.hive("Hive", build_h, cls=HiveCls)

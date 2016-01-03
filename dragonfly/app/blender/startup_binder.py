@@ -42,7 +42,7 @@ class _StartupBinderCls:
 
 
 def build_startup_binder(cls, i, ex, args):
-    ex.get_add_startup_callback = hive.socket(cls.set_add_startup_callback, ("callback", "startup"))
+    ex.get_add_startup_callback = hive.socket(cls.set_add_startup_callback, "callback.startup")
 
 
 StartupBinder = hive.hive("StartupBinder", builder=build_startup_binder, cls=_StartupBinderCls)

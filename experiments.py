@@ -1,6 +1,6 @@
 import string
 
-from hive import types_match
+from hive import identifiers_match
 
 
 class DataInfo:
@@ -181,7 +181,7 @@ class Parser:
 
 
 def data_match(a, b):
-    if not types_match(a.data_type, b.data_type):
+    if not identifiers_match(a.data_type, b.data_type):
         return False
 
     a_interfaces = a.interfaces

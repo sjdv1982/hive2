@@ -53,7 +53,7 @@ def build_orientation(cls, i, ex, args, meta_args):
     i.orientation = hive.property(cls, "orientation", "euler")
 
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.do_get_entity)
 
     else:
@@ -78,14 +78,12 @@ def build_orientation(cls, i, ex, args, meta_args):
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
-            ex.get_get_orientation = hive.socket(cls.set_get_orientation, identifier=("entity", "orientation", "get",
-                                                                                      "absolute"))
+            ex.get_get_orientation = hive.socket(cls.set_get_orientation, identifier="entity.orientation.get.absolute")
 
             i.do_get_orientation = hive.triggerable(cls.do_get_orientation)
 
         else:
-            ex.get_get_orientation = hive.socket(cls.set_get_orientation, identifier=("entity", "orientation", "get",
-                                                                                      "relative"))
+            ex.get_get_orientation = hive.socket(cls.set_get_orientation, identifier="entity.orientation.get.relative")
             i.do_get_orientation = hive.triggerable(cls.do_get_relative_orientation)
             hive.trigger(i.pull_orientation, i.pull_other_entity, pretrigger=True)
 
@@ -99,13 +97,11 @@ def build_orientation(cls, i, ex, args, meta_args):
 
     else:
         if coordinate_system == 'absolute':
-            ex.get_set_orientation = hive.socket(cls.set_set_orientation, identifier=("entity", "orientation", "set",
-                                                                                      "absolute"))
+            ex.get_set_orientation = hive.socket(cls.set_set_orientation, identifier="entity.orientation.set.absolute")
             i.do_set_orientation = hive.triggerable(cls.do_set_orientation)
 
         else:
-            ex.get_set_orientation = hive.socket(cls.set_set_orientation, identifier=("entity", "orientation", "set",
-                                                                                      "relative"))
+            ex.get_set_orientation = hive.socket(cls.set_set_orientation, identifier="entity.orientation.set.relative")
             i.do_set_orientation = hive.triggerable(cls.do_set_relative_orientation)
             hive.trigger(i.pull_orientation, i.pull_other_entity)
 

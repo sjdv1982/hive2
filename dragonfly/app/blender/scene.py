@@ -53,17 +53,13 @@ class SceneClass:
 def build_scene(cls, i, ex, args):
     i.bge_scene = hive.property(cls, "scene")
 
-    ex.get_entity = hive.plugin(cls.get_entity, identifier=("entity", "get"))
-    ex.get_position_absolute = hive.plugin(cls.get_position_absolute, identifier=("entity", "position", "absolute",
-                                                                                  "get"))
-    ex.get_position_relative = hive.plugin(cls.get_position_relative, identifier=("entity", "position", "relative",
-                                                                                  "get"))
-    ex.get_orientation_absolute = hive.plugin(cls.get_orientation_absolute, identifier=("entity", "orientation",
-                                                                                        "absolute", "get"))
-    ex.get_orientation_relative = hive.plugin(cls.get_orientation_relative, identifier=("entity", "orientation",
-                                                                                        "relative", "get"))
-    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier=("entity", "spawn"))
-    ex.get_scene = hive.plugin(cls.get_scene, identifier=("scene", "get_current"))
+    ex.get_entity = hive.plugin(cls.get_entity, identifier="entity.get")
+    ex.get_position_absolute = hive.plugin(cls.get_position_absolute, identifier="entity.position.absolute.get")
+    ex.get_position_relative = hive.plugin(cls.get_position_relative, identifier="entity.position.relative.get")
+    ex.get_orientation_absolute = hive.plugin(cls.get_orientation_absolute, identifier="entity.orientation.absolute.get")
+    ex.get_orientation_relative = hive.plugin(cls.get_orientation_relative, identifier="entity.orientation.relative.get")
+    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier="entity.spawn")
+    ex.get_scene = hive.plugin(cls.get_scene, identifier="entity.get_current")
 
     import dragonfly
     ex.on_tick = dragonfly.event.Tick()

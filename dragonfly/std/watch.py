@@ -42,7 +42,7 @@ def build_watch(cls, i, ex, args, meta_args):
     ex.on_changed = hive.hook(i.on_changed)
 
     ex.get_add_handler = hive.socket(cls.set_add_handler,
-                                     identifier=("event", "add_handler"))
+                                     identifier="event.add_handler")
 
 
 Watch = hive.dyna_hive("Watch", build_watch, declare_watch, cls=WatchClass)

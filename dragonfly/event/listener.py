@@ -26,7 +26,7 @@ def build_listener(cls, i, ex, args):
     i.on_event = hive.triggerfunc()
     ex.on_event = hive.hook(i.on_event)
 
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
 
 Listener = hive.hive("Listener", build_listener, cls=_ListenerCls)

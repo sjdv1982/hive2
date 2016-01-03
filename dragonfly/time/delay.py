@@ -62,10 +62,10 @@ def build_delay(cls, i, ex, args):
 
     hive.trigger(i.trigger, i.delay_in, pretrigger=True)
 
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
-    ex.get_remove_handler = hive.socket(cls.set_remove_handler, ("event", "remove_handler"))
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
+    ex.get_remove_handler = hive.socket(cls.set_remove_handler, "event.remove_handler")
 
-    ex.get_get_tick_rate = hive.socket(cls.set_get_tick_rate, ("app", "get_tick_rate"))
+    ex.get_get_tick_rate = hive.socket(cls.set_get_tick_rate, "app.get_tick_rate")
 
 
 Delay = hive.hive("Delay", build_delay, cls=_DelayCls)

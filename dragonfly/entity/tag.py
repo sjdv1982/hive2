@@ -41,7 +41,7 @@ def declare_tag(meta_args):
 def build_tag(cls, i, ex, args, meta_args):
     """Access to entity tag API"""
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.get_entity)
 
     else:
@@ -56,7 +56,7 @@ def build_tag(cls, i, ex, args, meta_args):
     ex.name = hive.antenna(i.pull_tag_name)
 
     if meta_args.mode == 'get':
-        ex.get_get_tag = hive.socket(cls.set_get_tag, identifier=("entity", "tag", "get"))
+        ex.get_get_tag = hive.socket(cls.set_get_tag, identifier="entity.tag.get")
 
         i.pull_tag_value = hive.pull_out(i.tag_value)
         ex.value = hive.output(i.pull_tag_value)
@@ -68,7 +68,7 @@ def build_tag(cls, i, ex, args, meta_args):
         hive.trigger(i.pull_tag_value, i.do_get_tag)
 
     else:
-        ex.get_set_tag = hive.socket(cls.set_set_tag, identifier=("entity", "tag", "set"))
+        ex.get_set_tag = hive.socket(cls.set_set_tag, identifier="entity.tag.set")
 
         i.pull_tag_value = hive.pull_in(i.tag_value)
         ex.value = hive.antenna(i.pull_tag_value)

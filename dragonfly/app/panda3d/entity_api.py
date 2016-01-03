@@ -74,45 +74,45 @@ class EntityClass:
 
 
 def build_entity(cls, i, ex, args):
-    ex.set_abs_position = hive.plugin(cls.set_absolute_position, identifier=("entity", "position", "set", "absolute"),
+    ex.set_abs_position = hive.plugin(cls.set_absolute_position, identifier="entity.position.set.absolute",
                                       export_to_parent=True)
-    ex.get_abs_position = hive.plugin(cls.get_absolute_position, identifier=("entity", "position", "get", "absolute"),
-                                      export_to_parent=True)
-
-    ex.set_rel_position = hive.plugin(cls.set_relative_position, identifier=("entity", "position", "set", "relative"),
-                                      export_to_parent=True)
-    ex.get_rel_position = hive.plugin(cls.get_relative_position, identifier=("entity", "position", "get", "relative"),
+    ex.get_abs_position = hive.plugin(cls.get_absolute_position, identifier="entity.position.get.absolute",
                                       export_to_parent=True)
 
-    ex.set_abs_orientation = hive.plugin(cls.set_absolute_orientation, identifier=("entity", "orientation", "set",
-                                                                                   "absolute"), export_to_parent=True)
-    ex.get_abs_orientation = hive.plugin(cls.get_absolute_orientation, identifier=("entity", "orientation", "get",
-                                                                                   "absolute"), export_to_parent=True)
+    ex.set_rel_position = hive.plugin(cls.set_relative_position, identifier="entity.position.set.relative",
+                                      export_to_parent=True)
+    ex.get_rel_position = hive.plugin(cls.get_relative_position, identifier="entity.position.get.relative",
+                                      export_to_parent=True)
 
-    ex.set_rel_orientation = hive.plugin(cls.set_relative_orientation, identifier=("entity", "orientation", "set",
-                                                                                   "relative"), export_to_parent=True)
-    ex.get_rel_orientation = hive.plugin(cls.get_relative_orientation, identifier=("entity", "orientation", "get",
-                                                                                   "relative"), export_to_parent=True)
+    ex.set_abs_orientation = hive.plugin(cls.set_absolute_orientation, identifier="entity.orientation.set.absolute",
+                                         export_to_parent=True)
+    ex.get_abs_orientation = hive.plugin(cls.get_absolute_orientation, identifier="entity.orientation.get.absolute",
+                                         export_to_parent=True)
 
-    ex.set_parent = hive.plugin(cls.set_parent, identifier=("entity", "parent", "set"),
+    ex.set_rel_orientation = hive.plugin(cls.set_relative_orientation, identifier="entity.orientation.set.relative",
+                                         export_to_parent=True)
+    ex.get_rel_orientation = hive.plugin(cls.get_relative_orientation, identifier="entity.orientation.get.relative",
+                                         export_to_parent=True)
+
+    ex.set_parent = hive.plugin(cls.set_parent, identifier="entity.parent.set",
                                 export_to_parent=True)
-    ex.get_parent = hive.plugin(cls.get_parent, identifier=("entity", "parent", "get"),
+    ex.get_parent = hive.plugin(cls.get_parent, identifier="entity.parent.get",
                                 export_to_parent=True)
 
-    ex.set_tag = hive.plugin(cls.set_tag, identifier=("entity", "tag", "set"),
+    ex.set_tag = hive.plugin(cls.set_tag, identifier="entity.tag.set",
                              export_to_parent=True)
-    ex.get_tag = hive.plugin(cls.get_tag, identifier=("entity", "tag", "get"),
+    ex.get_tag = hive.plugin(cls.get_tag, identifier="entity.tag.get",
                              export_to_parent=True)
 
-    ex.get_entity = hive.plugin(lambda name: None, identifier=("entity", "get"), export_to_parent=True)
+    ex.get_entity = hive.plugin(lambda name: None, identifier="entity.get", export_to_parent=True)
 
-    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier=("entity", "spawn"),
+    ex.spawn_entity = hive.plugin(cls.spawn_entity, identifier="entity.spawn",
                                   export_to_parent=True)
-    ex.destroy_entity = hive.plugin(cls.destroy_entity, identifier=("entity", "destroy"),
+    ex.destroy_entity = hive.plugin(cls.destroy_entity, identifier="entity.destroy",
                                     export_to_parent=True)
-    ex.register_entity_template = hive.plugin(cls.register_entity_template, ("entity", "register_template"),
+    ex.register_entity_template = hive.plugin(cls.register_entity_template, "entity.register_template",
                                               export_to_parent=True)
-    ex.register_hive_destructor = hive.plugin(cls.register_hive_destructor, ("entity", "register_destructor"),
+    ex.register_hive_destructor = hive.plugin(cls.register_hive_destructor, "entity.register_destructor",
                                               export_to_parent=True)
 
 

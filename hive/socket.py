@@ -56,9 +56,9 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
-        self.export_to_parent = export_to_parent
-        self.identifier = identifier
+        self.identifier = identifier_to_tuple(identifier, allow_none=False)
         self.data_type = identifier_to_tuple(data_type)
+        self.export_to_parent = export_to_parent
 
         if policy is None:
             policy = SingleRequired

@@ -24,7 +24,7 @@ def declare_spawn(meta_args):
 
 def build_spawn(cls, i, ex, args, meta_args):
     """Spawn an entity into the scene"""
-    ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, ("entity", "spawn"))
+    ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, "entity.spawn")
 
     i.entity_class = hive.property(cls, "entity_class", "str.id")
     i.pull_class = hive.pull_in(i.entity_class)

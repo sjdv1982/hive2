@@ -48,7 +48,7 @@ class Mouse_:
 
 
 def build_mouse(cls, i, ex, args):
-    ex.on_event = hive.socket(cls.set_add_handler, identifier=("event", "add_handler"))
+    ex.on_event = hive.socket(cls.set_add_handler, identifier="event.add_handler")
     i.on_tick = hive.triggerfunc()
 
     args.button = hive.parameter("str", "left", options={"left", "middle", "right"})
