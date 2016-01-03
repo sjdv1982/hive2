@@ -1,4 +1,4 @@
-from hive.tuple_type import types_match
+from hive.identifiers import identifiers_match
 
 
 class ConnectionType:
@@ -72,7 +72,7 @@ class Connection:
         if not target.can_connect_to(source, is_source=False):
             return ConnectionType.INVALID
 
-        if not types_match(source.data_type, target.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, target.data_type, allow_none=True):
             return ConnectionType.INVALID
 
         # Types valid and both

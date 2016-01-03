@@ -8,8 +8,8 @@ _type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", f
 
 
 def declare_convert(meta_args):
-    meta_args.from_data_type = hive.parameter("tuple", ("int",))
-    meta_args.to_data_type = hive.parameter("tuple", ("int",))
+    meta_args.from_data_type = hive.parameter("str", "int")
+    meta_args.to_data_type = hive.parameter("str", "int")
     meta_args.mode = hive.parameter("str", "pull", {"push", "pull"})
     meta_args.conversion = hive.parameter("str", "duck", {"duck", "cast"})
 

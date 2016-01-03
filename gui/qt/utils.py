@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from hive import types_match
+from hive import identifiers_match
 from .colour_button import QColorButton
 from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
     QColor, QToolButton, QIcon, QPixmap
@@ -261,7 +261,7 @@ def create_widget(data_type=(), options=None):
         if len(data_type) < len(factory_type):
             continue
 
-        if types_match(factory_type, data_type, allow_none=False):
+        if identifiers_match(factory_type, data_type, allow_none=False):
             return factory()
 
     return _create_repr()

@@ -5,7 +5,8 @@ from .classes import HiveBee
 from .manager import get_mode, memoize, register_bee
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
     Exportable
-from .tuple_type import types_match
+from .identifiers import identifiers_match
+
 
 ConnectionCandidate = namedtuple("ConnectionCandidate", ("bee_name", "data_type"))
 
@@ -26,7 +27,7 @@ def find_connection_candidates(sources, targets, require_types=True):
         if require_types and not (source_data_type and target_data_type):
             continue
 
-        if not types_match(source_data_type, target_data_type):
+        if not identifiers_match(source_data_type, target_data_type):
             continue
 
         candidates.append((source_candidate, target_candidate))

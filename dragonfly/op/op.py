@@ -12,7 +12,7 @@ operator_names = set(operators)
 
 
 def declare_operator(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
     meta_args.operator = hive.parameter("str", "+", options=operator_names)
 
 

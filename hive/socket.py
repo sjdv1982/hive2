@@ -1,7 +1,7 @@
 from .manager import memoize, get_building_hive, ContextFactory
 from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
 from .policies import SingleRequired
-from .tuple_type import tuple_type
+from .identifiers import identifier_to_tuple
 
 
 class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
@@ -11,7 +11,7 @@ class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
         self._run_hive = run_hive
         self._func = func
 
-        self.data_type = tuple_type(data_type)
+        self.data_type = identifier_to_tuple(data_type)
 
     def __repr__(self):
         return "<Socket: {}>".format(self._func)
@@ -58,7 +58,7 @@ class HiveSocketBee(Socket, ConnectTarget, Exportable):
 
         self.export_to_parent = export_to_parent
         self.identifier = identifier
-        self.data_type = tuple_type(data_type)
+        self.data_type = identifier_to_tuple(data_type)
 
         if policy is None:
             policy = SingleRequired

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from hive.tuple_type import types_match
+from hive.identifiers import identifiers_match
 from .list_view import ListView
 from .sockets import get_colour, get_shape
 
@@ -39,7 +39,7 @@ class IOPin(object):
         self._colour = get_colour(data_type)
         self._data_type = data_type
         self._mode = mode # "any" for any connection
-        self._is_trigger = types_match(data_type, ("trigger",), allow_none=False)
+        self._is_trigger = identifiers_match(data_type, ("trigger",), allow_none=False)
         self._io_type = io_type
         self._node = node
         self._restricted_data_types = restricted_types
@@ -146,7 +146,7 @@ class IOPin(object):
 
         # If a restricted data type
         for data_type in self._restricted_data_types:
-            if types_match(other_pin.data_type, data_type, allow_none=False):
+            if identifiers_match(other_pin.data_type, data_type, allow_none=False):
                 return False
 
         # Limit connections if provided

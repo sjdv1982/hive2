@@ -8,7 +8,7 @@ from ..sys.process import Process
 
 class _Mainloop(object):
 
-    @hive.argument_types(tick_rate=('int',))
+    @hive.types(tick_rate=('int',))
     def __init__(self, tick_rate=60):
         self._hive = hive.get_run_hive()
         self.tick_rate = tick_rate

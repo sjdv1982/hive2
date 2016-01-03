@@ -22,7 +22,7 @@ def next_modifier(self):
 
 
 def declare_next(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def build_next(i, ex, args, meta_args):

@@ -1,14 +1,14 @@
 from collections import defaultdict
 from inspect import isfunction, getcallargs
 
-from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, Method
-from .compatability import next, is_method
+from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
+from .compatability import next
 from .connect import connect, ConnectionCandidate
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_validation_enabled
 from .mixins import *
 from .policies import MatchmakingPolicyError
-from .tuple_type import tuple_type, types_match
+from .identifiers import identifier_to_tuple, identifiers_match
 
 
 def generate_bee_name():
@@ -19,30 +19,6 @@ def generate_bee_name():
 
 
 it_generate_bee_name = generate_bee_name()
-
-
-class HiveMethodWrapper(object):
-    """Intercept attribute lookups to return wrapped methods belonging to a given class."""
-
-    def __init__(self, cls):
-        object.__setattr__(self, "_cls", cls)
-
-    def __getattr__(self, attr):
-        value = getattr(self._cls, attr)
-
-        if is_method(value):
-            return Method(self._cls, value)
-
-        else:
-            return value
-
-    def __setattr__(self, attr):
-        raise AttributeError("HiveMethodWrapper of class '{}' is read-only".format(self._cls.__name__))
-
-    def __repr__(self):
-        self_cls = object.__getattribute__(self, "__class__")
-        wrapped_cls = object.__getattribute__(self, "_cls")
-        return "{}({})".format(self_cls.__name__, wrapped_cls)
 
 
 class RuntimeHiveInstantiator(Bindable):
@@ -355,9 +331,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         :param target: target to connect to
         """
         assert target.implements(ConnectTarget)
-        target_data_type = tuple_type(target.data_type)
+        target_data_type = identifier_to_tuple(target.data_type)
 
-        connect_sources = [c for c in cls._hive_find_connect_sources() if types_match(c.data_type, target_data_type)]
+        connect_sources = [c for c in cls._hive_find_connect_sources() if identifiers_match(c.data_type, target_data_type)]
 
         if not connect_sources:
             raise TypeError("No matching connection sources found for {}".format(target))
@@ -374,9 +350,9 @@ F
         :param source: source to connect to
         """
         assert source.implements(ConnectSource)
-        source_data_type = tuple_type(source.data_type)
+        source_data_type = identifier_to_tuple(source.data_type)
 
-        connect_targets = [c for c in cls._hive_find_connect_targets() if types_match(c.data_type, source_data_type)]
+        connect_targets = [c for c in cls._hive_find_connect_targets() if identifiers_match(c.data_type, source_data_type)]
 
         if not connect_targets:
             raise TypeError("No matching connections found for {}".format(source))
@@ -479,7 +455,7 @@ class HiveBuilder(object):
             for builder, builder_cls in cls._builders:
                 # Call builder with appropriate arguments depending upon Hive type
                 if builder_cls is not None:
-                    wrapper = HiveMethodWrapper(builder_cls)
+                    wrapper = HiveClassProxy(builder_cls)
                     builder_args = wrapper, internals, externals, args
 
                 else:

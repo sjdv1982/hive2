@@ -26,7 +26,7 @@ class WatchClass:
 
 
 def declare_watch(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def build_watch(cls, i, ex, args, meta_args):

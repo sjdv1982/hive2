@@ -1,9 +1,22 @@
 from functools import partial
 
+from .annotations import get_argument_types
 from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
-from .tuple_type import types_match
+from .identifiers import identifiers_match, identifier_to_tuple
+
+
+def get_callable_data_type(target):
+    arg_types = get_argument_types(target)
+    if not arg_types:
+        return ()
+
+    if len(arg_types) > 1:
+        raise ValueError("Target must have only one argument")
+
+    raw_data_type = next(iter(arg_types.values()))
+    return identifier_to_tuple(raw_data_type)
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
@@ -20,6 +33,11 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
         else:
             self._set_value = target
+
+            data_type = identifier_to_tuple(data_type)
+
+            if not data_type:
+                data_type = get_callable_data_type(target)
 
         self.target = target
         self.data_type = data_type
@@ -43,7 +61,7 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
         if isinstance(target, Bindable):
             target = target.bind(run_hive)
 
-        return self.__class__(target, self.data_type, run_hive=run_hive)
+        return self.__class__(target, data_type=self.data_type, run_hive=run_hive)
 
 
 class PushIn(PPInBase):
@@ -64,7 +82,7 @@ class PushIn(PPInBase):
         if source.mode != "push":
             raise TypeError("Source {} is not configured for push mode".format(source))
 
-        if not types_match(source.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match: {}, {}".format(source.data_type, self.data_type))
 
     def _hive_connect_target(self, source):
@@ -91,7 +109,7 @@ class PullIn(PPInBase, TriggerTarget):
         if source.mode != "pull":
             raise TypeError("Source {} is not configured for pull mode".format(source))
 
-        if not types_match(source.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, self.data_type, allow_none=True):
             raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
@@ -109,20 +127,24 @@ class PullIn(PPInBase, TriggerTarget):
 class PPInBee(Antenna, ConnectTarget, TriggerSource):
     mode = None
 
-    def __init__(self, target):
+    def __init__(self, target, data_type=None):
         is_stateful = isinstance(target, Stateful)
 
         if not (is_stateful or target.implements(Callable)):
             raise TypeError("Target must implement Callable or Stateful protocol")
 
         if is_stateful:
-            self.data_type = target.data_type
+            data_type = target.data_type
 
         else:
-            self.data_type = None
+            data_type = identifier_to_tuple(data_type)
+
+            if data_type is None:
+                data_type = get_callable_data_type(target)
 
         self._hive_object_cls = get_building_hive()
         self.target = target
+        self.data_type = data_type
 
     @memoize
     def getinstance(self, hive_object):
@@ -132,9 +154,9 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
             target = target.getinstance(hive_object)
 
         if self.mode == "push":    
-            return PushIn(target, self.data_type)
+            return PushIn(target, data_type=self.data_type)
 
-        return PullIn(target, self.data_type)
+        return PullIn(target, data_type=self.data_type)
 
     def implements(self, cls):
         if Bee.implements(self, cls):
@@ -155,17 +177,17 @@ class PullInBee(PPInBee, TriggerTarget):
     mode = "pull"
 
 
-def push_in(target):
+def push_in(target, data_type=None):
     if get_mode() == "immediate":
-        return PushIn(target)
+        return PushIn(target, data_type=data_type)
 
     else:
-        return PushInBee(target)
+        return PushInBee(target, data_type=data_type)
 
 
-def pull_in(target):
+def pull_in(target, data_type=None):
     if get_mode() == "immediate":
-        return PullIn(target)
+        return PullIn(target, data_type=data_type)
 
     else:
-        return PullInBee(target)
+        return PullInBee(target, data_type=data_type)

@@ -20,7 +20,7 @@ def build_get_entity(cls, i, ex, args):
     """Get entity from scene by ID"""
     ex.get_get_entity = hive.socket(cls.set_get_entity, identifier=("entity", "get"))
 
-    i.identifier = hive.property(cls, "identifier", ("str", "id"))
+    i.identifier = hive.property(cls, "identifier", "str.id")
     i.pull_identifier = hive.pull_in(i.identifier)
     ex.identifier = hive.antenna(i.pull_identifier)
 

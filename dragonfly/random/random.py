@@ -2,10 +2,12 @@ from random import Random as RNG
 
 import hive
 
+# TODO dont use raw pull_out from functions
+
 
 class _RandomCls:
 
-    @hive.argument_types(seed="float")
+    @hive.types(seed="float")
     def __init__(self, seed=None):
         self.rng = RNG()
         self.rng.seed(seed)

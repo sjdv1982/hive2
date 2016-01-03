@@ -1,8 +1,8 @@
-from .hive import HiveMethodWrapper
-from .mixins import Stateful, Exportable, Bindable, Parameter
-from .tuple_type import tuple_type
-from .manager import get_mode, get_building_hive, memoize
 from weakref import WeakSet
+
+from .mixins import Stateful, Exportable, Bindable, Parameter
+from .identifiers import identifier_to_tuple
+from .manager import get_mode, get_building_hive, memoize
 
 
 class Property(Stateful, Bindable, Exportable):
@@ -16,7 +16,7 @@ class Property(Stateful, Bindable, Exportable):
         self._attr = attr
         self._bound = WeakSet()
 
-        self.data_type = tuple_type(data_type)
+        self.data_type = identifier_to_tuple(data_type)
         self.start_value = start_value
 
     def _hive_stateful_getter(self, run_hive):
@@ -61,7 +61,8 @@ def property(cls, attr, data_type=None, start_value=None):
     if get_mode() == "immediate":
         raise ValueError("hive.property cannot be used in immediate mode")
 
-    else:
-        assert isinstance(cls, HiveMethodWrapper), "hive.property(cls) must be the cls argument in" \
-                                                   " build(cls, i, ex, args)"
-        return Property(cls._cls, attr, data_type, start_value)
+    from .classes import HiveClassProxy
+    assert isinstance(cls, HiveClassProxy), "hive.property(cls) must be the cls argument in" \
+                                               " build(cls, i, ex, args)"
+
+    return Property(cls._cls, attr, data_type, start_value)

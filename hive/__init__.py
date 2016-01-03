@@ -1,7 +1,7 @@
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
 from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled, \
     validation_enabled_as
-from .tuple_type import types_match
+from .identifiers import identifiers_match
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
@@ -28,6 +28,7 @@ from .output import output
 
 #args primitives
 from .parameter import parameter
-from .annotations import argument_options, argument_types, get_argument_options, get_argument_types
-
 from .exception import HiveException
+
+from .annotations import types, options, return_type, get_argument_options, get_argument_types, get_return_type, \
+    update_wrapper

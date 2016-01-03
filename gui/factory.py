@@ -52,7 +52,7 @@ class BeeNodeFactory:
 
     def build_pull_in(self, node):
         data_type = node.params['meta_args']['data_type']
-
+        # TODO check is tuple
         node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 

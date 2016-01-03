@@ -2,7 +2,7 @@ import hive
 
 
 def declare_foreach(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def do_iter(self):

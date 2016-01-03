@@ -35,7 +35,7 @@ class TagClass:
 def declare_tag(meta_args):
     meta_args.bound = hive.parameter("bool", True)
     meta_args.mode = hive.parameter("str", "get", options={"get", "set"})
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def build_tag(cls, i, ex, args, meta_args):

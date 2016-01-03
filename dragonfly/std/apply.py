@@ -2,7 +2,7 @@ import hive
 
 
 def declare_apply(meta_args):
-    meta_args.result_type = hive.parameter("tuple", ("int",))
+    meta_args.result_type = hive.parameter("str", "int")
 
 
 def modifier(self):

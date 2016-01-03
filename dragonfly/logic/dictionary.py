@@ -17,7 +17,7 @@ class DictCls:
 
 
 def declare_dictionary(meta_args):
-    meta_args.data_type = hive.parameter("str", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
     meta_args.mode = hive.parameter("str", "get", {"get", "set"})
 
 
@@ -28,7 +28,7 @@ def build_dictionary(cls, i, ex, args, meta_args):
     i.dict_in = hive.pull_in(ex.dict)
     ex.dict_in = hive.antenna(i.dict_in)
 
-    ex.key = hive.property(cls, "key", ("str", "id"))
+    ex.key = hive.property(cls, "key", "str.id")
     i.key_in = hive.pull_in(ex.key)
     ex.key_in = hive.antenna(i.key_in)
 
