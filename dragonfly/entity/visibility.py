@@ -41,13 +41,13 @@ def build_visibility(cls, i, ex, args, meta_args):
         pass
 
     else:
-        ex.get_get_parent = hive.socket(cls.set_get_parent, identifier=("entity", "hide"))
-        ex.get_set_parent = hive.socket(cls.set_set_parent, identifier=("entity", "parent", "set"))
+        ex.get_get_parent = hive.socket(cls.set_get_parent, identifier="entity.hide")
+        ex.get_set_parent = hive.socket(cls.set_set_parent, identifier="entity.show")
 
         i.parent_ = hive.property(cls, "parent", "entity")
 
         if meta_args.bound:
-            ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+            ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
             i.do_get_entity = hive.triggerable(cls.get_entity)
 
         else:

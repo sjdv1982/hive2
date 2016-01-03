@@ -52,7 +52,7 @@ def build_move(cls, i, ex, args, meta_args):
     ex.displacement = hive.antenna(i.pull_displacement)
 
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.do_get_entity)
 
         hive.trigger(i.pull_displacement, i.do_get_entity)
@@ -65,8 +65,8 @@ def build_move(cls, i, ex, args, meta_args):
         hive.trigger(i.pull_displacement, i.pull_entity)
 
     if coordinate_system == 'absolute':
-        ex.get_set_position = hive.socket(cls.set_set_position, identifier=("entity", "position", "set", "absolute"))
-        ex.get_get_position = hive.socket(cls.set_get_position, identifier=("entity", "position", "get", "absolute"))
+        ex.get_set_position = hive.socket(cls.set_set_position, identifier="entity.position.set.absolute")
+        ex.get_get_position = hive.socket(cls.set_get_position, identifier="entity.position.get.absolute")
 
         i.do_set_position = hive.triggerable(cls.do_move_absolute)
 
@@ -77,8 +77,8 @@ def build_move(cls, i, ex, args, meta_args):
 
         hive.trigger(i.pull_displacement, i.pull_other_entity)
 
-        ex.get_set_position = hive.socket(cls.set_set_position, identifier=("entity", "position", "set", "relative"))
-        ex.get_get_position = hive.socket(cls.set_get_position, identifier=("entity", "position", "get", "relative"))
+        ex.get_set_position = hive.socket(cls.set_set_position, identifier="entity.position.set.relative")
+        ex.get_get_position = hive.socket(cls.set_get_position, identifier="entity.position.get.relative")
 
         i.do_set_position = hive.triggerable(cls.do_move_relative)
 

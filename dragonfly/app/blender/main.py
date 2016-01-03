@@ -70,11 +70,11 @@
 #     hive.connect(i.pull_bind_id, i.scene_instantiator.bind_id)
 #
 #     # Get read event
-#     ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, ("event", "process"))
-#     ex.get_add_handler = hive.socket(cls.add_handler, ("event", "add_handler"))
-#     ex.do_quit = hive.plugin(cls.stop, ("quit",))
-#     ex.add_on_startup = hive.plugin(cls.on_start, identifier=("callback", "start"))
-#     ex.add_on_stopped = hive.plugin(cls.on_stop, identifier=("callback", "stop"))
+#     ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, "event.process")
+#     ex.get_add_handler = hive.socket(cls.add_handler, "event.add_handler")
+#     ex.do_quit = hive.plugin(cls.stop, "quit")
+#     ex.add_on_startup = hive.plugin(cls.on_start, identifier="on_started")
+#     ex.add_on_stopped = hive.plugin(cls.on_stop, identifier="on_stopped"))
 #
 #   #  i.startup_binder = StartupBinder()
 #

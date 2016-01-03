@@ -16,7 +16,7 @@ class _OnStart:
 
 def build_on_start(cls, i, ex, args):
     """Listen for start event"""
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
     i.on_started = hive.triggerfunc()
     ex.on_started = hive.hook(i.on_started)

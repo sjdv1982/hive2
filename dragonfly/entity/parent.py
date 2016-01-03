@@ -37,13 +37,13 @@ def declare_parent(meta_args):
 
 def build_parent(cls, i, ex, args, meta_args):
     """Set/Get entity parent"""
-    ex.get_get_parent = hive.socket(cls.set_get_parent, identifier=("entity", "parent", "get"))
-    ex.get_set_parent = hive.socket(cls.set_set_parent, identifier=("entity", "parent", "set"))
+    ex.get_get_parent = hive.socket(cls.set_get_parent, identifier="entity.parent.get")
+    ex.get_set_parent = hive.socket(cls.set_set_parent, identifier="entity.parent.set")
 
     i.parent_ = hive.property(cls, "parent", "entity")
 
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.get_entity)
 
     else:

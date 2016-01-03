@@ -22,7 +22,7 @@ def build_dispatch(cls, i, ex, args):
     i.pull_event = hive.pull_in(i.event)
     ex.event = hive.antenna(i.pull_event)
 
-    ex.get_read_event = hive.socket(cls.set_read_event, identifier=("event", "process"))
+    ex.get_read_event = hive.socket(cls.set_read_event, identifier="event.process")
 
     i.dispatch = hive.triggerable(cls.dispatch)
     ex.trig = hive.entry(i.dispatch)

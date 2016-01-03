@@ -33,7 +33,7 @@ def build_destroy(cls, i, ex, args, meta_args):
     ex.destroy = hive.entry(i.do_destroy)
 
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
         i.do_get_entity = hive.triggerable(cls.do_get_entity)
 
         hive.trigger(i.trig_destroy, i.do_get_entity, pretrigger=True)
@@ -45,7 +45,7 @@ def build_destroy(cls, i, ex, args, meta_args):
 
         hive.trigger(i.trig_destroy, i.pull_entity, pretrigger=True)
 
-    ex.get_destroy_entity = hive.socket(cls.set_destroy_entity, identifier=("entity", "destroy"))
+    ex.get_destroy_entity = hive.socket(cls.set_destroy_entity, identifier="entity.destroy")
 
 
 Destroy = hive.dyna_hive("Destroy", build_destroy, declare_destroy, cls=DestroyClass)

@@ -16,7 +16,7 @@ class OnStopClass:
 
 def build_on_stop(cls, i, ex, args):
     """Listen for quit event"""
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
     i.on_stop = hive.triggerfunc()
     ex.on_stop = hive.hook(i.on_stop)

@@ -62,7 +62,7 @@ def declare_keyboard(meta_args):
 def build_keyboard(cls, i, ex, args, meta_args):
     """Listen for keyboard event"""
     if meta_args.mode == 'single key':
-        ex.on_event = hive.socket(cls.add_single_listener, identifier=("event", "add_handler"))
+        ex.on_event = hive.socket(cls.add_single_listener, identifier="event.add_handler")
 
         args.key = hive.parameter("str", "w")
         i.key = hive.property(cls, "key", "str", args.key)
@@ -84,7 +84,7 @@ def build_keyboard(cls, i, ex, args, meta_args):
         ex.is_pressed = hive.output(i.pull_is_pressed)
 
     else:
-        ex.on_event = hive.socket(cls.add_any_listener, identifier=("event", "add_handler"))
+        ex.on_event = hive.socket(cls.add_any_listener, identifier="event.add_handler")
 
         i.key_pressed = hive.property(cls, 'key_pressed', data_type='str')
         i.pull_key_pressed = hive.push_out(i.key_pressed)

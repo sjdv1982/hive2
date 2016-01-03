@@ -26,7 +26,7 @@ class Dog(object):
 def build_dog(cls, i, ex, args):
     i.print_house = hive.triggerable(cls.print_house)
     ex.print_house = hive.entry(i.print_house)
-    ex.some_socket = hive.socket(cls.set_get_house, identifier=("get", "house"), data_type="float")
+    ex.some_socket = hive.socket(cls.set_get_house, identifier="get.house", data_type="float")
 
 
 DogHive = hive.hive("DogHive", build_dog, Dog)
@@ -57,7 +57,7 @@ class House(object):
 
 
 def build_house(cls, i, ex, args):
-    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier=("get", "house"), data_type="float")
+    ex.some_plugin = hive.plugin(cls.get_current_hive, identifier="get.house", data_type="float")
 
     # Auto connect
     i.filler = FillerHive()

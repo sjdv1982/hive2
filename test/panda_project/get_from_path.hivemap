@@ -1,0 +1,229 @@
+Hivemap (
+  hives = HiveNodeArray (
+    HiveNode (
+      identifier = 'import_',
+      import_path = 'dragonfly.sys.Import',
+      position = Coordinate2D (
+        x = -101.0,
+        y = -234.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+  ),
+  bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'result_',
+      import_path = 'hive.output',
+      position = Coordinate2D (
+        x = 152.0,
+        y = -293.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'module_name',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = -262.0,
+        y = -353.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_out',
+      import_path = 'hive.pull_out',
+      position = Coordinate2D (
+        x = 19.0,
+        y = -353.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = '()',
+        ),
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'result',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'pull_in',
+      import_path = 'hive.pull_in',
+      position = Coordinate2D (
+        x = -116.0,
+        y = -360.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+        InstanceParameter (
+          identifier = 'attribute_name',
+          data_type = 'str',
+          value = 'attr_name',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'modifier',
+      import_path = 'hive.modifier',
+      position = Coordinate2D (
+        x = -6.0,
+        y = -185.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'code',
+          data_type = 'str',
+          value = 'self._result = getattr(self._import_.module.pull(), self._attr_name)',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'result',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = 2.0,
+        y = -385.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = '()',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'NoneType',
+          value = 'None',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'attr_name',
+      import_path = 'hive.attribute',
+      position = Coordinate2D (
+        x = -86.0,
+        y = -393.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'tuple',
+          value = "('str',)",
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'export',
+          data_type = 'bool',
+          value = 'False',
+        ),
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = '',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+    BeeNode (
+      identifier = 'attr_name_',
+      import_path = 'hive.antenna',
+      position = Coordinate2D (
+        x = -260.0,
+        y = -430.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'module_name',
+      output_name = 'antenna',
+      to_node = 'import_',
+      input_name = 'import_path',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out',
+      output_name = 'value',
+      to_node = 'result_',
+      input_name = 'output',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'pull_out',
+      output_name = 'pre_output',
+      to_node = 'pull_in',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'pull_in',
+      output_name = 'post_update',
+      to_node = 'modifier',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'attr_name_',
+      output_name = 'antenna',
+      to_node = 'pull_in',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+  ),
+  docstring = '',
+)

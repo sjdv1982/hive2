@@ -7,8 +7,10 @@ def _validate_tuple(value):
         _validate_tuple(entry)
 
 
-def identifier_to_tuple(value):
+def identifier_to_tuple(value, allow_none=True):
     if value is None:
+        if not allow_none:
+            raise ValueError("None is not permitted!")
         return ()
 
     if isinstance(value, str):

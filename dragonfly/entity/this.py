@@ -16,7 +16,7 @@ class ThisClass:
 
 def build_this(cls, i, ex, args):
     """Access to current bound entity"""
-    ex.get_bound_entity = hive.socket(cls.set_get_entity, identifier=("entity", "get_bound"))
+    ex.get_bound_entity = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
 
     i.entity = hive.property(cls, "entity", "entity")
     i.pull_entity = hive.pull_out(i.entity)

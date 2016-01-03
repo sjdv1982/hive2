@@ -25,8 +25,8 @@ class ProcessClass:
 
 def build_process(cls, i, ex, args):
     # Startup / End callback
-    ex.get_on_started = hive.socket(cls.add_on_started, identifier=("on_started",), policy=hive.MultipleOptional)
-    ex.get_on_stopped = hive.socket(cls.add_on_stopped, identifier=("on_stopped",), policy=hive.MultipleOptional)
+    ex.get_on_started = hive.socket(cls.add_on_started, identifier="on_started", policy=hive.MultipleOptional)
+    ex.get_on_stopped = hive.socket(cls.add_on_stopped, identifier="on_stopped", policy=hive.MultipleOptional)
 
     i.on_started = hive.triggerable(cls.start)
     i.on_stopped = hive.triggerable(cls.stop)

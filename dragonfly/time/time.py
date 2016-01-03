@@ -38,8 +38,8 @@ def time_builder(cls, i, ex, args):
     i.elapsed_out = hive.pull_out(i.elapsed)
     ex.elapsed_out = hive.output(i.elapsed_out)
 
-    ex.get_add_handler = hive.socket(cls.set_add_handler, ("event", "add_handler"))
-    ex.on_started = hive.plugin(cls.on_started, ("on_started",), policy=hive.SingleRequired)
+    ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
+    ex.on_started = hive.plugin(cls.on_started, "on_started", policy=hive.SingleRequired)
     ex.get_get_tick_rate = hive.socket(cls.set_get_tick_rate, ("app", "get_tick_rate"))
 
 

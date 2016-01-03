@@ -27,8 +27,8 @@ def build_app_environment(cls, i, ex, args, meta_args):
 
     Provides appropriate sockets and plugins for app interface
     """
-    ex.app_quit = hive.plugin(cls.quit, identifier=("app", "quit"))
-    ex.app_get_tick_rate = hive.plugin(cls.get_tick_rate, identifier=("app", "get_tick_rate"))
+    ex.app_quit = hive.plugin(cls.quit, identifier="app.quit")
+    ex.app_get_tick_rate = hive.plugin(cls.get_tick_rate, identifier="app.get_tick_rate")
 
 
 AppEnvironment = hive.meta_hive("AppEnvironment", build_app_environment, declare_app_environment,
@@ -63,10 +63,10 @@ def declare_bind(meta_args):
 
 
 def build_bind(cls, i, ex, args, meta_args):
-    ex.get_quit = hive.socket(cls.set_quit, identifier=("app", "quit"))
-    ex.get_get_tick_rate = hive.socket(cls.set_get_tick_rate, identifier=("app", "get_tick_rate"))
+    ex.get_quit = hive.socket(cls.set_quit, identifier="app.quit")
+    ex.get_get_tick_rate = hive.socket(cls.set_get_tick_rate, identifier="app.get_tick_rate")
 
-    ex.app_get_plugins = hive.plugin(cls.get_plugins, identifier=("bind", "get_plugins"))
+    ex.app_get_plugins = hive.plugin(cls.get_plugins, identifier="bind.get_plugins")
 
 
 BindApp = hive.dyna_hive("BindApp", build_bind, declarator=declare_bind, cls=AppBindClass)

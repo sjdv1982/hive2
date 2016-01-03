@@ -50,11 +50,11 @@ def build_event_environment(cls, i, ex, args, meta_args):
 
     Provides appropriate sockets and plugins for event interface
     """
-    ex.add_handler = hive.plugin(cls.add_handler, identifier=("event", "add_handler"))
-    ex.remove_handler = hive.plugin(cls.remove_handler, identifier=("event", "remove_handler"))
-    ex.read_event = hive.plugin(cls.handle_event, identifier=("event", "process"))
+    ex.add_handler = hive.plugin(cls.add_handler, identifier="event.add_handler")
+    ex.remove_handler = hive.plugin(cls.remove_handler, identifier="event.remove_handler")
+    ex.read_event = hive.plugin(cls.handle_event, identifier="event.process")
 
-    ex.event_on_stopped = hive.plugin(cls.on_closed, identifier=("on_stopped",), policy=hive.SingleOptional)
+    ex.event_on_stopped = hive.plugin(cls.on_closed, identifier="on_stopped", policy=hive.SingleOptional)
 
 
 EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
@@ -106,11 +106,11 @@ def build_bind(cls, i, ex, args, meta_args):
         i.pull_event_leader = hive.pull_in(i.event_leader)
         ex.event_leader = hive.antenna(i.pull_event_leader)
 
-    ex.event_set_add_handler = hive.socket(cls.set_add_handler, identifier=("event", "add_handler"))
-    ex.event_set_remove_handler = hive.socket(cls.set_remove_handler, identifier=("event", "remove_handler"))
+    ex.event_set_add_handler = hive.socket(cls.set_add_handler, identifier="event.add_handler")
+    ex.event_set_remove_handler = hive.socket(cls.set_remove_handler, identifier="event.remove_handler")
 
-    ex.event_get_plugins = hive.plugin(cls.get_plugins, identifier=("bind", "get_plugins"))
-    ex.event_get_config = hive.plugin(cls.get_config, identifier=("bind", "get_config"))
+    ex.event_get_plugins = hive.plugin(cls.get_plugins, identifier="bind.get_plugins")
+    ex.event_get_config = hive.plugin(cls.get_config, identifier="bind.get_config")
 
 
 BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=declare_bind, cls=EventBindClass)
