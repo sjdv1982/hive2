@@ -32,6 +32,9 @@ class FrozenHiveArgs(object):
         member_pairs = ("{} = {}".format(k, v) for k, v in self._args.items())
         return "<FrozenHiveArgs ({})>\n\t{}".format(self._name, "\n\t".join(member_pairs))
 
+    def get_parameter_value(self, parameter):
+        return self._args[parameter._hive_parameter_name]
+
 
 class HiveArgs(object):
 
