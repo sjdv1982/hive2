@@ -1,7 +1,7 @@
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
 from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled, \
     validation_enabled_as
-from .identifiers import identifiers_match
+from .identifiers import identifiers_match, identifier_to_tuple
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable

@@ -21,8 +21,6 @@ area_classes = {
     "bottom": Qt.BottomDockWidgetArea,
 }
 
-# TODO throw unsaved warning when closing tabs
-
 
 def dict_to_delimited(data, delimiter, name_path=()):
     for name, value in data.items():

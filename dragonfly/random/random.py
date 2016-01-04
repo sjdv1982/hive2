@@ -2,8 +2,6 @@ from random import Random as RNG
 
 import hive
 
-# TODO dont use raw pull_out from functions
-
 
 class _RandomCls:
 
@@ -19,18 +17,23 @@ class _RandomCls:
         self.uniform_min = None
         self.uniform_max = None
 
+    @hive.types(seed='float')
     def set_seed(self, seed):
         self.rng.seed(seed)
 
+    @hive.return_type('float')
     def get_rand(self):
         return self.rng.random()
 
+    @hive.return_type('bool')
     def get_bool(self):
         return self.get_rand() >= 0.5
 
+    @hive.return_type('float')
     def get_randrange(self):
         return self.rng.randrange(self.randint_min, self.randint_max, self.randint_step)
 
+    @hive.return_type('float')
     def get_uniform(self):
         return self.rng.uniform(self.uniform_min, self.uniform_max)
 

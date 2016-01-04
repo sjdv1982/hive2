@@ -83,7 +83,7 @@ class BeeNodeInspector:
     def inspect_attribute(self):
         # Configure meta args
         meta_arg_options = OrderedDict()
-        meta_arg_options["data_type"] = InspectorOption(("tuple",), ("int",))
+        meta_arg_options["data_type"] = InspectorOption(("str",), "int")
         meta_args = yield ("meta_args", meta_arg_options)
 
         data_type = meta_args['data_type']

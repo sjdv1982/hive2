@@ -45,21 +45,25 @@ class MatchmakingPolicy:
 
 
 class SingleRequired(MatchmakingPolicy):
+    """One connection only must be established"""
 
     limits = (1, 1)
 
 
 class SingleOptional(MatchmakingPolicy):
+    """At most, one connection can be established"""
 
     limits = (None, 1)
 
 
 class MultipleRequired(MatchmakingPolicy):
+    """One or more connections must be established"""
 
     limits = (1, None)
 
 
 class MultipleOptional(MatchmakingPolicy):
+    """Any number of connections can be established"""
 
     limits = (None, None)
 

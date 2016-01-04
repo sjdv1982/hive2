@@ -44,7 +44,3 @@ def time_builder(cls, i, ex, args):
 
 
 Time = hive.hive("Time", builder=time_builder, cls=TimeClass)
-
-# TODO
-# All bind classes must have a disposal method (register cleanup functions) and their children
-# Entity spawn associate new entity with class

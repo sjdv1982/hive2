@@ -271,7 +271,6 @@ class NodeEditorSpace(QWidget):
         else:
             style = "dashed" if style_pin.mode == "pull" else "solid"
 
-        # TODO work this out properly
         curve = True
         gui_connection = Connection(output_socket, input_socket, style=style, curve=curve)
         self._connection_to_qt_connection[connection] = gui_connection

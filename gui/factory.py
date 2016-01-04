@@ -1,4 +1,4 @@
-from hive import validation_enabled_as
+from hive import validation_enabled_as, identifier_to_tuple
 
 from .node import Node, NodeTypes, MimicFlags
 from .utils import create_hive_object_instance, import_from_path, get_io_info
@@ -51,8 +51,9 @@ class BeeNodeFactory:
         return node
 
     def build_pull_in(self, node):
-        data_type = node.params['meta_args']['data_type']
-        # TODO check is tuple
+        raw_data_type = node.params['meta_args']['data_type']
+        data_type = identifier_to_tuple(raw_data_type)
+
         node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")
 
@@ -62,7 +63,8 @@ class BeeNodeFactory:
         return node
 
     def build_pull_out(self, node):
-        data_type = node.params['meta_args']['data_type']
+        raw_data_type = node.params['meta_args']['data_type']
+        data_type = identifier_to_tuple(raw_data_type)
 
         node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
 
@@ -72,7 +74,8 @@ class BeeNodeFactory:
         return node
 
     def build_push_in(self, node):
-        data_type = node.params['meta_args']['data_type']
+        raw_data_type = node.params['meta_args']['data_type']
+        data_type = identifier_to_tuple(raw_data_type)
 
         node.add_input("value", data_type, "push", restricted_types=[("trigger",)])
 
@@ -82,7 +85,8 @@ class BeeNodeFactory:
         return node
 
     def build_push_out(self, node):
-        data_type = node.params['meta_args']['data_type']
+        raw_data_type = node.params['meta_args']['data_type']
+        data_type = identifier_to_tuple(raw_data_type)
 
         node.add_output("value", data_type, "push", restricted_types=[("trigger",)])
         node.add_input("trigger", ("trigger",), "push")

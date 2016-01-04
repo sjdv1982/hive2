@@ -473,7 +473,6 @@ class HiveBuilder(object):
 
             cls._hive_build_namespace(hive_object_cls)
 
-            # TODO support separate hives building that aren't connected but instantiated inside hive
             if is_root:
                 tracked_policies = []
 
@@ -845,4 +844,4 @@ def meta_hive(name, builder, declarator, cls=None, bases=()):
 # 3. If bees set _hive_allow_export_namespace true, import appropriate plugins and sockets from child HiveObject
 # 4. For all plugins and sockets of current building hive, if export_to_parent, add names to class
 #       set "_hive_exportable_to_parent"
-# 5. If root HIVE (get_building_hive() is None after building), top-down recurse HiveObject._hive_establish_connectivity
+# 5. If root HIVE (get_building_hive() is None after building), top-down recurse HiveObject._hive_build_connectivity

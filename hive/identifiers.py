@@ -8,6 +8,10 @@ def _validate_tuple(value):
 
 
 def identifier_to_tuple(value, allow_none=True):
+    """Generate a tuple identifier from a string / tuple object.
+
+    String identifiers are split by full-stop '.'.
+    """
     if value is None:
         if not allow_none:
             raise ValueError("None is not permitted!")
