@@ -7,7 +7,8 @@ from ..identifiers import identifier_to_tuple
 
 
 class HiveClassProxy(object):
-    """Intercept attribute lookups to return wrapped methods belonging to a given class."""
+    """Intercept attribute lookups to return bee equivalents to instance methods and properties belonging to a bind
+    class."""
 
     def __init__(self, cls):
         object.__setattr__(self, "_cls", cls)

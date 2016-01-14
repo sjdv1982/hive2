@@ -62,7 +62,6 @@ def property(cls, attr, data_type=None, start_value=None):
         raise ValueError("hive.property cannot be used in immediate mode")
 
     from .classes import HiveClassProxy
-    assert isinstance(cls, HiveClassProxy), "hive.property(cls) must be the cls argument in" \
-                                               " build(cls, i, ex, args)"
+    assert isinstance(cls, HiveClassProxy), "hive.property(cls) must be the cls argument in build(cls, i, ex, args)"
 
     return Property(cls._cls, attr, data_type, start_value)

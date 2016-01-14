@@ -1,6 +1,11 @@
 def types(**kwargs):
     """Decorate function with argument types"""
     def wrapper(func):
+        for arg_name, data_type in kwargs.values():
+            if not isinstance(data_type, str):
+                raise TypeError("Expected string for data type, received {}='{}'"
+                                .format(arg_name, data_type))
+
         func._hive_arg_types = kwargs
         return func
 
@@ -17,6 +22,9 @@ def get_argument_types(func):
 
 def return_type(type_):
     """Decorate function with argument return type"""
+    if not isinstance(type_, str):
+        raise TypeError("Expected string for return type, received '{}'".format(type_))
+
     def wrapper(func):
         func._hive_return_type = type_
         return func

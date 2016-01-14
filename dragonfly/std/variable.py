@@ -3,6 +3,7 @@ import hive
 
 def declare_variable(meta_args):
     meta_args.data_type = hive.parameter("str", "int")
+    meta_args.advanced = hive.parameter("bool", False)
 
 
 def build_variable(i, ex, args, meta_args):
@@ -16,5 +17,11 @@ def build_variable(i, ex, args, meta_args):
     i.push_value = hive.push_in(ex.value)
     ex.value_in = hive.antenna(i.push_value)
 
+    if meta_args.advanced:
+        i.pre_output = hive.triggerfunc()
+        ex.pre_output = hive.hook(i.pre_output)
+
+        i.do_pre_output = hive.triggerable(i.pre_output)
+        hive.trigger(i.pull_value, i.do_pre_output, pretrigger=True)
 
 Variable = hive.dyna_hive("Variable", build_variable, declarator=declare_variable)

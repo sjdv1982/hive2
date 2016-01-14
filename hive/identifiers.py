@@ -1,10 +1,11 @@
-def _validate_tuple(value):
+def identifier_is_valid(value):
     if isinstance(value, str):
-        return
+        return True
 
-    assert isinstance(value, tuple), value
-    for entry in value:
-        _validate_tuple(entry)
+    if not isinstance(value, tuple):
+        return False
+
+    return all((identifier_is_valid(x) for x in value))
 
 
 def identifier_to_tuple(value, allow_none=True):
@@ -20,7 +21,8 @@ def identifier_to_tuple(value, allow_none=True):
     if isinstance(value, str):
         return tuple(value.split('.'))
     
-    _validate_tuple(value)
+    if not identifier_is_valid(value):
+        raise ValueError("'{}' is not a valid identifier".format(value))
     return value
 
 
