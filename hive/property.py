@@ -1,7 +1,6 @@
 from weakref import WeakSet
 
 from .mixins import Stateful, Exportable, Bindable, Parameter
-from .identifiers import identifier_to_tuple
 from .manager import get_mode, get_building_hive, memoize
 
 
@@ -16,7 +15,7 @@ class Property(Stateful, Bindable, Exportable):
         self._attr = attr
         self._bound = WeakSet()
 
-        self.data_type = identifier_to_tuple(data_type)
+        self.data_type = data_type
         self.start_value = start_value
 
     def _hive_stateful_getter(self, run_hive):

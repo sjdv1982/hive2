@@ -1,3 +1,6 @@
+import hive
+
+
 colours = [
     (255, 255, 95),
     (255, 0, 0),
@@ -15,8 +18,10 @@ colours = [
 
 def get_colour(data_type):
     """Return the appropriate socket colour for data type"""
-    if data_type:
-        base_type = data_type[0]
+    as_tuple = hive.identifier_to_tuple(data_type)
+
+    if as_tuple:
+        base_type = as_tuple[0]
 
         if base_type == "entity":
             return colours[0]

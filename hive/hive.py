@@ -8,7 +8,7 @@ from .manager import bee_register_context, get_mode, hive_mode_as, get_building_
     memoize, get_validation_enabled
 from .mixins import *
 from .policies import MatchmakingPolicyError
-from .identifiers import identifier_to_tuple, identifiers_match
+from .identifiers import identifiers_match
 
 
 def generate_bee_name():
@@ -331,9 +331,10 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         :param target: target to connect to
         """
         assert target.implements(ConnectTarget)
-        target_data_type = identifier_to_tuple(target.data_type)
+        #target_data_type = identifier_to_tuple(target.data_type)
 
-        connect_sources = [c for c in cls._hive_find_connect_sources() if identifiers_match(c.data_type, target_data_type)]
+        connect_sources = [c for c in cls._hive_find_connect_sources() if identifiers_match(c.data_type,
+                                                                                            target.data_type)]
 
         if not connect_sources:
             raise TypeError("No matching connection sources found for {}".format(target))
@@ -350,9 +351,9 @@ F
         :param source: source to connect to
         """
         assert source.implements(ConnectSource)
-        source_data_type = identifier_to_tuple(source.data_type)
-
-        connect_targets = [c for c in cls._hive_find_connect_targets() if identifiers_match(c.data_type, source_data_type)]
+        #source_data_type = identifier_to_tuple(source.data_type)
+        connect_targets = [c for c in cls._hive_find_connect_targets() if identifiers_match(c.data_type,
+                                                                                            source.data_type)]
 
         if not connect_targets:
             raise TypeError("No matching connections found for {}".format(source))

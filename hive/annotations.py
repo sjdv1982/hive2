@@ -1,7 +1,7 @@
 def types(**kwargs):
     """Decorate function with argument types"""
     def wrapper(func):
-        for arg_name, data_type in kwargs.values():
+        for arg_name, data_type in kwargs.items():
             if not isinstance(data_type, str):
                 raise TypeError("Expected string for data type, received {}='{}'"
                                 .format(arg_name, data_type))

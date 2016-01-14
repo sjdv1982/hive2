@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from hive import identifiers_match
+from hive import is_subtype
 from .colour_button import QColorButton
 from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
     QColor, QToolButton, QIcon, QPixmap
@@ -236,18 +236,18 @@ def _create_tuple():
 
 
 _factories = OrderedDict((
-    (("str", "code"), _create_code),
-    (("str",), _create_str),
-    (("int",), _create_int),
-    (("float",), _create_float),
-    (("bool",), _create_bool),
-    (("vector",), _create_vector),
-    (("euler",), _create_euler),
-    (("colour",), _create_colour),
+    ('str.code', _create_code),
+    ('str', _create_str),
+    ('int', _create_int),
+    ('float', _create_float),
+    ('bool', _create_bool),
+    ('vector', _create_vector),
+    ('euler', _create_euler),
+    ('colour', _create_colour),
     ))
 
 
-def create_widget(data_type=(), options=None):
+def create_widget(data_type=None, options=None):
     """Create a UI widget to edit a specific value
 
     :param data_type: data type of value
@@ -257,11 +257,7 @@ def create_widget(data_type=(), options=None):
         return _create_options(options)
 
     for factory_type, factory in _factories.items():
-        # Don't match str types with (str, code)!
-        if len(data_type) < len(factory_type):
-            continue
-
-        if identifiers_match(factory_type, data_type, allow_none=False):
+        if is_subtype(data_type, factory_type):
             return factory()
 
     return _create_repr()

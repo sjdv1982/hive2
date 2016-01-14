@@ -74,7 +74,7 @@ class BeeNodeInspector:
 
     def inspect_modifier(self):
         args_options = OrderedDict()
-        args_options["code"] = InspectorOption(("str", "code"), "")
+        args_options["code"] = InspectorOption('str.code', "")
         yield ("args", args_options)
 
     def inspect_triggerfunc(self):
@@ -83,14 +83,14 @@ class BeeNodeInspector:
     def inspect_attribute(self):
         # Configure meta args
         meta_arg_options = OrderedDict()
-        meta_arg_options["data_type"] = InspectorOption(("str",), "int")
+        meta_arg_options["data_type"] = InspectorOption('str', "int")
         meta_args = yield ("meta_args", meta_arg_options)
 
         data_type = meta_args['data_type']
 
         # Configure ARGS
         arg_options = OrderedDict()
-        arg_options["export"] = InspectorOption(("bool",), False)
+        arg_options["export"] = InspectorOption('bool', False)
         arg_options["start_value"] = InspectorOption(data_type)
 
         yield ("args", arg_options)
@@ -100,7 +100,7 @@ class BeeNodeInspector:
 
         # Configure meta args
         meta_arg_options = OrderedDict()
-        meta_arg_options["attribute_name"] = InspectorOption(("str",), options=set(attributes))
+        meta_arg_options["attribute_name"] = InspectorOption('str', options=set(attributes))
         meta_args = yield ("meta_args", meta_arg_options)
 
         attribute_name = meta_args['attribute_name']
@@ -163,7 +163,7 @@ class HiveNodeInspector:
 
         for arg_name in wrapper:
             param = getattr(wrapper, arg_name)
-            data_type = param.data_type if param.data_type else ()
+            data_type = param.data_type if param.data_type else ''
             options = param.options
 
             # If default is defined

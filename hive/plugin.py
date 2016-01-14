@@ -1,7 +1,6 @@
 from .manager import get_building_hive, memoize, ContextFactory
 from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
 from .policies import MultipleOptional
-from .identifiers import identifier_to_tuple
 
 
 class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
@@ -11,7 +10,7 @@ class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
         self._run_hive = run_hive
         self._func = func
 
-        self.data_type = identifier_to_tuple(data_type)
+        self.data_type = data_type
 
     def __repr__(self):
         return "<Plugin: {}>".format(self._func)
@@ -57,8 +56,8 @@ class HivePluginBee(Plugin, ConnectSource, Exportable):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
-        self.identifier = identifier_to_tuple(identifier, allow_none=False)
-        self.data_type = identifier_to_tuple(data_type)
+        self.identifier = identifier
+        self.data_type = data_type
         self.export_to_parent = export_to_parent
 
         if policy is None:

@@ -4,19 +4,15 @@ from .annotations import get_argument_types
 from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
-from .identifiers import identifiers_match, identifier_to_tuple
+from .identifiers import identifiers_match
 
 
 def get_callable_data_type(target):
     arg_types = get_argument_types(target)
-    if not arg_types:
-        return ()
-
     if len(arg_types) > 1:
         raise ValueError("Target must have only one argument")
 
-    raw_data_type = next(iter(arg_types.values()))
-    return identifier_to_tuple(raw_data_type)
+    return next(iter(arg_types.values()), ())
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
@@ -33,8 +29,6 @@ class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
 
         else:
             self._set_value = target
-
-            data_type = identifier_to_tuple(data_type)
 
             if not data_type:
                 data_type = get_callable_data_type(target)
@@ -82,7 +76,7 @@ class PushIn(PPInBase):
         if source.mode != "push":
             raise TypeError("Source {} is not configured for push mode".format(source))
 
-        if not identifiers_match(source.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, self.data_type, require_types=True):
             raise TypeError("Data types do not match: {}, {}".format(source.data_type, self.data_type))
 
     def _hive_connect_target(self, source):
@@ -109,7 +103,7 @@ class PullIn(PPInBase, TriggerTarget):
         if source.mode != "pull":
             raise TypeError("Source {} is not configured for pull mode".format(source))
 
-        if not identifiers_match(source.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, self.data_type, require_types=True):
             raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):
@@ -137,8 +131,6 @@ class PPInBee(Antenna, ConnectTarget, TriggerSource):
             data_type = target.data_type
 
         else:
-            data_type = identifier_to_tuple(data_type)
-
             if data_type is None:
                 data_type = get_callable_data_type(target)
 

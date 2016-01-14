@@ -73,18 +73,14 @@ def is_identifier(identifier):
 
 def start_value_from_type(data_type, allow_none=False):
     """Attempt to return a unique "starting value" for a given data type"""
-    if not data_type:
-        return None
+    as_tuple = hive.identifier_to_tuple(data_type, allow_none)
+    base_type = as_tuple[0]
 
-    base_type = data_type[0]
-
-    if base_type in type_factories:
+    try:
         return type_factories[base_type]()
 
-    elif allow_none:
-        return None
-
-    raise TypeError(data_type)
+    except KeyError:
+        raise TypeError(data_type)
 
 
 def get_builder_class_args(hive_cls):
@@ -158,12 +154,12 @@ def get_io_info(hive_object):
 
         elif isinstance(bee, Hook):
             storage_target = outputs
-            data_type = ("trigger",)
+            data_type = 'trigger'
             mode = "push"
 
         elif isinstance(bee, Entry):
             storage_target = inputs
-            data_type = ("trigger",)
+            data_type = 'trigger'
             mode = "push"
 
         else:

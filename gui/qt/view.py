@@ -42,6 +42,7 @@ from .qt_core import *
 from .qt_gui import *
 from .scene import NodeUIScene
 
+
 SELECT_SIZE = 10
 
 get_name = attrgetter("name")
@@ -168,7 +169,7 @@ class NodeView(QGraphicsView):
             scene_pos = self.mapToScene(origin)
 
             widget.setVisible(True)
-            widget.on_updated(scene_pos, repr(socket.parent_socket_row.pin.data_type)) #TODO
+            widget.on_updated(scene_pos, socket.parent_socket_row.pin.data_type) #TODO
 
         else:
             widget.setVisible(False)

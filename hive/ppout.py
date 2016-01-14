@@ -5,11 +5,7 @@ from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
 from .mixins import Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, ConnectTarget, \
     TriggerSource, TriggerTarget, Socket, Plugin
-from .identifiers import identifiers_match, identifier_to_tuple
-
-
-def get_callable_return_type(target):
-    return identifier_to_tuple(get_return_type(target))
+from .identifiers import identifiers_match
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
@@ -23,10 +19,8 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
             self._get_value = partial(target._hive_stateful_getter, run_hive)
 
         else:
-            data_type = identifier_to_tuple(data_type)
-
             if not data_type:
-                data_type = get_callable_return_type(target)
+                data_type = get_return_type(target)
 
             self._get_value = target
 
@@ -74,7 +68,7 @@ class PullOut(PPOutBase):
         if target.mode != "pull":
             raise TypeError("Target {} is not configured for pull mode".format(target))
 
-        if not identifiers_match(target.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(target.data_type, self.data_type, require_types=True):
             raise TypeError("Data types do not match")
 
     def _hive_connect_source(self, target):
@@ -110,7 +104,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         if target.mode != "push":
             raise TypeError("Target {} is not configured for push mode".format(target))
 
-        if not identifiers_match(target.data_type, self.data_type, allow_none=True):
+        if not identifiers_match(target.data_type, self.data_type, require_types=True):
             raise TypeError("Data types do not match")
     
     def _hive_connect_source(self, target):
@@ -140,10 +134,8 @@ class PPOutBee(Output, ConnectSource, TriggerSource):
             data_type = target.data_type
 
         else:
-            data_type = identifier_to_tuple(data_type)
-
             if not data_type:
-                data_type = get_callable_return_type(target)
+                data_type = get_return_type(target)
 
         self._hive_object_cls = get_building_hive()
         self.data_type = data_type

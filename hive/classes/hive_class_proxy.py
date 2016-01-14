@@ -3,7 +3,6 @@ from ..property import Property
 
 from ..annotations import get_argument_options, get_return_type
 from ..compatability import is_method
-from ..identifiers import identifier_to_tuple
 
 
 class HiveClassProxy(object):
@@ -35,12 +34,11 @@ class HiveClassProxy(object):
 
     def _property_from_descriptor(self, attr, prop):
         """Create a hive.property object from descriptor"""
-        raw_getter_type = get_return_type(prop.fget)
-        data_type = identifier_to_tuple(raw_getter_type)
+        data_type = get_return_type(prop.fget)
 
         if prop.fset is not None:
-            raw_setter_type = next(iter(get_argument_options(prop.fset)))
-            if identifier_to_tuple(raw_setter_type) != raw_getter_type:
+            setter_data_type = next(iter(get_argument_options(prop.fset)), None)
+            if setter_data_type != data_type:
                 raise TypeError()
 
         return Property(self._cls, attr, data_type, None)

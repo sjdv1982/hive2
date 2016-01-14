@@ -1,4 +1,4 @@
-from hive import validation_enabled_as, identifier_to_tuple
+from hive import validation_enabled_as
 
 from .node import Node, NodeTypes, MimicFlags
 from .utils import create_hive_object_instance, import_from_path, get_io_info
@@ -26,24 +26,24 @@ class BeeNodeFactory:
         return builder(node)
 
     def build_antenna(self, node):
-        node.add_output("antenna", None, "any", max_connections=1, restricted_types=[("trigger",)],
+        node.add_output("antenna", None, "any", max_connections=1, restricted_types=['trigger'],
                         mimic_flags=MimicFlags.COLOUR, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_output(self, node):
-        node.add_input("output", None, "any", max_connections=1, restricted_types=[("trigger",)],
+        node.add_input("output", None, "any", max_connections=1, restricted_types=['trigger'],
                        mimic_flags=MimicFlags.COLOUR, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_entry(self, node):
-        node.add_output("output", ("trigger",), "push", max_connections=1, is_virtual=True, count_proxies=True)
+        node.add_output("output", 'trigger', "push", max_connections=1, is_virtual=True, count_proxies=True)
 
         return node
 
     def build_hook(self, node):
-        node.add_input("output", ("trigger",), "push", max_connections=1, is_virtual=True, count_proxies=True)
+        node.add_input("output", 'trigger', "push", max_connections=1, is_virtual=True, count_proxies=True)
 
         return node
 
@@ -51,59 +51,55 @@ class BeeNodeFactory:
         return node
 
     def build_pull_in(self, node):
-        raw_data_type = node.params['meta_args']['data_type']
-        data_type = identifier_to_tuple(raw_data_type)
+        data_type = node.params['meta_args']['data_type']
 
-        node.add_input("value", data_type, "pull", restricted_types=[("trigger",)])
-        node.add_input("trigger", ("trigger",), "push")
+        node.add_input("value", data_type, "pull", restricted_types=['trigger'])
+        node.add_input("trigger", 'trigger', "push")
 
-        node.add_output("pre_update", ("trigger",), "push", is_virtual=True)
-        node.add_output("post_update", ("trigger",), "push")
+        node.add_output("pre_update", 'trigger', "push", is_virtual=True)
+        node.add_output("post_update", 'trigger', "push")
 
         return node
 
     def build_pull_out(self, node):
-        raw_data_type = node.params['meta_args']['data_type']
-        data_type = identifier_to_tuple(raw_data_type)
+        data_type = node.params['meta_args']['data_type']
 
-        node.add_output("value", data_type, "pull", restricted_types=[("trigger",)])
+        node.add_output("value", data_type, "pull", restricted_types=['trigger'])
 
-        node.add_output("pre_output", ("trigger",), "push", is_virtual=True)
-        node.add_output("post_output", ("trigger",), "push")
+        node.add_output("pre_output", 'trigger', "push", is_virtual=True)
+        node.add_output("post_output", 'trigger', "push")
 
         return node
 
     def build_push_in(self, node):
-        raw_data_type = node.params['meta_args']['data_type']
-        data_type = identifier_to_tuple(raw_data_type)
+        data_type = node.params['meta_args']['data_type']
 
-        node.add_input("value", data_type, "push", restricted_types=[("trigger",)])
+        node.add_input("value", data_type, "push", restricted_types=['trigger'])
 
-        node.add_output("pre_update", ("trigger",), "push", is_virtual=True)
-        node.add_output("post_update", ("trigger",), "push")
+        node.add_output("pre_update", 'trigger', "push", is_virtual=True)
+        node.add_output("post_update", 'trigger', "push")
 
         return node
 
     def build_push_out(self, node):
-        raw_data_type = node.params['meta_args']['data_type']
-        data_type = identifier_to_tuple(raw_data_type)
+        data_type = node.params['meta_args']['data_type']
 
-        node.add_output("value", data_type, "push", restricted_types=[("trigger",)])
-        node.add_input("trigger", ("trigger",), "push")
+        node.add_output("value", data_type, "push", restricted_types=['trigger'])
+        node.add_input("trigger", 'trigger', "push")
 
-        node.add_output("pre_output", ("trigger",), "push", is_virtual=True)
-        node.add_output("post_output", ("trigger",), "push")
+        node.add_output("pre_output", 'trigger', "push", is_virtual=True)
+        node.add_output("post_output", 'trigger', "push")
 
         return node
 
     def build_triggerfunc(self, node):
-        node.add_output("trigger", ("trigger",), "push")
-        node.add_output("pre_trigger", ("trigger",), "push", is_virtual=True)
+        node.add_output("trigger", 'trigger', "push")
+        node.add_output("pre_trigger", 'trigger', "push", is_virtual=True)
 
         return node
 
     def build_modifier(self, node):
-        node.add_input("trigger", ("trigger",), "push")
+        node.add_input("trigger", 'trigger', "push")
 
         return node
 

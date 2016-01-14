@@ -72,7 +72,7 @@ class Connection:
         if not target.can_connect_to(source, is_source=False):
             return ConnectionType.INVALID
 
-        if not identifiers_match(source.data_type, target.data_type, allow_none=True):
+        if not identifiers_match(source.data_type, target.data_type, require_types=True):
             return ConnectionType.INVALID
 
         # Types valid and both
