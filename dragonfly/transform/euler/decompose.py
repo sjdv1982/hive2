@@ -14,7 +14,7 @@ def build_decompose(i, ex, args):
     i.refresh = hive.modifier(decompose_modifier)
 
     for name in ['x', 'y', 'z']:
-        attr = hive.attribute("euler")
+        attr = hive.attribute("float")
         setattr(i, name, attr)
 
         pull_out = hive.pull_out(attr)
@@ -22,9 +22,9 @@ def build_decompose(i, ex, args):
 
         hive.trigger(pull_out, i.refresh, pretrigger=True)
 
-    i.eulerr = hive.attribute("eulerr")
-    i.pull_vector = hive.pull_in(i.eulerr)
-    ex.eulerr = hive.antenna(i.pull_vector)
+    i.euler = hive.attribute("euler")
+    i.pull_vector = hive.pull_in(i.euler)
+    ex.euler = hive.antenna(i.pull_vector)
 
 
 Decompose = hive.hive("Decompose", build_decompose)
