@@ -49,7 +49,6 @@ from __future__ import print_function
 # my_hive.b.push(1)
 # my_hive.trigger()
 #
-import gui.finder
 
 import sys
 import os

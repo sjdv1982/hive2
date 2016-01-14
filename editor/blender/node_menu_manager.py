@@ -62,7 +62,6 @@ def draw_menu(self, context):
 
 def register():
     global blend_manager
-    from .blend_manager import blend_manager
 
     types.NODE_MT_add.append(draw_menu)
 

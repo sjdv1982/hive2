@@ -1,6 +1,12 @@
 import hive
 
 
+class ImportHive:
+
+    def __init__(self):
+        pass
+
+
 def do_import_from_path(self):
     module_parts = self._import_path.split(".")
     sub_module_name = module_parts[-1]

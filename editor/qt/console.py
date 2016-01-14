@@ -1,11 +1,10 @@
+import sys
+from code import InteractiveConsole
 from collections import deque
 from contextlib import redirect_stdout, contextmanager
-from code import InteractiveConsole
 from io import StringIO
-import sys
 
 from .qt_core import *
-
 from .qt_gui import *
 
 

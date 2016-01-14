@@ -3,12 +3,12 @@ import ctypes
 import os
 import sys
 
-import gui.qt as pyside_gui
-import gui.qt.qdarkstyle as qdarkstyle
-from gui.qt.main_window import MainWindow
-from gui.qt.qt_core import *
-from gui.qt.qt_gui import *
-from gui.qt.qt_webkit import *
+import editor.qt as pyside_gui
+import editor.qt.qdarkstyle as qdarkstyle
+from editor.qt.main_window import MainWindow
+from editor.qt.qt_core import *
+from editor.qt.qt_gui import *
+from editor.qt.qt_webkit import *
 
 if __name__ == "__main__":
     # Create a Qt application

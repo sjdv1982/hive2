@@ -20,7 +20,7 @@ class Dog(object):
 
     def set_get_house(self, get_house_func):
         self.get_house = get_house_func
-        print("SET FUNC", get_house_func, self.name,self)
+        print("SET FUNC", get_house_func, self.name, self)
 
 
 def build_dog(cls, i, ex, args):

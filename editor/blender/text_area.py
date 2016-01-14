@@ -1,5 +1,6 @@
-import bpy
 from itertools import chain
+
+import bpy
 
 
 class BlenderTextArea:

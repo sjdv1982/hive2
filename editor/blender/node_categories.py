@@ -1,4 +1,4 @@
-from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
+from nodeitems_utils import NodeItem
 
 from .types import HiveNodeCategory
 
