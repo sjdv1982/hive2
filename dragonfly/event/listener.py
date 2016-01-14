@@ -5,7 +5,7 @@ from .event import EventHandler
 
 class _ListenerCls:
 
-    @hive.types(event="tuple", mode="str")
+    @hive.types(event="str", mode="str")
     @hive.options(mode={'leader', 'match', 'trigger'})
     def __init__(self, event, mode='leader'):
         self.add_handler = None
