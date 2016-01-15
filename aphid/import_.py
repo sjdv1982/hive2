@@ -8,19 +8,30 @@ class ImportClass:
 
     def __init__(self):
         self._hive = hive.get_run_hive()
+
         self.import_path = None
+        self.module = None
 
     def do_import_from_path(self):
         module_parts = self.import_path.split(".")
         sub_module_name = module_parts[-1]
 
-        gui_file_path = os.path.dirname(self._hive.parent._hive_object._hive_parent_class._hive_file_path)
-        context = editor.get_hook().temporary_relative_context(gui_file_path)
+        hook = editor.get_hook()
 
-        with context:
+        container_parent_class = self._hive.parent._hive_object._hive_parent_class
+        try:
+            directory = os.path.dirname(hook.get_path_of_class(container_parent_class))
+
+        except ValueError:
             module = __import__(self.import_path, fromlist=[sub_module_name])
 
-        self._module = module
+        else:
+            context = hook.temporary_relative_context(directory)
+
+            with context:
+                module = __import__(self.import_path, fromlist=[sub_module_name])
+
+        self.module = module
 
 
 def build_import(cls, i, ex, args):
@@ -31,7 +42,7 @@ def build_import(cls, i, ex, args):
 
     i.do_import = hive.triggerable(cls.do_import_from_path)
 
-    i.module = hive.attribute("module")
+    i.module = hive.property(cls, "module", "module")
     i.pull_module = hive.pull_out(i.module)
     ex.module = hive.output(i.pull_module)
 

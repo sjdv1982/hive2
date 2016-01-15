@@ -13,6 +13,10 @@ class HiveModuleLoader:
     def __init__(self, path, context):
         self.path = path
         self.context = context
+        self.classes = set()
+
+    def clear_cache(self):
+        self.classes.clear()
 
     def load_module(self, module_path):
         with self.context:
@@ -23,15 +27,16 @@ class HiveModuleLoader:
                 except Exception as exc:
                     raise ImportError from exc
 
+                self.classes.add(cls)
+
                 module = types.ModuleType(module_path, cls.__doc__)
                 module.__file__ = self.path
                 module.__loader__ = self
 
-                cls._hive_file_path = self.path
-
                 setattr(module, cls.__name__, cls)
                 sys.modules[module_path] = module
 
+            # TODO does this happen?
             return sys.modules[module_path]
 
 
@@ -39,10 +44,17 @@ class HiveModuleImporter(object):
 
     def __init__(self):
         self._additional_paths = []
+        self._loaders = []
 
     @property
     def additional_paths(self):
         return ListView(self._additional_paths)
+
+    def invalidate_caches(self):
+        for loader in self._loaders:
+            loader.clear_cache()
+
+        self._loaders.clear()
 
     @contextmanager
     def temporary_relative_context(self, *paths):
@@ -51,6 +63,18 @@ class HiveModuleImporter(object):
         self._additional_paths = _old_paths + list(paths)
         yield
         self._additional_paths = _old_paths
+
+    @property
+    def loaders(self):
+        return ListView(self._loaders)
+
+    def get_path_of_class(self, cls):
+        for loader in self._loaders:
+
+            if cls in loader.classes:
+                return loader.path
+
+        raise ValueError("Couldn't find class: {}".format(cls))
 
     def find_module(self, full_name, path=None):
         additional_paths = reversed(self._additional_paths)
@@ -65,7 +89,10 @@ class HiveModuleImporter(object):
         directory = os.path.dirname(file_path)
         context = self.temporary_relative_context(directory)
 
-        return HiveModuleLoader(file_path, context=context)
+        loader = HiveModuleLoader(file_path, context=context)#, register_class=self._register_created_class)
+        self._loaders.append(loader)
+
+        return loader
 
 
 _importer = None
