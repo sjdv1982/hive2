@@ -4,6 +4,7 @@ import types
 from contextlib import contextmanager
 
 from .code_generator import class_from_filepath
+from .list_view import ListView
 from .utils import find_source_hivemap
 
 
@@ -13,23 +14,25 @@ class HiveModuleLoader:
         self.path = path
         self.context = context
 
-    def load_module(self, name):
+    def load_module(self, module_path):
         with self.context:
-            if name not in sys.modules:
+            if module_path not in sys.modules:
                 try:
                     cls = class_from_filepath(self.path)
 
                 except Exception as exc:
                     raise ImportError from exc
 
-                module = types.ModuleType(name, cls.__doc__)
+                module = types.ModuleType(module_path, cls.__doc__)
                 module.__file__ = self.path
                 module.__loader__ = self
 
-                setattr(module, cls.__name__, cls)
-                sys.modules[name] = module
+                cls._hive_file_path = self.path
 
-            return sys.modules[name]
+                setattr(module, cls.__name__, cls)
+                sys.modules[module_path] = module
+
+            return sys.modules[module_path]
 
 
 class HiveModuleImporter(object):
@@ -37,9 +40,14 @@ class HiveModuleImporter(object):
     def __init__(self):
         self._additional_paths = []
 
+    @property
+    def additional_paths(self):
+        return ListView(self._additional_paths)
+
     @contextmanager
     def temporary_relative_context(self, *paths):
         _old_paths = self._additional_paths
+
         self._additional_paths = _old_paths + list(paths)
         yield
         self._additional_paths = _old_paths

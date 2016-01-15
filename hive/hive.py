@@ -4,11 +4,11 @@ from inspect import isfunction, getcallargs
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
 from .compatability import next
 from .connect import connect, ConnectionCandidate
+from .identifiers import identifiers_match
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_validation_enabled
 from .mixins import *
 from .policies import MatchmakingPolicyError
-from .identifiers import identifiers_match
 
 
 def generate_bee_name():
@@ -105,9 +105,9 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     # TODO: nice exception reporting
                     instance = bee.getinstance(self._hive_object)
-
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
+                        print("BIND", instance)
                         if instance is None:
                             continue
 

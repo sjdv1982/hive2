@@ -20,3 +20,6 @@ class ListView:
 
     def __iter__(self):
         return iter(self._sequence)
+
+    def __repr__(self):
+        return repr(self._sequence)
