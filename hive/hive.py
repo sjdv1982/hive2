@@ -107,7 +107,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     instance = bee.getinstance(self._hive_object)
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
-                        print("BIND", instance)
                         if instance is None:
                             continue
 

@@ -29,14 +29,24 @@ class HiveModuleLoader:
 
                 self.classes.add(cls)
 
+                try:
+                    package, _ = module_path.rsplit('.', 1)
+
+                except ValueError:
+                    package = None
+
                 module = types.ModuleType(module_path, cls.__doc__)
                 module.__file__ = self.path
                 module.__loader__ = self
-
+                module.__package__ = package
+                print(package)
                 setattr(module, cls.__name__, cls)
                 sys.modules[module_path] = module
 
             # TODO does this happen?
+            else:
+                raise Exception
+
             return sys.modules[module_path]
 
 
