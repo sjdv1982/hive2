@@ -17,7 +17,14 @@ if __name__ == "__main__":
 
     # Fix for windows tray icon
     app_id = 'hive2.hive2.1.0'
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    try:
+        windll = ctypes.windll
+
+    except AttributeError:
+        pass
+
+    else:
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     window = MainWindow()
     window.resize(1024, 768)
