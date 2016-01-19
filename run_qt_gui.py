@@ -3,7 +3,7 @@ import ctypes
 import os
 import sys
 
-import editor.qt as pyside_gui
+import editor.qt as any_qt
 import editor.qt.qdarkstyle as qdarkstyle
 from editor.qt.main_window import MainWindow
 from editor.qt.qt_core import *
@@ -13,7 +13,7 @@ from editor.qt.qt_webkit import *
 if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
+    app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=any_qt.IS_PYSIDE))
 
     # Fix for windows tray icon
     app_id = 'hive2.hive2.1.0'
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     if USE_LOCAL_HOME:
         # Load Help data
-        local_dir = pyside_gui.__path__[0]
+        local_dir = any_qt.__path__[0]
         html_file_name = os.path.join(local_dir, "home.html")
 
         with open(html_file_name) as f:
