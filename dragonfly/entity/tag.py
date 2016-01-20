@@ -70,17 +70,14 @@ def build_tag(cls, i, ex, args, meta_args):
     else:
         ex.get_set_tag = hive.socket(cls.set_set_tag, identifier="entity.tag.set")
 
-        i.pull_tag_value = hive.pull_in(i.tag_value)
-        ex.value = hive.antenna(i.pull_tag_value)
+        i.push_tag_value = hive.push_in(i.tag_value)
+        ex.value = hive.antenna(i.push_tag_value)
 
         i.do_get_tag = hive.triggerable(cls.get_tag)
-        i.trig = hive.triggerfunc(i.do_get_tag)
 
-        ex.trig = hive.entry(i.trig)
-
-        hive.trigger(i.trig, i.do_get_entity, pretrigger=True)
-        hive.trigger(i.trig, i.pull_tag_name, pretrigger=True)
-        hive.trigger(i.trig, i.pull_tag_value, pretrigger=True)
+        hive.trigger(i.push_tag_value, i.do_get_entity)
+        hive.trigger(i.push_tag_value, i.pull_tag_name)
+        hive.trigger(i.push_tag_value, i.do_get_tag)
 
 
 Tag = hive.dyna_hive("Tag", build_tag, declare_tag, TagClass)
