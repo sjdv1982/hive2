@@ -5,6 +5,7 @@ import sys
 
 import editor.qt as any_qt
 import editor.qt.qdarkstyle as qdarkstyle
+
 from editor.qt.main_window import MainWindow
 from editor.qt.qt_core import *
 from editor.qt.qt_gui import *
