@@ -233,7 +233,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     @classmethod
     @memoize
     def _hive_get_meta_primitive(cls):
-        return type("MetaHivePrimitive::{}".format(cls.__name__), (MetaHivePrimitive,), dict(_hive_object_cls=cls))
+        return type("MetaHivePrimitive::{}".format(cls.__name__), (MetaHivePrimitive,), {'_hive_object_cls': cls})
 
     @staticmethod
     def _hive_can_connect_hive(other):

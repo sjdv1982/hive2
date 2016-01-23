@@ -39,7 +39,7 @@ class HiveModuleLoader:
                 module.__file__ = self.path
                 module.__loader__ = self
                 module.__package__ = package
-                print(package)
+
                 setattr(module, cls.__name__, cls)
                 sys.modules[module_path] = module
 

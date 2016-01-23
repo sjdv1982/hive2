@@ -49,5 +49,6 @@ def build_import(cls, i, ex, args):
     hive.trigger(i.pull_module, i.pull_import_path, pretrigger=True)
     hive.trigger(i.pull_module, i.do_import, pretrigger=True)
 
+
 Import = hive.hive("Import", build_import, cls=ImportClass)
 

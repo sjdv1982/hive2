@@ -2,7 +2,7 @@ from keyword import iskeyword
 
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory
-from .history import OperationHistory
+from .history import HistoryManager
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
 from .node import FOLD_NODE_IMPORT_PATH
@@ -46,7 +46,7 @@ class NodeConnectionError(Exception):
 class NodeManager(object):
 
     def __init__(self):
-        self.history = OperationHistory()
+        self.history = HistoryManager()
 
         self.bee_node_factory = BeeNodeFactory()
         self.hive_node_factory = HiveNodeFactory()
