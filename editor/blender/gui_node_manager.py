@@ -190,7 +190,7 @@ class BlenderGUINodeManager:
         for link in to_remove:
             self.node_tree.links.remove(link)
 
-    def set_node_position(self, node, position):
+    def reposition_node(self, node, position):
         if self.internal_operation.type == "set_position":
             return
 
@@ -346,7 +346,7 @@ class BlenderGUINodeManager:
             # Update label
             if node.name != gui_node.label:
                 try:
-                    self.node_manager.set_node_name(node, gui_node.label)
+                    self.node_manager.rename_node(node, gui_node.label)
 
                 except ValueError:
                     gui_node.label = node.name
@@ -356,7 +356,7 @@ class BlenderGUINodeManager:
             node_position = tuple(gui_node_position)
 
             with self.internal_operation_from("set_position"):
-                self.node_manager.set_node_position(node, node_position)
+                self.node_manager.reposition_node(node, node_position)
 
         for gui_node in to_delete:
             self.node_tree.nodes.remove(gui_node)

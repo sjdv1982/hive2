@@ -26,7 +26,7 @@ class ConfigurationPanel(QWidget):
         self.on_node_updated(node)
 
     def _rename_node(self, node, name):
-        self._node_manager.set_node_name(node, name)
+        self._node_manager.rename_node(node, name)
 
     def on_node_updated(self, node):
         layout = self._layout

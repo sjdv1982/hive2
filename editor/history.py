@@ -1,3 +1,4 @@
+from collections import namedtuple
 from contextlib import contextmanager
 
 
@@ -6,6 +7,9 @@ def unique_id_counter():
     while True:
         yield i
         i += 1
+
+
+Operation = namedtuple("Operation", "op args reverse_op reverse_args op_id")
 
 
 class HistoryManager:
@@ -63,6 +67,10 @@ class HistoryManager:
             self.on_updated(self)
 
 
+class OperationHistoryError(Exception):
+    pass
+
+
 class AtomicOperationHistory:
 
     def __init__(self, limit=200, name="<main>"):
@@ -111,28 +119,26 @@ class AtomicOperationHistory:
 
     def undo(self):
         if self.cant_undo:
-            raise ValueError("Cannot undo any more operations")
+            raise OperationHistoryError("Cannot undo any more operations")
 
         last_operation = self._operations[self._index]
-        op, args, reverse_op, reverse_args, op_id = last_operation
-        reverse_op(*reverse_args)
+        last_operation.reverse_op(*last_operation.reverse_args)
 
         self._index -= 1
 
     def redo(self):
         if self.cant_redo:
-            raise ValueError("Cannot redo any more operations")
+            raise OperationHistoryError("Cannot redo any more operations")
 
         self._index += 1
 
         operation = self._operations[self._index]
-
-        op, args, reverse_op, reverse_args, op_id = operation
-        op(*args)
+        operation.op(*operation.args)
 
     def push_operation(self, op, args, reverse_op, reverse_args):
         operation_id = "{}.{}".format(self._name, next(self._id_counter))
-        self._push_operation((op, args, reverse_op, reverse_args, operation_id))
+        operation = Operation(op, args, reverse_op, reverse_args, operation_id)
+        self._push_operation(operation)
 
     def _push_operation(self, operation):
         # If in middle of redo/undo
@@ -154,8 +160,6 @@ class AtomicOperationHistory:
             self._operations[:] = self._operations[shift:]
 
     def __repr__(self):
-        ops = "\n\t".join([str(o) for o in self._operations])
-        ops = "\n\t".join(ops.split("\n"))
-        return "<History ({})>\n\t\t{}".format(self.name, ops)
+        return "<History ({})>".format(self.name)
 
 

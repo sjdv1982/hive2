@@ -119,10 +119,10 @@ class HiveMapIO:
         # Attempt to set common data between IO bees and Hives
         for node, spyder_node in node_to_spyder_node.items():
             # Try to use original name, otherwise make unique
-            node_manager.set_node_name(node, spyder_node.identifier, attempt_till_success=True)
+            node_manager.rename_node(node, spyder_node.identifier, attempt_till_success=True)
 
             # Set original position
-            node_manager.set_node_position(node, (spyder_node.position.x, spyder_node.position.y))
+            node_manager.reposition_node(node, (spyder_node.position.x, spyder_node.position.y))
 
             # Map original copied ID to new allocated ID
             node_name = node.name

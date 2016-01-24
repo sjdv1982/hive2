@@ -201,7 +201,7 @@ def add_hive_node(context, import_path, params=None):
 
     mouse_x, mouse_y = context.space_data.cursor_location
     position = mouse_x / LOCATION_DIVISOR, mouse_y / LOCATION_DIVISOR
-    node_manager.set_node_position(node, position)
+    node_manager.reposition_node(node, position)
 
     # Invoke translation
     ops.transform.translate('INVOKE_DEFAULT')
@@ -263,13 +263,13 @@ class NODE_OT_GrabHiveNode(types.Operator):
             mouse_x, mouse_y = context.space_data.cursor_location
 
             position = mouse_x / LOCATION_DIVISOR, mouse_y / LOCATION_DIVISOR
-            node_manager.set_node_position(node, position)
+            node_manager.reposition_node(node, position)
 
         elif event.type in ('LEFTMOUSE', 'RETURN'):
             return {'FINISHED'}
 
         elif event.type == 'RIGHTMOUSE':
-            node_manager.set_node_position(node, (0, 0))
+            node_manager.reposition_node(node, (0, 0))
             return {'FINISHED'}
 
         elif event.type == 'ESC':

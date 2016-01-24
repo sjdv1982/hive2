@@ -171,6 +171,10 @@ class NodeManager(object):
 
         self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
 
+        # Ensure node restored to original place
+        if callable(self.on_node_moved):
+            self.on_node_moved(node, node.position)
+
     def create_bee(self, import_path, params=None):
         """Create a bee node with the given import path"""
         if params is None:
@@ -235,7 +239,15 @@ class NodeManager(object):
 
         self.history.push_operation(self.delete_node, (node,), self._add_node, (node,))
 
-    def set_node_name(self, node, name, attempt_till_success=False):
+    def delete_nodes(self, nodes):
+        with self.history.composite_operation("delete-multiple"):
+            print("DELETE", nodes)
+            for node in nodes:
+                self.delete_node(node)
+
+        print(self.history._current_history._operations[-1])
+
+    def rename_node(self, node, name, attempt_till_success=False):
         if not is_identifier(name):
             raise ValueError("Name must be valid python identifier: {}".format(name))
 
@@ -262,9 +274,9 @@ class NodeManager(object):
         if callable(self.on_node_renamed):
             self.on_node_renamed(node, name)
 
-        self.history.push_operation(self.set_node_name, (node, name), self.set_node_name, (node, old_name))
+        self.history.push_operation(self.rename_node, (node, name), self.rename_node, (node, old_name))
 
-    def set_node_position(self, node, position):
+    def reposition_node(self, node, position):
         old_position = node.position
         node.position = position
 
@@ -279,13 +291,18 @@ class NodeManager(object):
                 other_node = target_pin.node
 
                 new_position = other_node.position[0] + dx, other_node.position[1] + dy
-                self.set_node_position(other_node, new_position)
+                self.reposition_node(other_node, new_position)
 
         if callable(self.on_node_moved):
             self.on_node_moved(node, position)
 
-        self.history.push_operation(self.set_node_position, (node, position),
-                                    self.set_node_position, (node, old_position))
+        self.history.push_operation(self.reposition_node, (node, position),
+                                    self.reposition_node, (node, old_position))
+
+    def reposition_nodes(self, node_to_position):
+        with self.history.composite_operation("reposition-multiple"):
+            for node, position in node_to_position.items():
+                self.reposition_node(node, position)
 
     def fold_pin(self, pin):
         assert pin.is_foldable
@@ -300,7 +317,7 @@ class NodeManager(object):
             target_node = self.create_hive(FOLD_NODE_IMPORT_PATH, params)
             target_pin = next(iter(target_node.outputs.values()))
 
-            self.set_node_name(target_node, pin.name, attempt_till_success=True)
+            self.rename_node(target_node, pin.name, attempt_till_success=True)
             self.create_connection(target_pin, pin)
 
             # TODO account for width of node and auto-arrange
@@ -414,4 +431,4 @@ class NodeManager(object):
             # Move nodes to mouse position
             for node in nodes:
                 position = node.position[0] + offset_x, node.position[1] + offset_y
-                self.set_node_position(node, position)
+                self.reposition_node(node, position)

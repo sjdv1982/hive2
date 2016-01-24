@@ -174,10 +174,10 @@ class NodeEditorSpace(QWidget):
 
         # View to node manager
         view = self._view
-        view.on_node_moved = self._gui_node_moved
-        view.on_node_deleted = self._gui_node_destroyed
+        view.on_nodes_moved = self._gui_nodes_moved
+        view.on_nodes_deleted = self._gui_nodes_destroyed
         view.on_connection_created = self._gui_connection_created
-        view.on_connection_destroyed = self._gui_connection_destroyed
+        view.on_connections_destroyed = self._gui_connections_destroyed
         view.on_connection_reordered = self._gui_connection_reordered
         view.on_node_selected = self._gui_node_selected
         view.on_dropped_tree_node = self.on_dropped_node
@@ -340,7 +340,7 @@ class NodeEditorSpace(QWidget):
         end_pin = end_socket.parent_socket_row.pin
         self._node_manager.create_connection(start_pin, end_pin)
 
-    def _gui_connection_destroyed(self, gui_connection):
+    def _gui_connections_destroyed(self, gui_connection):
         connection = next(c for c, gui_c in self._connection_to_qt_connection.items() if gui_c is gui_connection)
         self._node_manager.delete_connection(connection)
 
@@ -375,7 +375,6 @@ class NodeEditorSpace(QWidget):
         menu = QMenu(self)
         edit_hivemap_action = menu.addAction("Edit Hivemap")
 
-        #pos = self.mapFrom(self._view, self._view.mapFromScene(event.scenePos()))
         action = menu.exec_(event.screenPos())
 
         if action != edit_hivemap_action:
@@ -386,13 +385,13 @@ class NodeEditorSpace(QWidget):
 
         self.do_open_file(hivemap_file_path)
 
-    def _gui_node_destroyed(self, gui_node):
-        node = gui_node.node
-        self._node_manager.delete_node(node)
+    def _gui_nodes_destroyed(self, gui_nodes):
+        nodes = [gui_node.node for gui_node in gui_nodes]
+        self._node_manager.delete_nodes(nodes)
 
-    def _gui_node_moved(self, gui_node, position):
-        node = gui_node.node
-        self._node_manager.set_node_position(node, position)
+    def _gui_nodes_moved(self, gui_nodes):
+        node_to_position = {gui_node.node: (gui_node.pos().x(), gui_node.pos().y()) for gui_node in gui_nodes}
+        self._node_manager.reposition_nodes(node_to_position)
 
     def on_dropped_node(self, position):
         if not self._pending_dropped_node:
@@ -425,7 +424,7 @@ class NodeEditorSpace(QWidget):
             params = self._execute_inspector(inspector)
             node = self._node_manager.create_hive(import_path, params=params)
 
-        self._node_manager.set_node_position(node, position)
+        self._node_manager.reposition_node(node, position)
 
     def _socket_from_pin(self, pin):
         gui_node = self._node_to_qt_node[pin.node]
