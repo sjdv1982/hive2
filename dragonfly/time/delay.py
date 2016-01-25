@@ -14,8 +14,15 @@ class _DelayCls:
         self._hive = hive.get_run_hive()
 
         self._listener = EventHandler(self.on_tick, ("tick",), mode="match")
-        self._counter = 0
+
+        self._delay_ticks = 0
+        self._elapsed_ticks = 0
+
         self._tick_rate = None
+
+    @hive.typed_property("float")
+    def elapsed(self):
+        return self._tick_rate * self._elapsed_ticks
 
     def set_add_handler(self, add_handler):
         self.add_handler = add_handler
@@ -32,7 +39,8 @@ class _DelayCls:
         if not self.running:
             self.add_handler(self._listener)
 
-        self._counter = round(self.delay * self._tick_rate)
+        self._delay_ticks = round(self.delay * self._tick_rate)
+        self._elapsed_ticks = 0
 
     def on_elapsed(self):
         self.remove_handler(self._listener)
@@ -41,9 +49,9 @@ class _DelayCls:
         self._hive._on_elapsed()
 
     def on_tick(self):
-        self._counter -= 1
+        self._elapsed_ticks += 1
 
-        if not self._counter:
+        if self._elapsed_ticks == self._delay_ticks:
             self.on_elapsed()
 
 
@@ -59,6 +67,9 @@ def build_delay(cls, i, ex, args):
     ex.delay = hive.property(cls, "delay", "float")
     i.delay_in = hive.pull_in(ex.delay)
     ex.delay_in = hive.antenna(i.delay_in)
+
+    i.elapsed = hive.pull_out(cls.elapsed)
+    ex.elapsed = hive.output(i.elapsed)
 
     hive.trigger(i.trigger, i.delay_in, pretrigger=True)
 
