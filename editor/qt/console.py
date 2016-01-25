@@ -50,13 +50,13 @@ class QConsole(QWidget):
         self._max_history = max_history
         self._current_command = -1
         self._text = """
-Hive GUI console.
+ Hive GUI console.
 
-Available modules:
-------------------------------
- editor - current node editor
- window - main window
-------------------------------
+ Available modules:
+ ------------------------------
+  editor - current node editor
+  window - main window
+ ------------------------------
 """
         self.display_widget.setText(self._text)
         self._prefix = prefix
