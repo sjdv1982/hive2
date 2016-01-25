@@ -31,6 +31,7 @@ Control flow: Generic node manager -> Blender node manager
 - [x] Support modifier bees?
 - [ ] Add support for i/ex wrapper overlapping names 
     - [ ] Display in node name?
+- [ ] Allow connections to be given labels?
 - [ ] Allow access to all pre/post trigger events
 - [ ] Add better indicator for proxy pins (/rethink virtual pins)
 - [ ] Auto-arrange node support
