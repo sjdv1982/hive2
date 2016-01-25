@@ -160,7 +160,7 @@ class NodeView(QGraphicsView):
         self.on_node_selected = None
         self.on_node_deselected = None
         self.on_node_right_click = None
-        self.on_dropped_tree_node = None
+        self.on_dropped = None
 
     def on_socket_hover(self, socket, event=None):
         widget = self.type_info_widget
@@ -363,8 +363,8 @@ class NodeView(QGraphicsView):
 
         position = scene_pos.x(), scene_pos.y()
 
-        if callable(self.on_dropped_tree_node):
-            self.on_dropped_tree_node(position)
+        if callable(self.on_dropped):
+            self.on_dropped(position)
 
     @property
     def center(self):

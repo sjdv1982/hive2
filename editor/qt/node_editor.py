@@ -170,6 +170,7 @@ class NodeEditorSpace(QWidget):
         self.on_update_is_saved = None
 
         self.do_open_file = None
+        self.get_dropped_node_info = None
         self.get_project_directory = None
 
         # View to node manager
@@ -180,13 +181,11 @@ class NodeEditorSpace(QWidget):
         view.on_connections_destroyed = self._gui_connections_destroyed
         view.on_connection_reordered = self._gui_connection_reordered
         view.on_node_selected = self._gui_node_selected
-        view.on_dropped_tree_node = self.on_dropped_node
+        view.on_dropped = self._gui_on_dropped_node
         view.on_node_right_click = self._gui_node_right_clicked
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
-
-        self._pending_dropped_node = None
 
         self._docstring_widget = QTextEdit()
         self._docstring_widget.textChanged.connect(self._docstring_text_updated)
@@ -340,9 +339,10 @@ class NodeEditorSpace(QWidget):
         end_pin = end_socket.parent_socket_row.pin
         self._node_manager.create_connection(start_pin, end_pin)
 
-    def _gui_connections_destroyed(self, gui_connection):
-        connection = next(c for c, gui_c in self._connection_to_qt_connection.items() if gui_c is gui_connection)
-        self._node_manager.delete_connection(connection)
+    def _gui_connections_destroyed(self, gui_connections):
+        gui_to_connection = {gui_c: c for c, gui_c in self._connection_to_qt_connection.items()}
+        connections = [gui_to_connection[gui_c] for gui_c in gui_connections]
+        self._node_manager.delete_connections(connections)
 
     def _gui_connection_reordered(self, gui_connection, index):
         connection = next(c for c, gui_c in self._connection_to_qt_connection.items() if gui_c is gui_connection)
@@ -393,38 +393,16 @@ class NodeEditorSpace(QWidget):
         node_to_position = {gui_node.node: (gui_node.pos().x(), gui_node.pos().y()) for gui_node in gui_nodes}
         self._node_manager.reposition_nodes(node_to_position)
 
-    def on_dropped_node(self, position):
-        if not self._pending_dropped_node:
+    def _gui_on_dropped_node(self, position):
+        if not callable(self.get_dropped_node_info):
             return
 
-        import_path, node_type = self._pending_dropped_node
+        node_info = self.get_dropped_node_info()
+        if node_info is None:
+            return
 
-        if node_type == NodeTypes.BEE:
-            inspector = self._node_manager.bee_node_inspector.inspect(import_path)
-            params = self._execute_inspector(inspector)
-            node = self._node_manager.create_bee(import_path, params=params)
-
-        else:
-            # Check Hive's hivemap isn't currently open
-            if self.file_name is not None:
-                # Check we don't have a source file
-                if callable(self.get_hivemap_path):
-                    try:
-                        hivemap_file_path = self.get_hivemap_path(import_path)
-
-                    except ValueError:
-                        pass
-
-                    else:
-                        if hivemap_file_path == self.file_name:
-                            QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
-                            return
-
-            inspector = self._node_manager.hive_node_inspector.inspect(import_path)
-            params = self._execute_inspector(inspector)
-            node = self._node_manager.create_hive(import_path, params=params)
-
-        self._node_manager.reposition_node(node, position)
+        import_path, node_type = node_info
+        self.add_node_at(position, import_path, node_type)
 
     def _socket_from_pin(self, pin):
         gui_node = self._node_to_qt_node[pin.node]
@@ -471,9 +449,35 @@ class NodeEditorSpace(QWidget):
 
         return params
 
-    def add_hive_node_at_mouse(self, import_path):
-        self.pre_drop_node(import_path, NodeTypes.HIVE)
+    def add_node_at(self, position, import_path, node_type):
+        if node_type == NodeTypes.BEE:
+            inspector = self._node_manager.bee_node_inspector.inspect(import_path)
+            params = self._execute_inspector(inspector)
+            node = self._node_manager.create_bee(import_path, params=params)
 
+        else:
+            # Check Hive's hivemap isn't currently open
+            if self.file_name is not None:
+                # Check we don't have a source file
+                if callable(self.get_hivemap_path):
+                    try:
+                        hivemap_file_path = self.get_hivemap_path(import_path)
+
+                    except ValueError:
+                        pass
+
+                    else:
+                        if hivemap_file_path == self.file_name:
+                            QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
+                            return
+
+            inspector = self._node_manager.hive_node_inspector.inspect(import_path)
+            params = self._execute_inspector(inspector)
+            node = self._node_manager.create_hive(import_path, params=params)
+
+        self._node_manager.reposition_node(node, position)
+
+    def add_node_at_mouse(self, import_path, node_type):
         # Get mouse position
         cursor = QCursor()
         q_position = cursor.pos()
@@ -481,10 +485,7 @@ class NodeEditorSpace(QWidget):
         q_position = self._view.mapToScene(q_position)
         position = q_position.x(), q_position.y()
 
-        self.on_dropped_node(position)
-
-    def pre_drop_node(self, import_path, node_type):
-        self._pending_dropped_node = import_path, node_type
+        self.add_node_at(position, import_path, node_type)
 
     def select_all(self):
         self._view.select_all()
@@ -498,15 +499,15 @@ class NodeEditorSpace(QWidget):
     def cut(self):
         gui_nodes = self._view.gui_get_selected_nodes()
         nodes = [n.node for n in gui_nodes]
-        self._node_manager.cut(nodes)
+        self._node_manager.cut_nodes(nodes)
 
     def copy(self):
         gui_nodes = self._view.gui_get_selected_nodes()
         nodes = [n.node for n in gui_nodes]
-        self._node_manager.copy(nodes)
+        self._node_manager.copy_nodes(nodes)
 
     def paste(self):
-        self._node_manager.paste(self._view.mouse_pos)
+        self._node_manager.paste_nodes(self._view.mouse_pos)
 
     def save(self, file_name=None):
         use_existing_file_name = file_name is None

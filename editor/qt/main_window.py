@@ -8,6 +8,7 @@ from .qt_core import *
 from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
+from .web_view import QEditorWebView
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
@@ -145,18 +146,41 @@ class MainWindow(QMainWindow):
         self.console_window.setWidget(self.console_widget)
         self.tabifyDockWidget(self.bee_window, self.hive_window)
 
-        self.home_page = None
         self.hive_finder = HiveFinder()
 
         self.project_directory = None
         self._project_context = None
 
+        self._pending_dropped_node_info = None
         self.refresh_project_tree()
 
         icon = QIcon()
         file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
         icon.addFile(file_path)
         self.setWindowIcon(icon)
+
+        # Add Help page
+        web_view = QEditorWebView()
+        web_view.on_drag_enter = self._web_on_drag_enter
+
+        USE_LOCAL_HOME = True
+
+        if USE_LOCAL_HOME:
+            # Load Help data
+            local_dir = os.path.dirname(__file__)
+            html_file_name = os.path.join(local_dir, "home.html")
+
+            with open(html_file_name) as f:
+                html = f.read().replace("%LOCALDIR%", local_dir)
+
+            web_view.setHtml(html)
+        else:
+            url = QUrl("https://github.com/agoose77/hive2/wiki")
+            web_view.load(url)
+
+        # Load home page
+        self._web_view = web_view
+        self.tab_widget.addTab(web_view, "About", closeable=False)
 
     def closeEvent(self, event):
         try:
@@ -205,32 +229,28 @@ class MainWindow(QMainWindow):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
 
     def select_all_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.select_all()
+        editor = self.tab_widget.currentWidget()
+        editor.select_all()
 
     def undo_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.undo()
+        editor = self.tab_widget.currentWidget()
+        editor.undo()
 
     def redo_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.redo()
+        editor = self.tab_widget.currentWidget()
+        editor.redo()
 
     def copy_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.copy()
+        editor = self.tab_widget.currentWidget()
+        editor.copy()
 
     def cut_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.cut()
+        editor = self.tab_widget.currentWidget()
+        editor.cut()
 
     def paste_operation(self):
-        view = self.tab_widget.currentWidget()
-        view.paste()
-
-    def load_home_page(self, home_page):
-        self.tab_widget.addTab(home_page, "About", closeable=False)
-        self.home_page = home_page
+        editor = self.tab_widget.currentWidget()
+        editor.paste()
 
     def _check_tab_closable(self, index):
         widget = self.tab_widget.widget(index)
@@ -276,6 +296,8 @@ class MainWindow(QMainWindow):
         editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
         editor.do_open_file = self._open_file
         editor.get_hivemap_path = self._get_hivemap_path_in_project
+        editor.get_dropped_node_info = self._accept_dropped_node_info
+
         editor.show()
 
         return editor
@@ -357,13 +379,19 @@ class MainWindow(QMainWindow):
         self.parameter_window.setVisible(show_args)
         self.preview_window.setVisible(show_preview)
 
-    def on_selected_tree_node(self, path, node_type):
-        widget = self.tab_widget.currentWidget()
+    def _accept_dropped_node_info(self):
+        info, self._pending_dropped_node_info = self._pending_dropped_node_info, None
+        return info
 
-        if not isinstance(widget, NodeEditorSpace):
+    def on_selected_tree_node(self, path, node_type):
+        self._pending_dropped_node_info = path, node_type
+
+    def _web_on_drag_enter(self, position):
+        if self._pending_dropped_node_info is None:
             return
 
-        widget.pre_drop_node(path, node_type)
+        # Create blank editor
+        self.add_editor_space()
 
     def insert_from_path(self):
         dialogue = QDialog(self)
@@ -391,7 +419,8 @@ class MainWindow(QMainWindow):
             if not isinstance(widget, NodeEditorSpace):
                 return
 
-            widget.add_hive_node_at_mouse(editor.text())
+            import_path = editor.text()
+            widget.add_node_at_mouse(import_path, NodeTypes.HIVE)
             dialogue.close()
 
         editor.returnPressed.connect(on_return)

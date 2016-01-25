@@ -138,6 +138,15 @@ class NodeManager(object):
         self.history.push_operation(self.delete_connection, (connection,),
                                     self._add_connection, (connection,))
 
+    def delete_connections(self, connections):
+        """Remove multiple connections from the model (as a composite operation)
+
+        :param connections: Connection objects
+        """
+        with self.history.composite_operation("delete-connection-multiple"):
+            for connection in connections:
+                self.delete_connection(connection)
+
     def reorder_connection(self, connection, index):
         """Change connection order relative to other connections for the output pin.
 
@@ -212,6 +221,10 @@ class NodeManager(object):
         return node
 
     def delete_node(self, node):
+        """Remove node and its connections from the model
+
+        :param node: Node object
+        """
         # Remove connections
         for input_pin in node.inputs.values():
             is_folded = input_pin.is_folded
@@ -229,8 +242,7 @@ class NodeManager(object):
                 self.delete_node(output_pin.node)
 
         for output_pin in node.outputs.values():
-            for connection in list(output_pin.connections):
-                self.delete_connection(connection)
+            self.delete_connections(list(output_pin.connections))
 
         if callable(self.on_node_destroyed):
             self.on_node_destroyed(node)
@@ -240,14 +252,21 @@ class NodeManager(object):
         self.history.push_operation(self.delete_node, (node,), self._add_node, (node,))
 
     def delete_nodes(self, nodes):
-        with self.history.composite_operation("delete-multiple"):
-            print("DELETE", nodes)
+        """Remove multiple nodes and their connections from the model (as a composite operation)
+
+        :param nodes: Node objects
+        """
+        with self.history.composite_operation("delete-node-multiple"):
             for node in nodes:
                 self.delete_node(node)
 
-        print(self.history._current_history._operations[-1])
-
     def rename_node(self, node, name, attempt_till_success=False):
+        """Rename node with a new identifier
+
+        :param node: Node object
+        :param name: new name of node
+        :param attempt_till_success: if name is not available, find a valid name based upon it
+        """
         if not is_identifier(name):
             raise ValueError("Name must be valid python identifier: {}".format(name))
 
@@ -277,6 +296,11 @@ class NodeManager(object):
         self.history.push_operation(self.rename_node, (node, name), self.rename_node, (node, old_name))
 
     def reposition_node(self, node, position):
+        """Re-position node in the model
+
+        :param node: Node object
+        :param position: new x, y position
+        """
         old_position = node.position
         node.position = position
 
@@ -300,11 +324,19 @@ class NodeManager(object):
                                     self.reposition_node, (node, old_position))
 
     def reposition_nodes(self, node_to_position):
+        """Re-position multiple nodes in the model (as a composite operation)
+
+        :param node_to_position: dictionary of node, position item pairs
+        """
         with self.history.composite_operation("reposition-multiple"):
             for node, position in node_to_position.items():
                 self.reposition_node(node, position)
 
     def fold_pin(self, pin):
+        """Hide pin from node UI, as well as possible connected variable. If no variable, create, connect and hide.
+        
+        :param pin: IOPin object
+        """
         assert pin.is_foldable
 
         # Create variable
@@ -330,6 +362,10 @@ class NodeManager(object):
         self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
 
     def unfold_pin(self, pin):
+        """Expose pin to node UI, as well as possible connected variable. If no variable, create, connect and show.
+
+        :param pin: IOPin object
+        """
         assert pin.is_folded
         assert pin.connections
 
@@ -370,15 +406,18 @@ class NodeManager(object):
 
             self.docstring = data['docstring']
 
-    def cut(self, nodes):
+    def cut_nodes(self, nodes):
+        """Cut nodes to clipboard
+
+        :param nodes: nodes to cut
+        """
         with self.history.composite_operation("cut"):
-            self.copy(nodes)
+            self.copy_nodes(nodes)
 
             # Delete nodes
-            for node in nodes:
-                self.delete_node(node)
+            self.delete_nodes(nodes)
 
-    def copy(self, nodes):
+    def copy_nodes(self, nodes):
         """Copy nodes to clipboard
 
         :param nodes: nodes to copy
@@ -399,7 +438,7 @@ class NodeManager(object):
 
         self._clipboard = hivemap_io
 
-    def paste(self, position):
+    def paste_nodes(self, position):
         """Paste nodes from clipboard
 
         :param position: position of target center of mass of nodes
