@@ -40,6 +40,20 @@ def get_return_type(func):
         return None
 
 
+def typed_property(data_type):
+    """Returns a property descriptor for type-decorated function
+
+    :param data_type: return data type
+    """
+    annotate_type = return_type(data_type)
+
+    def wrapper(func):
+        annotate_type(func)
+        return property(func)
+
+    return wrapper
+
+
 def options(**kwargs):
     """Decorate function with argument options"""
     def wrapper(func):

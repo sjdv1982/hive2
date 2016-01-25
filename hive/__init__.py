@@ -1,11 +1,11 @@
 from .hive import hive, dyna_hive, meta_hive, HiveBuilder, RuntimeHive, MetaHivePrimitive, HiveObject
-from .manager import get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled, \
-    validation_enabled_as
 from .identifiers import identifiers_match, identifier_to_tuple, is_subtype
+from .manager import (get_building_hive, get_mode, get_run_hive, get_validation_enabled, set_validation_enabled,
+                      validation_enabled_as)
 #i primitives
 from .triggerfunc import triggerfunc
 from .triggerable import triggerable
-from .modifier import modifier #(akin to triggerable, but receives run_hive as self)
+from .modifier import modifier
 from .ppin import push_in, pull_in
 from .ppout import push_out, pull_out
 
@@ -30,5 +30,5 @@ from .output import output
 from .parameter import parameter
 from .exception import HiveException
 
-from .annotations import types, options, return_type, get_argument_options, get_argument_types, get_return_type, \
-    update_wrapper
+from .annotations import (types, options, return_type, get_argument_options, get_argument_types, get_return_type,
+                          update_wrapper, typed_property)
