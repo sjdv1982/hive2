@@ -126,11 +126,6 @@ class IOPin(object):
         if len(self.connections) == 1:
             target_connection = next(iter(self.connections))
             target_pin = target_connection.output_pin
-            target_node = target_pin.node
-
-            # If is not the correct type (variable)
-            if target_node.import_path != FOLD_NODE_IMPORT_PATH:
-                return False
 
             # If other pin is in use else where
             if len(target_pin.connections) == 1:
