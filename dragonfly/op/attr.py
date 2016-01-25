@@ -6,7 +6,7 @@ def do_setattr(self):
 
 
 def do_getattr(self):
-    self._value = getattr(self._object, self._name, self._value)
+    self._value = getattr(self._object_, self._name, self._value)
 
 
 def declare_attr(meta_args):
