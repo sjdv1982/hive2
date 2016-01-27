@@ -127,7 +127,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             else:
                 wrapper_name = "i"
 
-            declaration_body.append("{}.{} = hive.attribute({}, {})"
+            declaration_body.append("{}.{} = hive.attribute('{}', {})"
                                     .format(wrapper_name, identifier, data_type, start_value))
             attribute_name_to_wrapper[identifier] = wrapper_name
 
