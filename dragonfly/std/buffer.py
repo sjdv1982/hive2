@@ -24,7 +24,7 @@ def build_buffer(i, ex, args, meta_args):
         i.push_cached_value = hive.push_out(i.cached_value)
         ex.cached_value = hive.output(i.push_cached_value)
 
-        ex.push = hive.entry(i.push_cached_value)
+        ex.output = hive.entry(i.push_cached_value)
 
     elif meta_args.mode == "pull":
         i.pull_value = hive.pull_in(i.cached_value)
@@ -33,7 +33,7 @@ def build_buffer(i, ex, args, meta_args):
         i.pull_cached_value = hive.pull_out(i.cached_value)
         ex.cached_value = hive.output(i.pull_cached_value)
 
-        ex.from_string = hive.entry(i.pull_value)
+        ex.update_cache = hive.entry(i.pull_value)
 
 
 Buffer = hive.dyna_hive("Buffer", build_buffer, declarator=declare_buffer)
