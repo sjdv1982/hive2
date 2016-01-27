@@ -14,6 +14,9 @@ class WatchClass:
     def _on_tick(self):
         self._hive.value()
 
+        self.compare_values()
+
+    def compare_values(self):
         current_value = self.current_value
         last_value, self._last_value = self._last_value, current_value
 
@@ -27,6 +30,7 @@ class WatchClass:
 
 def declare_watch(meta_args):
     meta_args.data_type = hive.parameter("str", "int")
+    meta_args.mode = hive.parameter("str", "pull", {"push", "pull"})
 
 
 def build_watch(cls, i, ex, args, meta_args):
@@ -34,15 +38,26 @@ def build_watch(cls, i, ex, args, meta_args):
 
     Uses a tick callback.
     """
-    i.value = hive.property(cls, "current_value", meta_args.data_type)
-    i.pull_in = hive.pull_in(i.value)
-    ex.value = hive.antenna(i.pull_in)
+    args.start_value = hive.parameter(meta_args.data_type, None)
+    i.value = hive.property(cls, "current_value", meta_args.data_type, args.start_value)
+
+    if meta_args.mode == 'pull':
+        i.value_in = hive.pull_in(i.value)
+
+    else:
+        i.value_in = hive.push_in(i.value)
+
+    ex.value = hive.antenna(i.value_in)
 
     i.on_changed = hive.triggerfunc()
     ex.on_changed = hive.hook(i.on_changed)
 
-    ex.get_add_handler = hive.socket(cls.set_add_handler,
-                                     identifier="event.add_handler")
+    if meta_args.mode == 'pull':
+        ex.get_add_handler = hive.socket(cls.set_add_handler,
+                                         identifier="event.add_handler")
+    else:
+        i.compare_values = hive.triggerable(cls.compare_values)
+        hive.trigger(i.value_in, i.compare_values)
 
 
 Watch = hive.dyna_hive("Watch", build_watch, declare_watch, cls=WatchClass)
