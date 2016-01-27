@@ -171,13 +171,17 @@ def get_io_info(hive_object):
     return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 
-def import_from_path(import_path):
+def import_module_from_path(import_path):
     split_path = import_path.split(".")
     *module_parts, class_name = split_path
     import_path = ".".join(module_parts)
     sub_module_name = module_parts[-1]
 
-    module = __import__(import_path, fromlist=[sub_module_name])
+    return __import__(import_path, fromlist=[sub_module_name]), class_name
+
+
+def import_from_path(import_path):
+    module, class_name = import_module_from_path(import_path)
 
     try:
         return getattr(module, class_name)

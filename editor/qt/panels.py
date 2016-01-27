@@ -1,7 +1,10 @@
 from functools import partial
+from webbrowser import open as open_url
 
+from .label import QClickableLabel
 from .qt_gui import *
 from .utils import create_widget
+from ..utils import import_module_from_path
 
 
 class ConfigurationPanel(QWidget):
@@ -28,6 +31,10 @@ class ConfigurationPanel(QWidget):
     def _rename_node(self, node, name):
         self._node_manager.rename_node(node, name)
 
+    def _import_path_clicked(self, import_path):
+        module, class_name = import_module_from_path(import_path)
+        open_url(module.__file__)
+
     def on_node_updated(self, node):
         layout = self._layout
 
@@ -39,7 +46,9 @@ class ConfigurationPanel(QWidget):
         if node is None:
             return
 
-        widget = QLabel(node.import_path)
+        widget = QClickableLabel(node.import_path)
+        widget.clicked.connect(partial(self._import_path_clicked, node.import_path))
+
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
         layout.addRow(self.tr("Import path"), widget)
 
