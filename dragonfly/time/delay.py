@@ -18,7 +18,7 @@ class _DelayCls:
         self._delay_ticks = 0
         self._elapsed_ticks = 0
 
-        self._tick_rate = None
+        self._tick_rate = 0
 
     @hive.typed_property("float")
     def elapsed(self):

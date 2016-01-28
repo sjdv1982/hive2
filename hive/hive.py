@@ -4,6 +4,7 @@ from inspect import isfunction, getcallargs
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
 from .compatability import next
 from .connect import connect, ConnectionCandidate
+from .debug import get_current_context as get_debug_context
 from .identifiers import identifiers_match
 from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_validation_enabled
@@ -125,6 +126,11 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     self._bee_names.append(bee_name)
                     setattr(self, bee_name, instance)
 
+        # Debugging tracker
+        debug_context = get_debug_context()
+        if debug_context is not None:
+            debug_context.add_hive(self)
+
     @staticmethod
     def _hive_can_connect_hive(other):
         return isinstance(other, RuntimeHive)
@@ -185,6 +191,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     def __init__(self, *args, **kwargs):
         # HiveObject class for hive that contains this hive (not self.__class__)
         self._hive_object_cls = get_building_hive()
+        print(self._hive_object_cls, self)
 
         # Automatically import parent sockets and plugins
         self._hive_allow_import_namespace = kwargs.pop("import_namespace", True)

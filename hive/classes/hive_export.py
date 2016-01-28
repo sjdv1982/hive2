@@ -1,5 +1,5 @@
-from ..mixins import Bee, Exportable
 from . import SPECIAL_NAMES
+from ..mixins import Bee, Exportable
 
 
 class HiveExportables(object):
@@ -43,8 +43,6 @@ class HiveExportables(object):
         if name not in self._bee_names:
             self._bee_names.add(name)
             self._ordered_bee_names.append(name)
-
-        value._hive_bee_name = (name,)
 
         object.__setattr__(self, name, value)
 
