@@ -1,5 +1,5 @@
+import logging
 from keyword import iskeyword
-from traceback import format_exc
 
 from .code_generator import dict_to_parameter_array, parameter_array_to_dict
 from .connection import Connection, ConnectionType
@@ -46,7 +46,7 @@ class NodeConnectionError(Exception):
 
 class NodeManager(object):
 
-    def __init__(self):
+    def __init__(self, logger=None):
         self.history = HistoryManager()
 
         self.bee_node_factory = BeeNodeFactory()
@@ -70,7 +70,15 @@ class NodeManager(object):
         self.on_pin_folded = None
         self.on_pin_unfolded = None
 
-        self.on_pasted_pre_connect = None
+        if logger is None:
+            logger = logging.getLogger(repr(self))
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(levelname)s: %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+
+        self._logger = logger
 
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
@@ -98,7 +106,9 @@ class NodeManager(object):
 
         output_pin = connection.output_pin
         input_pin = connection.input_pin
-        print("Create connection", output_pin.name, output_pin.node, input_pin.name, input_pin.node)
+
+        self._logger.info("Created connection between {}.{} and {}.{}"
+                          .format(output_pin.node, output_pin.name, input_pin.node, input_pin.name))
 
     def create_connection(self, output_pin, input_pin):
         """Create connection between two pins.
@@ -130,12 +140,12 @@ class NodeManager(object):
         if callable(self.on_connection_destroyed):
             self.on_connection_destroyed(connection)
 
-        print("Delete Connection", connection)
-
         connection.delete()
 
         self.history.push_operation(self.delete_connection, (connection,),
                                     self._add_connection, (connection,))
+
+        self._logger.info("Deleted Connection: {}".format(connection))
 
     def delete_connections(self, connections):
         """Remove multiple connections from the model (as a composite operation)
@@ -206,14 +216,14 @@ class NodeManager(object):
             param_info = self.hive_node_inspector.inspect_configured(import_path, params)
 
         except Exception:
-            print("Failed to inspect '{}'".format(import_path))
+            self._logger.error("Failed to inspect '{}'".format(import_path))
             raise
 
         try:
             node = self.hive_node_factory.new(name, import_path, params, param_info)
 
         except Exception:
-            print("Failed to instantiate '{}'".format(import_path))
+            self._logger.error("Failed to instantiate '{}'".format(import_path))
             raise
 
         self._add_node(node)
@@ -537,8 +547,7 @@ class NodeManager(object):
                 node = self.create_bee(import_path, params)
 
             except Exception as err:
-                print("Unable to create node {}".format(spyder_bee.identifier))
-                print(format_exc())
+                self._logger.exception("Unable to create node {}".format(spyder_bee.identifier))
                 continue
 
             node_to_spyder_node[node] = spyder_bee
@@ -557,8 +566,7 @@ class NodeManager(object):
                 node = self.create_hive(import_path, params)
 
             except Exception as err:
-                print("Unable to create node {}".format(spyder_hive.identifier))
-                print(format_exc())
+                self._logger.exception("Unable to create node {}".format(spyder_hive.identifier))
                 continue
 
             node_to_spyder_node[node] = spyder_hive
@@ -586,7 +594,7 @@ class NodeManager(object):
                 to_id = id_to_node_name[connection.to_node]
 
             except KeyError:
-                print("Unable to find all nodes in connection: {}, {}".format(connection.from_node, connection.to_node))
+                self._logger.error("Unable to find all nodes in connection: {}, {}".format(connection.from_node, connection.to_node))
                 continue
 
             from_node = created_nodes[from_id]
@@ -597,16 +605,17 @@ class NodeManager(object):
                 to_pin = to_node.inputs[connection.input_name]
 
             except KeyError:
-                print("Unable to find all node pins in connection: {}.{}, {}.{}"
-                      .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
+                self._logger.error("Unable to find all node pins in connection: {}.{}, {}.{}"
+                                   .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
                 continue
 
             try:
                 self.create_connection(from_pin, to_pin)
+
             except Exception:
-                print("Unable to create connection between {}.{}, {}.{}"
-                      .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
-                print(format_exc())
+                self._logger.exception("Unable to create connection between {}.{}, {}.{}"
+                                       .format(connection.from_node, connection.output_name,
+                                               connection.to_node, connection.input_name))
 
         # Fold folded pins
         for node, spyder_node in node_to_spyder_node.items():
@@ -616,7 +625,7 @@ class NodeManager(object):
                     pin = node.inputs[pin_name]
 
                 except KeyError:
-                    print("Couldn't find pin {}.{} to fold".format(node.name, pin_name))
+                    self._logger.error("Couldn't find pin {}.{} to fold".format(node.name, pin_name))
                     continue
 
                 self.fold_pin(pin)
