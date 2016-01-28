@@ -56,7 +56,7 @@ class Keyboard_:
 
 
 def declare_keyboard(meta_args):
-    meta_args.mode = hive.parameter("str", options={'single key', 'any key'})
+    meta_args.mode = hive.parameter("str", 'single key', options={'single key', 'any key'})
 
 
 def build_keyboard(cls, i, ex, args, meta_args):
