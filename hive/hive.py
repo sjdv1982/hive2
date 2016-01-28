@@ -75,7 +75,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     build_class_instance.__init__(*args, **kwargs)
 
-            with building_hive_as(hive_object), hive_mode_as("build"):
+            with building_hive_as(hive_object.__class__), hive_mode_as("build"):
                 # Add external bees to runtime hive
                 exposed_bees = []
 
@@ -330,7 +330,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         :param target: target to connect to
         """
         assert target.implements(ConnectTarget)
-        #target_data_type = identifier_to_tuple(target.data_type)
 
         connect_sources = [c for c in cls._hive_find_connect_sources() if identifiers_match(c.data_type,
                                                                                             target.data_type)]
@@ -350,7 +349,7 @@ F
         :param source: source to connect to
         """
         assert source.implements(ConnectSource)
-        #source_data_type = identifier_to_tuple(source.data_type)
+
         connect_targets = [c for c in cls._hive_find_connect_targets() if identifiers_match(c.data_type,
                                                                                             source.data_type)]
 
