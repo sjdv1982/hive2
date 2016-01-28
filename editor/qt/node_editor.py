@@ -94,7 +94,7 @@ class PreviewWidget(QWidget):
         self._show_source.clicked.connect(self._show_code)
 
     def _show_code(self):
-        hivemap = self._node_manager.export_hivemap()
+        hivemap = self._node_manager.to_hivemap()
         code = hivemap_to_builder_body(hivemap)
         dialogue = SourceCodePreviewDialogue(self, code)
         dialogue.setAttribute(Qt.WA_DeleteOnClose)
@@ -499,15 +499,15 @@ class NodeEditorSpace(QWidget):
     def cut(self):
         gui_nodes = self._view.gui_get_selected_nodes()
         nodes = [n.node for n in gui_nodes]
-        self._node_manager.cut_nodes(nodes)
+        return self._node_manager.cut(nodes)
 
     def copy(self):
         gui_nodes = self._view.gui_get_selected_nodes()
         nodes = [n.node for n in gui_nodes]
-        self._node_manager.copy_nodes(nodes)
+        return self._node_manager.copy(nodes)
 
-    def paste(self):
-        self._node_manager.paste_nodes(self._view.mouse_pos)
+    def paste(self, hivemap):
+        self._node_manager.paste(hivemap, self._view.mouse_pos)
 
     def save(self, file_name=None):
         use_existing_file_name = file_name is None
@@ -561,7 +561,7 @@ class NodeEditorSpace(QWidget):
         node_manager = self._node_manager
 
         try:
-            node_manager.from_string(data)
+            node_manager.load_string(data)
 
         except Exception as err:
             print("Error during loading")

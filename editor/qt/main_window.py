@@ -47,61 +47,36 @@ class MainWindow(QMainWindow):
         self.setDockNestingEnabled(True)
 
         menu_bar = self.menuBar()
-
-        self.new_action = QAction("&New", menu_bar,
-                        shortcut=QKeySequence.New,
-                        statusTip="Create a new file", triggered=self.add_editor_space)
-
-        self.load_action = QAction("&Open...", menu_bar,
-                                   shortcut=QKeySequence.Open,
-                                   statusTip="Open an existing file", triggered=self.open_file)
-
-        self.save_action = QAction("&Save", menu_bar,
-                                   shortcut=QKeySequence.Save,
-                                   statusTip="Save as existing new file", triggered=self.save_file)
-
-        self.save_as_action = QAction("&Save As...", menu_bar,
-                                      shortcut=QKeySequence.SaveAs,
+        self.new_action = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
+                                  triggered=self.add_editor_space)
+        self.load_action = QAction("&Open...", menu_bar, shortcut=QKeySequence.Open, statusTip="Open an existing file",
+                                   triggered=self.open_file)
+        self.save_action = QAction("&Save", menu_bar, shortcut=QKeySequence.Save, statusTip="Save as existing new file",
+                                   triggered=self.save_file)
+        self.save_as_action = QAction("&Save As...", menu_bar, shortcut=QKeySequence.SaveAs,
                                       statusTip="Save as a new file", triggered=self.save_as_file)
 
         self.file_menu = QMenu("&File")
-
-        self.open_project_action = QAction("Open Project", menu_bar,
-                                           statusTip="Open an existing Hive project", triggered=self.open_project)
-
-        self.close_project_action = QAction("Close Project", menu_bar,
-                                            statusTip="Close the current Hive project", triggered=self.close_project)
-
-        self.refresh_project_action = QAction("Reload Project", menu_bar,
-                                            statusTip="Reload the current project", triggered=self.reload_project)
-
+        self.open_project_action = QAction("Open Project", menu_bar, statusTip="Open an existing Hive project",
+                                           triggered=self.open_project)
+        self.close_project_action = QAction("Close Project", menu_bar, statusTip="Close the current Hive project",
+                                            triggered=self.close_project)
+        self.refresh_project_action = QAction("Reload Project", menu_bar, statusTip="Reload the current project",
+                                              triggered=self.reload_project)
         self.insert_action = QAction("&Insert", menu_bar, shortcut=QKeySequence(self.tr(".", "  Insert from path")),
                                      statusTip="Insert node from path", triggered=self.insert_from_path)
-
-        self.select_all_action = QAction("Select &All", menu_bar,
-                                   shortcut=QKeySequence.SelectAll,
-                                   statusTip="Select all nodes", triggered=self.select_all_operation)
-
-        self.undo_action = QAction("&Undo", menu_bar,
-                                   shortcut=QKeySequence.Undo,
-                                   statusTip="Undo last operation", triggered=self.undo_operation)
-
-        self.redo_action = QAction("&Redo", menu_bar,
-                                   shortcut=QKeySequence.Redo,
-                                   statusTip="Redo last operation", triggered=self.redo_operation)
-
-        self.copy_action = QAction("&Copy", menu_bar,
-                                   shortcut=QKeySequence.Copy,
-                                   statusTip="Copy selected nodes", triggered=self.copy_operation)
-
-        self.cut_action = QAction("Cu&t", menu_bar,
-                                   shortcut=QKeySequence.Cut,
-                                   statusTip="Cut selected nodes", triggered=self.cut_operation)
-
-        self.paste_action = QAction("&Paste", menu_bar,
-                                   shortcut=QKeySequence.Paste,
-                                   statusTip="Paste selected nodes", triggered=self.paste_operation)
-
+        self.select_all_action = QAction("Select &All", menu_bar, shortcut=QKeySequence.SelectAll,
+                                         statusTip="Select all nodes", triggered=self.select_all_operation)
+        self.undo_action = QAction("&Undo", menu_bar, shortcut=QKeySequence.Undo, statusTip="Undo last operation",
+                                   triggered=self.undo_operation)
+        self.redo_action = QAction("&Redo", menu_bar, shortcut=QKeySequence.Redo, statusTip="Redo last operation",
+                                   triggered=self.redo_operation)
+        self.copy_action = QAction("&Copy", menu_bar, shortcut=QKeySequence.Copy, statusTip="Copy selected nodes",
+                                   triggered=self.copy_operation)
+        self.cut_action = QAction("Cu&t", menu_bar, shortcut=QKeySequence.Cut, statusTip="Cut selected nodes",
+                                  triggered=self.cut_operation)
+        self.paste_action = QAction("&Paste", menu_bar, shortcut=QKeySequence.Paste, statusTip="Paste selected nodes",
+                                    triggered=self.paste_operation)
 
         self.edit_menu = QMenu("&Edit")
 
@@ -114,7 +89,8 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_action)
         self.edit_menu.addAction(self.paste_action)
 
-        self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser", triggered=self.goto_help_page)
+        self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
+                                   triggered=self.goto_help_page)
         self.save_as_action.setVisible(False)
 
         # Add tab widget
@@ -154,6 +130,9 @@ class MainWindow(QMainWindow):
         self._pending_dropped_node_info = None
         self.refresh_project_tree()
 
+        self._clipboard = None
+
+        # Set application icon
         icon = QIcon()
         file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
         icon.addFile(file_path)
@@ -242,15 +221,18 @@ class MainWindow(QMainWindow):
 
     def copy_operation(self):
         editor = self.tab_widget.currentWidget()
-        editor.copy()
+        self._clipboard = editor.copy()
 
     def cut_operation(self):
         editor = self.tab_widget.currentWidget()
-        editor.cut()
+        self._clipboard = editor.cut()
 
     def paste_operation(self):
         editor = self.tab_widget.currentWidget()
-        editor.paste()
+        clipboard = self._clipboard
+
+        if clipboard is not None:
+            editor.paste(clipboard)
 
     def _check_tab_closable(self, index):
         widget = self.tab_widget.widget(index)
