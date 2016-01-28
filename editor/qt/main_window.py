@@ -2,7 +2,6 @@ import os
 import webbrowser
 from functools import partial
 
-from .console import QConsole
 from .node_editor import NodeEditorSpace
 from .qt_core import *
 from .qt_gui import *
@@ -115,11 +114,6 @@ class MainWindow(QMainWindow):
         self.preview_window = self.create_subwindow("Preview", "left")
         self.console_window = self.create_subwindow("Console", "right")
 
-        self.console_widget = QConsole()
-        self.console_widget.local_dict['editor'] = None
-        self.console_widget.local_dict['window'] = self
-
-        self.console_window.setWidget(self.console_widget)
         self.tabifyDockWidget(self.bee_window, self.hive_window)
 
         self.hive_finder = HiveFinder()
@@ -253,7 +247,7 @@ class MainWindow(QMainWindow):
 
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
-                                        self.parameter_window, self.preview_window)
+                                        self.parameter_window, self.preview_window, self.console_window)
 
         # Update UI elements
         self.update_ui_layout()
@@ -263,9 +257,7 @@ class MainWindow(QMainWindow):
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
             widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window,
-                            self.parameter_window, self.preview_window)
-
-            self.console_widget.local_dict['editor'] = widget
+                            self.parameter_window, self.preview_window, self.console_window)
 
     def add_editor_space(self, *, file_name=None):
         editor = NodeEditorSpace(file_name)

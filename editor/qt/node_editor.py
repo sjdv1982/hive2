@@ -1,5 +1,6 @@
 import os
 
+from .console import QConsole
 from .floating_text import FloatingTextWidget
 from .panels import FoldingPanel, ConfigurationPanel, ArgsPanel
 from .qt_core import *
@@ -193,6 +194,8 @@ class NodeEditorSpace(QWidget):
         self._configuration_widget = ConfigurationPanel(self._node_manager)
         self._folding_widget = FoldingPanel(self._node_manager)
         self._preview_widget = PreviewWidget(self._node_manager)
+
+        self._console_widget = QConsole(local_dict=dict(editor=self))
 
         if file_name is not None:
             self.load(file_name)
@@ -577,16 +580,20 @@ class NodeEditorSpace(QWidget):
         self._view.frame_scene_content()
         self._docstring_widget.setPlainText(node_manager.docstring)
 
-    def on_enter(self, docstring_window, folding_window, configuration_window, parameter_window, preview_window):
+    def on_enter(self, docstring_window, folding_window, configuration_window, parameter_window, preview_window,
+                 console_window):
         docstring_window.setWidget(self._docstring_widget)
         folding_window.setWidget(self._folding_widget)
         configuration_window.setWidget(self._configuration_widget)
         parameter_window.setWidget(self._args_widget)
         preview_window.setWidget(self._preview_widget)
+        console_window.setWidget(self._console_widget)
 
-    def on_exit(self, docstring_window, folding_window, configuration_window, parameter_window, preview_window):
+    def on_exit(self, docstring_window, folding_window, configuration_window, parameter_window, preview_window,
+                console_window):
         docstring_window.setWidget(QWidget())
         folding_window.setWidget(QWidget())
         configuration_window.setWidget(QWidget())
         parameter_window.setWidget(QWidget())
         preview_window.setWidget(QWidget())
+        console_window.setWidget(QWidget())

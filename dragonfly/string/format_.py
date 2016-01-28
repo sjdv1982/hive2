@@ -16,6 +16,9 @@ def build_format(i, ex, args, meta_args):
     kwarg_fields = []
     indexed_fields = []
 
+    i.result = hive.attribute('str')
+    i.result_out = hive.pull_out(i.result)
+
     for index, field in enumerate(fields):
         literal_text = field[1]
 
@@ -37,8 +40,6 @@ def build_format(i, ex, args, meta_args):
         setattr(ex, field_name, hive.antenna(in_attr))
         hive.trigger(i.result_out, in_attr, pretrigger=True)
 
-    i.result = hive.attribute('str')
-    i.result_out = hive.pull_out(i.result)
     ex.result = hive.output(i.result_out)
 
     def do_format(self):
