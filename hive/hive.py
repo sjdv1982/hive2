@@ -191,7 +191,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
     def __init__(self, *args, **kwargs):
         # HiveObject class for hive that contains this hive (not self.__class__)
         self._hive_object_cls = get_building_hive()
-        print(self._hive_object_cls, self)
 
         # Automatically import parent sockets and plugins
         self._hive_allow_import_namespace = kwargs.pop("import_namespace", True)

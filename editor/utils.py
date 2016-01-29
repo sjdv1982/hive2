@@ -64,7 +64,7 @@ def is_identifier(identifier):
     if not isinstance(body[0], ast.Expr):
         return False
 
-    value = body.value
+    value = body[0].value
     if not isinstance(value, ast.Name):
         return False
 

@@ -30,6 +30,9 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         self._run_hive = run_hive
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
+
+        from hive.debug import get_current_context
+        self._debug_context = get_current_context()
                 
     @memoize
     def bind(self, run_hive):
@@ -88,6 +91,8 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         self._pretrigger.push()
 
         value = self._get_value()
+
+        self._debug_context.report('push_out', self, value)
 
         for target in self._targets:
             target(value)
