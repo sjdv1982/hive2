@@ -8,7 +8,7 @@ from hive.entry import Entry
 from hive.antenna import HiveAntenna
 from hive.output import HiveOutput
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from inspect import getargspec
 from itertools import chain
 from os import path
@@ -31,6 +31,9 @@ type_factories = {
 }
 
 
+ArgOption = namedtuple("ArgOption", ("optional", "default", "options", "data_type"))
+
+
 def _get_type_name(value):
     """Helper function
 
@@ -41,15 +44,13 @@ def _get_type_name(value):
 
 def is_identifier(identifier):
     """Determines, if string is valid Python identifier."""
-
-    # Smoke test — if it's not string, then it's not identifier, but we don't
-    # want to just silence exception. It's better to fail fast.
     if not isinstance(identifier, str):
-        raise TypeError('expected str, but got {!r}'.format(type(identifier)))
+        raise TypeError('Expected string, received {}'.format(type(identifier)))
 
     # Resulting AST of simple identifier is <Module [<Expr <Name "foo">>]>
     try:
         root = ast.parse(identifier)
+
     except SyntaxError:
         return False
 
@@ -59,13 +60,15 @@ def is_identifier(identifier):
     if len(root.body) != 1:
         return False
 
-    if not isinstance(root.body[0], ast.Expr):
+    body = root.body
+    if not isinstance(body[0], ast.Expr):
         return False
 
-    if not isinstance(root.body[0].value, ast.Name):
+    value = body.value
+    if not isinstance(value, ast.Name):
         return False
 
-    if root.body[0].value.id != identifier:
+    if value.id != identifier:
         return False
 
     return True
@@ -119,9 +122,8 @@ def get_builder_class_args(hive_cls):
 
     # Construct argument pairs
     for arg_name in arg_names:
-        arg_data = {'optional': arg_name in arg_defaults, 'default': arg_defaults.get(arg_name),
-                    'options': arg_options.get(arg_name), 'data_type': arg_types.get(arg_name, "")}
-
+        arg_data = ArgOption(optional=arg_name in arg_defaults, default=arg_defaults.get(arg_name),
+                             options=arg_options.get(arg_name), data_type=arg_types.get(arg_name))
         builder_args[arg_name] = arg_data
 
     return builder_args

@@ -4,6 +4,10 @@ from .classes import BindContext
 
 
 class BindEnvironmentClass:
+    """Process environment which embeds a bound hive.
+
+    Exposes relevant plugins and sockets to embedded hive.
+    """
 
     def __init__(self, context):
         self._on_stopped = []
@@ -59,15 +63,8 @@ def build_bind_environment(cls, i, ex, args, meta_args):
     i.pull_state = hive.pull_out(i.state)
     ex.state = hive.output(i.pull_state)
 
-# TODO (s)
-# Close should be subscribed by event to send stop event
-# Stop is local, quit is global
-# Make panels scrollable!
-# When send start / stop events? Who? how deal with binding?
-# Add scheduling?
 
-
-class InstantiatorCls:
+class InstantiatorClass:
 
     def __init__(self):
         self._plugin_getters = []
@@ -89,6 +86,10 @@ class InstantiatorCls:
         self.hive_class = None
 
     def _create_context(self):
+        """Create context object for new hive instances.
+
+        Pass cached plugins and sockets, and request configuration data.
+        """
         if self._plugins is None:
             self._plugins = plugins = {}
             for getter in self._plugin_getters:
@@ -127,6 +128,10 @@ class InstantiatorCls:
         self._config_getters.append(get_config)
 
     def add_on_created(self, on_created):
+        """Add creation callback
+
+        :param on_created: callback
+        """
         self._bind_class_creation_callbacks.append(on_created)
 
     def forget_hive(self, child_hive):
@@ -162,7 +167,7 @@ class InstantiatorCls:
 
 
 def declare_instantiator(meta_args):
-    meta_args.bind_process = hive.parameter("str", 'dependent', {'dependent', 'independent'})
+    meta_args.bind_process = hive.parameter("str", 'child', {'child', 'independent'})
 
 
 def build_instantiator(cls, i, ex, args, meta_args):
@@ -170,7 +175,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
     # If this is built now, then it won't perform matchmaking, so use meta hive
     bind_meta_class = hive.meta_hive("BindEnvironment", build_bind_environment, declare_build_environment,
                                      cls=BindEnvironmentClass)
-    i.bind_meta_class = hive.property(cls, "bind_meta_class", "object", bind_meta_class)
+    i.bind_meta_class = hive.property(cls, "bind_meta_class", "class", bind_meta_class)
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
 
@@ -180,7 +185,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     ex.create = hive.entry(i.do_instantiate)
 
-    ex.last_created_hive = hive.property(cls, "last_created", "object")
+    ex.last_created_hive = hive.property(cls, "last_created", "process")
     i.pull_last_created = hive.pull_out(ex.last_created_hive)
     ex.last_created = hive.output(i.pull_last_created)
 
@@ -194,8 +199,9 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
 
     # Bind instantiator
-    if meta_args.bind_process == 'dependent':
+    if meta_args.bind_process == 'child':
         # Add startup and stop callbacks
         ex.on_stopped = hive.plugin(cls.on_stopped, identifier="on_stopped")
 
-Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorCls)
+
+Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorClass)

@@ -132,7 +132,6 @@ def build_entity_environment(cls, i, ex, args, meta_args):
     ex.register_destructor = hive.plugin(cls.register_destructor, identifier="entity.register_destructor")
 
 
-
 EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment, declare_entity_environment,
                                    cls=EntityEnvironmentClass)
 
