@@ -8,6 +8,7 @@ from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from .web_view import QEditorWebView
+
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
@@ -84,14 +85,7 @@ class MainWindow(QMainWindow):
     hivemap_extension = ".hivemap"
     untitled_file_name = "<Unsaved>"
 
-    def __init__(self):
-        QMainWindow.__init__(self)
-
-        status_bar = QStatusBar(self)
-        self.setStatusBar(status_bar)
-
-        self.setDockNestingEnabled(True)
-
+    def _setup_menus(self):
         menu_bar = self.menuBar()
         self.new_action = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
                                   triggered=self.add_editor_space)
@@ -135,9 +129,21 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_action)
         self.edit_menu.addAction(self.paste_action)
 
+        self.view_menu = QMenu("&View")
+
+        # Allow minimisable
+        self.view_menu.addAction(self.hive_window.toggleViewAction())
+        self.view_menu.addAction(self.bee_window.toggleViewAction())
+        self.view_menu.addAction(self.folding_window.toggleViewAction())
+        self.view_menu.addAction(self.configuration_window.toggleViewAction())
+        self.view_menu.addAction(self.console_window.toggleViewAction())
+        self.view_menu.addAction(self.preview_window.toggleViewAction())
+
         self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
                                    triggered=self.goto_help_page)
-        self.save_as_action.setVisible(False)
+
+    def _setup_windows(self):
+        self.setDockNestingEnabled(True)
 
         # Add tab widget
         self.tab_widget = TabViewWidget()
@@ -147,21 +153,30 @@ class MainWindow(QMainWindow):
         self.tab_widget.check_tab_closable = self._check_tab_closable
 
         # Left window
-        self.bee_window = self.create_subwindow("Bees", "left")
+        self.bee_window = self.create_subwindow("Bees", "left", closeable=True)
 
         # Left window
-        self.hive_window = self.create_subwindow("Hives", "left")
+        self.hive_window = self.create_subwindow("Hives", "left", closeable=True)
 
         # Docstring editor
-        self.docstring_window = self.create_subwindow("Docstring", "left")
-        self.configuration_window = self.create_subwindow("Configuration", "right")
+        self.docstring_window = self.create_subwindow("Docstring", "left", closeable=True)
+        self.configuration_window = self.create_subwindow("Configuration", "right", closeable=True)
+        self.folding_window = self.create_subwindow("Folding", "right", closeable=True)
+        self.preview_window = self.create_subwindow("Preview", "left", closeable=True)
+        self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
 
-        self.parameter_window = self.create_subwindow("Parameters", "right")
-        self.folding_window = self.create_subwindow("Folding", "right")
-        self.preview_window = self.create_subwindow("Preview", "left")
-        self.console_window = self.create_subwindow("Console", "right")
-
+        # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
+
+
+    def __init__(self):
+        QMainWindow.__init__(self)
+
+        status_bar = QStatusBar(self)
+        self.setStatusBar(status_bar)
+
+        self._setup_windows()
+        self._setup_menus()
 
         self.hive_finder = HiveFinder()
 
@@ -348,7 +363,7 @@ class MainWindow(QMainWindow):
 
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
-                                        self.parameter_window, self.preview_window, self.console_window)
+                                        self.preview_window, self.console_window)
 
         # Update UI elements
         self.update_ui_layout()
@@ -357,8 +372,8 @@ class MainWindow(QMainWindow):
 
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
-            widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window,
-                            self.parameter_window, self.preview_window, self.console_window)
+            widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
+                            self.console_window)
 
     def add_editor_space(self, *, file_name=None):
         editor = NodeEditorSpace(file_name)
@@ -402,7 +417,6 @@ class MainWindow(QMainWindow):
         show_config = True
         show_folding = True
         show_hives = True
-        show_args = True
         show_bees = True
         show_preview = True
         show_insert = False
@@ -440,6 +454,9 @@ class MainWindow(QMainWindow):
         if show_insert:
             self.file_menu.addAction(self.insert_action)
 
+        menu_bar.addMenu(self.view_menu)
+
+
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
 
@@ -451,7 +468,6 @@ class MainWindow(QMainWindow):
         self.configuration_window.setVisible(show_config)
         self.hive_window.setVisible(show_hives)
         self.bee_window.setVisible(show_bees)
-        self.parameter_window.setVisible(show_args)
         self.preview_window.setVisible(show_preview)
 
     def _accept_dropped_node_info(self):

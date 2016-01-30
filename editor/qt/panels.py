@@ -57,39 +57,6 @@ class ConfigurationPanel(QWidget):
         widget.textChanged.connect(partial(self._rename_node, node))
         layout.addRow(self.tr("&Name"), widget)
 
-
-class ArgsPanel(QWidget):
-
-    def __init__(self, node_manager):
-        QWidget.__init__(self)
-
-        self._node = None
-        self._node_manager = node_manager
-
-        self._layout = QFormLayout()
-        self.setLayout(self._layout)
-
-    @property
-    def node(self):
-        return self._node
-
-    @node.setter
-    def node(self, node):
-        self._node = node
-
-        self.on_node_updated(node)
-
-    def on_node_updated(self, node):
-        layout = self._layout
-
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            widget.deleteLater()
-
-        if node is None:
-            return
-
         # Meta Args
         meta_args = node.params.get('meta_args')
         if meta_args:

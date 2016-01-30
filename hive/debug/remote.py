@@ -239,7 +239,6 @@ class RemoteDebugContext(DebugContext):
             self._notify_create_root_hive(root_hive_ref(), root_hive_id)
 
         bee_name = source_bee._hive_bee_name
-        print("BEEEE", bee_name)
 
         # Send operation ...
         self._send_operation(opcode, root_hive_id, bee_name, data)
