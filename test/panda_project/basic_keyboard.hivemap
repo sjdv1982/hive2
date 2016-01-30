@@ -1,0 +1,122 @@
+Hivemap (
+  hives = HiveNodeArray (
+    HiveNode (
+      identifier = 'value',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 0.0,
+        y = 0.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'str',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = 'Debug!',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'transistor',
+      import_path = 'dragonfly.std.Transistor',
+      position = Coordinate2D (
+        x = -15.0,
+        y = -158.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'str',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'keyboard',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -229.0,
+        y = -129.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 'w',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'print',
+      import_path = 'dragonfly.io.Print',
+      position = Coordinate2D (
+        x = 129.0,
+        y = -67.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+  ),
+  bees = BeeNodeArray (
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'value',
+      output_name = 'value_out',
+      to_node = 'transistor',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'transistor',
+      output_name = 'result',
+      to_node = 'print',
+      input_name = 'value_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'keyboard',
+      output_name = 'on_pressed',
+      to_node = 'transistor',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+  ),
+  docstring = '',
+)
