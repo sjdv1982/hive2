@@ -2,10 +2,9 @@ from functools import partial
 
 from .annotations import get_return_type
 from .classes import Pusher
-from .manager import get_mode, get_building_hive, memoize
-from .mixins import Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, ConnectTarget, \
-    TriggerSource, TriggerTarget, Socket, Plugin
 from .identifiers import identifiers_match
+from .manager import get_mode, get_building_hive, memoize
+from .mixins import Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, TriggerSource, TriggerTarget, Socket
 
 
 class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
@@ -30,9 +29,6 @@ class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
         self._run_hive = run_hive
         self._trigger = Pusher(self)
         self._pretrigger = Pusher(self)
-
-        from hive.debug import get_current_context
-        self._debug_context = get_current_context()
                 
     @memoize
     def bind(self, run_hive):
@@ -78,7 +74,7 @@ class PullOut(PPOutBase):
         pass
 
     
-class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
+class PushOut(PPOutBase, Socket, TriggerTarget):
     mode = "push"
 
     def __init__(self, target, data_type=None, run_hive=None):
@@ -91,8 +87,6 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
         self._pretrigger.push()
 
         value = self._get_value()
-
-        self._debug_context.report('push_out', self, value)
 
         for target in self._targets:
             target(value)
@@ -114,14 +108,7 @@ class PushOut(PPOutBase, Socket, ConnectTarget, TriggerTarget):
     
     def _hive_connect_source(self, target):
         self._targets.append(target.push)
-            
-    def _hive_is_connectable_target(self, source):
-        if not isinstance(source, Plugin):
-            raise TypeError("Source does not implement Plugin: {}".format(source))
 
-    def _hive_connect_target(self, target):
-        self._targets.append(target.plugin)
-            
     def _hive_trigger_target(self):
         return self.push
 

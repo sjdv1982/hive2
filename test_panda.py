@@ -1,18 +1,7 @@
-import hive
-import dragonfly
-import editor
-
 from test.panda_project.basic_keyboard import BasicKeyboard as SomePandaDemo
 
-
-from editor.debugging import Server, Client
-
-server = Server()
-server.launch()
-
-client = Client()
-client.enqueue(b"WOO")
-client.launch()
+import dragonfly
+import hive
 
 
 class MyHiveClass:
@@ -34,14 +23,17 @@ def build_my_hive(cls, i, ex, args):
 
     i.some_panda_hive = SomePandaDemo()
 
-from hive.debug import current_context_as, DebugContext
 
-debug = DebugContext()
-debug.on_reported = print
+from hive.debug import current_context_as
+from editor.debugging import HivemapDebugContext
 
 
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
 
+# serv = Server()
+# serv.launch()
+
+debug = HivemapDebugContext()
 with current_context_as(debug):
     my_hive = MyHive()
     my_hive.run()

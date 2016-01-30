@@ -32,6 +32,53 @@ def dict_to_delimited(data, delimiter, name_path=()):
             yield '.'.join(new_name_path)
 
 
+# class ThreadDispatcher(QThread):
+#     def __init__(self, parent):
+#         QThread.__init__(self)
+#         self.parent = parent
+#
+#     def run(self):
+#         while True:
+#             callback = idle_loop.get()
+#             if callback is None:
+#                 break
+#             QApplication.postEvent(self.parent, _Event(callback))
+#
+#     def stop(self):
+#         idle_loop.put(None)
+#         self.wait()
+
+# class QDebugger(Server):
+#
+#     def
+
+
+class _Processor(QObject):
+
+    def customEvent(self, e):
+        e.process()
+
+
+class DeferredExecute(QEvent):
+    EVENT_TYPE = QEvent.Type(QEvent.registerEventType())
+
+    __processor = _Processor()
+
+    def __init__(self, func, *args, **kwargs):
+        QEvent.__init__(self, self.EVENT_TYPE)
+
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def dispatch(self):
+        QApplication.postEvent(self.__processor, self)
+
+    def process(self):
+        self.func(*self.args, **self.kwargs)
+
+
+
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
     hivemap_extension = ".hivemap"
@@ -154,6 +201,60 @@ class MainWindow(QMainWindow):
         # Load home page
         self._web_view = web_view
         self.tab_widget.addTab(web_view, "About", closeable=False)
+
+        from hive.debug import Server
+        self.debugger = Server()
+        self.debugger.launch()
+
+        self._root_id_to_filepath = {}
+        self.debugger.on_received = self._on_debug_received
+
+    def _on_debug_received(self, data):
+        event = DeferredExecute(self._process_debug_data, data)
+        event.dispatch()
+
+    def _process_debug_data(self, data):
+        from hive.debug import unpack_pascal_string, OpCodes
+        from struct import unpack_from
+
+        opcode = unpack_from('B', data)[0]
+        offset = 1
+
+        print("RECV", data)
+
+        if opcode == OpCodes.register_root:
+            file_path, read_bytes = unpack_pascal_string(data, offset=offset)
+            offset += read_bytes
+
+            root_id = unpack_from('B', data, offset=offset)[0]
+            offset += 1
+
+            self._root_id_to_filepath[root_id] = file_path
+
+        elif opcode == OpCodes.push_out:
+            root_id = unpack_from('B', data, offset=offset)[0]
+            offset += 1
+
+            delimited_bee_name, read_bytes = unpack_pascal_string(data, offset=offset)
+            offset += read_bytes
+
+            bee_name = delimited_bee_name.split(',')
+            value, read_bytes = unpack_pascal_string(data, offset=offset)
+
+            file_name = self._root_id_to_filepath[root_id]
+            self._open_file(file_name)
+
+            editor = self.tab_widget.currentWidget()
+            *_, node_name, pin_name = bee_name
+            node_name = node_name[1:]
+            node = editor.node_manager.nodes[node_name]
+            pin = node.outputs[pin_name]
+
+            con = pin.connections[0]
+            gcon = editor._connection_to_qt_connection[con]
+            gcon.set_active(True)
+
+            print(node, bee_name, pin)
 
     def closeEvent(self, event):
         try:

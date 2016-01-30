@@ -2,11 +2,11 @@ from collections import namedtuple
 from itertools import product
 
 from .classes import HiveBee
+from .debug import get_current_context
+from .identifiers import identifiers_match
 from .manager import get_mode, memoize, register_bee
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
     Exportable
-from .identifiers import identifiers_match
-
 
 ConnectionCandidate = namedtuple("ConnectionCandidate", ("bee_name", "data_type"))
 
@@ -69,7 +69,8 @@ def find_connections_between_hives(source_hive, target_hive):
     return source_bee, target_bee
 
 
-def build_connection(source, target):
+def resolve_endpoints(source, target):
+    """Resolve connect targets that are hives"""
     # TODO: register connection, or insert a listener function in between
     hive_source = isinstance(source, ConnectSourceDerived)
     hive_target = isinstance(target, ConnectTargetDerived)
@@ -78,16 +79,26 @@ def build_connection(source, target):
     if hive_source and hive_target:
         source, target = find_connections_between_hives(source, target)
 
-    else: 
+    else:
         if hive_source:
             source = source._hive_get_connect_source(target)
 
         elif hive_target:
             target = target._hive_get_connect_target(source)
 
+    return source, target
+
+
+def build_connection(source, target):
+    source, target = resolve_endpoints(source, target)
+
     # raises an Exception if incompatible
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
+
+    debug_context = get_current_context()
+    if debug_context is not None:
+        debug_context.on_create_connection(source, target)
 
     target._hive_connect_target(source)
     source._hive_connect_source(target)

@@ -1,4 +1,5 @@
 from .classes import HiveBee
+from .debug import get_current_context
 from .manager import get_mode, memoize, register_bee
 from .mixins import TriggerSourceBase, TriggerTargetBase, Bee, Bindable, TriggerTargetDerived
 
@@ -6,6 +7,10 @@ from .mixins import TriggerSourceBase, TriggerTargetBase, Bee, Bindable, Trigger
 def build_trigger(source, target, pre):
     # TODO: register connection, or insert a listener function in between
     target_func = target._hive_trigger_target()
+
+    debug_context = get_current_context()
+    if debug_context is not None:
+        debug_context.on_create_trigger(source, target, target_func, pre)
 
     if pre:
         source._hive_pretrigger_source(target_func)

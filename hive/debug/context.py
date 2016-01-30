@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from weakref import WeakKeyDictionary, WeakValueDictionary
 
 _debug_context = None
 
@@ -21,36 +20,19 @@ def current_context_as(context):
     set_current_context(original_context)
 
 
-def id_generator(i=0):
-    while True:
-        yield i
-        i += 1
-
-
 class DebugContext:
 
-    def __init__(self):
-        self._hive_to_id = WeakKeyDictionary()
-        self._id_to_hive = WeakValueDictionary()
+    def on_create_connection(self, source, target):
+        pass
 
-        self._id_generator = id_generator()
-        self.on_reported = None
+    def on_create_trigger(self, source, target, target_func, pre):
+        pass
 
-    def add_hive(self, run_hive):
-        if run_hive in self._hive_to_id:
-            return
+    def report_trigger(self, source_bee):
+        pass
 
-        hive_id = next(self._id_generator)
+    def report_pull_in(self, source_bee, data):
+        pass
 
-        self._hive_to_id[run_hive] = hive_id
-        self._id_to_hive[hive_id] = run_hive
-
-    def report(self, operation, source_bee, data=None):
-        if not callable(self.on_reported):
-            return
-
-        bee_hive = source_bee.parent
-        bee_parent_id = self._hive_to_id[bee_hive]
-        bee_name = source_bee._hive_bee_name
-
-        self.on_reported(operation, bee_parent_id, bee_name, data)
+    def report_push_out(self, source_bee, data):
+        pass

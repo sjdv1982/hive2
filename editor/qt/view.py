@@ -436,17 +436,17 @@ class NodeView(QGraphicsView):
                 # If found connection
                 if connection is not None:
                     for connection_ in self._connections:
-                        connection_.set_selected(False)
+                        connection_.set_active(False)
 
                     # Set selected
-                    connection.set_selected(True)
+                    connection.set_active(True)
                     self._active_connection = connection
 
                 # Unselect current
                 else:
                     connection = self._active_connection
                     if connection:
-                        connection.set_selected(False)
+                        connection.set_active(False)
                         self._active_connection = None
 
                 QGraphicsView.mousePressEvent(self, event)

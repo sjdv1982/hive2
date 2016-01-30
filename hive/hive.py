@@ -4,9 +4,8 @@ from inspect import isfunction, getcallargs
 from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
 from .compatability import next
 from .connect import connect, ConnectionCandidate
-from .debug import get_current_context as get_debug_context
 from .identifiers import identifiers_match
-from .manager import bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
+from .manager import bee_register_context, get_mode, get_run_hive, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
     memoize, get_validation_enabled
 from .mixins import *
 from .policies import MatchmakingPolicyError
@@ -121,15 +120,22 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         continue
 
                     # Risk that multiple references to same bee exist
-                    instance._hive_bee_name = self._hive_bee_name + (bee_name,)
+
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
                     setattr(self, bee_name, instance)
 
-        # Debugging tracker
-        debug_context = get_debug_context()
-        if debug_context is not None:
-            debug_context.add_hive(self)
+        # If root:
+        if get_run_hive() is None:
+            self._hive_set_bee_names()
+
+    def _hive_set_bee_names(self, name=()):
+        for bee_name, instance in self._hive_bee_instances.items():
+            full_bee_name = name + (bee_name,)
+            instance._hive_bee_name = full_bee_name
+
+            if isinstance(instance, RuntimeHive):
+                instance._hive_set_bee_names(full_bee_name)
 
     @staticmethod
     def _hive_can_connect_hive(other):
@@ -223,6 +229,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
                 bee = getattr(external_bees, bee_name)
 
                 target = bee.export()
+
                 resolve_bee = ResolveBee(target, self)
 
                 setattr(self, bee_name, resolve_bee)

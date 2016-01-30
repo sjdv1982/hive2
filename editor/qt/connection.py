@@ -64,6 +64,7 @@ class Connection(QGraphicsItem):
 
         self._active_style = style
         self._curve = curve
+        self._is_active = False
 
         self._color = start_socket.colorRef()
         self._pen = QPen(self._color)
@@ -106,6 +107,10 @@ class Connection(QGraphicsItem):
     def index(self):
         index, total = self.start_socket.get_index_info(self)
         return index
+
+    @property
+    def is_active(self):
+        return self._is_active
 
     def boundingRect(self):
         return self._rect
@@ -224,7 +229,8 @@ class Connection(QGraphicsItem):
         assert active in (True, False), active
 
         if active:
-            self._pen.setWidth(3)
+            self._pen.setWidth(4)
+
         else:
             self._pen.setWidth(2)
 
@@ -242,12 +248,7 @@ class Connection(QGraphicsItem):
         else:
             raise ValueError("Unknown pen style '%s'" % value)
 
-    def set_selected(self, selected):
-        assert selected in (True, False), selected
-
-        self.set_active(selected)
-        if selected:
-            self._pen.setWidth(5)
+        self._is_active = active
 
     def on_deleted(self):
         if self.scene():
