@@ -59,7 +59,7 @@ class NodePreviewView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-    def on_socket_hover(self, socket, event=None):
+    def gui_on_socket_hover(self, socket, event=None):
         pass
 
     def gui_on_hover_exit(self, node):
@@ -160,6 +160,7 @@ class NodeView(QGraphicsView):
         self.on_node_selected = None
         self.on_node_deselected = None
         self.on_node_right_click = None
+        self.on_socket_right_click = None
         self.on_dropped = None
 
     def on_socket_hover(self, socket, event=None):
@@ -250,17 +251,21 @@ class NodeView(QGraphicsView):
         if callable(self.on_connection_reordered):
             self.on_connection_reordered(gui_connection, index)
 
-    def gui_on_selected(self, gui_node):
+    def gui_on_node_selected(self, gui_node):
         if callable(self.on_node_selected):
             self.on_node_selected(gui_node)
 
-    def gui_on_deselected(self, gui_node):
+    def gui_on_node_deselected(self, gui_node):
         if callable(self.on_node_deselected):
             self.on_node_deselected(gui_node)
 
-    def gui_on_right_click(self, gui_node, event):
+    def gui_on_node_right_click(self, gui_node, event):
         if callable(self.on_node_right_click):
             self.on_node_right_click(gui_node, event)
+
+    def gui_on_socket_right_click(self, gui_socket, event):
+        if callable(self.on_socket_right_click):
+            self.on_socket_right_click(gui_socket, event)
 
     def gui_on_hover_enter(self, node):
         self.hovered_node = node

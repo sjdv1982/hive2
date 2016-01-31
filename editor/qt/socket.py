@@ -157,13 +157,13 @@ class Socket(QGraphicsItem):
         pass
 
     def hoverEnterEvent(self, event):
-        self.parent_node_ui.view.on_socket_hover(self, event)
+        self.parent_node_ui.view.gui_on_socket_hover(self, event)
 
         for connection in self._connections:
             connection.on_socket_hover_enter()
 
     def hoverLeaveEvent(self, event):
-        self.parent_node_ui.view.on_socket_hover(None)
+        self.parent_node_ui.view.gui_on_socket_hover(None)
 
         for connection in self._connections:
             connection.on_socket_hover_exit()
@@ -286,3 +286,6 @@ class Socket(QGraphicsItem):
 
     def on_deleted(self):
         pass
+
+    def contextMenuEvent(self, event):
+        self.parent_node_ui.view.gui_on_socket_right_click(self, event)

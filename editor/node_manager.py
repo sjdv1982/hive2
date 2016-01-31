@@ -46,8 +46,11 @@ class NodeConnectionError(Exception):
 
 class NodeManager(object):
 
-    def __init__(self, logger=None):
-        self.history = HistoryManager()
+    def __init__(self, history, logger=None):
+        if history is None:
+            history = HistoryManager()
+
+        self.history = history
 
         self.bee_node_factory = BeeNodeFactory()
         self.hive_node_factory = HiveNodeFactory()

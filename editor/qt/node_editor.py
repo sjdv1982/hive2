@@ -6,10 +6,13 @@ from .panels import FoldingPanel, ConfigurationPanel
 from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
+from .node import Node
 from .view import NodeView, NodePreviewView
+
 from ..code_generator import hivemap_to_builder_body
+from ..history import HistoryManager
 from ..inspector import InspectorOption
-from ..node import Node, MimicFlags, NodeTypes
+from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
 
@@ -102,6 +105,7 @@ class PreviewWidget(QWidget):
         dialogue.show()
 
     def update_preview(self):
+        from ..node import Node
         # Instead of creating a hive object and then using get_io_info, this is more lightweight
         preview_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
 
@@ -135,6 +139,18 @@ class PreviewWidget(QWidget):
         self._preview_view.preview_node(preview_node)
 
 
+class Debugger:
+
+    def __init__(self):
+        self._connection_breakpoints = set()
+
+    def add_breakpoint(self, connection):
+        self._connection_breakpoints.add(connection)
+
+    def remove_breakpoint(self, connection):
+        self._connection_breakpoints.remove(connection)
+
+
 class NodeEditorSpace(QWidget):
 
     def __init__(self, file_name=None):
@@ -145,12 +161,11 @@ class NodeEditorSpace(QWidget):
 
         self.file_name = file_name
 
-        self._node_manager = NodeManager()
+        self._history = HistoryManager()
+        self._node_manager = NodeManager(self._history)
 
         self._view = NodeView(self)
         layout.addWidget(self._view)
-
-        self._view.setParent(self)
         self._view.show()
 
         # Node manager to view
@@ -164,7 +179,7 @@ class NodeEditorSpace(QWidget):
         nm.on_connection_reordered = self._on_connection_reordered
         nm.on_pin_folded = self._on_pin_folded
         nm.on_pin_unfolded = self._on_pin_unfolded
-        nm.history.on_updated = self._on_node_history_update
+        self._history.on_updated = self._on_history_updated
 
         self._history_id = None
         self._last_saved_id = None
@@ -182,8 +197,10 @@ class NodeEditorSpace(QWidget):
         view.on_connections_destroyed = self._gui_connections_destroyed
         view.on_connection_reordered = self._gui_connection_reordered
         view.on_node_selected = self._gui_node_selected
+        view.on_node_deselected = self._gui_node_deselected
         view.on_dropped = self._gui_on_dropped_node
         view.on_node_right_click = self._gui_node_right_clicked
+        view.on_socket_right_click = self._gui_socket_right_clicked
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -207,15 +224,13 @@ class NodeEditorSpace(QWidget):
     def node_manager(self):
         return self._node_manager
 
-    def _on_node_history_update(self, history):
+    def _on_history_updated(self, history):
         self._history_id = history.operation_id
 
         if callable(self.on_update_is_saved):
             self.on_update_is_saved(self.has_unsaved_changes)
 
     def _on_node_created(self, node):
-        from .node import Node
-
         gui_node = Node(node, self._view)
         self._node_to_qt_node[node] = gui_node
 
@@ -225,6 +240,8 @@ class NodeEditorSpace(QWidget):
         self._preview_widget.update_preview()
 
     def _on_node_destroyed(self, node):
+        self.debugger.on_node_destroyed(node)
+
         gui_node = self._node_to_qt_node[node]
         gui_node.on_deleted()
 
@@ -351,14 +368,20 @@ class NodeEditorSpace(QWidget):
         self._node_manager.reorder_connection(connection, index)
 
     def _gui_node_selected(self, gui_node):
-        if gui_node is None:
-            node = None
-
-        else:
-            node = gui_node.node
+        node = gui_node.node
 
         self._folding_widget.node = node
         self._configuration_widget.node = node
+
+    def _gui_node_deselected(self):
+        self._folding_widget.node = None
+        self._configuration_widget.node = None
+
+    def _gui_socket_right_clicked(self, gui_socket, event):
+        pass
+        # TODO
+        #if self.is_debugging:
+        #   self.show_debug_menu_socket(self, node, pin)
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node

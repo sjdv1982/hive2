@@ -90,6 +90,10 @@ class SocketRow(QGraphicsWidget):
     def label_color(self):
         return self._label.brush().color()
 
+    @label_color.setter
+    def label_color(self, color):
+        self._label.setBrush(color)
+
     def refresh(self):
         # Update cosmetics
         self._socket.set_colour(self._pin.colour)
@@ -99,18 +103,6 @@ class SocketRow(QGraphicsWidget):
 
     def set_value(self, value):
         text = self._labelText
-        # if value is not None:
-        #     if False:#self._params.value_on_newline:
-        #         text += ":\n  "
-        #     else:
-        #         text += ": "
-        #     value2 = value
-        #     pos = value.find("\n")
-        #     if pos > -1:
-        #         value2 = value[:pos] + " ..."
-        #     if len(value2) > 34:
-        #         value2 = value2[:30] + " ..."
-        #     text += value2
         self._label.setText(text)
 
     def label(self):
@@ -293,7 +285,7 @@ class Node(QGraphicsWidget):
         return QGraphicsItem.itemChange(self, change, value)
 
     def contextMenuEvent(self, event):
-        self.view.gui_on_right_click(self, event)
+        self.view.gui_on_node_right_click(self, event)
 
     def onSelected(self):
         if self._deleted:
@@ -301,11 +293,11 @@ class Node(QGraphicsWidget):
 
         if self.isSelected():
             self._shapePen.setStyle(Qt.SolidLine)
-            self.view.gui_on_selected(self)
+            self.view.gui_on_node_selected(self)
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-            self.view.gui_on_selected(None)
+            self.view.gui_on_node_deselected()
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()

@@ -27,12 +27,3 @@ class DebugContext:
 
     def on_create_trigger(self, source, target, target_func, pre):
         pass
-
-    def report_trigger(self, source_bee):
-        pass
-
-    def report_pull_in(self, source_bee, data):
-        pass
-
-    def report_push_out(self, source_bee, data):
-        pass

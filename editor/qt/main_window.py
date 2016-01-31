@@ -2,6 +2,7 @@ import os
 import webbrowser
 from functools import partial
 
+from .debugger import QtRemoteDebugServer
 from .node_editor import NodeEditorSpace
 from .qt_core import *
 from .qt_gui import *
@@ -33,57 +34,60 @@ def dict_to_delimited(data, delimiter, name_path=()):
             yield '.'.join(new_name_path)
 
 
-# class ThreadDispatcher(QThread):
-#     def __init__(self, parent):
-#         QThread.__init__(self)
-#         self.parent = parent
-#
-#     def run(self):
-#         while True:
-#             callback = idle_loop.get()
-#             if callback is None:
-#                 break
-#             QApplication.postEvent(self.parent, _Event(callback))
-#
-#     def stop(self):
-#         idle_loop.put(None)
-#         self.wait()
-
-# class QDebugger(Server):
-#
-#     def
-
-
-class _Processor(QObject):
-
-    def customEvent(self, e):
-        e.process()
-
-
-class DeferredExecute(QEvent):
-    EVENT_TYPE = QEvent.Type(QEvent.registerEventType())
-
-    __processor = _Processor()
-
-    def __init__(self, func, *args, **kwargs):
-        QEvent.__init__(self, self.EVENT_TYPE)
-
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-
-    def dispatch(self):
-        QApplication.postEvent(self.__processor, self)
-
-    def process(self):
-        self.func(*self.args, **self.kwargs)
-
-
-
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
     hivemap_extension = ".hivemap"
     untitled_file_name = "<Unsaved>"
+
+    def __init__(self):
+        QMainWindow.__init__(self)
+
+        status_bar = QStatusBar(self)
+        self.setStatusBar(status_bar)
+
+        self._setup_windows()
+        self._setup_menus()
+
+        self.debugger = QtRemoteDebugServer()
+
+        self.hive_finder = HiveFinder()
+
+        self.project_directory = None
+        self._project_context = None
+
+        self._pending_dropped_node_info = None
+        self.refresh_project_tree()
+
+        self._clipboard = None
+
+        # Set application icon
+        icon = QIcon()
+        file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
+        icon.addFile(file_path)
+        self.setWindowIcon(icon)
+
+        # Add Help page
+        web_view = QEditorWebView()
+        web_view.on_drag_enter = self._web_on_drag_enter
+
+        USE_LOCAL_HOME = True
+
+        if USE_LOCAL_HOME:
+            # Load Help data
+            local_dir = os.path.dirname(__file__)
+            html_file_name = os.path.join(local_dir, "home.html")
+
+            with open(html_file_name) as f:
+                html = f.read().replace("%LOCALDIR%", local_dir)
+
+            web_view.setHtml(html)
+        else:
+            url = QUrl("https://github.com/agoose77/hive2/wiki")
+            web_view.load(url)
+
+        # Load home page
+        self._web_view = web_view
+        self.tab_widget.addTab(web_view, "About", closeable=False)
 
     def _setup_menus(self):
         menu_bar = self.menuBar()
@@ -159,117 +163,19 @@ class MainWindow(QMainWindow):
         self.hive_window = self.create_subwindow("Hives", "left", closeable=True)
 
         # Docstring editor
-        self.docstring_window = self.create_subwindow("Docstring", "left", closeable=True)
         self.configuration_window = self.create_subwindow("Configuration", "right", closeable=True)
         self.folding_window = self.create_subwindow("Folding", "right", closeable=True)
         self.preview_window = self.create_subwindow("Preview", "left", closeable=True)
+        self.docstring_window = self.create_subwindow("Docstring", "left", closeable=True)
         self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
+        self.breakpoints_window = self.create_subwindow("Breakpoints", "bottom", closeable=True)
+
+        self.breakpoints_list = QListWidget()
+        self.breakpoints_window.setWidget(self.breakpoints_list)
 
         # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
-
-
-    def __init__(self):
-        QMainWindow.__init__(self)
-
-        status_bar = QStatusBar(self)
-        self.setStatusBar(status_bar)
-
-        self._setup_windows()
-        self._setup_menus()
-
-        self.hive_finder = HiveFinder()
-
-        self.project_directory = None
-        self._project_context = None
-
-        self._pending_dropped_node_info = None
-        self.refresh_project_tree()
-
-        self._clipboard = None
-
-        # Set application icon
-        icon = QIcon()
-        file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
-        icon.addFile(file_path)
-        self.setWindowIcon(icon)
-
-        # Add Help page
-        web_view = QEditorWebView()
-        web_view.on_drag_enter = self._web_on_drag_enter
-
-        USE_LOCAL_HOME = True
-
-        if USE_LOCAL_HOME:
-            # Load Help data
-            local_dir = os.path.dirname(__file__)
-            html_file_name = os.path.join(local_dir, "home.html")
-
-            with open(html_file_name) as f:
-                html = f.read().replace("%LOCALDIR%", local_dir)
-
-            web_view.setHtml(html)
-        else:
-            url = QUrl("https://github.com/agoose77/hive2/wiki")
-            web_view.load(url)
-
-        # Load home page
-        self._web_view = web_view
-        self.tab_widget.addTab(web_view, "About", closeable=False)
-
-        from hive.debug import Server
-        self.debugger = Server()
-        self.debugger.launch()
-
-        self._root_id_to_filepath = {}
-        self.debugger.on_received = self._on_debug_received
-
-    def _on_debug_received(self, data):
-        event = DeferredExecute(self._process_debug_data, data)
-        event.dispatch()
-
-    def _process_debug_data(self, data):
-        from hive.debug import unpack_pascal_string, OpCodes
-        from struct import unpack_from
-
-        opcode = unpack_from('B', data)[0]
-        offset = 1
-
-        print("RECV", data)
-
-        if opcode == OpCodes.register_root:
-            file_path, read_bytes = unpack_pascal_string(data, offset=offset)
-            offset += read_bytes
-
-            root_id = unpack_from('B', data, offset=offset)[0]
-            offset += 1
-
-            self._root_id_to_filepath[root_id] = file_path
-
-        elif opcode == OpCodes.push_out:
-            root_id = unpack_from('B', data, offset=offset)[0]
-            offset += 1
-
-            delimited_bee_name, read_bytes = unpack_pascal_string(data, offset=offset)
-            offset += read_bytes
-
-            bee_name = delimited_bee_name.split(',')
-            value, read_bytes = unpack_pascal_string(data, offset=offset)
-
-            file_name = self._root_id_to_filepath[root_id]
-            self._open_file(file_name)
-
-            editor = self.tab_widget.currentWidget()
-            *_, node_name, pin_name = bee_name
-            node_name = node_name[1:]
-            node = editor.node_manager.nodes[node_name]
-            pin = node.outputs[pin_name]
-
-            con = pin.connections[0]
-            gcon = editor._connection_to_qt_connection[con]
-            gcon.set_active(True)
-
-            print(node, bee_name, pin)
+        self.tabifyDockWidget(self.docstring_window, self.preview_window)
 
     def closeEvent(self, event):
         try:
@@ -354,19 +260,20 @@ class MainWindow(QMainWindow):
             if reply != QMessageBox.Yes:
                 return False
 
+        widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
+                       self.console_window)
         return True
 
     def _on_tab_changed(self, tab_menu, previous_index=None):
         # Exit last open view
         if previous_index is not None:
             previous_widget = tab_menu.widget(previous_index)
-
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
                                         self.preview_window, self.console_window)
 
         # Update UI elements
-        self.update_ui_layout()
+        self._update_ui_layout()
 
         widget = tab_menu.currentWidget()
 
@@ -407,7 +314,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, window)
         return window
 
-    def update_ui_layout(self):
+    def _update_ui_layout(self):
         show_save = False
         show_save_as = False
 
@@ -551,7 +458,7 @@ class MainWindow(QMainWindow):
         self._project_context.__enter__()
 
         self.refresh_project_tree()
-        self.update_ui_layout()
+        self._update_ui_layout()
 
     def close_open_tabs(self):
         while self.tab_widget.count() > 1:
@@ -569,7 +476,7 @@ class MainWindow(QMainWindow):
             self._project_context = None
 
         self.refresh_project_tree()
-        self.update_ui_layout()
+        self._update_ui_layout()
 
         clear_imported_hivemaps()
 
@@ -659,7 +566,7 @@ class MainWindow(QMainWindow):
             self.tab_widget.setTabText(index, name)
 
         # Update save UI elements now we have a filename
-        self.update_ui_layout()
+        self._update_ui_layout()
 
     def save_as_file(self):
         widget = self.tab_widget.currentWidget()
@@ -686,7 +593,7 @@ class MainWindow(QMainWindow):
 
         # Update save UI elements now we have a filename
         if was_untitled:
-            self.update_ui_layout()
+            self._update_ui_layout()
 
         # Refresh hives
         if self.project_directory is not None:
@@ -697,3 +604,4 @@ class MainWindow(QMainWindow):
         assert isinstance(widget, NodeEditorSpace)
         widget.save()
 
+    # TODO DEBUG on tab closed clear debug info
