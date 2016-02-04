@@ -207,7 +207,6 @@ class RemoteDebugContext(DebugContext):
             source._hive_trigger_source(callable_target)
 
     def _on_received_response(self, response):
-        print("hive received,",response)
         opcode, = unpack_from('B', response)
         remainder = response[calcsize('B'):]
 
@@ -358,6 +357,13 @@ class HivemapDebugController:
         data = pack_pascal_string(bee_name)
 
         self.send_operation(OpCodes.remove_breakpoint, data)
+
+    def skip_breakpoint(self, bee_name):
+        if bee_name not in self._breakpoints:
+            raise ValueError
+
+        data = pack_pascal_string(bee_name)
+        self.send_operation(OpCodes.skip_breakpoint, data)
 
     def send_operation(self, opcode, data):
         raise NotImplementedError

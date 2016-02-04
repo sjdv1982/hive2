@@ -138,6 +138,24 @@ class PreviewWidget(QWidget):
         self._preview_view.preview_node(preview_node)
 
 
+class QDebugControlWidget(QWidget):
+
+    def __init__(self, parent):
+        QWidget.__init__(self, parent)
+
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+
+        next_button = QPushButton()
+        next_button.setToolTip("Step")
+
+        icon = self.style().standardIcon(QStyle.SP_ArrowForward)
+        next_button.setIcon(icon)
+
+        self._layout.addWidget(next_button)
+        next_button.pressed.connect(self.parent()._skip_active_breakpoint)
+
+
 class QDebugWidget(QWidget):
 
     def __init__(self):
@@ -146,25 +164,54 @@ class QDebugWidget(QWidget):
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)
 
-        self._list_widget = QListWidget()
+        self._list_widget = QListWidget(self)
+        self._debug_controls = QDebugControlWidget(self)
+
+        self._layout.addWidget(self._debug_controls)
         self._layout.addWidget(self._list_widget)
 
+        self._text_to_item = {}
+        self._list_widget.setEnabled(False)
+
+        self.on_skip_breakpoint = None
+
+    def _skip_active_breakpoint(self):
+        item = self._list_widget.currentItem()
+        if item is None:
+            return
+
+        breakpoint_name = item.text()
+        self._list_widget.setCurrentItem(None)
+
+        if callable(self.on_skip_breakpoint):
+            self.on_skip_breakpoint(breakpoint_name)
+
     def add_breakpoint(self, name):
-        self._list_widget.addItem(name)
+        if name in self._text_to_item:
+            raise ValueError
+
+        item = QListWidgetItem(name)
+        self._list_widget.addItem(item)
+
+        icon = QIcon()
+        file_path = os.path.join(os.path.dirname(__file__), "svg/radio_checked.svg")
+        icon.addFile(file_path)
+
+        item.setIcon(icon)
+        self._text_to_item[name] = item
+
+    def set_pending_breakpoint(self, name):
+        item = self._text_to_item[name]
+        self._list_widget.setCurrentItem(item)
 
     def remove_breakpoint(self, name):
-        for i in range(self._list_widget.count()):
-            item = self._list_widget.item(i)
-            if item.text() == name:
-                break
+        item = self._text_to_item.pop(name)
+        row = self._list_widget.row(item)
+        self._list_widget.takeItem(row)
 
-        else:
-            raise ValueError("Breakpoint not found! '{}'".format(name))
-
-        self._list_widget.takeItem(i)
-
-    def on_finished(self):
+    def clear(self):
         self._list_widget.clear()
+        self._text_to_item.clear()
 
 
 class NodeEditorSpace(QWidget):
@@ -260,11 +307,15 @@ class NodeEditorSpace(QWidget):
         self._debug_controller = debug_controller
         self._debug_widget.show()
 
-        debug_controller.on_breakpoint_hit = self._debug_widget.highlight
+        debug_controller.on_breakpoint_hit = self._debug_widget.set_pending_breakpoint
+        self._debug_widget.on_skip_breakpoint = debug_controller.skip_breakpoint
 
     def on_debugging_finished(self):
+        self._debug_controller.on_breakpoint_hit = None
+
         self._debug_controller = None
-        self._debug_widget.on_finished()
+        self._debug_widget.clear()
+        self._debug_widget.on_skip_breakpoint = None
 
     def _on_history_updated(self, history):
         self._history_id = history.operation_id
