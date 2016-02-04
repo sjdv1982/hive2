@@ -628,3 +628,5 @@ class MainWindow(QMainWindow):
     def _on_closed_debug_session(self, debug_session):
         debug_session.on_created_controller = None
         debug_session.on_destroyed_controller = None
+
+# TODO if any tabs are closed / edited, stop debugging!

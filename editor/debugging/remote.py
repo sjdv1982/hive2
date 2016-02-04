@@ -131,7 +131,9 @@ def id_generator(i=0):
 
 
 class OpCodes:
-    register_root, pull_in, push_out, trigger, pretrigger, add_breakpoint, skip_breakpoint, remove_breakpoint = range(8)
+    (register_root, pull_in, push_out, trigger,
+     pretrigger, add_breakpoint, skip_breakpoint,
+     remove_breakpoint, hit_breakpoint) = range(9)
 
 
 class DebugPushOutTarget:
@@ -334,6 +336,7 @@ class HivemapDebugController:
         self.on_pull_in = None
         self.on_trigger = None
         self.on_pretrigger = None
+        self.on_breakpoint_hit = None
 
     @property
     def breakpoints(self):
@@ -360,8 +363,9 @@ class HivemapDebugController:
         raise NotImplementedError
 
     def process_operation(self, opcode, data):
+        container_bee_name, read_bytes = unpack_pascal_string(data)
+
         if opcode == OpCodes.push_out:
-            container_bee_name, read_bytes = unpack_pascal_string(data)
             offset = read_bytes
 
             value, read_bytes = unpack_pascal_string(data, offset=offset)
@@ -369,14 +373,17 @@ class HivemapDebugController:
                 self.on_push_out(container_bee_name, value)
 
         elif opcode == OpCodes.trigger:
-            container_bee_name, read_bytes = unpack_pascal_string(data)
             if callable(self.on_push_out):
                 self.on_trigger(container_bee_name)
 
         elif opcode == OpCodes.pretrigger:
-            container_bee_name, read_bytes = unpack_pascal_string(data)
             if callable(self.on_push_out):
                 self.on_pretrigger(container_bee_name)
+
+        # We've hit a breakpoint!
+        if container_bee_name in self.breakpoints:
+            if callable(self.on_breakpoint_hit):
+                self.on_breakpoint_hit(container_bee_name)
 
 
 class RemoteDebugSession:

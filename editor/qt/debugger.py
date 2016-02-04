@@ -40,9 +40,3 @@ class DeferredExecute(QEvent):
 # When connection is updated, make bold (width(10)
 # Make breakpoint text red
 # During debugging session, lock canvas(?) but allow debug features?
-
-# Detail iteration 2
-# Overwite hive.connect and hive.trigger / make them poll a debug context?
-# Invoke builder with a wrapper:
-# def _builder(i, ex, args):
-#     with debug_context(hive_map_path): - won't work because UGH
