@@ -1,18 +1,16 @@
+import os
+from collections.abc import KeysView
+from errno import ECONNRESET
+from functools import lru_cache, partial
 from queue import Queue, Empty
 from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR
 from struct import pack, unpack_from, calcsize
-from threading import Lock
-from threading import Thread
+from threading import Event, Thread
 from weakref import WeakKeyDictionary, ref
 
 from hive.debug.context import DebugContext
 from hive.ppout import PushOut
-
-from struct import pack
-
-from functools import lru_cache
-
-from .utils import get_root_hive, pack_pascal_string, unpack_pascal_string
+from .utils import pack_pascal_string, unpack_pascal_string
 from ..importer import get_hook
 
 
@@ -31,34 +29,40 @@ class ConnectionBase:
         self._send_queue = Queue()
 
         self.on_received = None
+        self.on_disconnected = None
 
     def send(self, data):
         self._send_queue.put(data)
 
-    def _update_threaded(self):
+    def _run_threaded(self):
         raise NotImplementedError
 
     def launch(self):
-        self._thread = Thread(target=self._update_threaded)
+        self._thread = Thread(target=self._run_threaded)
+        self._thread.daemon = True
         self._thread.start()
+
+    def stop(self):
+        self._thread.join()
 
 
 class Client(ConnectionBase):
 
-    def _update_threaded(self):
+    def _run_threaded(self):
         sock = socket(AF_INET, SOCK_STREAM)
         sock.connect(self._address)
         sock.setblocking(False)
 
         send_queue = self._send_queue
+
         while True:
-            while not send_queue.empty():
+            while True:
                 try:
                     data = send_queue.get_nowait()
                 except Empty:
-                    pass
-                else:
-                    sock.sendall(data)
+                    break
+
+                sock.sendall(data)
 
             while True:
                 try:
@@ -70,35 +74,54 @@ class Client(ConnectionBase):
                 if callable(self.on_received):
                     self.on_received(data)
 
+        # TODO
+        if callable(self.on_disconnected):
+            self.on_disconnected()
+
 
 class Server(ConnectionBase):
 
-    def _update_threaded(self):
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind(self._address)
-        sock.listen(True)
-
-        connection, address = sock.accept()
-
+    def _run_threaded_for_connection(self, connection, address):
         send_queue = self._send_queue
-        while True:
-            while not send_queue.empty():
+
+        connected = True
+
+        while connected:
+            while True:
                 try:
                     data = send_queue.get_nowait()
+
                 except Empty:
-                    pass
-                else:
-                    connection.sendall(data)
+                    break
+
+                connection.sendall(data)
 
             while True:
                 try:
                     data = connection.recv(1024)
 
-                except SOCK_ERROR:
+                except OSError as err:
+                    if err.errno == ECONNRESET:
+                        connected = False
+
                     break
 
                 if callable(self.on_received):
                     self.on_received(data)
+
+        if callable(self.on_disconnected):
+            self.on_disconnected()
+
+    def _run_threaded(self):
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.bind(self._address)
+        sock.listen(True)
+
+        while True:
+            connection, address = sock.accept()
+            connection.setblocking(False)
+
+            self._run_threaded_for_connection(connection, address)
 
 
 def id_generator(i=0):
@@ -182,6 +205,7 @@ class RemoteDebugContext(DebugContext):
             source._hive_trigger_source(callable_target)
 
     def _on_received_response(self, response):
+        print("hive received,",response)
         opcode, = unpack_from('B', response)
         remainder = response[calcsize('B'):]
 
@@ -196,30 +220,31 @@ class RemoteDebugContext(DebugContext):
 
     def _add_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name = unpack_pascal_string(message, offset=1)
-
-        self._breakpoints[(root_hive_id, bee_container_name)] = Lock()
+        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
+        self._breakpoints[(root_hive_id, bee_container_name)] = Event()
 
     def _remove_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name = unpack_pascal_string(message, offset=1)
+        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
 
         lock = self._breakpoints.pop((root_hive_id, bee_container_name))
 
         try:
-            lock.release()
+            lock.set()
+            lock.clear()
 
         except RuntimeError:
             pass
 
     def _skip_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name = unpack_pascal_string(message, offset=1)
+        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
 
         lock = self._breakpoints[(root_hive_id, bee_container_name)]
 
         try:
-            lock.release()
+            lock.set()
+            lock.clear()
 
         except RuntimeError:
             pass
@@ -292,43 +317,114 @@ class RemoteDebugContext(DebugContext):
             breakpoint = self._breakpoints[container_hive_id, bee_container_name]
 
         except KeyError:
-            pass
+            return
 
-        else:
-            breakpoint.acquire()
+        file_name = os.path.basename(container_hive_path)
+        print("Hit breakpoint @ {} - {}".format(file_name, bee_container_name))
+        breakpoint.wait()
 
 
-class RemoteDebugServer:
+class HivemapDebugController:
 
-    def __init__(self, host=None, port=None):
-        self._server = Server(host, port)
-        self._server.on_received = self._on_received
+    def __init__(self, file_path):
+        self._breakpoints = set()
+        self._file_path = file_path
 
+        self.on_push_out = None
+        self.on_pull_in = None
+        self.on_trigger = None
+        self.on_pretrigger = None
+
+    @property
+    def breakpoints(self):
+        return KeysView(self._breakpoints)
+
+    @property
+    def file_path(self):
+        return self._file_path
+
+    def add_breakpoint(self, bee_name):
+        assert bee_name not in self._breakpoints
+        self._breakpoints.add(bee_name)
+
+        data = pack_pascal_string(bee_name)
+        self.send_operation(OpCodes.add_breakpoint, data)
+
+    def remove_breakpoint(self, bee_name):
+        self._breakpoints.remove(bee_name)
+        data = pack_pascal_string(bee_name)
+
+        self.send_operation(OpCodes.remove_breakpoint, data)
+
+    def send_operation(self, opcode, data):
+        raise NotImplementedError
+
+    def process_operation(self, opcode, data):
+        if opcode == OpCodes.push_out:
+            container_bee_name, read_bytes = unpack_pascal_string(data)
+            offset = read_bytes
+
+            value, read_bytes = unpack_pascal_string(data, offset=offset)
+            if callable(self.on_push_out):
+                self.on_push_out(container_bee_name, value)
+
+        elif opcode == OpCodes.trigger:
+            container_bee_name, read_bytes = unpack_pascal_string(data)
+            if callable(self.on_push_out):
+                self.on_trigger(container_bee_name)
+
+        elif opcode == OpCodes.pretrigger:
+            container_bee_name, read_bytes = unpack_pascal_string(data)
+            if callable(self.on_push_out):
+                self.on_pretrigger(container_bee_name)
+
+
+class RemoteDebugSession:
+    debug_controller_class = HivemapDebugController
+
+    def __init__(self):
         self._container_id_to_filepath = {}
-        self._server.launch()
+        self._filepath_to_container_id = {}
 
-    def add_breakpoint(self, root_hive_id, bee_name):
-        pass
+        self._breakpoints = {}
+        self._debug_controllers = {}
 
-    def _on_received(self, data):
-        self._process_data(data)
+        self.on_created_controller = None
+        self.on_destroyed_controller = None
 
-    def _on_received_push_out(self, root_id, bee_name, value):
-        pass
+    def send_data(self, data):
+        raise NotImplementedError
 
-    def _on_received_pull_in(self, root_id, bee_name, value):
-        pass
+    def request_close(self):
+        raise NotImplementedError
 
-    def _on_received_trigger(self, root_id, bee_name):
-        pass
+    def _create_hivemap_controller(self, container_id, file_path):
+        # Create debug controller
+        controller = self.__class__.debug_controller_class(file_path)
+        controller.send_operation = partial(self._send_data_from, container_id)
 
-    def _on_received_pretrigger(self, root_id, bee_name):
-        pass
+        if callable(self.on_created_controller):
+            self.on_created_controller(controller)
 
-    def _on_received_register_container_id(self, root_id, file_path):
-        self._container_id_to_filepath[root_id] = file_path
+        return controller
 
-    def _process_data(self, data):
+    def _on_received_register_container_id(self, container_id, file_path):
+        sanitised_path = self._sanitise_path(file_path)
+
+        self._container_id_to_filepath[container_id] = sanitised_path
+        self._filepath_to_container_id[sanitised_path] = container_id
+
+        self._debug_controllers[container_id] = self._create_hivemap_controller(container_id, sanitised_path)
+
+    def _send_data_from(self, container_id, opcode, data):
+        full_data = pack('BB', opcode, container_id) + data
+        self.send_data(full_data)
+
+    @staticmethod
+    def _sanitise_path(file_path):
+        return os.path.normpath(file_path)
+
+    def process_data(self, data):
         opcode, = unpack_from('B', data)
         offset = 1
 
@@ -341,30 +437,81 @@ class RemoteDebugServer:
 
             self._on_received_register_container_id(container_id, file_path)
 
-        elif opcode == OpCodes.push_out:
+        else:
             container_id, = unpack_from('B', data, offset=offset)
             offset += 1
 
-            container_bee_name, read_bytes = unpack_pascal_string(data, offset=offset)
-            offset += read_bytes
+            debug_controller = self._debug_controllers[container_id]
+            remaining_data = data[offset:]
 
-            value, read_bytes = unpack_pascal_string(data, offset=offset)
-            self._on_received_push_out(container_id, container_bee_name, value)
+            debug_controller.process_operation(opcode, remaining_data)
 
-        elif opcode == OpCodes.trigger:
-            container_id = unpack_from('B', data, offset=offset)[0]
-            offset += 1
+    def close(self):
+        if callable(self.on_destroyed_controller):
+            for controller in self._debug_controllers.values():
+                self.on_destroyed_controller(controller)
 
-            container_bee_name, read_bytes = unpack_pascal_string(data, offset=offset)
-            offset += read_bytes
+        self.request_close()
 
-            self._on_received_trigger(container_id, container_bee_name)
 
-        elif opcode == OpCodes.pretrigger:
-            container_id = unpack_from('B', data, offset=offset)[0]
-            offset += 1
+class RemoteDebugServer:
 
-            container_bee_name, read_bytes = unpack_pascal_string(data, offset=offset)
-            offset += read_bytes
+    session_class = RemoteDebugSession
 
-            self._on_received_pretrigger(container_id, container_bee_name)
+    def __init__(self, host=None, port=None):
+        self._server = Server(host, port)
+        self._server.on_received = self._on_received
+        self._server.on_disconnected = self._on_disconnected
+
+        self.on_created_session = None
+        self.on_closed_session = None
+
+        self._session = None
+        self._server.launch()
+
+    def add_breakpoint(self, root_hive_id, bee_name):
+        pass
+
+    @property
+    def session(self):
+        return self._session
+
+    def _create_session(self):
+        session = self.__class__.session_class()
+        session.send_data = partial(self._send_data, session)
+        session.request_close = partial(self._close_session, session)
+
+        if callable(self.on_created_session):
+            self.on_created_session(session)
+
+        return session
+
+    def _close_session(self, session):
+        if session is not self._session:
+            raise RuntimeError("Session not active session")
+
+        if callable(self.on_closed_session):
+            self.on_closed_session(session)
+
+        session.request_close = None
+        session.send_data = None
+
+        self._session = None
+
+    def _send_data(self, session, data):
+        if session is not self._session:
+            raise RuntimeError("Invalid session")
+
+        self._server.send(data)
+
+    def _on_received(self, data):
+        if self._session is None:
+            self._session = self._create_session()
+
+        self._session.process_data(data)
+
+    def _on_disconnected(self):
+        if self._session is None:
+            return
+
+        self._session.close()

@@ -12,7 +12,7 @@ class FloatingTextWidget(QGraphicsWidget):
         self._label = QGraphicsSimpleTextItem(self)
         self._label.setBrush(QColor(255, 255, 255))
 
-        # Add dropshadow
+        # Add drop shadow
         self._dropShadowEffect = QGraphicsDropShadowEffect()
         self.setGraphicsEffect(self._dropShadowEffect)
 
@@ -38,9 +38,9 @@ class FloatingTextWidget(QGraphicsWidget):
         shape = QPainterPath()
         shape.addRoundedRect(self.rect(), 1, 1)
 
-        #painter.setPen(self._shapePen)
         painter.setBrush(QBrush(QColor(0, 0, 0)))
         painter.drawPath(shape)
+
         # painter.setPen(self._pen)
         # painter.drawPath(self._path)
 
@@ -56,5 +56,8 @@ class FloatingTextWidget(QGraphicsWidget):
         if self.anchor == "center":
             x_pos -= rect.width() / 2
             y_pos -= rect.height() / 2
+
+        else:
+            y_pos -= rect.height()
 
         self.setPos(x_pos, y_pos)

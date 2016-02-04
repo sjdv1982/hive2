@@ -94,7 +94,7 @@ class NodePreviewView(QGraphicsView):
 
 
 class NodeView(QGraphicsView):
-    _panning = False
+    DEBUGGING_COLOR = QColor(255, 0, 0)
 
     def __init__(self, parent=None):
         QGraphicsView.__init__(self, parent)
@@ -160,24 +160,27 @@ class NodeView(QGraphicsView):
         self.on_node_selected = None
         self.on_node_deselected = None
         self.on_node_right_click = None
-        self.on_socket_right_click = None
+        self.on_socket_middle_click = None
         self.on_dropped = None
 
-    def on_socket_hover(self, socket, event=None):
+    def on_socket_hover_enter(self, socket, event=None):
         widget = self.type_info_widget
 
-        if event is not None:
-            cursor_pos = QCursor.pos()
-            origin = self.mapFromGlobal(cursor_pos)
-            scene_pos = self.mapToScene(origin)
+        cursor_pos = QCursor.pos()
+        origin = self.mapFromGlobal(cursor_pos)
+        scene_pos = self.mapToScene(origin)
 
-            widget.setVisible(True)
-            widget.on_updated(scene_pos, socket.parent_socket_row.pin.data_type) #TODO
+        widget.setVisible(True)
+        widget.on_updated(scene_pos, socket.parent_socket_row.pin.data_type) #TODO
 
-        else:
-            widget.setVisible(False)
+    def on_socket_hover_exit(self, socket):
+        widget = self.type_info_widget
+        widget.setVisible(False)
+        self.focused_socket = None
 
-        self.focused_socket = socket
+    def on_socket_middle_mouse(self, socket):
+        if callable(self.on_socket_middle_click):
+            self.on_socket_middle_click(socket)
 
     @property
     def mouse_pos(self):
@@ -211,6 +214,12 @@ class NodeView(QGraphicsView):
         self._position_busy = True
         gui_node.setPos(*position)
         self._position_busy = False
+
+    def enable_socket_debugging(self, gui_node, socket_row):
+        socket_row.label_color = self.DEBUGGING_COLOR
+
+    def disable_socket_debugging(self, gui_node, socket_row):
+        socket_row.label_color = socket_row.default_color
 
     def set_node_name(self, gui_node, name):
         gui_node.name = name
@@ -257,21 +266,18 @@ class NodeView(QGraphicsView):
 
     def gui_on_node_deselected(self, gui_node):
         if callable(self.on_node_deselected):
-            self.on_node_deselected(gui_node)
+            self.on_node_deselected()
 
     def gui_on_node_right_click(self, gui_node, event):
         if callable(self.on_node_right_click):
             self.on_node_right_click(gui_node, event)
 
-    def gui_on_socket_right_click(self, gui_socket, event):
-        if callable(self.on_socket_right_click):
-            self.on_socket_right_click(gui_socket, event)
-
     def gui_on_hover_enter(self, node):
         self.hovered_node = node
 
     def gui_on_hover_exit(self, node):
-        self.hovered_node = None
+        if node is self.hovered_node:
+            self.hovered_node = None
 
     def gui_set_selected_nodes(self, items):
         self.scene().clearSelection()
@@ -408,18 +414,19 @@ class NodeView(QGraphicsView):
         # Handle pan event
         if event.button() == Qt.MiddleButton or \
                 (event.button() == Qt.LeftButton and event.modifiers() == Qt.AltModifier):
-            self._last_pan_point = event.pos()
-            self.setCursor(Qt.ClosedHandCursor)
-            self._panning = True
+
+            if not self.hovered_node:
+                self._last_pan_point = event.pos()
+                self.setCursor(Qt.ClosedHandCursor)
+                self._panning = True
+
+            else:
+                QGraphicsView.mousePressEvent(self, event)
 
         # Handle augmented selection
         elif event.button() == Qt.LeftButton:
-            if event.modifiers() == Qt.ShiftModifier:
-                if self.hovered_node:
-                    self.hovered_node.setSelected(not self.hovered_node.isSelected())
-
             # Handle connection deletion
-            elif event.modifiers() == Qt.ControlModifier:
+            if event.modifiers() == Qt.ControlModifier:
                 self._cut_start_position = self.mapToScene(event.pos())
 
                 # Create visible path

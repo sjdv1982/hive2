@@ -1,13 +1,13 @@
-from ..debugging import RemoteDebugServer
-
 from .qt_core import *
 from .qt_gui import *
+from ..debugging import RemoteDebugServer
 
 
 class QtRemoteDebugServer(RemoteDebugServer):
 
     def _on_received(self, data):
-        event = DeferredExecute(self._process_data, data)
+        callback = super()._on_received
+        event = DeferredExecute(callback, data)
         event.dispatch()
 
 

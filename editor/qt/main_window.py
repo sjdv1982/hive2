@@ -9,7 +9,6 @@ from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from .web_view import QEditorWebView
-
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
@@ -49,6 +48,8 @@ class MainWindow(QMainWindow):
         self._setup_menus()
 
         self.debugger = QtRemoteDebugServer()
+        self.debugger.on_closed_session = self._on_closed_debug_session
+        self.debugger.on_created_session = self._on_created_debug_session
 
         self.hive_finder = HiveFinder()
 
@@ -170,9 +171,6 @@ class MainWindow(QMainWindow):
         self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
         self.breakpoints_window = self.create_subwindow("Breakpoints", "bottom", closeable=True)
 
-        self.breakpoints_list = QListWidget()
-        self.breakpoints_window.setWidget(self.breakpoints_list)
-
         # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
         self.tabifyDockWidget(self.docstring_window, self.preview_window)
@@ -261,7 +259,7 @@ class MainWindow(QMainWindow):
                 return False
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
-                       self.console_window)
+                       self.console_window, self.breakpoints_window)
         return True
 
     def _on_tab_changed(self, tab_menu, previous_index=None):
@@ -270,7 +268,7 @@ class MainWindow(QMainWindow):
             previous_widget = tab_menu.widget(previous_index)
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
-                                        self.preview_window, self.console_window)
+                                        self.preview_window, self.console_window, self.breakpoints_window)
 
         # Update UI elements
         self._update_ui_layout()
@@ -280,7 +278,7 @@ class MainWindow(QMainWindow):
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
             widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
-                            self.console_window)
+                            self.console_window, self.breakpoints_window)
 
     def add_editor_space(self, *, file_name=None):
         editor = NodeEditorSpace(file_name)
@@ -294,6 +292,7 @@ class MainWindow(QMainWindow):
         editor.do_open_file = self._open_file
         editor.get_hivemap_path = self._get_hivemap_path_in_project
         editor.get_dropped_node_info = self._accept_dropped_node_info
+        editor.get_debug_session = self._get_debug_session
 
         editor.show()
 
@@ -527,6 +526,26 @@ class MainWindow(QMainWindow):
         else:
             self.tab_widget.setTabText(index, "{}*".format(file_name))
 
+    def _get_debug_session(self):
+        return self.debugger.session
+
+    def find_editor_of_file(self, file_name):
+        # Check if already open
+        for index in range(self.tab_widget.count()):
+            widget = self.tab_widget.widget(index)
+            if not isinstance(widget, NodeEditorSpace):
+                continue
+
+            widget_file_name = widget.file_name
+            if widget_file_name is None:
+                continue
+
+            # If already open
+            if os.path.samefile(file_name, widget_file_name):
+                return widget
+
+        raise ValueError("File not open")
+
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
         dialogue.setDefaultSuffix("hivemap")
@@ -542,22 +561,11 @@ class MainWindow(QMainWindow):
 
     def _open_file(self, file_name):
         # Check if already open
-        for index in range(self.tab_widget.count()):
-            widget = self.tab_widget.widget(index)
+        try:
+            editor = self.find_editor_of_file(file_name)
+            self.tab_widget.setCurrentWidget(editor)
 
-            if not isinstance(widget, NodeEditorSpace):
-                continue
-
-            widget_file_name = widget.file_name
-            if widget_file_name is None:
-                continue
-
-            # If already open
-            if os.path.samefile(file_name, widget_file_name):
-                self.tab_widget.setCurrentIndex(index)
-                break
-
-        else:
+        except ValueError:
             editor = self.add_editor_space(file_name=file_name)
 
             # Rename tab
@@ -605,3 +613,18 @@ class MainWindow(QMainWindow):
         widget.save()
 
     # TODO DEBUG on tab closed clear debug info
+    def _on_created_debug_controller(self, debug_controller):
+        editor = self.find_editor_of_file(debug_controller.file_path)
+        editor.on_debugging_started(debug_controller)
+
+    def _on_destroyed_debug_controller(self, debug_controller):
+        editor = self.find_editor_of_file(debug_controller.file_path)
+        editor.on_debugging_finished()
+
+    def _on_created_debug_session(self, debug_session):
+        debug_session.on_created_controller = self._on_created_debug_controller
+        debug_session.on_destroyed_controller = self._on_destroyed_debug_controller
+
+    def _on_closed_debug_session(self, debug_session):
+        debug_session.on_created_controller = None
+        debug_session.on_destroyed_controller = None

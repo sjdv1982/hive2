@@ -44,7 +44,7 @@ from ..sockets import SocketTypes
 
 class Socket(QGraphicsItem):
 
-    def __init__(self, socket_row, mode, shape, parent_item=None, hover_text=None, order_dependent=False):
+    def __init__(self, socket_row, mode, shape, parent_item=None, hover_text="", order_dependent=False):
         if parent_item is None:  # parentItem is used by builtinUis.ContainedAttributeUiProxy
             parent_item = socket_row
 
@@ -74,6 +74,7 @@ class Socket(QGraphicsItem):
         self._pen.setWidthF(1.0)
 
         self.setAcceptsHoverEvents(True)
+        self.setToolTip(hover_text)
 
         self._dragging_connection = None
         self._connections = []
@@ -157,26 +158,19 @@ class Socket(QGraphicsItem):
         pass
 
     def hoverEnterEvent(self, event):
-        self.parent_node_ui.view.gui_on_socket_hover(self, event)
+        self.parent_node_ui.view.on_socket_hover_enter(self, event)
 
         for connection in self._connections:
             connection.on_socket_hover_enter()
 
     def hoverLeaveEvent(self, event):
-        self.parent_node_ui.view.gui_on_socket_hover(None)
-
         for connection in self._connections:
             connection.on_socket_hover_exit()
 
+        self.parent_node_ui.view.on_socket_hover_exit(self)
+
     def setMixedColor(self, value=True):
         self.mixed_color = value
-
-    def update_tooltip(self):
-        tooltip = self.parent_socket_row.toolTip()
-        if tooltip is None:
-            tooltip = ""
-
-        self.setToolTip(tooltip)
 
     def set_shape(self, shape):
         self._shape = shape
@@ -199,14 +193,16 @@ class Socket(QGraphicsItem):
         return self._color
 
     def mousePressEvent(self, event):
-        # QGraphicsItem.mousePressEvent(self, event)
+        if event.button() == Qt.LeftButton:
+            from .connection import Connection
 
-        from .connection import Connection
+            if self.is_output:
+                connection = self._dragging_connection = Connection(self)
+                connection.setActive(False)
+                connection.show()
 
-        if self.is_output:
-            connection = self._dragging_connection = Connection(self)
-            connection.setActive(False)
-            connection.show()
+        elif event.button() == Qt.MiddleButton:
+            self.parent_node_ui.view.on_socket_middle_mouse(self)
 
     def mouseMoveEvent(self, event):
         if self.is_output:
@@ -222,23 +218,24 @@ class Socket(QGraphicsItem):
         # QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
-        if self.is_output:
-            connection = self._dragging_connection
+        if event.button() == Qt.LeftButton:
+            if self.is_output:
+                connection = self._dragging_connection
 
-            start_socket = connection.start_socket
-            target_socket = connection.find_closest_socket()
+                start_socket = connection.start_socket
+                target_socket = connection.find_closest_socket()
 
-            connection.on_deleted()
-            self._dragging_connection = None
+                connection.on_deleted()
+                self._dragging_connection = None
 
-            if target_socket is not None:
-                node = self.parent_socket_row.parent_node_ui
+                if target_socket is not None:
+                    node = self.parent_node_ui
 
-                try:
-                    node.view.gui_create_connection(start_socket, target_socket)
+                    try:
+                        node.view.gui_create_connection(start_socket, target_socket)
 
-                except NodeConnectionError:
-                    pass
+                    except NodeConnectionError:
+                        pass
 
         # QGraphicsItem.mouseReleaseEvent(self, event)
 

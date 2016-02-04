@@ -55,12 +55,6 @@ class NodeUIScene(QGraphicsScene):
         self.setStickyFocus(True)
 
     def helpEvent(self, event):
-        items = self.items(event.scenePos())
-        for item in items:
-            if hasattr(item, "updateToolTip"):
-                item.update_tooltip()
-                break
-
         QGraphicsScene.helpEvent(self, event)
 
     def mouseReleaseEvent(self, event):
@@ -73,20 +67,18 @@ class NodeUIScene(QGraphicsScene):
         QGraphicsScene.drawBackground(self, painter, rect)
         painter.setPen(self._grid_pen)
 
-        gridSize = 50
+        grid_size = 50
 
-        left = int(rect.left()) - (int(rect.left()) % gridSize)
-        top = int(rect.top()) - (int(rect.top()) % gridSize)
-
-        lines = []
+        left = int(rect.left()) - (int(rect.left()) % grid_size)
+        top = int(rect.top()) - (int(rect.top()) % grid_size)
 
         x = left
         while x < rect.right():
             painter.drawLine(x, rect.top(), x, rect.bottom())
-            x += gridSize
+            x += grid_size
 
         y = top
         while y < rect.bottom():
             painter.drawLine(rect.left(), y, rect.right(), y)
-            y += gridSize
+            y += grid_size
 

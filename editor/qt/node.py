@@ -62,20 +62,18 @@ class SocketRow(QGraphicsWidget):
         socket_type = pin.shape
 
         if pin.io_type == "input":
-            self._socket = Socket(self, "input", socket_type, hover_text="", order_dependent=True)
+            self._socket = Socket(self, "input", socket_type, order_dependent=True)
             self._socket.set_colour(socket_colour)
 
         else:
-            self._socket = Socket(self, "output", socket_type, hover_text="", order_dependent=True)
+            self._socket = Socket(self, "output", socket_type, order_dependent=True)
             self._socket.set_colour(socket_colour)
 
         self._socket.setVisible(True)
 
-        self._label.setBrush(parent_node_ui.labels_color)
-        label = self._pin.name
+        self.label_color = self.default_color
+        self.label_text = self._pin.name
 
-        self._labelText = label
-        self.set_value("")
         self.setVisible(True)
 
     @property
@@ -87,6 +85,10 @@ class SocketRow(QGraphicsWidget):
         return self._socket
 
     @property
+    def default_color(self):
+        return self.parent_node_ui.labels_color
+
+    @property
     def label_color(self):
         return self._label.brush().color()
 
@@ -94,22 +96,20 @@ class SocketRow(QGraphicsWidget):
     def label_color(self, color):
         self._label.setBrush(color)
 
+    @property
+    def label_text(self):
+        return self._label.text()
+
+    @label_text.setter
+    def label_text(self, text):
+        self._label.setText(text)
+
     def refresh(self):
         # Update cosmetics
         self._socket.set_colour(self._pin.colour)
         self._socket.set_shape(self._pin.shape)
 
         self._socket.update()
-
-    def set_value(self, value):
-        text = self._labelText
-        self._label.setText(text)
-
-    def label(self):
-        return self._label
-
-    def toolTip(self):
-        return ""
 
     @property
     def parent_node_ui(self):
@@ -297,7 +297,7 @@ class Node(QGraphicsWidget):
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-            self.view.gui_on_node_deselected()
+            self.view.gui_on_node_deselected(self)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()
@@ -324,6 +324,10 @@ class Node(QGraphicsWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.RightButton:
             pass
+
+        if event.button() == Qt.LeftButton:
+            if event.modifiers() == Qt.ShiftModifier:
+                self.setSelected(not self.isSelected())
 
         else:
             QGraphicsWidget.mousePressEvent(self, event)

@@ -2,13 +2,12 @@ import os
 
 from .console import QConsole
 from .floating_text import FloatingTextWidget
+from .node import Node
 from .panels import FoldingPanel, ConfigurationPanel
 from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
-from .node import Node
 from .view import NodeView, NodePreviewView
-
 from ..code_generator import hivemap_to_builder_body
 from ..history import HistoryManager
 from ..inspector import InspectorOption
@@ -139,18 +138,6 @@ class PreviewWidget(QWidget):
         self._preview_view.preview_node(preview_node)
 
 
-class Debugger:
-
-    def __init__(self):
-        self._connection_breakpoints = set()
-
-    def add_breakpoint(self, connection):
-        self._connection_breakpoints.add(connection)
-
-    def remove_breakpoint(self, connection):
-        self._connection_breakpoints.remove(connection)
-
-
 class NodeEditorSpace(QWidget):
 
     def __init__(self, file_name=None):
@@ -200,7 +187,7 @@ class NodeEditorSpace(QWidget):
         view.on_node_deselected = self._gui_node_deselected
         view.on_dropped = self._gui_on_dropped_node
         view.on_node_right_click = self._gui_node_right_clicked
-        view.on_socket_right_click = self._gui_socket_right_clicked
+        view.on_socket_middle_click = self._gui_socket_middle_click
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -212,6 +199,9 @@ class NodeEditorSpace(QWidget):
         self._preview_widget = PreviewWidget(self._node_manager)
 
         self._console_widget = QConsole(local_dict=dict(editor=self))
+        self._breakpoints_widget = QListWidget()
+
+        self._debug_controller = None
 
         if file_name is not None:
             self.load(file_name)
@@ -223,6 +213,26 @@ class NodeEditorSpace(QWidget):
     @property
     def node_manager(self):
         return self._node_manager
+
+    def _pin_to_bee_container_name(self, pin):
+        return "{}.{}".format(pin.node.name, pin.name)
+
+    def _bee_container_name_to_pin(self, bee_container_name):
+        node_name, pin_name = bee_container_name.split('.')
+        node = self.node_manager.nodes[node_name]
+
+        try:
+            return node.inputs[node_name]
+
+        except KeyError:
+            return node.outputs[node_name]
+
+    def on_debugging_started(self, debug_controller):
+        print("Started debugging!", debug_controller.file_path)
+        self._debug_controller = debug_controller
+
+    def on_debugging_finished(self):
+        self._debug_controller = None
 
     def _on_history_updated(self, history):
         self._history_id = history.operation_id
@@ -240,12 +250,60 @@ class NodeEditorSpace(QWidget):
         self._preview_widget.update_preview()
 
     def _on_node_destroyed(self, node):
-        self.debugger.on_node_destroyed(node)
-
         gui_node = self._node_to_qt_node[node]
         gui_node.on_deleted()
 
         self._view.remove_node(gui_node)
+
+        self.clear_breakpoints(node)
+
+    def _on_breakpoint_added(self, bee_container_name):
+        self._breakpoints_widget.addItem(bee_container_name)
+
+        node_name, pin_name = bee_container_name.split('.')
+        node = self.node_manager.nodes[node_name]
+
+        gui_node = self._node_to_qt_node[node]
+        socket_row = gui_node.get_socket_row(pin_name)
+
+        self._view.enable_socket_debugging(gui_node, socket_row)
+
+    def _on_breakpoint_removed(self, bee_container_name):
+        for i in range(self._breakpoints_widget.count()):
+            item = self._breakpoints_widget.item(i)
+            if item.text() == bee_container_name:
+                break
+
+        else:
+            return
+
+        self._breakpoints_widget.takeItem(i)
+
+        # Visual
+        node_name, pin_name = bee_container_name.split('.')
+        node = self.node_manager.nodes[node_name]
+
+        gui_node = self._node_to_qt_node[node]
+        socket_row = gui_node.get_socket_row(pin_name)
+
+        self._view.disable_socket_debugging(gui_node, socket_row)
+
+    # def clear_breakpoints(self, node):
+    #     """Remove debug breakpoints from node"""
+    #     if not callable(self.get_debug_session):
+    #         return
+    #
+    #     debug_session = self.get_debug_session()
+    #     if debug_session is None:
+    #         return
+    #
+    #     for pin in node.inputs.values():
+    #         if debug_session.has_breakpoint(pin):
+    #             debug_session.remove_breakpoint(pin)
+    #
+    #     for pin in node.outputs.values():
+    #         if debug_session.has_breakpoint(pin):
+    #             debug_session.remove_breakpoint(pin)
 
     def _on_node_moved(self, node, position):
         gui_node = self._node_to_qt_node[node]
@@ -377,11 +435,21 @@ class NodeEditorSpace(QWidget):
         self._folding_widget.node = None
         self._configuration_widget.node = None
 
-    def _gui_socket_right_clicked(self, gui_socket, event):
-        pass
-        # TODO
-        #if self.is_debugging:
-        #   self.show_debug_menu_socket(self, node, pin)
+    def _gui_socket_middle_click(self, gui_socket):
+        debug_controller = self._debug_controller
+        if debug_controller is None:
+            return
+
+        pin = gui_socket.parent_socket_row.pin
+        bee_container_name = self._pin_to_bee_container_name(pin)
+
+        if bee_container_name not in debug_controller.breakpoints:
+            debug_controller.add_breakpoint(bee_container_name)
+            self._on_breakpoint_added(bee_container_name)
+
+        else:
+            debug_controller.remove_breakpoint(bee_container_name)
+            self._on_breakpoint_removed(bee_container_name)
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
@@ -602,17 +670,19 @@ class NodeEditorSpace(QWidget):
         self._docstring_widget.setPlainText(node_manager.docstring)
 
     def on_enter(self, docstring_window, folding_window, configuration_window, preview_window,
-                 console_window):
+                 console_window, breakpoints_window):
         docstring_window.setWidget(self._docstring_widget)
         folding_window.setWidget(self._folding_widget)
         configuration_window.setWidget(self._configuration_widget)
         preview_window.setWidget(self._preview_widget)
         console_window.setWidget(self._console_widget)
+        breakpoints_window.setWidget(self._breakpoints_widget)
 
     def on_exit(self, docstring_window, folding_window, configuration_window, preview_window,
-                console_window):
+                console_window, breakpoints_window):
         docstring_window.setWidget(QWidget())
         folding_window.setWidget(QWidget())
         configuration_window.setWidget(QWidget())
         preview_window.setWidget(QWidget())
         console_window.setWidget(QWidget())
+        breakpoints_window.setWidget(QWidget())
