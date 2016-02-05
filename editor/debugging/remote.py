@@ -31,8 +31,32 @@ class ConnectionBase:
         self.on_received = None
         self.on_disconnected = None
 
+        self._received_raw = b''
+
+    def _on_received(self, data):
+        self._received_raw += data
+
+        messages = []
+        while self._received_raw:
+            length, = unpack_from("H", self._received_raw)
+            offset = calcsize("H")
+
+            end_index = offset + length
+            if end_index > len(self._received_raw):
+                break
+
+            message = self._received_raw[offset: end_index]
+            self._received_raw = self._received_raw[end_index:]
+
+            messages.append(message)
+
+        if callable(self.on_received):
+            for message in messages:
+                self.on_received(message)
+
     def send(self, data):
-        self._send_queue.put(data)
+        length_encoded = pack("H", len(data)) + data
+        self._send_queue.put(length_encoded)
 
     def _run_threaded(self):
         raise NotImplementedError
@@ -71,8 +95,7 @@ class Client(ConnectionBase):
                 except SOCK_ERROR:
                     break
 
-                if callable(self.on_received):
-                    self.on_received(data)
+                self._on_received(data)
 
         # TODO
         if callable(self.on_disconnected):
@@ -106,8 +129,7 @@ class Server(ConnectionBase):
 
                     break
 
-                if callable(self.on_received):
-                    self.on_received(data)
+                self._on_received(data)
 
         if callable(self.on_disconnected):
             self.on_disconnected()
@@ -208,25 +230,31 @@ class RemoteDebugContext(DebugContext):
 
     def _on_received_response(self, response):
         opcode, = unpack_from('B', response)
-        remainder = response[calcsize('B'):]
+        body = response[calcsize('B'):]
 
         if opcode == OpCodes.add_breakpoint:
-            self._add_breakpoint(remainder)
+            self._add_breakpoint(body)
 
         elif opcode == OpCodes.remove_breakpoint:
-            self._remove_breakpoint(remainder)
+            self._remove_breakpoint(body)
 
         elif opcode == OpCodes.skip_breakpoint:
-            self._skip_breakpoint(remainder)
+            self._skip_breakpoint(body)
+
+        else:
+            raise ValueError("Invalid OPCODE: '{}'".format(opcode))
 
     def _add_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
+        bee_container_name, read_bytes = unpack_pascal_string(message, 1)
+
+        print("DBG::Add breakpoint!", [bee_container_name])
         self._breakpoints[(root_hive_id, bee_container_name)] = Event()
 
     def _remove_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
+        bee_container_name, read_bytes = unpack_pascal_string(message, 1)
+        print("DBG::Remove breakpoint!", [bee_container_name])
 
         lock = self._breakpoints.pop((root_hive_id, bee_container_name))
 
@@ -239,9 +267,10 @@ class RemoteDebugContext(DebugContext):
 
     def _skip_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
-        bee_container_name, read_bytes = unpack_pascal_string(message, offset=1)
+        bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
         lock = self._breakpoints[(root_hive_id, bee_container_name)]
+        print("DBG::Skip breakpoint!", bee_container_name)
 
         try:
             lock.set()
@@ -309,6 +338,7 @@ class RemoteDebugContext(DebugContext):
         node_name = node_name[1:]
 
         bee_container_name = "{}.{}".format(node_name, bee_name)
+        print("DBG::Report", bee_container_name, opcode)
 
         # Send operation ...
         self._send_operation(opcode, container_hive_id, bee_container_name, data)
@@ -336,6 +366,12 @@ class HivemapDebugController:
         self.on_trigger = None
         self.on_pretrigger = None
         self.on_breakpoint_hit = None
+        self.on_io = None
+
+        self.on_added_breakpoint = None
+        self.on_removed_breakpoint = None
+
+        self._request_close = None
 
     @property
     def breakpoints(self):
@@ -345,6 +381,9 @@ class HivemapDebugController:
     def file_path(self):
         return self._file_path
 
+    def close(self):
+        self._request_close()
+
     def add_breakpoint(self, bee_name):
         assert bee_name not in self._breakpoints
         self._breakpoints.add(bee_name)
@@ -352,11 +391,17 @@ class HivemapDebugController:
         data = pack_pascal_string(bee_name)
         self.send_operation(OpCodes.add_breakpoint, data)
 
+        if callable(self.on_added_breakpoint):
+            self.on_added_breakpoint(bee_name)
+
     def remove_breakpoint(self, bee_name):
         self._breakpoints.remove(bee_name)
         data = pack_pascal_string(bee_name)
 
         self.send_operation(OpCodes.remove_breakpoint, data)
+
+        if callable(self.on_removed_breakpoint):
+            self.on_removed_breakpoint(bee_name)
 
     def skip_breakpoint(self, bee_name):
         if bee_name not in self._breakpoints:
@@ -405,16 +450,18 @@ class RemoteDebugSession:
         self.on_created_controller = None
         self.on_destroyed_controller = None
 
-    def send_data(self, data):
-        raise NotImplementedError
+        self._request_close = None
+        self._send_data = None
 
-    def request_close(self):
-        raise NotImplementedError
+    def is_debugging_hivemap(self, file_path):
+        sanitised = self._sanitise_path(file_path)
+        return sanitised in self._filepath_to_container_id
 
     def _create_hivemap_controller(self, container_id, file_path):
         # Create debug controller
         controller = self.__class__.debug_controller_class(file_path)
         controller.send_operation = partial(self._send_data_from, container_id)
+        controller._request_close = self.close
 
         if callable(self.on_created_controller):
             self.on_created_controller(controller)
@@ -431,7 +478,7 @@ class RemoteDebugSession:
 
     def _send_data_from(self, container_id, opcode, data):
         full_data = pack('BB', opcode, container_id) + data
-        self.send_data(full_data)
+        self._send_data(full_data)
 
     @staticmethod
     def _sanitise_path(file_path):
@@ -464,7 +511,7 @@ class RemoteDebugSession:
             for controller in self._debug_controllers.values():
                 self.on_destroyed_controller(controller)
 
-        self.request_close()
+        self._request_close()
 
 
 class RemoteDebugServer:
@@ -491,8 +538,8 @@ class RemoteDebugServer:
 
     def _create_session(self):
         session = self.__class__.session_class()
-        session.send_data = partial(self._send_data, session)
-        session.request_close = partial(self._close_session, session)
+        session._send_data = partial(self._send_data, session)
+        session._request_close = partial(self._close_session, session)
 
         if callable(self.on_created_session):
             self.on_created_session(session)
@@ -506,8 +553,10 @@ class RemoteDebugServer:
         if callable(self.on_closed_session):
             self.on_closed_session(session)
 
-        session.request_close = None
-        session.send_data = None
+        session.on_closed()
+
+        session._request_close = None
+        session._send_data = None
 
         self._session = None
 
@@ -527,4 +576,4 @@ class RemoteDebugServer:
         if self._session is None:
             return
 
-        self._session.close()
+        self._session.request_close()

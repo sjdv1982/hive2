@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 from .console import QConsole
 from .floating_text import FloatingTextWidget
@@ -149,7 +150,10 @@ class QDebugControlWidget(QWidget):
         next_button = QPushButton()
         next_button.setToolTip("Step")
 
-        icon = self.style().standardIcon(QStyle.SP_ArrowForward)
+        icon = QIcon()
+        file_path = os.path.join(os.path.dirname(__file__), "svg/radio_checked.svg")
+        icon.addFile(file_path)
+
         next_button.setIcon(icon)
 
         self._layout.addWidget(next_button)
@@ -158,30 +162,44 @@ class QDebugControlWidget(QWidget):
 
 class QDebugWidget(QWidget):
 
-    def __init__(self):
+    def __init__(self, max_history_entries=15):
         QWidget.__init__(self)
 
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)
 
-        self._list_widget = QListWidget(self)
+        self._breakpoint_list = QListWidget(self)
         self._debug_controls = QDebugControlWidget(self)
+        self._history_view = QTableView(self)
 
-        self._layout.addWidget(self._debug_controls)
-        self._layout.addWidget(self._list_widget)
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self._debug_controls)
+        splitter.addWidget(self._breakpoint_list)
+        splitter.addWidget(self._history_view)
+
+        self._history_model = QStandardItemModel(self._history_view)
+        self._history_model.setHorizontalHeaderLabels(("Bee", "Operation", "Value"))
+
+        # Apply the model to the list view
+        self._history_view.setModel(self._history_model)
+        self._history_view.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+
+        self._layout.addWidget(splitter)
 
         self._text_to_item = {}
-        self._list_widget.setEnabled(False)
+        self._breakpoint_list.setEnabled(False)
+
+        self._max_history_entries = max_history_entries
 
         self.on_skip_breakpoint = None
 
     def _skip_active_breakpoint(self):
-        item = self._list_widget.currentItem()
+        item = self._breakpoint_list.currentItem()
         if item is None:
             return
 
         breakpoint_name = item.text()
-        self._list_widget.setCurrentItem(None)
+        self._breakpoint_list.setCurrentItem(None)
 
         if callable(self.on_skip_breakpoint):
             self.on_skip_breakpoint(breakpoint_name)
@@ -191,7 +209,7 @@ class QDebugWidget(QWidget):
             raise ValueError
 
         item = QListWidgetItem(name)
-        self._list_widget.addItem(item)
+        self._breakpoint_list.addItem(item)
 
         icon = QIcon()
         file_path = os.path.join(os.path.dirname(__file__), "svg/radio_checked.svg")
@@ -202,15 +220,28 @@ class QDebugWidget(QWidget):
 
     def set_pending_breakpoint(self, name):
         item = self._text_to_item[name]
-        self._list_widget.setCurrentItem(item)
+        self._breakpoint_list.setCurrentItem(item)
 
     def remove_breakpoint(self, name):
         item = self._text_to_item.pop(name)
-        row = self._list_widget.row(item)
-        self._list_widget.takeItem(row)
+        row = self._breakpoint_list.row(item)
+        self._breakpoint_list.takeItem(row)
 
-    def clear(self):
-        self._list_widget.clear()
+    def add_history_operation(self, name, operation, value=""):
+        # Create an item with a caption
+        row_items = QStandardItem(name), QStandardItem(operation), QStandardItem(value)
+
+        # Add the item to the model
+        self._history_model.appendRow(row_items)
+
+        if self._history_model.rowCount() > self._max_history_entries:
+            self._history_model.takeRow(0)
+
+    def clear_history(self):
+        self._history_model.clear()
+
+    def clear_breakpoints(self):
+        self._breakpoint_list.clear()
         self._text_to_item.clear()
 
 
@@ -229,7 +260,6 @@ class NodeEditorSpace(QWidget):
 
         self._view = NodeView(self)
         layout.addWidget(self._view)
-        self._view.show()
 
         # Node manager to view
         nm = self._node_manager
@@ -290,35 +320,54 @@ class NodeEditorSpace(QWidget):
     def node_manager(self):
         return self._node_manager
 
+    @property
+    def is_debugging(self):
+        return self._debug_controller is not None
+
     def _pin_to_bee_container_name(self, pin):
         return "{}.{}".format(pin.node.name, pin.name)
-
-    def _bee_container_name_to_pin(self, bee_container_name):
-        node_name, pin_name = bee_container_name.split('.')
-        node = self.node_manager.nodes[node_name]
-
-        try:
-            return node.inputs[node_name]
-
-        except KeyError:
-            return node.outputs[node_name]
 
     def on_debugging_started(self, debug_controller):
         self._debug_controller = debug_controller
         self._debug_widget.show()
 
+        add_history_operation = self._debug_widget.add_history_operation
+
+        debug_controller.on_push_out = lambda name, value: add_history_operation(name, operation="push-out", value=value)
+        debug_controller.on_pull_in = lambda name, value: add_history_operation(name, operation="pull-in", value=value)
+        debug_controller.on_trigger = partial(add_history_operation, operation="trigger")
+        debug_controller.on_pre_trigger = partial(add_history_operation, operation="pre-trigger")
+        debug_controller.on_added_breakpoint = self._on_breakpoint_added
+        debug_controller.on_removed_breakpoint = self._on_breakpoint_removed
+
         debug_controller.on_breakpoint_hit = self._debug_widget.set_pending_breakpoint
+
         self._debug_widget.on_skip_breakpoint = debug_controller.skip_breakpoint
 
     def on_debugging_finished(self):
-        self._debug_controller.on_breakpoint_hit = None
+        debug_controller = self._debug_controller
+
+        debug_controller.on_push_out = None
+        debug_controller.on_pull_in = None
+        debug_controller.on_trigger = None
+        debug_controller.on_pre_trigger = None
+        debug_controller.on_added_breakpoint = None
+        debug_controller.on_removed_breakpoint = None
+        debug_controller.on_breakpoint_hit = None
 
         self._debug_controller = None
-        self._debug_widget.clear()
+
+        # Reset debug widget
+        self._debug_widget.clear_history()
+        self._debug_widget.clear_breakpoints()
         self._debug_widget.on_skip_breakpoint = None
 
     def _on_history_updated(self, history):
         self._history_id = history.operation_id
+
+        # Stop debugging if history is updated!
+        if self.has_unsaved_changes and self.is_debugging:
+            self._debug_controller.request_close()
 
         if callable(self.on_update_is_saved):
             self.on_update_is_saved(self.has_unsaved_changes)
@@ -503,11 +552,9 @@ class NodeEditorSpace(QWidget):
 
         if bee_container_name not in debug_controller.breakpoints:
             debug_controller.add_breakpoint(bee_container_name)
-            self._on_breakpoint_added(bee_container_name)
 
         else:
             debug_controller.remove_breakpoint(bee_container_name)
-            self._on_breakpoint_removed(bee_container_name)
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
@@ -659,38 +706,50 @@ class NodeEditorSpace(QWidget):
     def paste(self, hivemap):
         self._node_manager.paste(hivemap, self._view.mouse_pos)
 
-    def save(self, file_name=None):
-        use_existing_file_name = file_name is None
-
-        if use_existing_file_name:
-            file_name = self.file_name
-
-            if file_name is None:
-                raise ValueError("Untitled hivemap cannot be saved without filename")
-
+    def _check_for_cyclic_reference(self, file_path):
         node_manager = self._node_manager
+        get_hivemap_path = self.get_hivemap_path
+
+        if not callable(get_hivemap_path):
+            raise RuntimeError("Unable to check for hive path")
 
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
-        if os.path.exists(file_name) and callable(self.get_hivemap_path):
-            for node in node_manager.nodes.values():
-                # If destination file is a hivemap, don't allow
-                try:
-                    hivemap_source_path = self.get_hivemap_path(node.import_path)
+        if not os.path.exists(file_path):
+            return False
 
-                except ValueError:
-                    continue
+        for node in node_manager.nodes.values():
+            # If destination file is a hivemap, don't allow
+            try:
+                hivemap_source_path = get_hivemap_path(node.import_path)
 
-                if file_name == hivemap_source_path:
-                    QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced"
-                                                              "in this editor")
-                    raise ValueError("Untitled hivemap cannot be saved without filename")
+            except ValueError:
+                continue
+
+            if file_path == hivemap_source_path:
+                return True
+
+        return False
+
+    def save(self, file_path=None):
+        use_existing_file_name = file_path is None
+
+        if use_existing_file_name:
+            file_path = self.file_name
+
+            if file_path is None:
+                raise ValueError("Untitled hivemap cannot be saved without filename")
+
+        if self._check_for_cyclic_reference(file_path):
+            QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced"
+                                                      "in this editor")
+            raise ValueError("Untitled hivemap cannot be saved without filename")
 
         # Export data
-        data = node_manager.to_string()
-        with open(file_name, "w") as f:
+        data = self._node_manager.to_string()
+        with open(file_path, "w") as f:
             f.write(data)
 
-        self.file_name = file_name
+        self.file_name = file_path
 
         # Mark pending changes as false
         self._last_saved_id = self._history_id
@@ -734,9 +793,10 @@ class NodeEditorSpace(QWidget):
         configuration_window.setWidget(self._configuration_widget)
         preview_window.setWidget(self._preview_widget)
         console_window.setWidget(self._console_widget)
-
         debug_window.setWidget(self._debug_widget)
-        self._debug_widget.hide()
+
+        # Set visibility
+        self._debug_widget.setVisible(self.is_debugging)
 
     def on_exit(self, docstring_window, folding_window, configuration_window, preview_window,
                 console_window, debug_window):

@@ -171,9 +171,13 @@ class MainWindow(QMainWindow):
         self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
         self.breakpoints_window = self.create_subwindow("Breakpoints", "bottom", closeable=True)
 
+        # Close breakpoints by default
+        self.breakpoints_window.close()
+
         # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
         self.tabifyDockWidget(self.docstring_window, self.preview_window)
+        self.tabifyDockWidget(self.breakpoints_window, self.console_window)
 
     def closeEvent(self, event):
         try:
@@ -271,7 +275,7 @@ class MainWindow(QMainWindow):
                                         self.preview_window, self.console_window, self.breakpoints_window)
 
         # Update UI elements
-        self._update_ui_layout()
+        self._update_menu_options()
 
         widget = tab_menu.currentWidget()
 
@@ -292,9 +296,6 @@ class MainWindow(QMainWindow):
         editor.do_open_file = self._open_file
         editor.get_hivemap_path = self._get_hivemap_path_in_project
         editor.get_dropped_node_info = self._accept_dropped_node_info
-        editor.get_debug_session = self._get_debug_session
-
-        editor.show()
 
         return editor
 
@@ -313,18 +314,12 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, window)
         return window
 
-    def _update_ui_layout(self):
+    def _update_menu_options(self):
         show_save = False
         show_save_as = False
 
         show_edit = False
 
-        show_docstring = True
-        show_config = True
-        show_folding = True
-        show_hives = True
-        show_bees = True
-        show_preview = True
         show_insert = False
 
         menu_bar = self.menuBar()
@@ -362,19 +357,10 @@ class MainWindow(QMainWindow):
 
         menu_bar.addMenu(self.view_menu)
 
-
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
 
         menu_bar.addAction(self.help_action)
-
-        # Static visibilities
-        self.docstring_window.setVisible(show_docstring)
-        self.folding_window.setVisible(show_folding)
-        self.configuration_window.setVisible(show_config)
-        self.hive_window.setVisible(show_hives)
-        self.bee_window.setVisible(show_bees)
-        self.preview_window.setVisible(show_preview)
 
     def _accept_dropped_node_info(self):
         info, self._pending_dropped_node_info = self._pending_dropped_node_info, None
@@ -457,7 +443,7 @@ class MainWindow(QMainWindow):
         self._project_context.__enter__()
 
         self.refresh_project_tree()
-        self._update_ui_layout()
+        self._update_menu_options()
 
     def close_open_tabs(self):
         while self.tab_widget.count() > 1:
@@ -475,7 +461,7 @@ class MainWindow(QMainWindow):
             self._project_context = None
 
         self.refresh_project_tree()
-        self._update_ui_layout()
+        self._update_menu_options()
 
         clear_imported_hivemaps()
 
@@ -526,9 +512,6 @@ class MainWindow(QMainWindow):
         else:
             self.tab_widget.setTabText(index, "{}*".format(file_name))
 
-    def _get_debug_session(self):
-        return self.debugger.session
-
     def find_editor_of_file(self, file_name):
         # Check if already open
         for index in range(self.tab_widget.count()):
@@ -559,22 +542,22 @@ class MainWindow(QMainWindow):
         file_name = dialogue.selectedFiles()[0]
         self._open_file(file_name)
 
-    def _open_file(self, file_name):
+    def _open_file(self, file_path):
         # Check if already open
         try:
-            editor = self.find_editor_of_file(file_name)
+            editor = self.find_editor_of_file(file_path)
             self.tab_widget.setCurrentWidget(editor)
 
         except ValueError:
-            editor = self.add_editor_space(file_name=file_name)
+            editor = self.add_editor_space(file_name=file_path)
 
             # Rename tab
-            name = self._get_display_name(file_name, allow_untitled=False)
+            name = self._get_display_name(file_path, allow_untitled=False)
             index = self.tab_widget.currentIndex()
             self.tab_widget.setTabText(index, name)
 
         # Update save UI elements now we have a filename
-        self._update_ui_layout()
+        self._update_menu_options()
 
     def save_as_file(self):
         widget = self.tab_widget.currentWidget()
@@ -592,7 +575,7 @@ class MainWindow(QMainWindow):
         file_name = dialogue.selectedFiles()[0]
 
         was_untitled = widget.file_name is None
-        widget.save(file_name=file_name)
+        widget.save(file_path=file_name)
 
         # Rename tab
         name = self._get_display_name(file_name, allow_untitled=False)
@@ -601,7 +584,7 @@ class MainWindow(QMainWindow):
 
         # Update save UI elements now we have a filename
         if was_untitled:
-            self._update_ui_layout()
+            self._update_menu_options()
 
         # Refresh hives
         if self.project_directory is not None:
@@ -625,8 +608,16 @@ class MainWindow(QMainWindow):
         debug_session.on_created_controller = self._on_created_debug_controller
         debug_session.on_destroyed_controller = self._on_destroyed_debug_controller
 
+        self.breakpoints_window.show()
+
+        self._debug_session = debug_session
+
     def _on_closed_debug_session(self, debug_session):
         debug_session.on_created_controller = None
         debug_session.on_destroyed_controller = None
+
+        self.breakpoints_window.close()
+
+        self._debug_session = None
 
 # TODO if any tabs are closed / edited, stop debugging!
