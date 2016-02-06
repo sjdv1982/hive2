@@ -262,6 +262,10 @@ class MainWindow(QMainWindow):
             if reply != QMessageBox.Yes:
                 return False
 
+        # Stop debugging if editor is closed
+        if self._debug_session.is_debugging_hivemap(widget.file_name):
+            self._debug_session.close()
+
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
                        self.console_window, self.breakpoints_window)
         return True
@@ -595,8 +599,9 @@ class MainWindow(QMainWindow):
         assert isinstance(widget, NodeEditorSpace)
         widget.save()
 
-    # TODO DEBUG on tab closed clear debug info
     def _on_created_debug_controller(self, debug_controller):
+        self._open_file(debug_controller.file_path)
+
         editor = self.find_editor_of_file(debug_controller.file_path)
         editor.on_debugging_started(debug_controller)
 

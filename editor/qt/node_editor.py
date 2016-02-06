@@ -328,6 +328,16 @@ class NodeEditorSpace(QWidget):
         return "{}.{}".format(pin.node.name, pin.name)
 
     def on_debugging_started(self, debug_controller):
+        if self.has_unsaved_changes:
+            reply = QMessageBox.warning(self, 'Revert Changes', "This file has unsaved changes, and a debugger has been launched. Do you want to reset them?",
+                                        QMessageBox.Yes, QMessageBox.No)
+
+            if reply != QMessageBox.Yes:
+                debug_controller.close()
+                return
+
+            self.load()
+
         self._debug_controller = debug_controller
         self._debug_widget.show()
 
@@ -367,7 +377,7 @@ class NodeEditorSpace(QWidget):
 
         # Stop debugging if history is updated!
         if self.has_unsaved_changes and self.is_debugging:
-            self._debug_controller.request_close()
+            self._debug_controller.close()
 
         if callable(self.on_update_is_saved):
             self.on_update_is_saved(self.has_unsaved_changes)
@@ -386,8 +396,6 @@ class NodeEditorSpace(QWidget):
         gui_node.on_deleted()
 
         self._view.remove_node(gui_node)
-
-        self.clear_breakpoints(node)
 
     def _on_breakpoint_added(self, bee_container_name):
         self._debug_widget.add_breakpoint(bee_container_name)

@@ -270,7 +270,11 @@ class NodeManager(object):
         """
         with self.history.composite_operation("delete-node-multiple"):
             for node in nodes:
-                self.delete_node(node)
+                try:
+                    self.delete_node(node)
+
+                except KeyError:
+                    continue
 
     def rename_node(self, node, name, attempt_till_success=False):
         """Rename node with a new identifier

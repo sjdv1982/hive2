@@ -29,7 +29,6 @@ class ConnectionBase:
         self._send_queue = Queue()
 
         self.on_received = None
-        self.on_disconnected = None
 
         self._received_raw = b''
 
@@ -97,19 +96,33 @@ class Client(ConnectionBase):
 
                 self._on_received(data)
 
-        # TODO
-        if callable(self.on_disconnected):
-            self.on_disconnected()
+
+# TODO how to handle editor switching? (should be handled)
+# TODO How to open editor if not open during debugging
 
 
 class Server(ConnectionBase):
 
+    def __init__(self, host=None, port=None):
+        super().__init__(host, port)
+
+        self._connected = Event()
+
+        self.on_connected = None
+        self.on_disconnected = None
+
+    def disconnect(self):
+        self._connected.clear()
+
     def _run_threaded_for_connection(self, connection, address):
         send_queue = self._send_queue
 
-        connected = True
+        self._connected.set()
 
-        while connected:
+        if callable(self.on_connected):
+            self.on_connected()
+
+        while self._connected.is_set():
             while True:
                 try:
                     data = send_queue.get_nowait()
@@ -125,7 +138,7 @@ class Server(ConnectionBase):
 
                 except OSError as err:
                     if err.errno == ECONNRESET:
-                        connected = False
+                        self.disconnect()
 
                     break
 
@@ -368,9 +381,6 @@ class HivemapDebugController:
         self.on_breakpoint_hit = None
         self.on_io = None
 
-        self.on_added_breakpoint = None
-        self.on_removed_breakpoint = None
-
         self._request_close = None
 
     @property
@@ -383,6 +393,11 @@ class HivemapDebugController:
 
     def close(self):
         self._request_close()
+
+    def on_closed(self):
+        print("CONT CLOSE")
+        for breakpoint in self._breakpoints.copy():
+            self.remove_breakpoint(breakpoint)
 
     def add_breakpoint(self, bee_name):
         assert bee_name not in self._breakpoints
@@ -506,11 +521,15 @@ class RemoteDebugSession:
 
             debug_controller.process_operation(opcode, remaining_data)
 
-    def close(self):
-        if callable(self.on_destroyed_controller):
-            for controller in self._debug_controllers.values():
+    def on_closed(self):
+        print("YOU DONE CONTRROLLERS")
+        for controller in self._debug_controllers.values():
+            controller.on_closed()
+
+            if callable(self.on_destroyed_controller):
                 self.on_destroyed_controller(controller)
 
+    def close(self):
         self._request_close()
 
 
@@ -521,6 +540,7 @@ class RemoteDebugServer:
     def __init__(self, host=None, port=None):
         self._server = Server(host, port)
         self._server.on_received = self._on_received
+        self._server.on_connected = self._on_connected
         self._server.on_disconnected = self._on_disconnected
 
         self.on_created_session = None
@@ -539,21 +559,25 @@ class RemoteDebugServer:
     def _create_session(self):
         session = self.__class__.session_class()
         session._send_data = partial(self._send_data, session)
-        session._request_close = partial(self._close_session, session)
+        session._request_close = partial(self._session_request_close, session)
 
         if callable(self.on_created_session):
             self.on_created_session(session)
 
         return session
 
+    def _session_request_close(self, session):
+        self._close_session(session)
+        self._server.disconnect()
+
     def _close_session(self, session):
         if session is not self._session:
             raise RuntimeError("Session not active session")
 
+        session.on_closed()
+
         if callable(self.on_closed_session):
             self.on_closed_session(session)
-
-        session.on_closed()
 
         session._request_close = None
         session._send_data = None
@@ -562,18 +586,24 @@ class RemoteDebugServer:
 
     def _send_data(self, session, data):
         if session is not self._session:
-            raise RuntimeError("Invalid session")
+            raise RuntimeError("No active session")
 
         self._server.send(data)
 
     def _on_received(self, data):
         if self._session is None:
-            self._session = self._create_session()
+            raise RuntimeError("No active session")
 
         self._session.process_data(data)
+
+    def _on_connected(self):
+        if self._session is not None:
+            raise RuntimeError("Expected no active session")
+
+        self._session = self._create_session()
 
     def _on_disconnected(self):
         if self._session is None:
             return
 
-        self._session.request_close()
+        self._close_session(self._session)

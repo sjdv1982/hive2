@@ -5,6 +5,16 @@ from ..debugging import RemoteDebugServer
 
 class QtRemoteDebugServer(RemoteDebugServer):
 
+    def _on_connected(self):
+        callback = super()._on_connected
+        event = DeferredExecute(callback)
+        event.dispatch()
+
+    def _on_disconnected(self):
+        callback = super()._on_disconnected
+        event = DeferredExecute(callback)
+        event.dispatch()
+
     def _on_received(self, data):
         callback = super()._on_received
         event = DeferredExecute(callback, data)
