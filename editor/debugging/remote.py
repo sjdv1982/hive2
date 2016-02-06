@@ -15,20 +15,12 @@ from ..importer import get_hook
 
 
 class ConnectionBase:
-    default_host = 'localhost'
-    default_port = 39989
-
-    def __init__(self, host=None, port=None):
-        if host is None:
-            host = self.default_host
-
-        if port is None:
-            port = self.default_port
-
-        self._address = host, port
+    def __init__(self):
         self._send_queue = Queue()
 
         self.on_received = None
+        self.on_connected = None
+        self.on_disconnected = None
 
         self._received_raw = b''
 
@@ -60,8 +52,8 @@ class ConnectionBase:
     def _run_threaded(self):
         raise NotImplementedError
 
-    def launch(self):
-        self._thread = Thread(target=self._run_threaded)
+    def launch(self, *args, **kwargs):
+        self._thread = Thread(target=self._run_threaded, args=args, kwargs=kwargs)
         self._thread.daemon = True
         self._thread.start()
 
@@ -70,13 +62,35 @@ class ConnectionBase:
 
 
 class Client(ConnectionBase):
+    default_host = 'localhost'
+    default_server_host = 'localhost'
+    default_server_port = 39989
+    poll_interval = 1/200
+    
+    def __init__(self, host=None, port=None):
+        super().__init__()
 
-    def _run_threaded(self):
+        if host is None:
+            host = self.default_host
+
+        if port is None:
+            port = 0
+
+        self._address = host, port
+
+    def _run_threaded(self, server_address=None):
+        if server_address is None:
+            server_address = self.default_server_host, self.default_server_port
+
         sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(self._address)
-        sock.setblocking(False)
+        sock.bind(self._address)
+        sock.connect(server_address)
+        sock.settimeout(self.poll_interval)
 
         send_queue = self._send_queue
+
+        if callable(self.on_connected):
+            self.on_connected()
 
         while True:
             while True:
@@ -96,20 +110,26 @@ class Client(ConnectionBase):
 
                 self._on_received(data)
 
-
-# TODO how to handle editor switching? (should be handled)
-# TODO How to open editor if not open during debugging
+        if callable(self.on_disconnected):
+            self.on_disconnected()
 
 
 class Server(ConnectionBase):
+    default_host = 'localhost'
+    default_port = 39989
+    poll_interval = 1/200
 
     def __init__(self, host=None, port=None):
-        super().__init__(host, port)
+        super().__init__()
 
+        if host is None:
+            host = self.default_host
+
+        if port is None:
+            port = self.default_port
+
+        self._address = host, port
         self._connected = Event()
-
-        self.on_connected = None
-        self.on_disconnected = None
 
     def disconnect(self):
         self._connected.clear()
@@ -154,9 +174,11 @@ class Server(ConnectionBase):
 
         while True:
             connection, address = sock.accept()
-            connection.setblocking(False)
+            connection.settimeout(self.poll_interval)
 
             self._run_threaded_for_connection(connection, address)
+
+            connection.close()
 
 
 def id_generator(i=0):
@@ -212,8 +234,18 @@ class RemoteDebugContext(DebugContext):
         self._client = Client()
         self._client.launch()
         self._client.on_received = self._on_received_response
+        self._client.on_disconnected = self._on_disconnected
 
         self._breakpoints = {}
+
+    def _clear_breakpoints(self):
+        for breakpoint in self._breakpoints.values():
+            self._unset_breakpoint(breakpoint)
+
+        self._breakpoints()
+
+    def _on_disconnected(self):
+        self._clear_breakpoints()
 
     def report_trigger(self, source_bee_ref):
         self._report(OpCodes.trigger, source_bee_ref)
@@ -269,25 +301,21 @@ class RemoteDebugContext(DebugContext):
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
         print("DBG::Remove breakpoint!", [bee_container_name])
 
-        lock = self._breakpoints.pop((root_hive_id, bee_container_name))
-
-        try:
-            lock.set()
-            lock.clear()
-
-        except RuntimeError:
-            pass
+        breakpoint = self._breakpoints.pop((root_hive_id, bee_container_name))
+        self._unset_breakpoint(breakpoint)
 
     def _skip_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
-        lock = self._breakpoints[(root_hive_id, bee_container_name)]
+        breakpoint = self._breakpoints[(root_hive_id, bee_container_name)]
         print("DBG::Skip breakpoint!", bee_container_name)
+        self._unset_breakpoint(breakpoint)
 
+    def _unset_breakpoint(self, breakpoint):
         try:
-            lock.set()
-            lock.clear()
+            breakpoint.set()
+            breakpoint.clear()
 
         except RuntimeError:
             pass
@@ -348,7 +376,9 @@ class RemoteDebugContext(DebugContext):
 
         # Assume using i wrapper
         assert node_name[0] == '_'
+
         node_name = node_name[1:]
+        bee_name = bee_name.lstrip('_')
 
         bee_container_name = "{}.{}".format(node_name, bee_name)
         print("DBG::Report", bee_container_name, opcode)
@@ -395,9 +425,7 @@ class HivemapDebugController:
         self._request_close()
 
     def on_closed(self):
-        print("CONT CLOSE")
-        for breakpoint in self._breakpoints.copy():
-            self.remove_breakpoint(breakpoint)
+        pass
 
     def add_breakpoint(self, bee_name):
         assert bee_name not in self._breakpoints
@@ -406,17 +434,11 @@ class HivemapDebugController:
         data = pack_pascal_string(bee_name)
         self.send_operation(OpCodes.add_breakpoint, data)
 
-        if callable(self.on_added_breakpoint):
-            self.on_added_breakpoint(bee_name)
-
     def remove_breakpoint(self, bee_name):
         self._breakpoints.remove(bee_name)
         data = pack_pascal_string(bee_name)
 
         self.send_operation(OpCodes.remove_breakpoint, data)
-
-        if callable(self.on_removed_breakpoint):
-            self.on_removed_breakpoint(bee_name)
 
     def skip_breakpoint(self, bee_name):
         if bee_name not in self._breakpoints:
@@ -522,7 +544,6 @@ class RemoteDebugSession:
             debug_controller.process_operation(opcode, remaining_data)
 
     def on_closed(self):
-        print("YOU DONE CONTRROLLERS")
         for controller in self._debug_controllers.values():
             controller.on_closed()
 

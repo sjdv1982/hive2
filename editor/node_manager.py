@@ -276,6 +276,21 @@ class NodeManager(object):
                 except KeyError:
                     continue
 
+    def delete_all_nodes(self):
+        nodes_to_delete = set(self.nodes.values())
+
+        # Ignore folded nodes (handled)
+        for node in self.nodes.values():
+            for pin in node.inputs.values():
+                if pin.is_folded:
+                    target_connection = next(iter(pin.connections))
+                    target_pin = target_connection.output_pin
+                    folded_node = target_pin.node
+
+                    nodes_to_delete.remove(folded_node)
+
+        self.delete_nodes(nodes_to_delete)
+
     def rename_node(self, node, name, attempt_till_success=False):
         """Rename node with a new identifier
 
@@ -411,7 +426,7 @@ class NodeManager(object):
     def load_hivemap(self, hivemap):
         with self.history.composite_operation("load"):
             # Clear nodes first
-            self.delete_nodes(list(self.nodes.values()))
+            self.delete_all_nodes()
             data = self._import_from_hivemap(hivemap)
             self.docstring = data['docstring']
 

@@ -263,8 +263,9 @@ class MainWindow(QMainWindow):
                 return False
 
         # Stop debugging if editor is closed
-        if self._debug_session.is_debugging_hivemap(widget.file_name):
-            self._debug_session.close()
+        if self._debug_session is not None:
+            if self._debug_session.is_debugging_hivemap(widget.file_name):
+                self._debug_session.close()
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
                        self.console_window, self.breakpoints_window)

@@ -365,6 +365,10 @@ class NodeEditorSpace(QWidget):
         debug_controller.on_removed_breakpoint = None
         debug_controller.on_breakpoint_hit = None
 
+        # Cleanup breakpoints
+        for breakpoint in debug_controller.breakpoints:
+            self._on_breakpoint_removed(breakpoint)
+
         self._debug_controller = None
 
         # Reset debug widget
@@ -560,9 +564,11 @@ class NodeEditorSpace(QWidget):
 
         if bee_container_name not in debug_controller.breakpoints:
             debug_controller.add_breakpoint(bee_container_name)
+            self._on_breakpoint_added(bee_container_name)
 
         else:
             debug_controller.remove_breakpoint(bee_container_name)
+            self._on_breakpoint_removed(bee_container_name)
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node

@@ -205,8 +205,9 @@ class Socket(QGraphicsItem):
             self.parent_node_ui.view.on_socket_middle_mouse(self)
 
     def mouseMoveEvent(self, event):
-        if self.is_output:
-            connection = self._dragging_connection
+        connection = self._dragging_connection
+
+        if self.is_output and connection is not None:
             mouse_pos = connection.mapFromScene(event.scenePos())
 
             end_socket = connection.end_socket

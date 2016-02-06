@@ -334,7 +334,6 @@ class NodeView(QGraphicsView):
     def _on_del_key(self):
         scene = self.scene()
 
-        # TODO allow composite deletion
         selected_nodes = scene.selectedItems()
         if callable(self.on_nodes_deleted):
             self.on_nodes_deleted(selected_nodes)
@@ -499,7 +498,6 @@ class NodeView(QGraphicsView):
         elif self._slice_path is not None:
             to_remove = self._get_intersected_connections(self._slice_path)
 
-            # TODO allow composite deletion
             self.gui_delete_connections(to_remove)
 
             self._slice_path = None
