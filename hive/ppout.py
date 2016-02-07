@@ -67,7 +67,7 @@ class PullOut(PPOutBase):
         if target.mode != "pull":
             raise TypeError("Target {} is not configured for pull mode".format(target))
 
-        if not identifiers_match(target.data_type, self.data_type, require_types=True):
+        if not identifiers_match(target.data_type, self.data_type):
             raise TypeError("Data types do not match")
 
     def _hive_connect_source(self, target):
@@ -103,7 +103,7 @@ class PushOut(PPOutBase, Socket, TriggerTarget):
         if target.mode != "push":
             raise TypeError("Target {} is not configured for push mode".format(target))
 
-        if not identifiers_match(target.data_type, self.data_type, require_types=True):
+        if not identifiers_match(target.data_type, self.data_type):
             raise TypeError("Data types do not match")
     
     def _hive_connect_source(self, target):

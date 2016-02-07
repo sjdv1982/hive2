@@ -20,10 +20,16 @@ def current_context_as(context):
     set_current_context(original_context)
 
 
-class DebugContext:
+class DebugContextBase(object):
 
-    def on_create_connection(self, source, target):
-        pass
+    def build_connection(self, source, target):
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
 
-    def on_create_trigger(self, source, target, target_func, pre):
-        pass
+    def build_trigger(self, source, target, pre):
+        target_func = target._hive_trigger_target()
+        if pre:
+            source._hive_pretrigger_source(target_func)
+
+        else:
+            source._hive_trigger_source(target_func)

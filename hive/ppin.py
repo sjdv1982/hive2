@@ -2,9 +2,9 @@ from functools import partial
 
 from .annotations import get_argument_types
 from .classes import Pusher
+from .identifiers import identifiers_match
 from .manager import get_mode, get_building_hive, memoize
 from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
-from .identifiers import identifiers_match
 
 
 def get_callable_data_type(target):
@@ -76,7 +76,7 @@ class PushIn(PPInBase):
         if source.mode != "push":
             raise TypeError("Source {} is not configured for push mode".format(source))
 
-        if not identifiers_match(source.data_type, self.data_type, require_types=True):
+        if not identifiers_match(source.data_type, self.data_type):
             raise TypeError("Data types do not match: {}, {}".format(source.data_type, self.data_type))
 
     def _hive_connect_target(self, source):
@@ -103,7 +103,7 @@ class PullIn(PPInBase, TriggerTarget):
         if source.mode != "pull":
             raise TypeError("Source {} is not configured for pull mode".format(source))
 
-        if not identifiers_match(source.data_type, self.data_type, require_types=True):
+        if not identifiers_match(source.data_type, self.data_type):
             raise TypeError("Data types do not match")
 
     def _hive_connect_target(self, source):

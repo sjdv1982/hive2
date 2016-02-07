@@ -11,7 +11,7 @@ from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, 
 ConnectionCandidate = namedtuple("ConnectionCandidate", ("bee_name", "data_type"))
 
 
-def find_connection_candidates(sources, targets, require_types=True):
+def find_connection_candidates(sources, targets, support_untyped=False):
     """Finds appropriate connections between ConnectionSources and ConnectionTargets
 
     :param sources: connection sources
@@ -24,10 +24,7 @@ def find_connection_candidates(sources, targets, require_types=True):
         source_data_type = source_candidate.data_type
         target_data_type = target_candidate.data_type
 
-        if require_types and not (source_data_type and target_data_type):
-            continue
-
-        if not identifiers_match(source_data_type, target_data_type):
+        if not identifiers_match(source_data_type, target_data_type, support_untyped):
             continue
 
         candidates.append((source_candidate, target_candidate))
@@ -52,7 +49,7 @@ def find_connections_between_hives(source_hive, target_hive):
     candidates = find_connection_candidates(connect_sources, connect_targets)
 
     if not candidates:
-        candidates = find_connection_candidates(connect_sources, connect_targets, require_types=False)
+        candidates = find_connection_candidates(connect_sources, connect_targets)
 
     if not candidates:
         raise ValueError("No matching connections found")
@@ -98,10 +95,11 @@ def build_connection(source, target):
 
     debug_context = get_current_context()
     if debug_context is not None:
-        debug_context.on_create_connection(source, target)
+        debug_context.build_connection(source, target)
 
-    target._hive_connect_target(source)
-    source._hive_connect_source(target)
+    else:
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
 
 
 class Connection(Bindable):

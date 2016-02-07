@@ -2,19 +2,21 @@ import os
 from collections.abc import KeysView
 from errno import ECONNRESET
 from functools import lru_cache, partial
+from logging import getLogger
 from queue import Queue, Empty
 from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR
 from struct import pack, unpack_from, calcsize
 from threading import Event, Thread
 from weakref import WeakKeyDictionary, ref
 
-from hive.debug.context import DebugContext
+from hive.debug import DebugContextBase
 from hive.ppout import PushOut
 from .utils import pack_pascal_string, unpack_pascal_string
 from ..importer import get_hook
 
 
-class ConnectionBase:
+class ConnectionBase(object):
+
     def __init__(self):
         self._send_queue = Queue()
 
@@ -187,13 +189,13 @@ def id_generator(i=0):
         i += 1
 
 
-class OpCodes:
+class OpCodes(object):
     (register_root, pull_in, push_out, trigger,
      pretrigger, add_breakpoint, skip_breakpoint,
      remove_breakpoint, hit_breakpoint) = range(9)
 
 
-class DebugPushOutTarget:
+class DebugPushOutTarget(object):
 
     def __init__(self, debug_context, bee_reference):
         self._debug_context = debug_context
@@ -203,7 +205,7 @@ class DebugPushOutTarget:
         self._debug_context.report_push_out(self._bee_reference, value)
 
 
-class DebugTriggerTarget:
+class DebugTriggerTarget(object):
 
     def __init__(self, debug_context, bee_reference):
         self._debug_context = debug_context
@@ -213,7 +215,7 @@ class DebugTriggerTarget:
         self._debug_context.report_trigger(self._bee_reference)
 
 
-class DebugPretriggerTarget:
+class DebugPretriggerTarget(object):
 
     def __init__(self, debug_context, bee_reference):
         self._debug_context = debug_context
@@ -223,9 +225,11 @@ class DebugPretriggerTarget:
         self._debug_context.report_pretrigger(self._bee_reference)
 
 
-class RemoteDebugContext(DebugContext):
+# TODO - send source and target of trigger / ppio
+# TODO - trigger breakpoints of either source or target of these connections when triggered
+class RemoteDebugContext(DebugContextBase):
 
-    def __init__(self):
+    def __init__(self, logger=None):
         self._container_hives = WeakKeyDictionary()
         self._container_hive_ref_to_id = {}
 
@@ -235,6 +239,11 @@ class RemoteDebugContext(DebugContext):
         self._client.launch()
         self._client.on_received = self._on_received_response
         self._client.on_disconnected = self._on_disconnected
+
+        if logger is None:
+            logger = getLogger(__name__)
+
+        self._logger = logger
 
         self._breakpoints = {}
 
@@ -259,12 +268,14 @@ class RemoteDebugContext(DebugContext):
     def report_pull_in(self, source_bee_ref, data):
         self._report(OpCodes.pull_in, source_bee_ref, data)
 
-    def on_create_connection(self, source, target):
+    def build_connection(self, source, target):
         if isinstance(source, PushOut):
-            target = DebugPushOutTarget(self, ref(source))
+            target = DebugPushOutTarget(self, ref(source), ref(target))
             source._hive_connect_source(target)
 
-    def on_create_trigger(self, source, target, target_func, pre):
+        super().build_connection(source, target)
+
+    def build_trigger(self, source, target, target_func, pre):
         if pre:
             callable_target = DebugPretriggerTarget(self, ref(source))
             source._hive_pretrigger_source(callable_target)
@@ -287,21 +298,22 @@ class RemoteDebugContext(DebugContext):
             self._skip_breakpoint(body)
 
         else:
-            raise ValueError("Invalid OPCODE: '{}'".format(opcode))
+            self._logger.error("Invalid OPCODE: '{}'".format(opcode))
 
     def _add_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
-        print("DBG::Add breakpoint!", [bee_container_name])
+        self._logger.info("Added breakpoint on '{}'".format(bee_container_name))
         self._breakpoints[(root_hive_id, bee_container_name)] = Event()
 
     def _remove_breakpoint(self, message):
         root_hive_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
-        print("DBG::Remove breakpoint!", [bee_container_name])
 
+        self._logger.info("Removed breakpoint from '{}'".format(bee_container_name))
         breakpoint = self._breakpoints.pop((root_hive_id, bee_container_name))
+
         self._unset_breakpoint(breakpoint)
 
     def _skip_breakpoint(self, message):
@@ -309,7 +321,8 @@ class RemoteDebugContext(DebugContext):
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
         breakpoint = self._breakpoints[(root_hive_id, bee_container_name)]
-        print("DBG::Skip breakpoint!", bee_container_name)
+
+        self._logger.info("Step over breakpoint on '{}'".format(bee_container_name))
         self._unset_breakpoint(breakpoint)
 
     def _unset_breakpoint(self, breakpoint):
@@ -366,6 +379,7 @@ class RemoteDebugContext(DebugContext):
     def _report(self, opcode, source_bee_ref, data=None):
         try:
             container_hive_path = self._find_container_hive_path(source_bee_ref)
+
         except ValueError:
             return
 
@@ -381,7 +395,6 @@ class RemoteDebugContext(DebugContext):
         bee_name = bee_name.lstrip('_')
 
         bee_container_name = "{}.{}".format(node_name, bee_name)
-        print("DBG::Report", bee_container_name, opcode)
 
         # Send operation ...
         self._send_operation(opcode, container_hive_id, bee_container_name, data)
@@ -393,12 +406,14 @@ class RemoteDebugContext(DebugContext):
         except KeyError:
             return
 
+        # Hit breakpoint
         file_name = os.path.basename(container_hive_path)
-        print("Hit breakpoint @ {} - {}".format(file_name, bee_container_name))
+        self._logger.info("Hit breakpoint @ {} - {}".format(file_name, bee_container_name))
+
         breakpoint.wait()
 
 
-class HivemapDebugController:
+class HivemapDebugController(object):
 
     def __init__(self, file_path):
         self._breakpoints = set()
@@ -474,7 +489,7 @@ class HivemapDebugController:
                 self.on_breakpoint_hit(container_bee_name)
 
 
-class RemoteDebugSession:
+class RemoteDebugSession(object):
     debug_controller_class = HivemapDebugController
 
     def __init__(self):
@@ -554,7 +569,7 @@ class RemoteDebugSession:
         self._request_close()
 
 
-class RemoteDebugServer:
+class RemoteDebugServer(object):
 
     session_class = RemoteDebugSession
 

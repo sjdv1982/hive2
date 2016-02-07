@@ -39,7 +39,7 @@ class IOPin(object):
         self._colour = get_colour(data_type)
         self._data_type = data_type
         self._mode = mode # "any" for any connection
-        self._is_trigger = identifiers_match(data_type, "trigger", require_types=False)
+        self._is_trigger = identifiers_match(data_type, "trigger", support_untyped=False)
         self._io_type = io_type
         self._node = node
         self._restricted_data_types = restricted_types
@@ -141,7 +141,7 @@ class IOPin(object):
 
         # If a restricted data type
         for data_type in self._restricted_data_types:
-            if identifiers_match(other_pin.data_type, data_type, require_types=False):
+            if identifiers_match(other_pin.data_type, data_type, support_untyped=False):
                 return False
 
         # Limit connections if provided

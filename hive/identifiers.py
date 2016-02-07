@@ -27,17 +27,16 @@ def identifier_to_tuple(value, allow_none=True):
     return value
 
 
-def identifiers_match(identifier_a, identifier_b, require_types=True):
+def identifiers_match(identifier_a, identifier_b, support_untyped=True):
     """Checks that two identifier strings match by comparing their first N elements,
     where N is the length of the shortest converted data type tuple
-    Returns a TypeError otherwise
 
     :param identifier_a: string of first identifier
     :param identifier_b: string of second identifier
     """
 
     if not (identifier_a and identifier_b):
-        return require_types
+        return support_untyped
 
     else:
         type_a = identifier_to_tuple(identifier_a)
