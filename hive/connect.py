@@ -98,10 +98,11 @@ def build_connection(source, target):
 
     debug_context = get_current_context()
     if debug_context is not None:
-        debug_context.on_create_connection(source, target)
+        debug_context.build_connection(source, target)
 
-    target._hive_connect_target(source)
-    source._hive_connect_source(target)
+    else:
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
 
 
 class Connection(Bindable):

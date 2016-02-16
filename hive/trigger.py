@@ -12,11 +12,12 @@ def build_trigger(source, target, pre):
     if debug_context is not None:
         debug_context.on_create_trigger(source, target, target_func, pre)
 
-    if pre:
-        source._hive_pretrigger_source(target_func)
-
     else:
-        source._hive_trigger_source(target_func)
+        if pre:
+            source._hive_pretrigger_source(target_func)
+
+        else:
+            source._hive_trigger_source(target_func)
 
 
 class Trigger(Bindable):

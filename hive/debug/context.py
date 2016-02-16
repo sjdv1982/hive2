@@ -22,7 +22,7 @@ def current_context_as(context):
 
 class DebugContext:
 
-    def on_create_connection(self, source, target):
+    def build_connection(self, source, target):
         pass
 
     def on_create_trigger(self, source, target, target_func, pre):

@@ -259,14 +259,17 @@ class RemoteDebugContext(DebugContext):
     def report_pull_in(self, source_bee_ref, data):
         self._report(OpCodes.pull_in, source_bee_ref, data)
 
-    def on_create_connection(self, source, target):
+    def build_connection(self, source, target):
         if isinstance(source, PushOut):
             target = DebugPushOutTarget(self, ref(source))
             source._hive_connect_source(target)
 
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
+
     def on_create_trigger(self, source, target, target_func, pre):
         if pre:
-            callable_target = DebugPretriggerTarget(self, ref(source))
+            callable_target = DebugPretriggerTarget(self, ref(source), ref(target))
             source._hive_pretrigger_source(callable_target)
 
         else:

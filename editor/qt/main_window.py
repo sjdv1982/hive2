@@ -263,9 +263,9 @@ class MainWindow(QMainWindow):
                 return False
 
         # Stop debugging if editor is closed
-        if self._debug_session is not None:
-            if self._debug_session.is_debugging_hivemap(widget.file_name):
-                self._debug_session.close()
+        if self.debugger.session is not None:
+            if self.debugger.session.is_debugging_hivemap(widget.file_name):
+                self.debugger.session.close()
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
                        self.console_window, self.breakpoints_window)
@@ -616,14 +616,10 @@ class MainWindow(QMainWindow):
 
         self.breakpoints_window.show()
 
-        self._debug_session = debug_session
-
     def _on_closed_debug_session(self, debug_session):
         debug_session.on_created_controller = None
         debug_session.on_destroyed_controller = None
 
         self.breakpoints_window.close()
-
-        self._debug_session = None
 
 # TODO if any tabs are closed / edited, stop debugging!
