@@ -344,6 +344,9 @@ class NodeEditorSpace(QWidget):
 
         add_history_operation = self._debug_widget.add_history_operation
 
+        # TODO clean this mess up
+        # TODO make debug controller trigger UI?
+
         debug_controller.on_push_out = lambda source_name, target_name, value: add_history_operation(source_name, target_name, operation="push-out", value=value)
         debug_controller.on_pull_in = lambda source_name, target_name, value: add_history_operation(source_name, target_name, operation="pull-in", value=value)
         debug_controller.on_trigger = partial(add_history_operation, operation="trigger")

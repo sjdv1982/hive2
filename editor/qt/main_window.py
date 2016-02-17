@@ -622,5 +622,3 @@ class MainWindow(QMainWindow):
         debug_session.on_destroyed_controller = None
 
         self.breakpoints_window.close()
-
-# TODO if any tabs are closed / edited, stop debugging!
