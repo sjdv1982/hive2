@@ -25,5 +25,5 @@ class DebugContext:
     def build_connection(self, source, target):
         pass
 
-    def on_create_trigger(self, source, target, target_func, pre):
+    def build_trigger(self, source, target, pre):
         pass

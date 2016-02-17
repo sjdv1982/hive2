@@ -99,6 +99,7 @@ class HiveInternalWrapper(HiveObjectWrapper):
                             .format(name)))
 
         if value._hive_object_cls is None:
+            print(value, type(value))
             raise AttributeError(self._repr_message("attribute '{}' must be a Bee instance defined inside the builder"
                                                     "function".format(name)))
 

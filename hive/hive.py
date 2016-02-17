@@ -95,6 +95,16 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
 
+                    # Store runtime information on bee
+                    if isinstance(instance, Nameable):
+                        info = BoundRuntimeInfo(ref(self), bee_name)
+
+                        if instance._hive_runtime_info is None:
+                            instance._hive_runtime_info = set()
+
+                        instance._hive_runtime_info.add(info)
+                      #  print("BIND", instance, info)
+
                     exposed_bees.append((bee_name, instance))
 
                 # Add internal bees (that are hives, Callable or Stateful) to runtime hive
@@ -114,6 +124,15 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         if instance is None:
                             continue
 
+                    # Store runtime information on bee
+                    if isinstance(instance, Nameable):
+                        info = BoundRuntimeInfo(ref(self), bee_name)
+
+                        if instance._hive_runtime_info is None:
+                            instance._hive_runtime_info = set()
+
+                        instance._hive_runtime_info.add(info)
+
                     if isinstance(bee, HiveObject) or bee.implements(Callable):
                         exposed_bees.append((private_name, instance))
 
@@ -125,28 +144,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
 
-                    # Store runtime information on bee
-                    if isinstance(instance, Nameable):
-                        info = BoundRuntimeInfo(ref(self), bee_name)
-
-                        if instance._hive_runtime_info is None:
-                            instance._hive_runtime_info = []
-
-                        instance._hive_runtime_info.append(info)
-
                     setattr(self, bee_name, instance)
-
-        # If root:
-        if get_run_hive() is None:
-            self._hive_set_bee_names()
-
-    def _hive_set_bee_names(self, name=()):
-        for bee_name, instance in self._hive_bee_instances.items():
-            full_bee_name = name + (bee_name,)
-            instance._hive_bee_name = full_bee_name
-
-            if isinstance(instance, RuntimeHive):
-                instance._hive_set_bee_names(full_bee_name)
 
     @staticmethod
     def _hive_can_connect_hive(other):

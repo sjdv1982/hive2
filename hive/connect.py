@@ -131,7 +131,7 @@ class Connection(Bindable):
 class ConnectionBee(HiveBee):
 
     def __init__(self, source, target):
-        super(HiveBee, self).__init__()
+        super(ConnectionBee, self).__init__()
 
         self.source = source
         self.target = target
