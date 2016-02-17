@@ -19,16 +19,16 @@ class FrozenHiveArgs(object):
         raise AttributeError("FrozenHiveArgs ({}) has no attribute '{}'".format(self._name, name))
 
     def __delattr_(self, name):
-        raise AttributeError("FrozenHiveArgs ({}) cannot be assigned to".format(self._name))
+        raise AttributeError("FrozenHiveArgs ({}) attributes cannot be removed".format(self._name))
 
     def __setattr__(self, name, value):
-        raise AttributeError("FrozenHiveArgs ({}) cannot be assigned to".format(self._name))
+        raise AttributeError("FrozenHiveArgs ({}) attributes cannot be modified".format(self._name))
 
     def __bool__(self):
         return bool(self._args)
 
     def __dir__(self):
-        return self._args.keys()
+        return tuple(self._args.keys())
 
     def __iter__(self):
         return iter(self._args.keys())
@@ -88,7 +88,7 @@ class HiveArgs(object):
         return bool(self._arg_names)
 
     def __dir__(self):
-        return self._arg_names
+        return tuple(self._arg_names)
 
     def __iter__(self):
         return iter(self._arg_names)
