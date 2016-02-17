@@ -1,6 +1,11 @@
 from .. compatability import next
 from ..mixins import Parameter
 
+from collections import namedtuple
+
+
+HiveArgsExtraction = namedtuple("HiveArgsExtraction", "args kwargs parameter_values")
+
 
 class FrozenHiveArgs(object):
 
@@ -46,9 +51,6 @@ class HiveArgs(object):
         self._arg_names = []
 
     def __setattr__(self, name, value):
-        if name == "parent":
-            raise AttributeError("HiveArgs ({}) special attribute 'parent' cannot be assigned to".format(self._name))
-
         if name.startswith("_"): 
             return object.__setattr__(self, name, value)
 
@@ -100,19 +102,19 @@ class HiveArgs(object):
 
         :param parameter_values: parameter values returned from extract_parameter_values
         """
-        param_pairs = []
+        parameter_dict = {}
 
         for param_name, parameter_value in zip(self._arg_names, parameter_values):
             parameter = getattr(self, param_name)
+
             options = parameter.options
-
             if options is not None and parameter_value not in options:
-                raise ValueError("{} is not a permitted value: {}".format(repr(parameter_value), options))
+                raise ValueError("{} is not in the permitted options {} for {}".format(repr(parameter_value), options,
+                                                                                       param_name))
 
-            param_pairs.append((param_name, parameter_value))
+            parameter_dict[param_name] = parameter_value
 
-        resolved_args = dict(param_pairs)
-        return FrozenHiveArgs(resolved_args, self._name)
+        return FrozenHiveArgs(parameter_dict, self._name)
 
     def extract_from_args(self, args, kwargs):
         """Extract parameter values from arguments and keyword arguments provided to the building hive.
@@ -123,7 +125,6 @@ class HiveArgs(object):
         :param kwargs: dict of keyword name value pairs
         """
         parameter_values = []
-
         use_args = True
         iter_args = iter(args)
         out_kwargs = kwargs.copy()
@@ -142,8 +143,7 @@ class HiveArgs(object):
                 except KeyError:
                     # Check if we can omit the value
                     if parameter.start_value is Parameter.NoValue:
-                        raise ValueError("No value for '{}' passed to HiveArgs({})"
-                                         .format(param_name, self._name))
+                        raise ValueError("No value for '{}' passed to HiveArgs({})".format(param_name, self._name))
                     else:
                         arg_value = parameter.start_value
 
@@ -152,8 +152,7 @@ class HiveArgs(object):
                 if not use_args:
                     # Check if we can omit the value
                     if parameter.start_value is Parameter.NoValue:
-                        raise ValueError("No value for '{}' passed to HiveArgs({})"
-                                         .format(param_name, self._name))
+                        raise ValueError("No value for '{}' passed to HiveArgs({})".format(param_name, self._name))
                     else:
                         arg_value = parameter.start_value
 
@@ -164,8 +163,7 @@ class HiveArgs(object):
 
                     except StopIteration:
                         if parameter.start_value is Parameter.NoValue:
-                            raise ValueError("No value for '{}' passed to HiveArgs({})"
-                                             .format(param_name, self._name))
+                            raise ValueError("No value for '{}' passed to HiveArgs({})".format(param_name, self._name))
                         else:
                             arg_value = parameter.start_value
 
@@ -174,4 +172,4 @@ class HiveArgs(object):
         out_args = tuple(iter_args)
         out_parameter_values = tuple(parameter_values)
 
-        return out_args, out_kwargs, out_parameter_values
+        return HiveArgsExtraction(out_args, out_kwargs, out_parameter_values)
