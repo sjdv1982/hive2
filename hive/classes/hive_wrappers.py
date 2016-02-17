@@ -106,6 +106,8 @@ class HiveInternalWrapper(HiveObjectWrapper):
             raise AttributeError(self._repr_message("attribute '{}' cannot contain a Bee built by a different hive"
                                                     .format(name)))
 
+        value._hive_wrapper_name = name
+
 
 class HiveExportableWrapper(HiveObjectWrapper):
 
@@ -126,6 +128,8 @@ class HiveExportableWrapper(HiveObjectWrapper):
         if value._hive_object_cls is not self._hive_object_cls:
             raise AttributeError(self._repr_message("attribute '{}' cannot contain a Bee built by a different hive"
                                                     .format(name)))
+
+        value._hive_wrapper_name = name
 
 
 class FrozenArgsView(MappingObject):

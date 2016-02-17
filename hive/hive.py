@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from inspect import isfunction, getcallargs
 from weakref import ref
 
@@ -11,6 +11,9 @@ from .manager import (bee_register_context, get_mode, get_run_hive, hive_mode_as
                       run_hive_as, memoize, get_validation_enabled)
 from .mixins import *
 from .policies import MatchmakingPolicyError
+
+
+BoundRuntimeInfo = namedtuple("BoundRuntimeInfo", "parent name")
 
 
 def generate_bee_name():
@@ -38,7 +41,7 @@ class RuntimeHiveInstantiator(Bindable):
         return self._hive_object.instantiate()
 
 
-class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
+class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget, Nameable):
     """Unique Hive instance that is created at runtime for a Hive object.
 
     Lightweight instantiation is supported through caching performed by the HiveObject instance.
@@ -91,7 +94,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
-                        instance.parent = self
 
                     exposed_bees.append((bee_name, instance))
 
@@ -112,8 +114,6 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         if instance is None:
                             continue
 
-                        instance.parent = self
-
                     if isinstance(bee, HiveObject) or bee.implements(Callable):
                         exposed_bees.append((private_name, instance))
 
@@ -122,9 +122,18 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         continue
 
                     # Risk that multiple references to same bee exist
-
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
+
+                    # Store runtime information on bee
+                    if isinstance(instance, Nameable):
+                        info = BoundRuntimeInfo(ref(self), bee_name)
+
+                        if instance._hive_runtime_info is None:
+                            instance._hive_runtime_info = []
+
+                        instance._hive_runtime_info.append(info)
+
                     setattr(self, bee_name, instance)
 
         # If root:

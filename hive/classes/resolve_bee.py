@@ -1,8 +1,8 @@
 from ..manager import memoize, get_building_hive
-from ..mixins import Bee, Bindable, Exportable
+from ..mixins import Bee, Bindable, Exportable, Nameable
 
 
-class BindableResolveBee(Bee, Bindable):
+class BindableResolveBee(Bee, Bindable, Nameable):
 
     def __init__(self, unbound_run_hive, bee):
         self._bee = bee
@@ -17,6 +17,10 @@ class BindableResolveBee(Bee, Bindable):
 
         else:
             self._hive_object = None
+
+    @property
+    def _hive_runtime_info(self):
+        raise RuntimeError
 
     @memoize
     def bind(self, run_hive):

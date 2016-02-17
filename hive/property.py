@@ -1,10 +1,10 @@
 from weakref import WeakSet
 
-from .mixins import Stateful, Exportable, Bindable, Parameter
+from .mixins import Stateful, Exportable, Bindable, Parameter, Nameable
 from .manager import get_mode, get_building_hive, memoize
 
 
-class Property(Stateful, Bindable, Exportable):
+class Property(Stateful, Bindable, Exportable, Nameable):
     """Interface to bind class attributes"""
 
     export_only = False

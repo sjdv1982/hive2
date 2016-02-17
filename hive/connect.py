@@ -131,13 +131,13 @@ class Connection(Bindable):
 class ConnectionBee(HiveBee):
 
     def __init__(self, source, target):
-        super().__init__()
+        super(HiveBee, self).__init__()
 
         self.source = source
         self.target = target
 
     def __repr__(self):
-        return "<ConnectionBee\n\t{}\n\t{}>".format(*self.args)
+        return "<{}: ({}, {})>".format(self.__class__.__name__, *self.args)
 
     @memoize
     def getinstance(self, hive_object):

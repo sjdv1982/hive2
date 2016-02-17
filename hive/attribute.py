@@ -1,10 +1,10 @@
 from weakref import WeakKeyDictionary
 
 from .manager import ContextFactory, get_building_hive, memoize
-from .mixins import Stateful, Exportable, Bindable, Parameter
+from .mixins import Stateful, Exportable, Bindable, Parameter, Nameable
 
 
-class Attribute(Stateful, Bindable, Exportable):
+class Attribute(Stateful, Bindable, Exportable, Nameable):
     """Stateful data store object"""
 
     export_only = False

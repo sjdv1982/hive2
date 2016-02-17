@@ -3,7 +3,8 @@ from functools import partial
 from .annotations import get_argument_types
 from .classes import Pusher
 from .manager import get_mode, get_building_hive, memoize
-from .mixins import Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable
+from .mixins import (Antenna, Output, Stateful, ConnectTarget, TriggerSource, TriggerTarget, Bee, Bindable, Callable,
+                     Nameable)
 from .identifiers import identifiers_match
 
 
@@ -15,7 +16,7 @@ def get_callable_data_type(target):
     return next(iter(arg_types.values()), ())
 
 
-class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable):
+class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable, Nameable):
 
     def __init__(self, target, data_type=None, run_hive=None):
         # Once bound, hive Method object is resolved to a function, not bee

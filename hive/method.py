@@ -1,9 +1,9 @@
-from hive.mixins import Bindable, Callable, Exportable
+from hive.mixins import Bindable, Callable, Exportable, Nameable
 from hive.manager import get_building_hive, memoize
 from hive.annotations import update_wrapper
 
 
-class Method(Bindable, Callable, Exportable):
+class Method(Bindable, Callable, Exportable, Nameable):
     """Exportable interface to instance methods of bind classes"""
 
     def __init__(self, builder_cls, func):

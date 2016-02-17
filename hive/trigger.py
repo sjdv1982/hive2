@@ -43,7 +43,7 @@ class Trigger(Bindable):
 class TriggerBee(HiveBee):
 
     def __init__(self, source, target, pretrigger):
-        super().__init__()
+        super(TriggerBee, self).__init__()
 
         self.source = source
         self.target = target

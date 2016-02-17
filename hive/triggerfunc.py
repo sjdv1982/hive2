@@ -1,9 +1,9 @@
 from .classes import HiveBee, Pusher
 from .manager import ContextFactory, memoize
-from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable
+from .mixins import TriggerSource, TriggerTarget, ConnectSource, Callable, Bee, Bindable, Nameable
 
 
-class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable):
+class TriggerFunc(TriggerSource, ConnectSource, Bindable, Callable, Nameable):
     """Callable interface to HIVE (pre)trigger"""
 
     data_type = 'trigger'
@@ -58,7 +58,7 @@ class TriggerFuncBee(HiveBee, TriggerSource, ConnectSource, Callable):
     data_type = 'trigger'
 
     def __init__(self, func=None):
-        super().__init__()
+        super(TriggerFuncBee, self).__init__()
 
         self._func = func
 
