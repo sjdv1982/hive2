@@ -14,7 +14,7 @@ class Method(Bindable, Callable, Exportable):
         update_wrapper(self, func)
 
     def __repr__(self):
-        return "<Method {}>".format(self._func.__qualname__)
+        return "<{}: {}>".format(self.__name__, self._func.__qualname__)
 
     @memoize
     def bind(self, run_hive):

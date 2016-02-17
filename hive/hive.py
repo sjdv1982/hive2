@@ -1,12 +1,14 @@
 from collections import defaultdict
 from inspect import isfunction, getcallargs
+from weakref import ref
 
-from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
+from .classes import (HiveInternalWrapper, HiveExportableWrapper, HiveArgsWrapper, HiveMetaArgsWrapper, ResolveBee,
+                      HiveClassProxy)
 from .compatability import next
 from .connect import connect, ConnectionCandidate
 from .identifiers import identifiers_match
-from .manager import bee_register_context, get_mode, get_run_hive, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
-    memoize, get_validation_enabled
+from .manager import (bee_register_context, get_mode, get_run_hive, hive_mode_as, get_building_hive, building_hive_as, \
+                      run_hive_as, memoize, get_validation_enabled)
 from .mixins import *
 from .policies import MatchmakingPolicyError
 
@@ -397,9 +399,6 @@ F
     def export(self):
         return self
 
-    def __repr__(self):
-        return "[{}({})]".format(self.__class__.__name__, id(self))
-
 
 class MetaHivePrimitive:
     _hive_object_cls = None
@@ -449,11 +448,11 @@ class HiveBuilder(object):
         :param kwargs: Parameter keyword arguments
         """
         hive_object_dict = {'__doc__': cls.__doc__, "_hive_parent_class": cls}
-        hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), hive_object_dict)
+        hive_object_cls = type("HiveObject<{}>".format(cls.__name__), (HiveObject,), hive_object_dict)
 
-        hive_object_cls._hive_i = internals = HiveInternals(hive_object_cls)
-        hive_object_cls._hive_ex = externals = HiveExportables(hive_object_cls)
-        hive_object_cls._hive_args = args = HiveArgs(hive_object_cls, "args")
+        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls)
+        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls)
+        hive_object_cls._hive_args = args = HiveArgsWrapper(hive_object_cls)
 
         # Get frozen meta args
         frozen_meta_args = cls._hive_meta_args.freeze(meta_arg_values)
@@ -737,7 +736,7 @@ class HiveBuilder(object):
 
     @classmethod
     def _hive_build_meta_args_wrapper(cls):
-        cls._hive_meta_args = args_wrapper = HiveArgs(cls, "meta_args")
+        cls._hive_meta_args = args_wrapper = HiveMetaArgsWrapper(cls)
 
         # Execute declarators
         with hive_mode_as("declare"):

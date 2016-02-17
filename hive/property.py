@@ -55,6 +55,9 @@ class Property(Stateful, Bindable, Exportable):
 
         return self
 
+    def __repr__(self):
+        return "<{} '{}'>".format(self.__class__.__name__, self._attr)
+
 
 def property(cls, attr, data_type=None, start_value=None):
     if get_mode() == "immediate":

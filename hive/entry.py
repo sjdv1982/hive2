@@ -13,7 +13,7 @@ class Entry(Exportable, Bee):
         self._target = target
 
     def __repr__(self):
-        return "<Entry {}>".format(self._target)
+        return "<{}: {}>".format(self.__class__.__name__, self._target)
 
     def export(self):
         # TODO: somehow log the redirection path
