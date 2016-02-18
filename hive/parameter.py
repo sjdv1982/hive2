@@ -14,7 +14,7 @@ class HiveParameter(Parameter):
             assert start_value in options
 
     def __repr__(self):
-        return "<Parameter: {}>".format(self.start_value)
+        return "<{}: {}>".format(self.__class__.__name__, self.start_value)
 
 
 parameter = ContextFactory("hive.parameter", declare_mode_cls=HiveParameter, build_mode_cls=HiveParameter)

@@ -1,9 +1,9 @@
 from .classes import HiveBee
 from .manager import ContextFactory, memoize
-from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
+from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable, Nameable
 
 
-class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable):
+class Triggerable(TriggerTarget, ConnectTarget, Bindable, Callable, Nameable):
     """Callable Python snippet"""
 
     def __init__(self, func, run_hive=None):
@@ -45,7 +45,7 @@ class TriggerableBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
     """Callable Python snippet"""
 
     def __init__(self, func):
-        super().__init__()
+        super(TriggerTarget, self).__init__()
 
         self._func = func
 

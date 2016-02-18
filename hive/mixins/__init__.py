@@ -1,6 +1,6 @@
 class Bee(object):
     _hive_object_cls = None
-    _hive_bee_name = ()
+    _hive_wrapper_name = None
 
     def implements(self, cls):
         return isinstance(self, cls)
@@ -28,6 +28,11 @@ class Connectable(object):
 class Bindable(object):
     # Connectables don't need to be Bees!
     pass
+
+
+class Nameable(object):
+
+    _hive_runtime_info = None
 
 
 class Callable(Bee):

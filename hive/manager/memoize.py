@@ -24,7 +24,7 @@ def memoize(func):
             return results_cache[args]
 
         except KeyError:
-            result = results_cache[args] = func(self, *args)
+            result = results_cache[args] = func.__get__(self)(*args)
             return result
 
     return wrapper

@@ -4,10 +4,11 @@ from .annotations import get_return_type
 from .classes import Pusher
 from .identifiers import identifiers_match
 from .manager import get_mode, get_building_hive, memoize
-from .mixins import Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, TriggerSource, TriggerTarget, Socket
+from .mixins import (Antenna, Output, Stateful, Bee, Bindable, Callable, ConnectSource, TriggerSource, TriggerTarget,
+                     Socket, Nameable)
 
 
-class PPOutBase(Output, ConnectSource, TriggerSource, Bindable):
+class PPOutBase(Output, ConnectSource, TriggerSource, Bindable, Nameable):
 
     def __init__(self, target, data_type=None, run_hive=None):
         is_stateful = isinstance(target, Stateful)
@@ -78,7 +79,7 @@ class PushOut(PPOutBase, Socket, TriggerTarget):
     mode = "push"
 
     def __init__(self, target, data_type=None, run_hive=None):
-        super().__init__(target, data_type, run_hive)
+        super(PushOut, self).__init__(target, data_type, run_hive)
 
         self._targets = []
 

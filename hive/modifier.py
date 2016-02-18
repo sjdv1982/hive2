@@ -1,9 +1,9 @@
 from .classes import HiveBee
 from .manager import ContextFactory, memoize
-from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable
+from .mixins import TriggerTarget, ConnectTarget, TriggerSource, Callable, Bee, Bindable, Nameable
 
 
-class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
+class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable, Nameable):
     """Callable Python snippet which is passed the current run hive"""
 
     def __init__(self, func, run_hive=None):
@@ -16,7 +16,7 @@ class Modifier(TriggerTarget, ConnectTarget, Bindable, Callable):
         self.trigger()
 
     def __repr__(self):
-        return "<Modifier: {}>".format(self._func)
+        return "<{}: {}>".format(self.__class__.__name__, self._func)
 
     def trigger(self):
         # TODO: exception handling hooks
@@ -44,12 +44,12 @@ class ModifierBee(TriggerTarget, ConnectTarget, Callable, HiveBee):
     """Callable Python snippet which is passed the current run hive"""
 
     def __init__(self, func):
-        super().__init__()
+        super(ModifierBee, self).__init__()
 
         self._func = func
 
     def __repr__(self):
-        return "<Modifier: {}>".format(self._func)
+        return "<{}: {}>".format(self.__class__.__name__, self._func)
 
     @memoize
     def getinstance(self, hive_object):

@@ -298,6 +298,9 @@ class NodeManager(object):
         :param name: new name of node
         :param attempt_till_success: if name is not available, find a valid name based upon it
         """
+        if name.startswith('_'):
+            raise ValueError("Name must not start with '_'")
+
         if not is_identifier(name):
             raise ValueError("Name must be valid python identifier: {}".format(name))
 

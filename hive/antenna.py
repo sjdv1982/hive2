@@ -12,6 +12,9 @@ class HiveAntenna(Antenna, Exportable):
         self._hive_object_cls = get_building_hive()
         self._target = target
 
+    def __repr__(self):
+        return "<{}: {}>".format(self.__class__.__name__, self._target)
+
     def export(self):
         # TODO: somehow log the redirection path
         target = self._target

@@ -178,7 +178,7 @@ class QDebugWidget(QWidget):
         splitter.addWidget(self._history_view)
 
         self._history_model = QStandardItemModel(self._history_view)
-        self._history_model.setHorizontalHeaderLabels(("Bee", "Operation", "Value"))
+        self._history_model.setHorizontalHeaderLabels(("Source Bee", "Target Bee", "Operation", "Value"))
 
         # Apply the model to the list view
         self._history_view.setModel(self._history_model)
@@ -227,9 +227,10 @@ class QDebugWidget(QWidget):
         row = self._breakpoint_list.row(item)
         self._breakpoint_list.takeItem(row)
 
-    def add_history_operation(self, name, operation, value=""):
+    def add_history_operation(self, source_name, target_name, operation, value=""):
         # Create an item with a caption
-        row_items = QStandardItem(name), QStandardItem(operation), QStandardItem(value)
+        row_items = QStandardItem(source_name), QStandardItem(target_name), QStandardItem(operation), \
+                    QStandardItem(value)
 
         # Add the item to the model
         self._history_model.appendRow(row_items)
@@ -343,8 +344,11 @@ class NodeEditorSpace(QWidget):
 
         add_history_operation = self._debug_widget.add_history_operation
 
-        debug_controller.on_push_out = lambda name, value: add_history_operation(name, operation="push-out", value=value)
-        debug_controller.on_pull_in = lambda name, value: add_history_operation(name, operation="pull-in", value=value)
+        # TODO clean this mess up
+        # TODO make debug controller trigger UI?
+
+        debug_controller.on_push_out = lambda source_name, target_name, value: add_history_operation(source_name, target_name, operation="push-out", value=value)
+        debug_controller.on_pull_in = lambda source_name, target_name, value: add_history_operation(source_name, target_name, operation="pull-in", value=value)
         debug_controller.on_trigger = partial(add_history_operation, operation="trigger")
         debug_controller.on_pre_trigger = partial(add_history_operation, operation="pre-trigger")
         debug_controller.on_added_breakpoint = self._on_breakpoint_added

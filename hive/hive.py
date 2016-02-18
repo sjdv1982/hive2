@@ -1,14 +1,19 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from inspect import isfunction, getcallargs
+from weakref import ref
 
-from .classes import HiveInternals, HiveExportables, HiveArgs, ResolveBee, HiveClassProxy
+from .classes import (HiveInternalWrapper, HiveExportableWrapper, HiveArgsWrapper, HiveMetaArgsWrapper, ResolveBee,
+                      HiveClassProxy)
 from .compatability import next
 from .connect import connect, ConnectionCandidate
 from .identifiers import identifiers_match
-from .manager import bee_register_context, get_mode, get_run_hive, hive_mode_as, get_building_hive, building_hive_as, run_hive_as, \
-    memoize, get_validation_enabled
+from .manager import (bee_register_context, get_mode, get_run_hive, hive_mode_as, get_building_hive, building_hive_as, \
+                      run_hive_as, memoize, get_validation_enabled)
 from .mixins import *
 from .policies import MatchmakingPolicyError
+
+
+BoundRuntimeInfo = namedtuple("BoundRuntimeInfo", "parent name")
 
 
 def generate_bee_name():
@@ -36,7 +41,7 @@ class RuntimeHiveInstantiator(Bindable):
         return self._hive_object.instantiate()
 
 
-class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget):
+class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, TriggerTarget, Nameable):
     """Unique Hive instance that is created at runtime for a Hive object.
 
     Lightweight instantiation is supported through caching performed by the HiveObject instance.
@@ -89,7 +94,16 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                     if isinstance(instance, Bindable):
                         instance = instance.bind(self)
-                        instance.parent = self
+
+                    # Store runtime information on bee
+                    if isinstance(instance, Nameable):
+                        info = BoundRuntimeInfo(ref(self), bee_name)
+
+                        if instance._hive_runtime_info is None:
+                            instance._hive_runtime_info = set()
+
+                        instance._hive_runtime_info.add(info)
+                      #  print("BIND", instance, info)
 
                     exposed_bees.append((bee_name, instance))
 
@@ -110,7 +124,14 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         if instance is None:
                             continue
 
-                        instance.parent = self
+                    # Store runtime information on bee
+                    if isinstance(instance, Nameable):
+                        info = BoundRuntimeInfo(ref(self), bee_name)
+
+                        if instance._hive_runtime_info is None:
+                            instance._hive_runtime_info = set()
+
+                        instance._hive_runtime_info.add(info)
 
                     if isinstance(bee, HiveObject) or bee.implements(Callable):
                         exposed_bees.append((private_name, instance))
@@ -120,22 +141,10 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                         continue
 
                     # Risk that multiple references to same bee exist
-
                     self._hive_bee_instances[bee_name] = instance
                     self._bee_names.append(bee_name)
+
                     setattr(self, bee_name, instance)
-
-        # If root:
-        if get_run_hive() is None:
-            self._hive_set_bee_names()
-
-    def _hive_set_bee_names(self, name=()):
-        for bee_name, instance in self._hive_bee_instances.items():
-            full_bee_name = name + (bee_name,)
-            instance._hive_bee_name = full_bee_name
-
-            if isinstance(instance, RuntimeHive):
-                instance._hive_set_bee_names(full_bee_name)
 
     @staticmethod
     def _hive_can_connect_hive(other):
@@ -397,9 +406,6 @@ F
     def export(self):
         return self
 
-    def __repr__(self):
-        return "[{}({})]".format(self.__class__.__name__, id(self))
-
 
 class MetaHivePrimitive:
     _hive_object_cls = None
@@ -449,11 +455,11 @@ class HiveBuilder(object):
         :param kwargs: Parameter keyword arguments
         """
         hive_object_dict = {'__doc__': cls.__doc__, "_hive_parent_class": cls}
-        hive_object_cls = type("{}::hive_object".format(cls.__name__), (HiveObject,), hive_object_dict)
+        hive_object_cls = type("HiveObject<{}>".format(cls.__name__), (HiveObject,), hive_object_dict)
 
-        hive_object_cls._hive_i = internals = HiveInternals(hive_object_cls)
-        hive_object_cls._hive_ex = externals = HiveExportables(hive_object_cls)
-        hive_object_cls._hive_args = args = HiveArgs(hive_object_cls, "args")
+        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls)
+        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls)
+        hive_object_cls._hive_args = args = HiveArgsWrapper(hive_object_cls)
 
         # Get frozen meta args
         frozen_meta_args = cls._hive_meta_args.freeze(meta_arg_values)
@@ -737,7 +743,7 @@ class HiveBuilder(object):
 
     @classmethod
     def _hive_build_meta_args_wrapper(cls):
-        cls._hive_meta_args = args_wrapper = HiveArgs(cls, "meta_args")
+        cls._hive_meta_args = args_wrapper = HiveMetaArgsWrapper(cls)
 
         # Execute declarators
         with hive_mode_as("declare"):

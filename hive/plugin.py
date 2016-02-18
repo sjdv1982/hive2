@@ -1,9 +1,9 @@
 from .manager import get_building_hive, memoize, ContextFactory
-from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable
+from .mixins import Plugin, Socket, ConnectSource, Exportable, Callable, Bee, Bindable, Nameable
 from .policies import MultipleOptional
 
 
-class HivePlugin(Plugin, ConnectSource, Bindable, Exportable):
+class HivePlugin(Plugin, ConnectSource, Bindable, Exportable, Nameable):
 
     def __init__(self, func, data_type=None, run_hive=None):
         assert callable(func) or isinstance(func, Callable), func

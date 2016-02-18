@@ -1,9 +1,9 @@
 from .manager import memoize, get_building_hive, ContextFactory
-from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable
+from .mixins import ConnectTarget, Plugin, Socket, Callable, Exportable, Bee, Bindable, Nameable
 from .policies import SingleRequired
 
 
-class HiveSocket(Socket, ConnectTarget, Bindable, Exportable):
+class HiveSocket(Socket, ConnectTarget, Bindable, Exportable, Nameable):
 
     def __init__(self, func, data_type=None, run_hive=None):
         assert callable(func) or isinstance(func, Callable), func
