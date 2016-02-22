@@ -20,10 +20,10 @@ def current_context_as(context):
     set_current_context(original_context)
 
 
-class DebugContext:
+class DebugContextBase:
 
     def build_connection(self, source, target):
-        pass
+        raise NotImplementedError
 
     def build_trigger(self, source, target, pre):
-        pass
+        raise NotImplementedError

@@ -1,7 +1,9 @@
 import os
+from collections import namedtuple, defaultdict
 from collections.abc import KeysView
 from errno import ECONNRESET
 from functools import lru_cache, partial
+from itertools import product
 from logging import getLogger
 from queue import Queue, Empty
 from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR
@@ -9,12 +11,14 @@ from struct import pack, unpack_from, calcsize
 from threading import Event, Thread
 from weakref import WeakKeyDictionary, ref
 
-from hive.debug.context import DebugContext
-from hive.ppout import PushOut
+from hive.debug import DebugContextBase
 from hive.mixins import Nameable
-
+from hive.ppout import PushOut
 from .utils import pack_pascal_string, unpack_pascal_string
 from ..importer import get_hook
+from ..models import model
+
+HivemapConnection = namedtuple("Connection", "from_node from_name to_node to_name")
 
 
 class ConnectionBase:
@@ -223,13 +227,12 @@ class DebugPretriggerTarget(DebugTarget):
         self._debug_context.report_pretrigger(self._source_ref, self._target_ref,)
 
 
-from collections import namedtuple
 ContainerCandidates = namedtuple("ContainerCandidates", "containers paths")
 ContainerPairInfo = namedtuple("PairInfo", "source_container_name target_container_name hivemap_path")
 ContainerBeeReference = namedtuple("ContainerBeeReference", "container_id bee_container_name")
 
 
-class RemoteDebugContext(DebugContext):
+class RemoteDebugContext(DebugContextBase):
 
     def __init__(self, logger=None):
         self._container_hives = WeakKeyDictionary()
@@ -258,16 +261,16 @@ class RemoteDebugContext(DebugContext):
         self._clear_breakpoints()
 
     def report_trigger(self, source_bee_ref, target_ref):
-        self._report(OpCodes.trigger, source_bee_ref, target_ref)
+        self._on_operation(OpCodes.trigger, source_bee_ref, target_ref)
 
     def report_pretrigger(self, source_bee_ref, target_ref):
-        self._report(OpCodes.pretrigger, source_bee_ref, target_ref)
+        self._on_operation(OpCodes.pretrigger, source_bee_ref, target_ref)
 
     def report_push_out(self, source_bee_ref, target_ref, data):
-        self._report(OpCodes.push_out, source_bee_ref, target_ref, data)
+        self._on_operation(OpCodes.push_out, source_bee_ref, target_ref, data)
 
     def report_pull_in(self, source_bee_ref, target_ref, data):
-        self._report(OpCodes.pull_in, source_bee_ref, target_ref, data)
+        self._on_operation(OpCodes.pull_in, source_bee_ref, target_ref, data)
 
     def build_connection(self, source, target):
         if isinstance(source, PushOut):
@@ -359,29 +362,33 @@ class RemoteDebugContext(DebugContext):
         data = pack_pascal_string(container_hive_path) + pack('B', root_hive_id)
         self._send_command(OpCodes.register_root, data)
 
+    def _send_hit_breakpoint(self, root_hive_id, container_name):
+        data = pack('B', root_hive_id) + pack_pascal_string(container_name)
+        self._send_command(OpCodes.hit_breakpoint, data)
+
     @staticmethod
     def _find_container_candidates(bee):
         if not isinstance(bee, Nameable):
             raise TypeError("Bee is not Nameable")
 
-        candidates = set()
-        paths = {}
+        paths = defaultdict(set)
 
-        for info in bee._hive_runtime_info:
-            parent_ref, bee_name = info
-            parent = parent_ref()
+        bee_runtime_infos = bee._hive_runtime_info
+        if bee_runtime_infos is not None:
+            for info in bee._hive_runtime_info:
+                parent_ref, bee_name = info
+                parent = parent_ref()
 
-            parent_runtime_infos = parent._hive_runtime_info
-            if parent_runtime_infos is None:
-                continue
+                parent_runtime_infos = parent._hive_runtime_info
+                if parent_runtime_infos is None:
+                    continue
 
-            for parent_info in parent._hive_runtime_info:
-                container_ref, node_name = parent_info
-                candidates.add(container_ref)
+                for parent_info in parent._hive_runtime_info:
+                    container_ref, node_name = parent_info
 
-                paths[container_ref] = node_name, bee_name
+                    paths[container_ref].add((node_name, bee_name))
 
-        return ContainerCandidates(candidates, paths)
+        return paths
 
     @staticmethod
     def _format_container_path(name_path):
@@ -389,15 +396,36 @@ class RemoteDebugContext(DebugContext):
         return "{}.{}".format(x.lstrip('_'), y.lstrip('_'))
 
     @lru_cache()
+    def _get_hivemap_connections(self, file_path):
+        hivemap = model.Hivemap.fromfile(file_path)
+        name_to_hive = {hive.identifier: hive for hive in hivemap.hives}
+
+        connections = set()
+
+        for connection in hivemap.connections:
+            from_identifier = connection.from_node
+            to_identifier = connection.to_node
+
+            if from_identifier not in name_to_hive:
+                continue
+
+            if to_identifier not in name_to_hive:
+                continue
+
+            connection = HivemapConnection(from_identifier, connection.output_name, to_identifier, connection.input_name)
+            connections.add(connection)
+
+        return connections
+
+    @lru_cache()
     def _find_container_pair_info(self, source_bee_ref, target_bee_ref):
-        # Now find last hivemap
-        importer = get_hook()
-        get_file_path = importer.get_path_of_class
+        source_bee = source_bee_ref()
+        target_bee = target_bee_ref()
 
-        source_candidates = self._find_container_candidates(source_bee_ref())
-        target_candidates = self._find_container_candidates(target_bee_ref())
+        source_candidates = self._find_container_candidates(source_bee)
+        target_candidates = self._find_container_candidates(target_bee)
 
-        containers = source_candidates.containers & target_candidates.containers
+        containers = set(source_candidates).intersection(target_candidates)
 
         try:
             containing_hive_ref = containers.pop()
@@ -408,15 +436,16 @@ class RemoteDebugContext(DebugContext):
 
         assert not containers
 
-        source_path = self._format_container_path(source_candidates.paths[containing_hive_ref])
-        target_path = self._format_container_path(target_candidates.paths[containing_hive_ref])
-
         try:
             parent_builder_class = containing_hive_ref()._hive_object._hive_parent_class
 
         except AttributeError:
             self._logger.warn("Bee is not a container member")
             return None
+
+        # Now find last hivemap
+        importer = get_hook()
+        get_file_path = importer.get_path_of_class
 
         # If this fails, not a hivemap hive
         try:
@@ -425,7 +454,17 @@ class RemoteDebugContext(DebugContext):
         except ValueError:
             return None
 
-        return ContainerPairInfo(source_path, target_path, file_path)
+        connections = self._get_hivemap_connections(file_path)
+
+        for source_name, target_name in product(source_candidates[containing_hive_ref],
+                                                target_candidates[containing_hive_ref]):
+            candidate = HivemapConnection(*(source_name + target_name))
+            if candidate not in connections:
+                continue
+
+            source_bee_name = "{}.{}".format(*source_name)
+            target_bee_name = "{}.{}".format(*target_name)
+            return ContainerPairInfo(source_bee_name, target_bee_name, file_path)
 
     @lru_cache()
     def _get_container_hive_id(self, container_hive_path):
@@ -433,7 +472,7 @@ class RemoteDebugContext(DebugContext):
         self._send_container_hive_id(hive_id, container_hive_path)
         return hive_id
 
-    def _report(self, opcode, source_bee_ref, target_bee_ref, data=None):
+    def _on_operation(self, opcode, source_bee_ref, target_bee_ref, data=None):
         container_pair_info = self._find_container_pair_info(source_bee_ref, target_bee_ref)
 
         if container_pair_info is None:
@@ -447,19 +486,26 @@ class RemoteDebugContext(DebugContext):
         self._send_operation(opcode, container_hive_id, container_pair_info.source_container_name,
                              container_pair_info.target_container_name, data)
 
+        self._check_for_breakpoint(container_pair_info.source_container_name, container_hive_id,
+                                   container_pair_info.hivemap_path)
+        self._check_for_breakpoint(container_pair_info.target_container_name, container_hive_id,
+                                   container_pair_info.hivemap_path)
+
+    def _check_for_breakpoint(self, bee_container_name, container_hive_id, hivemap_path):
         # Check for breakpoint on pin
-        for bee_container_name in container_pair_info[:2]:
-            bee_container_ref = container_hive_id, bee_container_name
+        bee_container_ref = container_hive_id, bee_container_name
 
-            try:
-                breakpoint = self._breakpoints[bee_container_ref]
+        try:
+            breakpoint = self._breakpoints[bee_container_ref]
 
-            except KeyError:
-                return
+        except KeyError:
+            return
 
-            file_name = os.path.basename(container_pair_info.hivemap_path)
-            print("Hit breakpoint @ {} - {}".format(file_name, bee_container_name))
-            breakpoint.wait()
+        self._send_hit_breakpoint(container_hive_id, bee_container_name)
+        file_name = os.path.basename(hivemap_path)
+
+        print("Hit breakpoint @ {} - {}".format(file_name, bee_container_name))
+        breakpoint.wait()
 
 
 class HivemapDebugController:
@@ -518,27 +564,26 @@ class HivemapDebugController:
         source_container_name, read_bytes = unpack_pascal_string(data)
         offset = read_bytes
 
-        target_container_name, read_bytes = unpack_pascal_string(data, offset=offset)
-        offset += read_bytes
+        if opcode == OpCodes.hit_breakpoint:
+            if callable(self.on_breakpoint_hit):
+                self.on_breakpoint_hit(source_container_name)
 
-        if opcode == OpCodes.push_out:
-            value, read_bytes = unpack_pascal_string(data, offset=offset)
-            if callable(self.on_push_out):
-                self.on_push_out(source_container_name, target_container_name, value)
+        else:
+            target_container_name, read_bytes = unpack_pascal_string(data, offset=offset)
+            offset += read_bytes
 
-        elif opcode == OpCodes.trigger:
-            if callable(self.on_push_out):
-                self.on_trigger(source_container_name, target_container_name)
+            if opcode == OpCodes.push_out:
+                value, read_bytes = unpack_pascal_string(data, offset=offset)
+                if callable(self.on_push_out):
+                    self.on_push_out(source_container_name, target_container_name, value)
 
-        elif opcode == OpCodes.pretrigger:
-            if callable(self.on_push_out):
-                self.on_pretrigger(source_container_name, target_container_name)
+            elif opcode == OpCodes.trigger:
+                if callable(self.on_push_out):
+                    self.on_trigger(source_container_name, target_container_name)
 
-        # We've hit a breakpoint!
-        for container_name in source_container_name, target_container_name:
-            if container_name in self.breakpoints:
-                if callable(self.on_breakpoint_hit):
-                    self.on_breakpoint_hit(container_name)
+            elif opcode == OpCodes.pretrigger:
+                if callable(self.on_push_out):
+                    self.on_pretrigger(source_container_name, target_container_name)
 
 
 class RemoteDebugSession:
@@ -636,9 +681,6 @@ class RemoteDebugServer:
 
         self._session = None
         self._server.launch()
-
-    def add_breakpoint(self, root_hive_id, bee_name):
-        pass
 
     @property
     def session(self):

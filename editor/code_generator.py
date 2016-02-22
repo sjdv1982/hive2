@@ -34,9 +34,9 @@ def dict_to_parameter_array(parameters):
     return [model.InstanceParameter(name, _get_type_name(value), repr(value)) for name, value in parameters.items()]
 
 
-_io_import_paths = {"hive.hook", "hive.entry", "hive.antenna", "hive.output"}
-_wraps_attribute_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out", "hive.pull_out"}
-_wrapper_import_paths = _io_import_paths | _wraps_attribute_import_paths
+io_import_paths = {"hive.hook", "hive.entry", "hive.antenna", "hive.output"}
+wraps_attribute_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out", "hive.pull_out"}
+wrapper_import_paths = io_import_paths | wraps_attribute_import_paths
 
 
 def hivemap_to_builder_body(hivemap, builder_name="builder"):
@@ -105,9 +105,9 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
         bees[identifier] = spyder_bee
 
         # Bees that have to be resolved later
-        if import_path in _wrapper_import_paths:
+        if import_path in wrapper_import_paths:
             # If bee wraps an attribute
-            if import_path in _wraps_attribute_import_paths:
+            if import_path in wraps_attribute_import_paths:
                 wraps_attribute.append(spyder_bee)
 
             continue
@@ -175,7 +175,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             from_bee = bees[from_identifier]
 
             # Do antenna, entry definitions later
-            if from_bee.import_path in _io_import_paths:
+            if from_bee.import_path in io_import_paths:
                 io_definitions.append(connection)
                 continue
 
@@ -194,7 +194,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             to_bee = bees[to_identifier]
 
             # Do output, hook definitions later
-            if to_bee.import_path in _io_import_paths:
+            if to_bee.import_path in io_import_paths:
                 io_definitions.append(connection)
                 continue
 
@@ -221,7 +221,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             io_bee = bees[from_identifier]
 
             # From an IO BEE
-            if io_bee.import_path in _io_import_paths:
+            if io_bee.import_path in io_import_paths:
                 wrapper_bee = io_bee
 
             # From a generic other bee
@@ -236,7 +236,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             io_bee = bees[to_identifier]
 
             # To an IO BEE
-            if io_bee.import_path in _io_import_paths:
+            if io_bee.import_path in io_import_paths:
                 assert wrapper_bee is None
                 wrapper_bee = io_bee
 

@@ -178,7 +178,8 @@ class QDebugWidget(QWidget):
         splitter.addWidget(self._history_view)
 
         self._history_model = QStandardItemModel(self._history_view)
-        self._history_model.setHorizontalHeaderLabels(("Source Bee", "Target Bee", "Operation", "Value"))
+        self._labels = ("Source Bee", "Target Bee", "Operation", "Value", "Index")
+        self._history_model.setHorizontalHeaderLabels(self._labels)
 
         # Apply the model to the list view
         self._history_view.setModel(self._history_model)
@@ -188,6 +189,8 @@ class QDebugWidget(QWidget):
 
         self._text_to_item = {}
         self._breakpoint_list.setEnabled(False)
+
+        self._index = 0
 
         self._max_history_entries = max_history_entries
 
@@ -228,9 +231,12 @@ class QDebugWidget(QWidget):
         self._breakpoint_list.takeItem(row)
 
     def add_history_operation(self, source_name, target_name, operation, value=""):
+        index = self._index
+        self._index += 1
+
         # Create an item with a caption
         row_items = QStandardItem(source_name), QStandardItem(target_name), QStandardItem(operation), \
-                    QStandardItem(value)
+                    QStandardItem(value), QStandardItem(str(index))
 
         # Add the item to the model
         self._history_model.appendRow(row_items)
@@ -240,6 +246,8 @@ class QDebugWidget(QWidget):
 
     def clear_history(self):
         self._history_model.clear()
+        self._history_model.setHorizontalHeaderLabels(self._labels)
+        self._index = 0
 
     def clear_breakpoints(self):
         self._breakpoint_list.clear()
