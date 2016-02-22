@@ -2,10 +2,10 @@
 import ctypes
 import sys
 
-import editor.qt as any_qt
-import editor.qt.qdarkstyle as qdarkstyle
-from editor.qt.main_window import MainWindow
-from editor.qt.qt_gui import *
+import hive_editor.qt as any_qt
+import hive_editor.qt.qdarkstyle as qdarkstyle
+from hive_editor.qt.main_window import MainWindow
+from hive_editor.qt.qt_gui import *
 
 if __name__ == "__main__":
     # Create a Qt application

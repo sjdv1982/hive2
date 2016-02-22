@@ -1,7 +1,7 @@
 import os
 
-import editor
 import hive
+import hive_editor
 
 
 class ImportClass:
@@ -16,7 +16,7 @@ class ImportClass:
         module_parts = self.import_path.split(".")
         sub_module_name = module_parts[-1]
 
-        hook = editor.get_hook()
+        hook = hive_editor.get_hook()
 
         container_parent_class = self._hive.parent._hive_object._hive_parent_class
         try:

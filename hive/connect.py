@@ -2,7 +2,7 @@ from collections import namedtuple
 from itertools import product
 
 from .classes import HiveBee
-from .debug import get_current_context
+from .debug import get_debug_context
 from .identifiers import identifiers_match
 from .manager import get_mode, memoize, register_bee
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
@@ -93,7 +93,7 @@ def build_connection(source, target):
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
 
-    debug_context = get_current_context()
+    debug_context = get_debug_context()
     if debug_context is not None:
         debug_context.build_connection(source, target)
 

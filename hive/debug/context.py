@@ -3,21 +3,21 @@ from contextlib import contextmanager
 _debug_context = None
 
 
-def get_current_context():
+def get_debug_context():
     return _debug_context
 
 
-def set_current_context(context):
+def set_debug_context(context):
     global _debug_context
     _debug_context = context
 
 
 @contextmanager
-def current_context_as(context):
-    original_context = get_current_context()
-    set_current_context(context)
+def debug_context_as(context):
+    original_context = get_debug_context()
+    set_debug_context(context)
     yield
-    set_current_context(original_context)
+    set_debug_context(original_context)
 
 
 class DebugContextBase:
