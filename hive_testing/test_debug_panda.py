@@ -1,8 +1,8 @@
-from panda_project.basic_keyboard import BasicKeyboard as SomePandaDemo
-
 import dragonfly
 import hive
+
 from hive_editor.debugging import RemoteDebugContext
+from panda_project.basic_keyboard import BasicKeyboard as SomePandaDemo
 
 
 class MyHiveClass:

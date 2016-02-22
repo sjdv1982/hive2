@@ -2,6 +2,7 @@ from functools import lru_cache
 from os import path
 
 import hive
+
 from .models import model
 from .utils import import_from_path, underscore_to_camel_case
 
