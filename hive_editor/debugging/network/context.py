@@ -1,201 +1,25 @@
 import os
 from collections import namedtuple, defaultdict
 from collections.abc import KeysView
-from errno import ECONNRESET
 from functools import lru_cache, partial
 from itertools import product
 from logging import getLogger
-from queue import Queue, Empty
-from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR
 from struct import pack, unpack_from, calcsize
-from threading import Event, Thread
+from threading import Event
 from weakref import WeakKeyDictionary, ref
 
 from hive.debug import DebugContextBase
 from hive.mixins import Nameable
 from hive.ppin import PullIn
 from hive.ppout import PushOut
+
 from .utils import pack_pascal_string, unpack_pascal_string
-from ..importer import get_hook
-from ..models import model
+from .network import Server, Client
+
+from ...importer import get_hook
+from ...models import model
 
 HivemapConnection = namedtuple("Connection", "from_node from_name to_node to_name")
-
-
-class ConnectionBase:
-
-    def __init__(self):
-        self._send_queue = Queue()
-
-        self.on_received = None
-        self.on_connected = None
-        self.on_disconnected = None
-
-        self._received_raw = b''
-        self._thread = None
-
-        self._is_running_event = Event()
-
-    def _on_received(self, data):
-        self._received_raw += data
-
-        messages = []
-        while self._received_raw:
-            length, = unpack_from("H", self._received_raw)
-            offset = calcsize("H")
-
-            end_index = offset + length
-            if end_index > len(self._received_raw):
-                break
-
-            message = self._received_raw[offset: end_index]
-            self._received_raw = self._received_raw[end_index:]
-
-            messages.append(message)
-
-        if callable(self.on_received):
-            for message in messages:
-                self.on_received(message)
-
-    def send(self, data):
-        length_encoded = pack("H", len(data)) + data
-        self._send_queue.put(length_encoded)
-
-    def _run_threaded(self):
-        raise NotImplementedError
-
-    def launch(self, *args, **kwargs):
-        self._thread = Thread(target=self._run_threaded, args=args, kwargs=kwargs)
-        self._thread.daemon = True
-
-        self._is_running_event.set()
-        self._thread.start()
-
-    def stop(self):
-        self._is_running_event.clear()
-        self._thread.join()
-
-
-class Client(ConnectionBase):
-    default_host = 'localhost'
-    default_server_host = 'localhost'
-    default_server_port = 39989
-    poll_interval = 1/200
-    
-    def __init__(self, host=None, port=None):
-        super(Client, self).__init__()
-
-        if host is None:
-            host = self.default_host
-
-        if port is None:
-            port = 0
-
-        self._address = host, port
-
-    def _run_threaded(self, server_address=None):
-        if server_address is None:
-            server_address = self.default_server_host, self.default_server_port
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind(self._address)
-        sock.connect(server_address)
-        sock.settimeout(self.poll_interval)
-
-        send_queue = self._send_queue
-
-        if callable(self.on_connected):
-            self.on_connected()
-
-        while self._is_running_event.is_set():
-            while True:
-                try:
-                    data = send_queue.get_nowait()
-                except Empty:
-                    break
-
-                sock.sendall(data)
-
-            while True:
-                try:
-                    data = sock.recv(1024)
-
-                except SOCK_ERROR:
-                    break
-
-                self._on_received(data)
-
-        if callable(self.on_disconnected):
-            self.on_disconnected()
-
-
-class Server(ConnectionBase):
-    default_host = 'localhost'
-    default_port = 39989
-    poll_interval = 1/200
-
-    def __init__(self, host=None, port=None):
-        super(Server, self).__init__()
-
-        if host is None:
-            host = self.default_host
-
-        if port is None:
-            port = self.default_port
-
-        self._address = host, port
-        self._is_connected_event = Event()
-
-    def disconnect(self):
-        self._is_connected_event.clear()
-
-    def _run_threaded_for_connection(self, connection, address):
-        send_queue = self._send_queue
-
-        self._is_connected_event.set()
-
-        if callable(self.on_connected):
-            self.on_connected()
-
-        while self._is_connected_event.is_set() and self._is_running_event.is_set():
-            while True:
-                try:
-                    data = send_queue.get_nowait()
-
-                except Empty:
-                    break
-
-                connection.sendall(data)
-
-            while True:
-                try:
-                    data = connection.recv(1024)
-
-                except OSError as err:
-                    if err.errno == ECONNRESET:
-                        self.disconnect()
-
-                    break
-
-                self._on_received(data)
-
-        self._is_connected_event.clear()
-
-        if callable(self.on_disconnected):
-            self.on_disconnected()
-
-    def _run_threaded(self):
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind(self._address)
-        sock.listen(True)
-
-        while self._is_running_event.is_set():
-            connection, address = sock.accept()
-            connection.settimeout(self.poll_interval)
-
-            self._run_threaded_for_connection(connection, address)
-
-            connection.close()
 
 
 def id_generator(i=0):
@@ -210,7 +34,7 @@ class OpCodes:
      remove_breakpoint, hit_breakpoint) = range(9)
 
 
-class DebugNode:
+class DebugBeeBase:
 
     def __init__(self, debug_context, source_ref, target_ref):
         self._debug_context = debug_context
@@ -218,7 +42,7 @@ class DebugNode:
         self._target_ref = target_ref
 
 
-class DebugPushOutTarget(DebugNode):
+class DebugPushOutTarget(DebugBeeBase):
 
     def __getattr__(self, name):
         return getattr(self._target_ref(), name)
@@ -228,7 +52,7 @@ class DebugPushOutTarget(DebugNode):
         self._target_ref().push(value)
 
 
-class DebugPullInSource(DebugNode):
+class DebugPullInSource(DebugBeeBase):
 
     def __getattr__(self, name):
         return getattr(self._source_ref(), name)
@@ -244,13 +68,13 @@ class DebugPullInSource(DebugNode):
         return value
 
 
-class DebugTriggerTarget(DebugNode):
+class DebugTriggerTarget(DebugBeeBase):
 
     def __call__(self):
         self._debug_context.report_trigger(self._source_ref, self._target_ref,)
 
 
-class DebugPretriggerTarget(DebugNode):
+class DebugPretriggerTarget(DebugBeeBase):
 
     def __call__(self):
         self._debug_context.report_pretrigger(self._source_ref, self._target_ref,)
@@ -261,7 +85,7 @@ ContainerPairInfo = namedtuple("PairInfo", "source_container_name target_contain
 ContainerBeeReference = namedtuple("ContainerBeeReference", "container_id bee_container_name")
 
 
-class RemoteDebugContext(DebugContextBase):
+class NetworkDebugContext(DebugContextBase):
 
     def __init__(self, logger=None, host=None, port=None):
         self._container_hives = WeakKeyDictionary()
@@ -287,27 +111,6 @@ class RemoteDebugContext(DebugContextBase):
         self._client.stop()
         super().__exit__(exc_type, exc_val, exc_tb)
 
-    def _clear_breakpoints(self):
-        for breakpoint in self._breakpoints.values():
-            self._unset_breakpoint(breakpoint)
-
-        self._breakpoints.clear()
-
-    def _on_disconnected(self):
-        self._clear_breakpoints()
-
-    def report_trigger(self, source_bee_ref, target_ref):
-        self._on_operation(OpCodes.trigger, source_bee_ref, target_ref)
-
-    def report_pretrigger(self, source_bee_ref, target_ref):
-        self._on_operation(OpCodes.pretrigger, source_bee_ref, target_ref)
-
-    def report_push_out(self, source_bee_ref, target_ref, data):
-        self._on_operation(OpCodes.push_out, source_bee_ref, target_ref, data)
-
-    def report_pull_in(self, source_bee_ref, target_ref, data):
-        self._on_operation(OpCodes.pull_in, source_bee_ref, target_ref, data)
-
     def build_connection(self, source, target):
         if isinstance(source, PushOut):
             target = DebugPushOutTarget(self, ref(source), ref(target))
@@ -330,6 +133,27 @@ class RemoteDebugContext(DebugContextBase):
             callable_target = DebugTriggerTarget(self, ref(source), ref(target))
             source._hive_trigger_source(callable_target)
             source._hive_trigger_source(target_func)
+
+    def _clear_breakpoints(self):
+        for breakpoint in self._breakpoints.values():
+            self._unset_breakpoint(breakpoint)
+
+        self._breakpoints.clear()
+
+    def _on_disconnected(self):
+        self._clear_breakpoints()
+
+    def report_trigger(self, source_bee_ref, target_ref):
+        self._on_operation(OpCodes.trigger, source_bee_ref, target_ref)
+
+    def report_pretrigger(self, source_bee_ref, target_ref):
+        self._on_operation(OpCodes.pretrigger, source_bee_ref, target_ref)
+
+    def report_push_out(self, source_bee_ref, target_ref, data):
+        self._on_operation(OpCodes.push_out, source_bee_ref, target_ref, data)
+
+    def report_pull_in(self, source_bee_ref, target_ref, data):
+        self._on_operation(OpCodes.pull_in, source_bee_ref, target_ref, data)
 
     def _on_received_response(self, response):
         opcode, = unpack_from('B', response)
@@ -548,7 +372,11 @@ class RemoteDebugContext(DebugContextBase):
         breakpoint.wait()
 
 
-class HivemapDebugController:
+class EditorDebugController:
+    """Bound editor debug controller.
+
+    Unique to Hivemap type for active session.
+    """
 
     def __init__(self, file_path):
         self._breakpoints = set()
@@ -631,8 +459,9 @@ class HivemapDebugController:
                     self.on_pretrigger(source_container_name, target_container_name)
 
 
-class RemoteDebugSession:
-    debug_controller_class = HivemapDebugController
+class NetworkDebugSession:
+    """Interface to editor debugging features"""
+    debug_controller_class = EditorDebugController
 
     def __init__(self):
         self._container_id_to_filepath = {}
@@ -711,9 +540,10 @@ class RemoteDebugSession:
         self._request_close()
 
 
-class RemoteDebugServer:
+class NetworkDebugManager:
+    """Manages sessions for Hivemap debugging"""
 
-    session_class = RemoteDebugSession
+    session_class = NetworkDebugSession
 
     def __init__(self, host=None, port=None):
         self._server = Server(host, port)

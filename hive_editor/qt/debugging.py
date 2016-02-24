@@ -1,22 +1,23 @@
 from .qt_core import *
 from .qt_gui import *
-from ..debugging import RemoteDebugServer
+
+from ..debugging.network import NetworkDebugManager
 
 
-class QtRemoteDebugServer(RemoteDebugServer):
+class QtNetworkDebugManager(NetworkDebugManager):
 
     def _on_connected(self):
-        callback = super(QtRemoteDebugServer, self)._on_connected
+        callback = super(QtNetworkDebugManager, self)._on_connected
         event = DeferredExecute(callback)
         event.dispatch()
 
     def _on_disconnected(self):
-        callback = super(QtRemoteDebugServer, self)._on_disconnected
+        callback = super(QtNetworkDebugManager, self)._on_disconnected
         event = DeferredExecute(callback)
         event.dispatch()
 
     def _on_received(self, data):
-        callback = super(QtRemoteDebugServer, self)._on_received
+        callback = super(QtNetworkDebugManager, self)._on_received
         event = DeferredExecute(callback, data)
         event.dispatch()
 

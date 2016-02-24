@@ -409,9 +409,10 @@ class NodeEditorSpace(QWidget):
 
         # Stop debugging if history is updated!
         if self.has_unsaved_changes and self.is_debugging:
+            self.load()
             self._debug_controller.close()
 
-        if callable(self.on_update_is_saved):
+        elif callable(self.on_update_is_saved):
             self.on_update_is_saved(self.has_unsaved_changes)
 
     def _on_node_created(self, node):

@@ -1,13 +1,6 @@
 from struct import pack, unpack_from
 
 
-def get_root_hive(bee):
-    while getattr(bee, 'parent', None):
-        bee = bee.parent
-
-    return bee
-
-
 def pack_pascal_string(string):
     return pack("B{}s".format(len(string)), len(string), string.encode())
 

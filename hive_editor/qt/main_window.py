@@ -2,7 +2,7 @@ import os
 import webbrowser
 from functools import partial
 
-from .debugger import QtRemoteDebugServer
+from .debugging import QtNetworkDebugManager
 from .node_editor import NodeEditorSpace
 from .qt_core import *
 from .qt_gui import *
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self._setup_windows()
         self._setup_menus()
 
-        self.debugger = QtRemoteDebugServer()
+        self.debugger = QtNetworkDebugManager()
         self.debugger.on_closed_session = self._on_closed_debug_session
         self.debugger.on_created_session = self._on_created_debug_session
 
@@ -170,15 +170,15 @@ class MainWindow(QMainWindow):
         self.preview_window = self.create_subwindow("Preview", "left", closeable=True)
         self.docstring_window = self.create_subwindow("Docstring", "left", closeable=True)
         self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
-        self.breakpoints_window = self.create_subwindow("Breakpoints", "bottom", closeable=True)
+        self.debug_window = self.create_subwindow("Debugging", "bottom", closeable=True)
 
         # Close breakpoints by default
-        self.breakpoints_window.close()
+        self.debug_window.close()
 
         # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
         self.tabifyDockWidget(self.docstring_window, self.preview_window)
-        self.tabifyDockWidget(self.breakpoints_window, self.console_window)
+        self.tabifyDockWidget(self.debug_window, self.console_window)
 
     def closeEvent(self, event):
         try:
@@ -269,7 +269,7 @@ class MainWindow(QMainWindow):
                 self.debugger.session.close()
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
-                       self.console_window, self.breakpoints_window)
+                       self.console_window, self.debug_window)
         return True
 
     def _on_tab_changed(self, tab_menu, previous_index=None):
@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
             previous_widget = tab_menu.widget(previous_index)
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
-                                        self.preview_window, self.console_window, self.breakpoints_window)
+                                        self.preview_window, self.console_window, self.debug_window)
 
         # Update UI elements
         self._update_menu_options()
@@ -288,13 +288,12 @@ class MainWindow(QMainWindow):
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
             widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
-                            self.console_window, self.breakpoints_window)
+                            self.console_window, self.debug_window)
 
-    def add_editor_space(self, file_name=None):
+    def add_editor_space(self, *_, file_name=None):
         editor = NodeEditorSpace(file_name)
 
         display_name = self._get_display_name(file_name)
-
         index = self.tab_widget.addTab(editor, display_name)
         self.tab_widget.setCurrentIndex(index)
 
@@ -615,10 +614,10 @@ class MainWindow(QMainWindow):
         debug_session.on_created_controller = self._on_created_debug_controller
         debug_session.on_destroyed_controller = self._on_destroyed_debug_controller
 
-        self.breakpoints_window.show()
+        self.debug_window.show()
 
     def _on_closed_debug_session(self, debug_session):
         debug_session.on_created_controller = None
         debug_session.on_destroyed_controller = None
 
-        self.breakpoints_window.close()
+        self.debug_window.close()

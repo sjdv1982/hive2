@@ -1,7 +1,7 @@
 import dragonfly
 import hive
 
-from hive_editor.debugging import RemoteDebugContext
+from hive_editor.debugging.network import NetworkDebugContext
 from panda_project.basic_keyboard import BasicKeyboard as SomePandaDemo
 
 
@@ -28,7 +28,7 @@ def build_my_hive(cls, i, ex, args):
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
 
 
-debug = RemoteDebugContext()
-with debug:
+debug_context = NetworkDebugContext()
+with debug_context:
     my_hive = MyHive()
     my_hive.run()
