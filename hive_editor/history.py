@@ -12,11 +12,34 @@ def unique_id_counter():
 Operation = namedtuple("Operation", "op args reverse_op reverse_args op_id")
 
 
+class RecursionGuard:
+
+    def __init__(self):
+        self._depth = 0
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @property
+    def is_busy(self):
+        return bool(self._depth)
+
+    def __enter__(self):
+        self._depth += 1
+
+    def __exit__(self, *args):
+        self._depth -= 1
+
+
 class HistoryManager:
 
     def __init__(self, name='<root>'):
         self._current_history = AtomicOperationHistory(name=name)
         self._is_guarded = False
+
+        self._update_guard = RecursionGuard()
+        self._push_guard = RecursionGuard()
 
         self.on_updated = None
 
@@ -32,18 +55,16 @@ class HistoryManager:
         return self._current_history.operation_id
 
     def undo(self):
-        with self.guarded():
+        with self._push_guard:
             self._current_history.undo()
 
-        if callable(self.on_updated):
-            self.on_updated(self)
+        self._on_updated()
 
     def redo(self):
-        with self.guarded():
+        with self._push_guard:
             self._current_history.redo()
 
-        if callable(self.on_updated):
-            self.on_updated(self)
+        self._on_updated()
 
     @contextmanager
     def composite_operation(self, name):
@@ -58,13 +79,17 @@ class HistoryManager:
 
     def push_operation(self, op, args, reverse_op, reverse_args):
         """Add reversable operation to history"""
-        if self._is_guarded:
+        if not self._push_guard.is_busy:
+            self._current_history.push_operation(op, args, reverse_op, reverse_args)
+            self._on_updated()
+
+    def _on_updated(self):
+        if self._update_guard.is_busy:
             return
 
-        self._current_history.push_operation(op, args, reverse_op, reverse_args)
-
-        if callable(self.on_updated):
-            self.on_updated(self)
+        with self._update_guard:
+            if callable(self.on_updated):
+                self.on_updated(self)
 
 
 class OperationHistoryError(Exception):
