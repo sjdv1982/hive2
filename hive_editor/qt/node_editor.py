@@ -302,7 +302,7 @@ class NodeEditorSpace(QWidget):
         view.on_node_deselected = self._gui_node_deselected
         view.on_dropped = self._gui_on_dropped_node
         view.on_node_right_click = self._gui_node_right_clicked
-        view.on_socket_middle_click = self._gui_socket_middle_click
+        view.on_socket_interact = self._gui_socket_interact
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -583,7 +583,7 @@ class NodeEditorSpace(QWidget):
         self._folding_widget.node = None
         self._configuration_widget.node = None
 
-    def _gui_socket_middle_click(self, gui_socket):
+    def _gui_socket_interact(self, gui_socket):
         debug_controller = self._debug_controller
         if debug_controller is None:
             return

@@ -160,7 +160,7 @@ class NodeView(QGraphicsView):
         self.on_node_selected = None
         self.on_node_deselected = None
         self.on_node_right_click = None
-        self.on_socket_middle_click = None
+        self.on_socket_interact = None
         self.on_dropped = None
 
     def on_socket_hover_enter(self, socket, event=None):
@@ -178,9 +178,9 @@ class NodeView(QGraphicsView):
         widget.setVisible(False)
         self.focused_socket = None
 
-    def on_socket_middle_mouse(self, socket):
-        if callable(self.on_socket_middle_click):
-            self.on_socket_middle_click(socket)
+    def on_socket_interact(self, socket):
+        if callable(self.on_socket_interact):
+            self.on_socket_interact(socket)
 
     @property
     def mouse_pos(self):

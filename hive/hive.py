@@ -396,6 +396,8 @@ F
 
 
 class MetaHivePrimitive:
+    """Primitive container to instantiate Hive with particular meta arguments"""
+
     _hive_object_cls = None
 
     def __new__(cls, *args, **kwargs):
