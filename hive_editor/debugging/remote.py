@@ -32,6 +32,9 @@ class ConnectionBase:
         self.on_disconnected = None
 
         self._received_raw = b''
+        self._thread = None
+
+        self._is_running_event = Event()
 
     def _on_received(self, data):
         self._received_raw += data
@@ -64,9 +67,12 @@ class ConnectionBase:
     def launch(self, *args, **kwargs):
         self._thread = Thread(target=self._run_threaded, args=args, kwargs=kwargs)
         self._thread.daemon = True
+
+        self._is_running_event.set()
         self._thread.start()
 
     def stop(self):
+        self._is_running_event.clear()
         self._thread.join()
 
 
@@ -101,7 +107,7 @@ class Client(ConnectionBase):
         if callable(self.on_connected):
             self.on_connected()
 
-        while True:
+        while self._is_running_event.is_set():
             while True:
                 try:
                     data = send_queue.get_nowait()
@@ -138,20 +144,20 @@ class Server(ConnectionBase):
             port = self.default_port
 
         self._address = host, port
-        self._connected = Event()
+        self._is_connected_event = Event()
 
     def disconnect(self):
-        self._connected.clear()
+        self._is_connected_event.clear()
 
     def _run_threaded_for_connection(self, connection, address):
         send_queue = self._send_queue
 
-        self._connected.set()
+        self._is_connected_event.set()
 
         if callable(self.on_connected):
             self.on_connected()
 
-        while self._connected.is_set():
+        while self._is_connected_event.is_set() and self._is_running_event.is_set():
             while True:
                 try:
                     data = send_queue.get_nowait()
@@ -173,6 +179,8 @@ class Server(ConnectionBase):
 
                 self._on_received(data)
 
+        self._is_connected_event.clear()
+
         if callable(self.on_disconnected):
             self.on_disconnected()
 
@@ -181,7 +189,7 @@ class Server(ConnectionBase):
         sock.bind(self._address)
         sock.listen(True)
 
-        while True:
+        while self._is_running_event.is_set():
             connection, address = sock.accept()
             connection.settimeout(self.poll_interval)
 
@@ -262,7 +270,6 @@ class RemoteDebugContext(DebugContextBase):
         self._id_generator = id_generator()
 
         self._client = Client(host, port)
-        self._client.launch()
         self._client.on_received = self._on_received_response
         self._client.on_disconnected = self._on_disconnected
 
@@ -271,6 +278,14 @@ class RemoteDebugContext(DebugContextBase):
             logger = getLogger(repr(self))
 
         self._logger = logger
+
+    def __enter__(self):
+        super().__enter__()
+        self._client.launch()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._client.stop()
+        super().__exit__(exc_type, exc_val, exc_tb)
 
     def _clear_breakpoints(self):
         for breakpoint in self._breakpoints.values():

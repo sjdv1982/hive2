@@ -7,7 +7,8 @@ def get_debug_context():
 
 def set_debug_context(context):
     global _debug_context
-    assert _debug_context is None
+    if context is not None:
+        assert _debug_context is None
     _debug_context = context
 
 
