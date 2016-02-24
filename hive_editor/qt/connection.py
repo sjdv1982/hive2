@@ -253,7 +253,7 @@ class Connection(QGraphicsItem):
         else:
             self._pen_width = self._pen_width_inactive
 
-        self._pen.setWidth(4)
+        self._pen.setWidth(self._pen_width)
 
         value = self._active_style
 
