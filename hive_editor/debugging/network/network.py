@@ -1,6 +1,6 @@
-from errno import ECONNRESET
+from errno import ECONNRESET, ENODATA
 from queue import Queue, Empty
-from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR
+from socket import AF_INET, SOCK_STREAM, socket, error as SOCK_ERROR, SHUT_RDWR, SOL_SOCKET, SO_REUSEADDR
 from struct import pack, unpack_from, calcsize
 from threading import Event, Thread
 
@@ -47,6 +47,49 @@ class ConnectionBase:
     def _run_threaded(self):
         raise NotImplementedError
 
+    def _run_socket_threaded(self, sock, *alive_flags, connected_flag=None):
+        if connected_flag is None:
+            connected_flag = alive_flags[0]
+
+        send_queue = self._send_queue
+
+        if callable(self.on_connected):
+            self.on_connected()
+
+        while all(f.is_set() for f in alive_flags):
+            while True:
+                try:
+                    data = send_queue.get_nowait()
+
+                except Empty:
+                    break
+
+                sock.sendall(data)
+
+            while True:
+                try:
+                    data = sock.recv(1024)
+
+                except OSError as err:
+                    if err.errno == ECONNRESET:
+                        connected_flag.clear()
+
+                    # Otherwise, timeout failed, just break and allow loop to restart!
+                    break
+
+                # Non blocking will only receive no data if lost connection
+                if not data:
+                    connected_flag.clear()
+                    break
+
+                self._on_received(data)
+
+        if callable(self.on_disconnected):
+            self.on_disconnected()
+
+        sock.shutdown(SHUT_RDWR)
+        sock.close()
+
     def launch(self, *args, **kwargs):
         self._thread = Thread(target=self._run_threaded, args=args, kwargs=kwargs)
         self._thread.daemon = True
@@ -84,32 +127,10 @@ class Client(ConnectionBase):
         sock.bind(self._address)
         sock.connect(server_address)
         sock.settimeout(self.poll_interval)
+        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-        send_queue = self._send_queue
-
-        if callable(self.on_connected):
-            self.on_connected()
-
-        while self._is_running_event.is_set():
-            while True:
-                try:
-                    data = send_queue.get_nowait()
-                except Empty:
-                    break
-
-                sock.sendall(data)
-
-            while True:
-                try:
-                    data = sock.recv(1024)
-
-                except SOCK_ERROR:
-                    break
-
-                self._on_received(data)
-
-        if callable(self.on_disconnected):
-            self.on_disconnected()
+        self._is_running_event.set()
+        self._run_socket_threaded(sock, self._is_running_event)
 
 
 class Server(ConnectionBase):
@@ -132,38 +153,6 @@ class Server(ConnectionBase):
     def disconnect(self):
         self._is_connected_event.clear()
 
-    def _run_threaded_for_connection(self, connection, address):
-        send_queue = self._send_queue
-
-        self._is_connected_event.set()
-
-        if callable(self.on_connected):
-            self.on_connected()
-
-        while self._is_connected_event.is_set() and self._is_running_event.is_set():
-            while True:
-                try:
-                    data = send_queue.get_nowait()
-
-                except Empty:
-                    break
-
-                connection.sendall(data)
-
-            while True:
-                try:
-                    data = connection.recv(1024)
-
-                except OSError as err:
-                    if err.errno == ECONNRESET:
-                        self.disconnect()
-
-                    break
-
-                self._on_received(data)
-
-        self._is_connected_event.clear()
-
         if callable(self.on_disconnected):
             self.on_disconnected()
 
@@ -176,7 +165,11 @@ class Server(ConnectionBase):
             connection, address = sock.accept()
             connection.settimeout(self.poll_interval)
 
-            self._run_threaded_for_connection(connection, address)
+            self._is_connected_event.set()
+            self._run_socket_threaded(connection, self._is_running_event, self._is_connected_event,
+                                      connected_flag=self._is_connected_event)
+            self._is_connected_event.clear()
 
             connection.close()
+
 
