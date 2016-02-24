@@ -27,7 +27,8 @@ def build_my_hive(cls, i, ex, args):
 
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
 
+
 debug = RemoteDebugContext()
-with hive.debug_context_as(debug):
+with debug:
     my_hive = MyHive()
     my_hive.run()

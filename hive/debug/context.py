@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 _debug_context = None
 
 
@@ -9,18 +7,17 @@ def get_debug_context():
 
 def set_debug_context(context):
     global _debug_context
+    assert _debug_context is None
     _debug_context = context
 
 
-@contextmanager
-def debug_context_as(context):
-    original_context = get_debug_context()
-    set_debug_context(context)
-    yield
-    set_debug_context(original_context)
-
-
 class DebugContextBase:
+
+    def __enter__(self):
+        set_debug_context(self)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        set_debug_context(None)
 
     def build_connection(self, source, target):
         raise NotImplementedError
