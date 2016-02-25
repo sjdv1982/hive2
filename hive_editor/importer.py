@@ -4,7 +4,7 @@ import types
 from contextlib import contextmanager
 
 from .code_generator import class_from_filepath
-from .list_view import ListView
+from .data_views import ListView
 from .utils import find_source_hivemap
 
 

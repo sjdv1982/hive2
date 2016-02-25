@@ -130,14 +130,21 @@ class HiveNodeFactory:
             # Use the params dict instead of re-scraping the hive_object if reading these values
 
             node = Node(name, NodeTypes.HIVE, import_path, params, param_info)
-            node.tooltip = hive_object.__doc__ or ""
 
-            for pin_name, info in io_info['inputs'].items():
-                node.add_input(pin_name, info['data_type'], info['mode'])
+            # Set tooltip as docstring
+            with node.make_writable():
+                node.tooltip = hive_object.__doc__ or ""
 
-            for pin_name, info in io_info['outputs'].items():
-                node.add_output(pin_name, info['data_type'], info['mode'])
+            inputs = io_info['inputs']
+            outputs = io_info['outputs']
 
-            node.pin_order[:] = io_info['pin_order']
+            for pin_name in io_info['pin_order']:
+                try:
+                    info = inputs[pin_name]
+                    node.add_input(pin_name, info['data_type'], info['mode'])
+
+                except KeyError:
+                    info = outputs[pin_name]
+                    node.add_output(pin_name, info['data_type'], info['mode'])
 
             return node

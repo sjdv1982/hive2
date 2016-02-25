@@ -1,8 +1,10 @@
 from collections import OrderedDict
 
 from hive.identifiers import identifiers_match
-from .list_view import ListView
+
+from .data_views import ListView, DictView
 from .sockets import get_colour, get_shape
+from .protected_container import ProtectedContainer, RestrictedProperty
 
 FOLD_NODE_IMPORT_PATH = "dragonfly.std.Variable"
 
@@ -211,7 +213,7 @@ class NodeTypes(object):
     HIVE, BEE, HELPER = range(3)
 
 
-class Node(object):
+class Node(ProtectedContainer):
 
     def __init__(self, name, node_type, import_path, params, params_info):
         """
@@ -223,10 +225,12 @@ class Node(object):
         :param params_info: parameter dictionary containing data about params dict
         :return:
         """
-        self.name = name
-        self.tooltip = ""
+        super(Node, self).__init__()
 
-        self.position = (0.0, 0.0)
+        with self.make_writable():
+            self.name = name
+            self.tooltip = ""
+            self.position = (0.0, 0.0)
 
         # Read only
         self._node_type = node_type
@@ -236,24 +240,24 @@ class Node(object):
         self.params_info = params_info
 
         # Pin IO
-        self.pin_order = []
-        self.inputs = OrderedDict()
-        self.outputs = OrderedDict()
+        self._pin_order = []
+        self._inputs = OrderedDict()
+        self._outputs = OrderedDict()
 
     def add_input(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
                   mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         pin = IOPin(self, name, "input", data_type, mode, max_connections, restricted_types, mimic_flags,
                     is_virtual, count_proxies)
-        self.inputs[name] = pin
-        self.pin_order.append(name)
+        self._inputs[name] = pin
+        self._pin_order.append(name)
         return pin
 
     def add_output(self, name, data_type=None, mode="pull", max_connections=-1, restricted_types=None,
                    mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         pin = IOPin(self, name, "output", data_type, mode, max_connections, restricted_types, mimic_flags,
                     is_virtual, count_proxies)
-        self.outputs[name] = pin
-        self.pin_order.append(name)
+        self._outputs[name] = pin
+        self._pin_order.append(name)
         return pin
 
     @property
@@ -263,6 +267,22 @@ class Node(object):
     @property
     def node_type(self):
         return self._node_type
+
+    @property
+    def inputs(self):
+        return DictView(self._inputs)
+
+    @property
+    def outputs(self):
+        return DictView(self._outputs)
+
+    @property
+    def pin_order(self):
+        return ListView(self._pin_order)
+
+    position = RestrictedProperty()
+    name = RestrictedProperty()
+    tooltip = RestrictedProperty()
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

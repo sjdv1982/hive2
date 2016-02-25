@@ -322,7 +322,8 @@ class NodeManager(object):
         self.nodes[name] = node
 
         # Update name
-        node.name = name
+        with node.make_writable():
+            node.name = name
 
         if callable(self.on_node_renamed):
             self.on_node_renamed(node, name)
@@ -336,7 +337,9 @@ class NodeManager(object):
         :param position: new x, y position
         """
         old_position = node.position
-        node.position = position
+
+        with node.make_writable():
+            node.position = position
 
         # Move folded nodes too
         dx = position[0] - old_position[0]
