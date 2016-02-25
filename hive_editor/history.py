@@ -64,15 +64,15 @@ class RecursionGuard:
         self._depth -= 1
 
 
-class HistoryManager:
+class CommandHistoryManager:
 
     def __init__(self, name='<root>', logger=None):
         if logger is None:
-            logger = getLogger("{}::{}".format(self, id(self)))
+            logger = getLogger("{}::{}".format(name, id(self)))
 
         self._logger = logger
 
-        self._current_history = AtomicCommandHistory(self._logger, name)
+        self._current_history = CommandHistory(self._logger, name)
 
         self._update_guard = RecursionGuard()
         self._push_guard = RecursionGuard()
@@ -83,24 +83,10 @@ class HistoryManager:
     def command_id(self):
         return self._current_history.command_id
 
-    def undo(self):
-        with self._push_guard:
-            print("DO UNDI")
-            self._current_history.undo()
-
-        print("DONE UNDO")
-        self._on_updated()
-
-    def redo(self):
-        with self._push_guard:
-            self._current_history.redo()
-
-        self._on_updated()
-
     @contextmanager
     def command_context(self, name):
         composite_name = "{}.{}".format(self._current_history.name, name)
-        history = AtomicCommandHistory(self._logger, name=composite_name)
+        history = CommandHistory(self._logger, name=composite_name)
 
         self._current_history, old_history = history, self._current_history
         yield
@@ -113,6 +99,18 @@ class HistoryManager:
         if not self._push_guard.is_busy:
             self._current_history.record_command(execute, unexecute)
             self._on_updated()
+
+    def undo(self):
+        with self._push_guard:
+            self._current_history.undo()
+
+        self._on_updated()
+
+    def redo(self):
+        with self._push_guard:
+            self._current_history.redo()
+
+        self._on_updated()
 
     def _on_updated(self):
         if self._update_guard.is_busy:
@@ -127,7 +125,7 @@ class OperationHistoryError(Exception):
     pass
 
 
-class AtomicCommandHistory:
+class CommandHistory:
 
     def __init__(self, logger, name="<main>", limit=200):
         self._commands = []
@@ -155,7 +153,7 @@ class AtomicCommandHistory:
 
     @property
     def command_id(self):
-        if not self._commands:
+        if not 0 <= self._index < len(self._commands):
             return id(self)
 
         command = self._commands[self._index]
@@ -176,14 +174,12 @@ class AtomicCommandHistory:
         command = self._commands[self._index]
         command.unexecute()
 
-        print("Undo", self._name, self._index, len(self._commands))
         self._index -= 1
 
     def redo(self):
         if not self.can_redo:
             raise OperationHistoryError("Cannot redo any more operations")
 
-        print("REDO")
         self._index += 1
 
         command = self._commands[self._index]
@@ -199,11 +195,10 @@ class AtomicCommandHistory:
             latest_command = self._commands[self._index]
 
             self._logger.info("Commands after {} have been lost due to an add command".format(latest_command))
-            del self._commands[:self._index + 1]
+            del self._commands[self._index + 1:]
 
         self._commands.append(command)
         self._index += 1
-        print("ADD", command)
 
         # Limit length
         if len(self._commands) > self._limit:

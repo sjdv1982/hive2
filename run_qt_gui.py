@@ -7,6 +7,17 @@ import hive_editor.qt.qdarkstyle as qdarkstyle
 from hive_editor.qt.main_window import MainWindow
 from hive_editor.qt.qt_gui import *
 
+from logging import getLogger, StreamHandler, Formatter, DEBUG
+
+# Setup logging
+logger = getLogger()
+handler = StreamHandler()
+formatter = Formatter('%(asctime)s %(name)-12s %(levelname)-5s %(message)s', datefmt='%I:%M:%S %p')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(DEBUG)
+
+
 if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)

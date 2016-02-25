@@ -10,7 +10,7 @@ from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_builder_body
-from ..history import HistoryManager
+from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
@@ -69,7 +69,7 @@ class SourceCodePreviewDialogue(QDialog):
 
     def __init__(self, parent, code):
         QDialog.__init__(self, parent)
-        self.resize(400, 500)
+        self.resize(600, 500)
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -78,6 +78,7 @@ class SourceCodePreviewDialogue(QDialog):
         text_editor.setCurrentFont(QFont("Consolas"))
         text_editor.setPlainText(code)
 
+        self.setAttribute(Qt.WA_DeleteOnClose)
         layout.addWidget(text_editor)
 
 
@@ -101,7 +102,6 @@ class PreviewWidget(QWidget):
         hivemap = self._node_manager.to_hivemap()
         code = hivemap_to_builder_body(hivemap)
         dialogue = SourceCodePreviewDialogue(self, code)
-        dialogue.setAttribute(Qt.WA_DeleteOnClose)
         dialogue.show()
 
     def update_preview(self):
@@ -264,7 +264,9 @@ class NodeEditorSpace(QWidget):
 
         self.file_name = file_name
 
-        self._history = HistoryManager()
+        self._history = CommandHistoryManager()
+        self._history.on_updated = self._on_history_updated
+
         self._node_manager = NodeManager(self._history)
 
         self._view = NodeView(self)
@@ -281,12 +283,11 @@ class NodeEditorSpace(QWidget):
         nm.on_connection_reordered = self._on_connection_reordered
         nm.on_pin_folded = self._on_pin_folded
         nm.on_pin_unfolded = self._on_pin_unfolded
-        self._history.on_updated = self._on_history_updated
 
-        self._history_id = None
-        self._last_saved_id = None
+        self._history_id = self._history.command_id
+        self._last_saved_id = self._history_id
+
         self.on_update_is_saved = None
-
         self.do_open_file = None
         self.get_dropped_node_info = None
         self.get_project_directory = None
