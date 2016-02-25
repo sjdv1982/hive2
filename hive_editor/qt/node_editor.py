@@ -405,7 +405,7 @@ class NodeEditorSpace(QWidget):
         self._debug_widget.on_skip_breakpoint = None
 
     def _on_history_updated(self, history):
-        self._history_id = history.operation_id
+        self._history_id = history.command_id
 
         # Stop debugging if history is updated!
         if self.has_unsaved_changes and self.is_debugging:

@@ -1,15 +1,47 @@
-from collections import namedtuple
 from contextlib import contextmanager
+from logging import getLogger
 
 
 def unique_id_counter():
     i = 0
+
     while True:
         yield i
         i += 1
 
 
-Operation = namedtuple("Operation", "op args reverse_op reverse_args op_id")
+class IllegalCommandError(Exception):
+    pass
+
+
+class CommandStates:
+    execute, unexecute = range(2)
+
+
+class Command:
+
+    def __init__(self, execute, unexecute):
+        self._execute = execute
+        self._unexecute = unexecute
+
+        self._allowed_state = CommandStates.unexecute
+
+    def __repr__(self):
+        return "<Command>\n\t{}\n\t{}".format(self._execute, self._unexecute)
+
+    def execute(self):
+        if self._allowed_state != CommandStates.execute:
+            raise IllegalCommandError("Command has already been executed")
+
+        self._allowed_state = CommandStates.unexecute
+        self._execute()
+
+    def unexecute(self):
+        if self._allowed_state != CommandStates.unexecute:
+            raise IllegalCommandError("Command has already been unexecuted")
+
+        self._allowed_state = CommandStates.execute
+        self._unexecute()
 
 
 class RecursionGuard:
@@ -34,30 +66,29 @@ class RecursionGuard:
 
 class HistoryManager:
 
-    def __init__(self, name='<root>'):
-        self._current_history = AtomicOperationHistory(name=name)
-        self._is_guarded = False
+    def __init__(self, name='<root>', logger=None):
+        if logger is None:
+            logger = getLogger("{}::{}".format(self, id(self)))
+
+        self._logger = logger
+
+        self._current_history = AtomicCommandHistory(self._logger, name)
 
         self._update_guard = RecursionGuard()
         self._push_guard = RecursionGuard()
 
         self.on_updated = None
 
-    @contextmanager
-    def guarded(self):
-        """Guard history and ignore undo/redo operations"""
-        self._is_guarded = True
-        yield
-        self._is_guarded = False
-
     @property
-    def operation_id(self):
-        return self._current_history.operation_id
+    def command_id(self):
+        return self._current_history.command_id
 
     def undo(self):
         with self._push_guard:
+            print("DO UNDI")
             self._current_history.undo()
 
+        print("DONE UNDO")
         self._on_updated()
 
     def redo(self):
@@ -67,20 +98,20 @@ class HistoryManager:
         self._on_updated()
 
     @contextmanager
-    def composite_operation(self, name):
+    def command_context(self, name):
         composite_name = "{}.{}".format(self._current_history.name, name)
-        history = AtomicOperationHistory(name=composite_name)
+        history = AtomicCommandHistory(self._logger, name=composite_name)
+
         self._current_history, old_history = history, self._current_history
-
         yield
-
         self._current_history = old_history
-        old_history.push_operation(history.redo_all, (), history.undo_all, ())
 
-    def push_operation(self, op, args, reverse_op, reverse_args):
+        self.record_command(history.redo_all, history.undo_all)
+
+    def record_command(self, execute, unexecute):
         """Add reversable operation to history"""
         if not self._push_guard.is_busy:
-            self._current_history.push_operation(op, args, reverse_op, reverse_args)
+            self._current_history.record_command(execute, unexecute)
             self._on_updated()
 
     def _on_updated(self):
@@ -96,16 +127,23 @@ class OperationHistoryError(Exception):
     pass
 
 
-class AtomicOperationHistory:
+class AtomicCommandHistory:
 
-    def __init__(self, limit=200, name="<main>"):
-        self._operations = []
+    def __init__(self, logger, name="<main>", limit=200):
+        self._commands = []
         self._index = -1
         self._limit = limit
 
-        self._id_counter = unique_id_counter()
-        self._operation_id = 0
         self._name = name
+        self._logger = logger
+
+    @property
+    def can_redo(self):
+        return self._index < len(self._commands) - 1
+
+    @property
+    def can_undo(self):
+        return self._index >= 0
 
     @property
     def name(self):
@@ -116,73 +154,63 @@ class AtomicOperationHistory:
         return self._index
 
     @property
-    def cant_redo(self):
-        return self._index >= (len(self._operations) - 1)
+    def command_id(self):
+        if not self._commands:
+            return id(self)
 
-    @property
-    def cant_undo(self):
-        return self._index < 0
-
-    @property
-    def operation_id(self):
-        try:
-            operation = self._operations[self._index]
-
-        except IndexError:
-            return 0
-
-        else:
-            return operation[-1]
+        command = self._commands[self._index]
+        return id(command)
 
     def undo_all(self):
-        while not self.cant_undo:
+        while self.can_undo:
             self.undo()
 
     def redo_all(self):
-        while not self.cant_redo:
+        while self.can_redo:
             self.redo()
 
     def undo(self):
-        if self.cant_undo:
+        if not self.can_undo:
             raise OperationHistoryError("Cannot undo any more operations")
 
-        last_operation = self._operations[self._index]
-        last_operation.reverse_op(*last_operation.reverse_args)
+        command = self._commands[self._index]
+        command.unexecute()
 
+        print("Undo", self._name, self._index, len(self._commands))
         self._index -= 1
 
     def redo(self):
-        if self.cant_redo:
+        if not self.can_redo:
             raise OperationHistoryError("Cannot redo any more operations")
 
+        print("REDO")
         self._index += 1
 
-        operation = self._operations[self._index]
-        operation.op(*operation.args)
+        command = self._commands[self._index]
+        command.execute()
 
-    def push_operation(self, op, args, reverse_op, reverse_args):
-        operation_id = "{}.{}".format(self._name, next(self._id_counter))
-        operation = Operation(op, args, reverse_op, reverse_args, operation_id)
-        self._push_operation(operation)
+    def record_command(self, execute, unexecute):
+        command = Command(execute, unexecute)
+        self._add_command(command)
 
-    def _push_operation(self, operation):
-        # If in middle of redo/undo
-        if self._index < len(self._operations) - 1:
-            print("Lost data after", self._index, len(self._operations))
-            self._operations[:] = self._operations[:self._index + 1]
+    def _add_command(self, command):
+        # If not at end of stack
+        if self._index < len(self._commands) - 1:
+            latest_command = self._commands[self._index]
 
-        self._operations.append(operation)
+            self._logger.info("Commands after {} have been lost due to an add command".format(latest_command))
+            del self._commands[:self._index + 1]
+
+        self._commands.append(command)
         self._index += 1
+        print("ADD", command)
 
         # Limit length
-        if len(self._operations) > self._limit:
-            shift = len(self._operations) - self._limit
-
-            self._index -= shift
-            if self._index < 0:
-                self._index = 0
-
-            self._operations[:] = self._operations[shift:]
+        if len(self._commands) > self._limit:
+            # Assume everything atomic, hence only one command to displace
+            # Index must be at end, if command list has grown
+            self._index -= 1
+            del self._commands[0]
 
     def __repr__(self):
         return "<History ({})>".format(self.name)

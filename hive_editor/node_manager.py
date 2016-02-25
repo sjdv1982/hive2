@@ -98,8 +98,8 @@ class NodeManager(object):
 
         :param connection: connection to connect
         """
-        self.history.push_operation(self._add_connection, (connection,),
-                                    self.delete_connection, (connection,))
+        self.history.record_command(lambda: self._add_connection(connection),
+                                    lambda: self.delete_connection(connection))
 
         connection.connect()
 
@@ -145,8 +145,8 @@ class NodeManager(object):
 
         connection.delete()
 
-        self.history.push_operation(self.delete_connection, (connection,),
-                                    self._add_connection, (connection,))
+        self.history.record_command(lambda: self.delete_connection(connection),
+                                    lambda: self._add_connection(connection))
 
         self._logger.info("Deleted Connection: {}".format(connection))
 
@@ -155,7 +155,7 @@ class NodeManager(object):
 
         :param connections: Connection objects
         """
-        with self.history.composite_operation("delete-connection-multiple"):
+        with self.history.command_context("delete-connection-multiple"):
             for connection in connections:
                 self.delete_connection(connection)
 
@@ -174,8 +174,8 @@ class NodeManager(object):
         if callable(self.on_connection_reordered):
             self.on_connection_reordered(connection, index)
 
-        self.history.push_operation(self.reorder_connection, (connection, index),
-                                    self.reorder_connection, (connection, old_index))
+        self.history.record_command(lambda: self.reorder_connection(connection, index),
+                                    lambda: self.reorder_connection(connection, old_index))
 
     def _add_node(self, node):
         """Add node to node dict and write to history.
@@ -190,7 +190,7 @@ class NodeManager(object):
         for pin in node.inputs.values():
             assert not pin.is_folded, (pin.name, pin.node)
 
-        self.history.push_operation(self._add_node, (node,), self.delete_node, (node,))
+        self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
 
         # Ensure node restored to original place
         if callable(self.on_node_moved):
@@ -261,14 +261,14 @@ class NodeManager(object):
 
         self.nodes.pop(node.name)
 
-        self.history.push_operation(self.delete_node, (node,), self._add_node, (node,))
+        self.history.record_command(lambda: self.delete_node(node), lambda: self._add_node(node))
 
     def delete_nodes(self, nodes):
         """Remove multiple nodes and their connections from the model (as a composite operation)
 
         :param nodes: Node objects
         """
-        with self.history.composite_operation("delete-node-multiple"):
+        with self.history.command_context("delete-node-multiple"):
             for node in nodes:
                 try:
                     self.delete_node(node)
@@ -328,7 +328,8 @@ class NodeManager(object):
         if callable(self.on_node_renamed):
             self.on_node_renamed(node, name)
 
-        self.history.push_operation(self.rename_node, (node, name), self.rename_node, (node, old_name))
+        self.history.record_command(lambda: self.rename_node(node, name),
+                                    lambda: self.rename_node(node, old_name))
 
     def reposition_node(self, node, position):
         """Re-position node in the model
@@ -357,15 +358,15 @@ class NodeManager(object):
         if callable(self.on_node_moved):
             self.on_node_moved(node, position)
 
-        self.history.push_operation(self.reposition_node, (node, position),
-                                    self.reposition_node, (node, old_position))
+        self.history.record_command(lambda: self.reposition_node(node, position),
+                                    lambda: self.reposition_node(node, old_position))
 
     def reposition_nodes(self, node_to_position):
         """Re-position multiple nodes in the model (as a composite operation)
 
         :param node_to_position: dictionary of node, position item pairs
         """
-        with self.history.composite_operation("reposition-multiple"):
+        with self.history.command_context("reposition-multiple"):
             for node, position in node_to_position.items():
                 self.reposition_node(node, position)
 
@@ -396,7 +397,7 @@ class NodeManager(object):
         if callable(self.on_pin_folded):
             self.on_pin_folded(pin)
 
-        self.history.push_operation(self.fold_pin, (pin,), self.unfold_pin, (pin,))
+        self.history.record_command(lambda: self.fold_pin(pin), lambda: self.unfold_pin(pin))
 
     def unfold_pin(self, pin):
         """Expose pin to node UI, as well as possible connected variable. If no variable, create, connect and show.
@@ -411,7 +412,7 @@ class NodeManager(object):
         if callable(self.on_pin_unfolded):
             self.on_pin_unfolded(pin)
 
-        self.history.push_operation(self.unfold_pin, (pin,), self.fold_pin, (pin,))
+        self.history.record_command(lambda: self.unfold_pin(pin), lambda: self.fold_pin(pin))
 
     def to_string(self):
         hivemap = self.to_hivemap()
@@ -430,7 +431,7 @@ class NodeManager(object):
         return self._export_to_hivemap(docstring=self.docstring)
 
     def load_hivemap(self, hivemap):
-        with self.history.composite_operation("load"):
+        with self.history.command_context("load"):
             # Clear nodes first
             self.delete_all_nodes()
             data = self._import_from_hivemap(hivemap)
@@ -441,7 +442,7 @@ class NodeManager(object):
 
         :param nodes: nodes to cut
         """
-        with self.history.composite_operation("cut"):
+        with self.history.command_context("cut"):
             clipboard = self.copy(nodes)
 
             # Delete nodes
@@ -472,7 +473,7 @@ class NodeManager(object):
 
         :param position: position of target center of mass of nodes
         """
-        with self.history.composite_operation("paste"):
+        with self.history.command_context("paste"):
             data = self._import_from_hivemap(clipboard)
             node_map = data['nodes']
 
