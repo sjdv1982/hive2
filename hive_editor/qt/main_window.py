@@ -70,6 +70,8 @@ class MainWindow(QMainWindow):
 
         # Add Help page
         web_view = QEditorWebView()
+        web_view.on_drag_move.connect(self._on_drag_move)
+        web_view.on_dropped.connect(self._on_dropped)
 
         USE_LOCAL_HOME = True
 
@@ -179,26 +181,27 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(self.docstring_window, self.preview_window)
         self.tabifyDockWidget(self.debug_window, self.console_window)
 
-        self.tab_widget.check_valid_drop = self._validate_dropped_item
-        self.tab_widget.on_dropped = self._on_dropped_item
-
-    def _validate_dropped_item(self, event):
+    def _on_drag_move(self, event):
         mime_data = event.mimeData()
-        return {'text/uri-list', 'text/plain', 'apsplication/x-qabstractitemmodeldatalist'}.intersection(mime_data.formats())
+        if {'text/uri-list', 'text/plain',
+            'application/x-qabstractitemmodeldatalist'}.intersection(mime_data.formats()):
+            event.accept()
 
-    def _on_dropped_item(self, event):
+        else:
+            event.ignore()
+
+    def _on_dropped(self, event, position):
         mime_data = event.mimeData()
 
         if mime_data.hasFormat('text/uri-list'):
-            file_paths = mime_data.urls()
+            urls = mime_data.urls()
 
-            for file_path in file_paths:
-                self._open_file(file_path)
+            for url in urls:
+                self._open_file(url.toLocalFile())
 
         elif mime_data.hasFormat('text/plain'):
             hivemap_text = mime_data.text()
 
-            print(hivemap_text)
             editor = self.add_editor_space()
             editor.load_from_text(hivemap_text)
 
@@ -209,19 +212,7 @@ class MainWindow(QMainWindow):
             if not isinstance(editor, NodeEditorSpace):
                 editor = self.add_editor_space()
 
-
-            #event.ignore()
-            # x=self.tab_widget.mapToGlobal(event.pos())
-            # print("global", x, event.pos())
-            # print(editor.parent())
-            # s2=editor._view.mapToScene(x)
-            # print("ATT2", s2)
-            # scene_pos = editor._view.mapToScene(event.pos())
-            # #event.accept()
-            #
-            # position = scene_pos.x(), scene_pos.y()
-            # print("POS", position)
-            # editor.add_node_at(position, *self._accept_dropped_node_info())
+            editor.add_node_at(position, *self._accept_dropped_node_info())
 
     def closeEvent(self, event):
         try:
@@ -256,15 +247,6 @@ class MainWindow(QMainWindow):
             return self.untitled_file_name
 
         return os.path.basename(file_path)
-
-    def _get_hivemap_path_in_project(self, import_path):
-        if self.project_directory:
-            additional_paths = [self.project_directory]
-
-        else:
-            additional_paths = []
-
-        return import_path_to_hivemap_path(import_path, additional_paths)
 
     def goto_help_page(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
@@ -334,15 +316,16 @@ class MainWindow(QMainWindow):
                             self.console_window, self.debug_window)
 
     def add_editor_space(self, *_, file_path=None):
-        editor = NodeEditorSpace(file_path)
+        editor = NodeEditorSpace(file_path, project_path=self._project_directory)
 
         display_name = self._get_display_name(file_path)
         index = self.tab_widget.addTab(editor, display_name)
         self.tab_widget.setCurrentIndex(index)
 
-        editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
-        editor.do_open_file = self._open_file
-        editor.get_hivemap_path = self._get_hivemap_path_in_project
+        editor.on_save_state_updated.connect(partial(self._on_save_state_changed, editor))
+        editor.do_open_file.connect(self._open_file)
+        editor.on_drag_move.connect(self._on_drag_move)
+        editor.on_dropped.connect(self._on_dropped)
 
         return editor
 
@@ -520,20 +503,21 @@ class MainWindow(QMainWindow):
 
     def show_hive_edit_menu(self, hive_widget, import_path, event):
         # Can only edit .hivemaps
+        additional_paths = [self.project_directory] if self.project_directory else []
+
         try:
-            hivemap_file_path = self._get_hivemap_path_in_project(import_path)
+            hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
 
         except ValueError:
             return
 
         menu = QMenu(hive_widget)
         edit_action = menu.addAction("Edit Hivemap")
-
         global_position = hive_widget.mapToGlobal(event.pos())
         called_action = menu.exec_(global_position)
 
         if called_action == edit_action:
-            editor = self._open_file(hivemap_file_path)
+            self._open_file(hivemap_file_path)
 
     def _on_save_state_changed(self, editor, has_unsaved_changes):
         # Check if already open

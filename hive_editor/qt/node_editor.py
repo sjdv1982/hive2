@@ -9,9 +9,11 @@ from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
+
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
+from ..utils import import_path_to_hivemap_path
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
@@ -256,7 +258,14 @@ class QDebugWidget(QWidget):
 
 class NodeEditorSpace(QWidget):
 
-    def __init__(self, file_path=None):
+    on_save_state_updated = Signal(bool)
+    do_open_file = Signal(str)
+    on_node_context_menu = Signal(object, object)
+
+    on_drag_move = Signal(QEvent)
+    on_dropped = Signal(QEvent, QPoint)
+
+    def __init__(self, file_path=None, project_path=None):
         QWidget.__init__(self)
 
         layout = QVBoxLayout()
@@ -287,11 +296,6 @@ class NodeEditorSpace(QWidget):
         self._history_id = self._history.command_id
         self._last_saved_id = self._history_id
 
-        self.on_update_is_saved = None
-        self.do_open_file = None
-        self.get_dropped_node_info = None
-        self.get_project_directory = None
-
         # View to node manager
         view = self._view
         view.on_nodes_moved.connect(self._gui_nodes_moved)
@@ -301,7 +305,8 @@ class NodeEditorSpace(QWidget):
         view.on_connection_reordered .connect(self._gui_connection_reordered)
         view.on_node_selected.connect(self._gui_node_selected)
         view.on_node_deselected.connect(self._gui_node_deselected)
-        view.on_dropped.connect(self._gui_on_dropped_node)
+        view.on_dropped.connect(self._gui_on_dropped)
+        view.on_drag_move.connect(self._gui_on_drag_move)
         view.on_node_right_click.connect(self._gui_node_right_clicked)
         view.on_socket_interact.connect(self._gui_socket_interact)
 
@@ -320,6 +325,8 @@ class NodeEditorSpace(QWidget):
         self._debug_controller = None
         self._debug_blink_time = 1
 
+        self._project_path = project_path
+
         if file_path is not None:
             self.load(file_path)
 
@@ -334,6 +341,10 @@ class NodeEditorSpace(QWidget):
     @property
     def is_debugging(self):
         return self._debug_controller is not None
+
+    @property
+    def project_path(self):
+        return self._project_path
 
     def _pin_to_bee_container_name(self, pin):
         return "{}.{}".format(pin.node.name, pin.name)
@@ -406,16 +417,16 @@ class NodeEditorSpace(QWidget):
         self._debug_widget.clear_breakpoints()
         self._debug_widget.on_skip_breakpoint = None
 
-    def _on_history_updated(self, history):
-        self._history_id = history.command_id
+    def _on_history_updated(self, command_id):
+        self._history_id = command_id
 
         # Stop debugging if history is updated!
         if self.has_unsaved_changes and self.is_debugging:
             self.load()
             self._debug_controller.close()
 
-        elif callable(self.on_update_is_saved):
-            self.on_update_is_saved(self.has_unsaved_changes)
+        else:
+            self.on_save_state_updated.emit(self.has_unsaved_changes)
 
     def _on_node_created(self, node):
         gui_node = Node(node, self._view)
@@ -561,6 +572,12 @@ class NodeEditorSpace(QWidget):
         self._view.unfold_pin(socket_row, target_gui_node)
 
     # GUI nodes
+    def _gui_on_drag_move(self, event):
+        self.on_drag_move.emit(event)
+
+    def _gui_on_dropped(self, event, pos):
+        self.on_dropped.emit(event, pos)
+
     def _gui_connection_created(self, start_socket, end_socket):
         start_pin = start_socket.parent_socket_row.pin
         end_pin = end_socket.parent_socket_row.pin
@@ -604,12 +621,12 @@ class NodeEditorSpace(QWidget):
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
 
-        if not callable(self.get_hivemap_path):
-            return
+        # Try and import the hivemap
+        additional_paths = [self._project_path] if self._project_path else []
 
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = self.get_hivemap_path(node.import_path)
+            hivemap_file_path = import_path_to_hivemap_path(node.import_path, additional_paths)
 
         except ValueError:
             return
@@ -618,14 +635,10 @@ class NodeEditorSpace(QWidget):
         edit_hivemap_action = menu.addAction("Edit Hivemap")
 
         action = menu.exec_(event.screenPos())
-
         if action != edit_hivemap_action:
             return
 
-        if not callable(self.do_open_file):
-            return
-
-        self.do_open_file(hivemap_file_path)
+        self.do_open_file.emit(hivemap_file_path)
 
     def _gui_nodes_destroyed(self, gui_nodes):
         nodes = [gui_node.node for gui_node in gui_nodes]
@@ -634,18 +647,6 @@ class NodeEditorSpace(QWidget):
     def _gui_nodes_moved(self, gui_nodes):
         node_to_position = {gui_node.node: (gui_node.pos().x(), gui_node.pos().y()) for gui_node in gui_nodes}
         self._node_manager.reposition_nodes(node_to_position)
-
-    def _gui_on_dropped_node(self, position):
-        if not callable(self.get_dropped_node_info):
-            return
-
-        print("ACTUAL", position)
-        node_info = self.get_dropped_node_info()
-        if node_info is None:
-            return
-
-        import_path, node_type = node_info
-        self.add_node_at(position, import_path, node_type)
 
     def _socket_from_pin(self, pin):
         gui_node = self._node_to_qt_node[pin.node]
@@ -693,6 +694,7 @@ class NodeEditorSpace(QWidget):
         return params
 
     def add_node_at(self, position, import_path, node_type):
+        print("ADD")
         if node_type == NodeTypes.BEE:
             inspector = self._node_manager.bee_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
@@ -718,7 +720,12 @@ class NodeEditorSpace(QWidget):
             params = self._execute_inspector(inspector)
             node = self._node_manager.create_hive(import_path, params=params)
 
-        self._node_manager.reposition_node(node, position)
+
+        view_position = self._view.mapFromGlobal(position)
+        scene_position = self._view.mapToScene(view_position)
+        pos = scene_position.x(), scene_position.y()
+        print("ADD", position, view_position, scene_position, pos)
+        self._node_manager.reposition_node(node, pos)
 
     def add_node_at_mouse(self, import_path, node_type):
         # Get mouse position
@@ -754,10 +761,9 @@ class NodeEditorSpace(QWidget):
 
     def _check_for_cyclic_reference(self, file_path):
         node_manager = self._node_manager
-        get_hivemap_path = self.get_hivemap_path
 
-        if not callable(get_hivemap_path):
-            raise RuntimeError("Unable to check for hive path")
+        # Try and import the hivemap
+        additional_paths = [self._project_path] if self._project_path else []
 
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
         if not os.path.exists(file_path):
@@ -766,12 +772,12 @@ class NodeEditorSpace(QWidget):
         for node in node_manager.nodes.values():
             # If destination file is a hivemap, don't allow
             try:
-                hivemap_source_path = get_hivemap_path(node.import_path)
+                hivemap_file_path = import_path_to_hivemap_path(node.import_path, additional_paths)
 
             except ValueError:
                 continue
 
-            if file_path == hivemap_source_path:
+            if file_path == hivemap_file_path:
                 return True
 
         return False
@@ -786,9 +792,9 @@ class NodeEditorSpace(QWidget):
                 raise ValueError("Untitled hivemap cannot be saved without filename")
 
         if self._check_for_cyclic_reference(file_path):
-            QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced"
-                                                      "in this editor")
-            raise ValueError("Untitled hivemap cannot be saved without filename")
+            QMessageBox.critical(self, 'Cyclic Hive', "Cannot save the Hivemap of a Hive node already instanced in this"
+                                                      "editor")
+            raise ValueError("Cyclic references cannot be saved to hivemap")
 
         # Export data
         data = self._node_manager.to_string()
@@ -799,9 +805,7 @@ class NodeEditorSpace(QWidget):
 
         # Mark pending changes as false
         self._last_saved_id = self._history_id
-
-        if callable(self.on_update_is_saved):
-            self.on_update_is_saved(False)
+        self.on_save_state_updated.emit(False)
 
     def load(self, file_path=None):
         if file_path is None:

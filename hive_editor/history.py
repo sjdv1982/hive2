@@ -118,7 +118,7 @@ class CommandHistoryManager:
 
         with self._update_guard:
             if callable(self.on_updated):
-                self.on_updated(self)
+                self.on_updated(self.command_id)
 
 
 class OperationHistoryError(Exception):

@@ -107,7 +107,9 @@ class NodeView(QGraphicsView):
     on_node_deselected = Signal(object)
     on_node_right_click = Signal(object, QEvent)
     on_socket_interact = Signal(object)
-    on_dropped = Signal(object)
+
+    on_drag_move = Signal(QEvent)
+    on_dropped = Signal(QEvent, QPoint)
 
     def __init__(self, parent=None):
         QGraphicsView.__init__(self, parent)
@@ -358,16 +360,12 @@ class NodeView(QGraphicsView):
         self.centerOn(new_center)
         self._current_center_point = new_center
 
-    def dragEnterEvent(self, event):
-        print("DFRAG")
-        event.ignore()
+    def dragMoveEvent(self, event):
+        self.on_drag_move.emit(event)
 
-        scene_pos = self.mapToScene(event.pos())
-        position = scene_pos.x(), scene_pos.y()
-        print(position, "RAW")
-
-    def dropEvent(self, dr):
-        print("DROPPP")
+    def dropEvent(self, event):
+        global_pos = self.mapToGlobal(event.pos())
+        self.on_dropped.emit(event, global_pos)
 
     @property
     def center(self):
