@@ -70,16 +70,15 @@ class MainWindow(QMainWindow):
 
         # Add Help page
         web_view = QEditorWebView()
-        web_view.on_drag_enter = self._web_on_drag_enter
 
         USE_LOCAL_HOME = True
 
         if USE_LOCAL_HOME:
             # Load Help data
             local_dir = os.path.dirname(__file__)
-            html_file_name = os.path.join(local_dir, "home.html")
+            html_file_path = os.path.join(local_dir, "home.html")
 
-            with open(html_file_name) as f:
+            with open(html_file_path) as f:
                 html = f.read().replace("%LOCALDIR%", local_dir)
 
             web_view.setHtml(html)
@@ -180,6 +179,50 @@ class MainWindow(QMainWindow):
         self.tabifyDockWidget(self.docstring_window, self.preview_window)
         self.tabifyDockWidget(self.debug_window, self.console_window)
 
+        self.tab_widget.check_valid_drop = self._validate_dropped_item
+        self.tab_widget.on_dropped = self._on_dropped_item
+
+    def _validate_dropped_item(self, event):
+        mime_data = event.mimeData()
+        return {'text/uri-list', 'text/plain', 'apsplication/x-qabstractitemmodeldatalist'}.intersection(mime_data.formats())
+
+    def _on_dropped_item(self, event):
+        mime_data = event.mimeData()
+
+        if mime_data.hasFormat('text/uri-list'):
+            file_paths = mime_data.urls()
+
+            for file_path in file_paths:
+                self._open_file(file_path)
+
+        elif mime_data.hasFormat('text/plain'):
+            hivemap_text = mime_data.text()
+
+            print(hivemap_text)
+            editor = self.add_editor_space()
+            editor.load_from_text(hivemap_text)
+
+        else:
+            editor = self.tab_widget.currentWidget()
+
+            # Replace docstring
+            if not isinstance(editor, NodeEditorSpace):
+                editor = self.add_editor_space()
+
+
+            #event.ignore()
+            # x=self.tab_widget.mapToGlobal(event.pos())
+            # print("global", x, event.pos())
+            # print(editor.parent())
+            # s2=editor._view.mapToScene(x)
+            # print("ATT2", s2)
+            # scene_pos = editor._view.mapToScene(event.pos())
+            # #event.accept()
+            #
+            # position = scene_pos.x(), scene_pos.y()
+            # print("POS", position)
+            # editor.add_node_at(position, *self._accept_dropped_node_info())
+
     def closeEvent(self, event):
         try:
             self.close_open_tabs()
@@ -205,14 +248,14 @@ class MainWindow(QMainWindow):
         title = self.project_name_template.format(directory_name)
         self.setWindowTitle(title)
 
-    def _get_display_name(self, file_name, allow_untitled=True):
-        if file_name is None:
+    def _get_display_name(self, file_path, allow_untitled=True):
+        if file_path is None:
             if not allow_untitled:
                 raise ValueError("File name must not be None")
 
             return self.untitled_file_name
 
-        return os.path.basename(file_name)
+        return os.path.basename(file_path)
 
     def _get_hivemap_path_in_project(self, import_path):
         if self.project_directory:
@@ -265,7 +308,7 @@ class MainWindow(QMainWindow):
 
         # Stop debugging if editor is closed
         if self.debugger.session is not None:
-            if self.debugger.session.is_debugging_hivemap(widget.file_name):
+            if self.debugger.session.is_debugging_hivemap(widget.file_path):
                 self.debugger.session.close()
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
@@ -290,17 +333,16 @@ class MainWindow(QMainWindow):
             widget.on_enter(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
                             self.console_window, self.debug_window)
 
-    def add_editor_space(self, *_, file_name=None):
-        editor = NodeEditorSpace(file_name)
+    def add_editor_space(self, *_, file_path=None):
+        editor = NodeEditorSpace(file_path)
 
-        display_name = self._get_display_name(file_name)
+        display_name = self._get_display_name(file_path)
         index = self.tab_widget.addTab(editor, display_name)
         self.tab_widget.setCurrentIndex(index)
 
         editor.on_update_is_saved = partial(self._on_save_state_changed, editor)
         editor.do_open_file = self._open_file
         editor.get_hivemap_path = self._get_hivemap_path_in_project
-        editor.get_dropped_node_info = self._accept_dropped_node_info
 
         return editor
 
@@ -344,7 +386,7 @@ class MainWindow(QMainWindow):
         file_is_open = isinstance(widget, NodeEditorSpace)
         if file_is_open:
             show_save_as = True
-            show_save = widget.file_name is not None
+            show_save = widget.file_path is not None
             show_edit = True
             show_insert = True
 
@@ -371,15 +413,8 @@ class MainWindow(QMainWindow):
         info, self._pending_dropped_node_info = self._pending_dropped_node_info, None
         return info
 
-    def on_selected_tree_node(self, path, node_type):
+    def _on_selected_tree_node(self, path, node_type):
         self._pending_dropped_node_info = path, node_type
-
-    def _web_on_drag_enter(self, position):
-        if self._pending_dropped_node_info is None:
-            return
-
-        # Create blank editor
-        self.add_editor_space()
 
     def insert_from_path(self):
         dialogue = QDialog(self)
@@ -471,18 +506,19 @@ class MainWindow(QMainWindow):
         clear_imported_hivemaps()
 
     def refresh_project_tree(self):
-        self.hive_widget = TreeWidget(title="Path")
-        self.hive_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.HIVE)
-        self.hive_window.setWidget(self.hive_widget)
-        self.hive_widget.load_items(self.hive_finder.find_hives())
-        self.hive_widget.on_right_click = self.show_hive_edit_menu
+        hive_widget = TreeWidget(title="Path")
+        hive_widget.on_selected = partial(self._on_selected_tree_node, node_type=NodeTypes.HIVE)
+        hive_widget.load_items(self.hive_finder.find_hives())
+        hive_widget.on_right_click = partial(self.show_hive_edit_menu, hive_widget)
 
-        self.bee_widget = TreeWidget(title="Path")
-        self.bee_widget.on_selected = partial(self.on_selected_tree_node, node_type=NodeTypes.BEE)
-        self.bee_window.setWidget(self.bee_widget)
-        self.bee_widget.load_items(found_bees)
+        self.hive_window.setWidget(hive_widget)
 
-    def show_hive_edit_menu(self, import_path, event):
+        bee_widget = TreeWidget(title="Path")
+        bee_widget.on_selected = partial(self._on_selected_tree_node, node_type=NodeTypes.BEE)
+        self.bee_window.setWidget(bee_widget)
+        bee_widget.load_items(found_bees)
+
+    def show_hive_edit_menu(self, hive_widget, import_path, event):
         # Can only edit .hivemaps
         try:
             hivemap_file_path = self._get_hivemap_path_in_project(import_path)
@@ -490,10 +526,10 @@ class MainWindow(QMainWindow):
         except ValueError:
             return
 
-        menu = QMenu(self.hive_widget)
+        menu = QMenu(hive_widget)
         edit_action = menu.addAction("Edit Hivemap")
 
-        global_position = self.hive_widget.mapToGlobal(event.pos())
+        global_position = hive_widget.mapToGlobal(event.pos())
         called_action = menu.exec_(global_position)
 
         if called_action == edit_action:
@@ -509,27 +545,27 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError()
 
-        file_name = self._get_display_name(editor.file_name)
+        file_path = self._get_display_name(editor.file_path)
 
         if not has_unsaved_changes:
-            self.tab_widget.setTabText(index, file_name)
+            self.tab_widget.setTabText(index, file_path)
 
         else:
-            self.tab_widget.setTabText(index, "{}*".format(file_name))
+            self.tab_widget.setTabText(index, "{}*".format(file_path))
 
-    def find_editor_of_file(self, file_name):
+    def find_editor_of_file(self, file_path):
         # Check if already open
         for index in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(index)
             if not isinstance(widget, NodeEditorSpace):
                 continue
 
-            widget_file_name = widget.file_name
-            if widget_file_name is None:
+            widget_file_path = widget.file_path
+            if widget_file_path is None:
                 continue
 
             # If already open
-            if os.path.samefile(file_name, widget_file_name):
+            if os.path.samefile(file_path, widget_file_path):
                 return widget
 
         raise ValueError("File not open")
@@ -544,8 +580,8 @@ class MainWindow(QMainWindow):
         if not dialogue.exec_():
             return
 
-        file_name = dialogue.selectedFiles()[0]
-        self._open_file(file_name)
+        file_path = dialogue.selectedFiles()[0]
+        self._open_file(file_path)
 
     def _open_file(self, file_path):
         # Check if already open
@@ -554,7 +590,7 @@ class MainWindow(QMainWindow):
             self.tab_widget.setCurrentWidget(editor)
 
         except ValueError:
-            editor = self.add_editor_space(file_name=file_path)
+            editor = self.add_editor_space(file_path=file_path)
 
             # Rename tab
             name = self._get_display_name(file_path, allow_untitled=False)
@@ -577,13 +613,13 @@ class MainWindow(QMainWindow):
         if not dialogue.exec_():
             return
 
-        file_name = dialogue.selectedFiles()[0]
+        file_path = dialogue.selectedFiles()[0]
 
-        was_untitled = widget.file_name is None
-        widget.save(file_path=file_name)
+        was_untitled = widget.file_path is None
+        widget.save(file_path=file_path)
 
         # Rename tab
-        name = self._get_display_name(file_name, allow_untitled=False)
+        name = self._get_display_name(file_path, allow_untitled=False)
         index = self.tab_widget.currentIndex()
         self.tab_widget.setTabText(index, name)
 

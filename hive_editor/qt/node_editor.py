@@ -256,13 +256,13 @@ class QDebugWidget(QWidget):
 
 class NodeEditorSpace(QWidget):
 
-    def __init__(self, file_name=None):
+    def __init__(self, file_path=None):
         QWidget.__init__(self)
 
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        self.file_name = file_name
+        self.file_path = file_path
 
         self._history = CommandHistoryManager()
         self._history.on_updated = self._on_history_updated
@@ -294,16 +294,16 @@ class NodeEditorSpace(QWidget):
 
         # View to node manager
         view = self._view
-        view.on_nodes_moved = self._gui_nodes_moved
-        view.on_nodes_deleted = self._gui_nodes_destroyed
-        view.on_connection_created = self._gui_connection_created
-        view.on_connections_destroyed = self._gui_connections_destroyed
-        view.on_connection_reordered = self._gui_connection_reordered
-        view.on_node_selected = self._gui_node_selected
-        view.on_node_deselected = self._gui_node_deselected
-        view.on_dropped = self._gui_on_dropped_node
-        view.on_node_right_click = self._gui_node_right_clicked
-        view.on_socket_interact = self._gui_socket_interact
+        view.on_nodes_moved.connect(self._gui_nodes_moved)
+        view.on_nodes_deleted.connect(self._gui_nodes_destroyed)
+        view.on_connection_created.connect(self._gui_connection_created)
+        view.on_connections_destroyed.connect(self._gui_connections_destroyed)
+        view.on_connection_reordered .connect(self._gui_connection_reordered)
+        view.on_node_selected.connect(self._gui_node_selected)
+        view.on_node_deselected.connect(self._gui_node_deselected)
+        view.on_dropped.connect(self._gui_on_dropped_node)
+        view.on_node_right_click.connect(self._gui_node_right_clicked)
+        view.on_socket_interact.connect(self._gui_socket_interact)
 
         self._node_to_qt_node = {}
         self._connection_to_qt_connection = {}
@@ -311,6 +311,7 @@ class NodeEditorSpace(QWidget):
         self._docstring_widget = QTextEdit()
         self._docstring_widget.textChanged.connect(self._docstring_text_updated)
         self._configuration_widget = ConfigurationPanel(self._node_manager)
+
         self._folding_widget = FoldingPanel(self._node_manager)
         self._preview_widget = PreviewWidget(self._node_manager)
         self._console_widget = QConsole(local_dict=dict(editor=self))
@@ -319,8 +320,8 @@ class NodeEditorSpace(QWidget):
         self._debug_controller = None
         self._debug_blink_time = 1
 
-        if file_name is not None:
-            self.load(file_name)
+        if file_path is not None:
+            self.load(file_path)
 
     @property
     def has_unsaved_changes(self):
@@ -638,6 +639,7 @@ class NodeEditorSpace(QWidget):
         if not callable(self.get_dropped_node_info):
             return
 
+        print("ACTUAL", position)
         node_info = self.get_dropped_node_info()
         if node_info is None:
             return
@@ -698,7 +700,7 @@ class NodeEditorSpace(QWidget):
 
         else:
             # Check Hive's hivemap isn't currently open
-            if self.file_name is not None:
+            if self.file_path is not None:
                 # Check we don't have a source file
                 if callable(self.get_hivemap_path):
                     try:
@@ -708,7 +710,7 @@ class NodeEditorSpace(QWidget):
                         pass
 
                     else:
-                        if hivemap_file_path == self.file_name:
+                        if hivemap_file_path == self.file_path:
                             QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
                             return
 
@@ -775,10 +777,10 @@ class NodeEditorSpace(QWidget):
         return False
 
     def save(self, file_path=None):
-        use_existing_file_name = file_path is None
+        use_existing_file_path = file_path is None
 
-        if use_existing_file_name:
-            file_path = self.file_name
+        if use_existing_file_path:
+            file_path = self.file_path
 
             if file_path is None:
                 raise ValueError("Untitled hivemap cannot be saved without filename")
@@ -793,7 +795,7 @@ class NodeEditorSpace(QWidget):
         with open(file_path, "w") as f:
             f.write(data)
 
-        self.file_name = file_path
+        self.file_path = file_path
 
         # Mark pending changes as false
         self._last_saved_id = self._history_id
@@ -801,14 +803,14 @@ class NodeEditorSpace(QWidget):
         if callable(self.on_update_is_saved):
             self.on_update_is_saved(False)
 
-    def load(self, file_name=None):
-        if file_name is None:
-            file_name = self.file_name
+    def load(self, file_path=None):
+        if file_path is None:
+            file_path = self.file_path
 
-            if file_name is None:
+            if file_path is None:
                 raise ValueError("Untitled hivemap cannot be loaded without filename")
 
-        with open(file_name, 'r') as f:
+        with open(file_path, 'r') as f:
             data = f.read()
 
         node_manager = self._node_manager
@@ -822,13 +824,16 @@ class NodeEditorSpace(QWidget):
             print(traceback.format_exc())
             return
 
-        self.file_name = file_name
+        self.file_path = file_path
 
         # Mark pending changes as false
         self._last_saved_id = self._history_id
 
         self._view.frame_scene_content()
         self._docstring_widget.setPlainText(node_manager.docstring)
+
+    def load_from_text(self, text):
+        self._node_manager.load_string(text)
 
     def on_enter(self, docstring_window, folding_window, configuration_window, preview_window,
                  console_window, debug_window):

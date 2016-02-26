@@ -7,15 +7,30 @@ class TabViewWidget(QTabWidget):
         QTabWidget.__init__(self)
 
         self.setTabsClosable(True)
+        self.setAcceptDrops(True)
+
         self.tabCloseRequested.connect(self.removeTab)
         self.currentChanged.connect(self._tab_changed)
 
         self.on_inserted = None
         self.on_removed = None
         self.on_changed = None
+        self.check_valid_drop = None
+        self.on_dropped = None
         self.check_tab_closable = None
 
         self._current_tab_index = None
+
+    def dragEnterEvent(self, event):
+        if callable(self.check_valid_drop):
+            if self.check_valid_drop(event):
+                event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if callable(self.on_dropped):
+            self.on_dropped(event)
 
     def addTab(self, widget, label, closeable=True):
         tab = QTabWidget.addTab(self, widget, label)

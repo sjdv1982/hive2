@@ -39,8 +39,8 @@ from .qt_gui import *
 
 class NodeUIScene(QGraphicsScene):
 
-    def __init__(self):
-        QGraphicsScene.__init__(self)
+    def __init__(self, parent=None):
+        QGraphicsScene.__init__(self, parent)
 
         self._background_color = QColor(50, 55, 60)
         self._grid_pen = QPen(self._background_color.lighter(120))

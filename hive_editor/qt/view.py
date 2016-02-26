@@ -96,6 +96,19 @@ class NodePreviewView(QGraphicsView):
 class NodeView(QGraphicsView):
     DEBUGGING_COLOR = QColor(255, 0, 0)
 
+    on_connection_created = Signal(object, object)
+    on_connection_reordered = Signal(object, int)
+    on_connections_destroyed = Signal(list)
+
+    on_nodes_moved = Signal(object)
+    on_nodes_deleted = Signal(list)
+
+    on_node_selected = Signal(object)
+    on_node_deselected = Signal(object)
+    on_node_right_click = Signal(object, QEvent)
+    on_socket_interact = Signal(object)
+    on_dropped = Signal(object)
+
     def __init__(self, parent=None):
         QGraphicsView.__init__(self, parent)
 
@@ -140,7 +153,7 @@ class NodeView(QGraphicsView):
         self._moved_gui_nodes = set()
         self._position_busy = False
 
-        self.setScene(NodeUIScene())
+        self.setScene(NodeUIScene(self))
 
         self.focused_socket = None
         self.hovered_node = None
@@ -149,19 +162,6 @@ class NodeView(QGraphicsView):
         self.type_info_widget.setZValue(1e4)
         self.scene().addItem(self.type_info_widget)
         self.type_info_widget.setVisible(False)
-
-        self.on_connection_created = None
-        self.on_connection_reordered = None
-        self.on_connections_destroyed = None
-
-        self.on_nodes_moved = None
-        self.on_nodes_deleted = None
-
-        self.on_node_selected = None
-        self.on_node_deselected = None
-        self.on_node_right_click = None
-        self.on_socket_interact = None
-        self.on_dropped = None
 
     def on_socket_hover_enter(self, socket, event=None):
         widget = self.type_info_widget
@@ -177,10 +177,6 @@ class NodeView(QGraphicsView):
         widget = self.type_info_widget
         widget.setVisible(False)
         self.focused_socket = None
-
-    def on_socket_interact(self, socket):
-        if callable(self.on_socket_interact):
-            self.on_socket_interact(socket)
 
     @property
     def mouse_pos(self):
@@ -244,36 +240,32 @@ class NodeView(QGraphicsView):
 
         self._moved_gui_nodes.add(gui_node)
 
+    def gui_on_socket_interact(self, socket):
+        self.on_socket_interact.emit(socket)
+
     def gui_finished_move(self):
         """Called after all nodes in view have been moved"""
-        if callable(self.on_nodes_moved):
-            self.on_nodes_moved(self._moved_gui_nodes)
+        self.on_nodes_moved.emit(self._moved_gui_nodes)
 
         self._moved_gui_nodes.clear()
 
     def gui_create_connection(self, start_socket, end_socket):
-        if callable(self.on_connection_created):
-            self.on_connection_created(start_socket, end_socket)
+        self.on_connection_created.emit(start_socket, end_socket)
 
     def gui_delete_connections(self, gui_connections):
-        if callable(self.on_connections_destroyed):
-            self.on_connections_destroyed(gui_connections)
+        self.on_connections_destroyed.emit(gui_connections)
 
     def gui_reorder_connection(self, gui_connection, index):
-        if callable(self.on_connection_reordered):
-            self.on_connection_reordered(gui_connection, index)
+        self.on_connection_reordered.emit(gui_connection, index)
 
     def gui_on_node_selected(self, gui_node):
-        if callable(self.on_node_selected):
-            self.on_node_selected(gui_node)
+        self.on_node_selected.emit(gui_node)
 
     def gui_on_node_deselected(self, gui_node):
-        if callable(self.on_node_deselected):
-            self.on_node_deselected()
+        self.on_node_deselected.emit(gui_node)
 
     def gui_on_node_right_click(self, gui_node, event):
-        if callable(self.on_node_right_click):
-            self.on_node_right_click(gui_node, event)
+        self.on_node_right_click.emit(gui_node, event)
 
     def gui_on_hover_enter(self, node):
         self.hovered_node = node
@@ -338,8 +330,7 @@ class NodeView(QGraphicsView):
         scene = self.scene()
 
         selected_nodes = scene.selectedItems()
-        if callable(self.on_nodes_deleted):
-            self.on_nodes_deleted(selected_nodes)
+        self.on_nodes_deleted.emit(selected_nodes)
 
     def select_all(self):
         from .node import Node
@@ -367,17 +358,16 @@ class NodeView(QGraphicsView):
         self.centerOn(new_center)
         self._current_center_point = new_center
 
-    def dragMoveEvent(self, event):
-        event.accept()
+    def dragEnterEvent(self, event):
+        print("DFRAG")
+        event.ignore()
 
-    def dropEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        event.accept()
-
         position = scene_pos.x(), scene_pos.y()
+        print(position, "RAW")
 
-        if callable(self.on_dropped):
-            self.on_dropped(position)
+    def dropEvent(self, dr):
+        print("DROPPP")
 
     @property
     def center(self):
