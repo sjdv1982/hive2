@@ -92,6 +92,9 @@ class CommandHistoryManager:
         yield
         self._current_history = old_history
 
+        if not history.has_commands:
+            return
+
         self.record_command(history.redo_all, history.undo_all)
 
     def record_command(self, execute, unexecute):
@@ -134,6 +137,10 @@ class CommandHistory:
 
         self._name = name
         self._logger = logger
+
+    @property
+    def has_commands(self):
+        return bool(self._commands)
 
     @property
     def can_redo(self):
@@ -195,6 +202,7 @@ class CommandHistory:
             latest_command = self._commands[self._index]
 
             self._logger.info("Commands after {} have been lost due to an add command".format(latest_command))
+            self._logger.info(repr(command))
             del self._commands[self._index + 1:]
 
         self._commands.append(command)

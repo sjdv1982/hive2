@@ -4,7 +4,7 @@ from hive.identifiers import identifiers_match
 
 from .data_views import ListView, DictView
 from .sockets import get_colour, get_shape
-from .protected_container import ProtectedContainer, RestrictedProperty
+from .protected_container import ProtectedContainer, RestrictedAttribute, RestrictedProperty
 
 FOLD_NODE_IMPORT_PATH = "dragonfly.std.Variable"
 
@@ -236,8 +236,8 @@ class Node(ProtectedContainer):
         self._node_type = node_type
         self._import_path = import_path
 
-        self.params = params
-        self.params_info = params_info
+        self._params = params
+        self._params_info = params_info
 
         # Pin IO
         self._pin_order = []
@@ -280,9 +280,21 @@ class Node(ProtectedContainer):
     def pin_order(self):
         return ListView(self._pin_order)
 
-    position = RestrictedProperty()
-    name = RestrictedProperty()
-    tooltip = RestrictedProperty()
+    @RestrictedProperty
+    def params(self):
+        return DictView({k: DictView(v) for k, v in self._params.items()})
+
+    @params.guarded_getter
+    def params(self):
+        return self._params
+
+    @property
+    def params_info(self):
+        return DictView({k: DictView(v) for k, v in self._params_info.items()})
+
+    position = RestrictedAttribute()
+    name = RestrictedAttribute()
+    tooltip = RestrictedAttribute()
 
     def __repr__(self):
         return "<HiveNode ({})>".format(self.name)

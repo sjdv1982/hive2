@@ -9,13 +9,15 @@ from ..utils import import_module_from_path
 
 class NodeContextPanelBase(QWidget):
 
-    def __init__(self):
+    def __init__(self, node_manager):
         QWidget.__init__(self)
 
         self._node = None
 
         self._layout = QFormLayout()
         self.setLayout(self._layout)
+
+        self._node_manager = node_manager
 
     @property
     def node(self):
@@ -26,6 +28,9 @@ class NodeContextPanelBase(QWidget):
         self._node = node
 
         self.on_node_updated(node)
+
+    def refresh(self):
+        self.on_node_updated(self._node)
 
     def _clear_layout(self):
         layout = self._layout
@@ -83,6 +88,8 @@ class ArgumentsPanel(NodeContextPanelBase):
 
                 layout.addRow(self.tr(name), widget)
 
+        node_manager = self._node_manager
+
         # Args
         args = node.params.get('args')
         if args:
@@ -103,10 +110,10 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget.controller = controller
 
                 def on_changed(value, name=name, args=args):
-                    args[name] = value
+                    node_manager.set_param_value(node, "args", name, value)
 
-                controller.on_changed = on_changed
                 controller.value = value
+                controller.on_changed = on_changed
 
                 layout.addRow(self.tr(name), widget)
 
@@ -130,20 +137,15 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget.controller = controller
 
                 def on_changed(value, name=name, cls_args=cls_args):
-                    cls_args[name] = value
+                    node_manager.set_param_value(node, 'cls_args', name, value)
 
-                controller.on_changed = on_changed
                 controller.value = value
+                controller.on_changed = on_changed
 
                 layout.addRow(self.tr(name), widget)
 
 
 class ConfigurationPanel(ArgumentsPanel):
-
-    def __init__(self, node_manager):
-        super().__init__()
-
-        self._node_manager = node_manager
 
     def _rename_node(self, node, name):
         self._node_manager.rename_node(node, name)
@@ -172,11 +174,6 @@ class ConfigurationPanel(ArgumentsPanel):
 
 
 class FoldingPanel(NodeContextPanelBase):
-
-    def __init__(self, node_manager):
-        super().__init__()
-
-        self._node_manager = node_manager
 
     def _fold_antenna(self, pin):
         self._node_manager.fold_pin(pin)

@@ -291,6 +291,18 @@ class NodeManager(object):
 
         self.delete_nodes(nodes_to_delete)
 
+    def set_param_value(self, node, param_type, name, value):
+        assert param_type in {'cls_args', 'args'}, "Invalid param type given"
+
+        with node.make_writable():
+            params_dict = node.params[param_type]
+
+        original_value = params_dict[name]
+        params_dict[name] = value
+        print("RECORD", params_dict)
+        self.history.record_command(lambda: self.set_param_value(node, param_type, name, value),
+                                    lambda: self.set_param_value(node, param_type, name, original_value))
+
     def rename_node(self, node, name, attempt_till_success=False):
         """Rename node with a new identifier
 

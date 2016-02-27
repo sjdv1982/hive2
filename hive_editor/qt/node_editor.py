@@ -419,13 +419,19 @@ class NodeEditorSpace(QWidget):
     def _on_history_updated(self, command_id):
         self._history_id = command_id
 
+        has_unsaved_changes = self.has_unsaved_changes
+
+        if has_unsaved_changes:
+            self._configuration_widget.refresh()
+            self._folding_widget.refresh()
+
         # Stop debugging if history is updated!
-        if self.has_unsaved_changes and self.is_debugging:
+        if has_unsaved_changes and self.is_debugging:
             self.load()
             self._debug_controller.close()
 
         else:
-            self.on_save_state_updated.emit(self.has_unsaved_changes)
+            self.on_save_state_updated.emit(has_unsaved_changes)
 
     def _on_node_created(self, node):
         gui_node = Node(node, self._view)
@@ -731,11 +737,7 @@ class NodeEditorSpace(QWidget):
         # Get mouse position
         cursor = QCursor()
         q_position = cursor.pos()
-        q_position = self._view.mapFromGlobal(q_position)
-        q_position = self._view.mapToScene(q_position)
-        position = q_position.x(), q_position.y()
-
-        self.add_node_at(position, import_path, node_type)
+        self.add_node_at(q_position, import_path, node_type)
 
     def select_all(self):
         self._view.select_all()
