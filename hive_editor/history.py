@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from logging import getLogger
 
+from .observer import Observable
+
 
 def unique_id_counter():
     i = 0
@@ -66,6 +68,8 @@ class RecursionGuard:
 
 class CommandHistoryManager:
 
+    on_updated = Observable()
+
     def __init__(self, name='<root>', logger=None):
         if logger is None:
             logger = getLogger("{}::{}".format(name, id(self)))
@@ -76,8 +80,6 @@ class CommandHistoryManager:
 
         self._update_guard = RecursionGuard()
         self._push_guard = RecursionGuard()
-
-        self.on_updated = None
 
     @property
     def command_id(self):
@@ -120,8 +122,7 @@ class CommandHistoryManager:
             return
 
         with self._update_guard:
-            if callable(self.on_updated):
-                self.on_updated(self.command_id)
+            self.on_updated(self.command_id)
 
 
 class OperationHistoryError(Exception):

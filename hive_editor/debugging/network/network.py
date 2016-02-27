@@ -5,14 +5,17 @@ from struct import pack, unpack_from, calcsize
 from threading import Event, Thread
 
 
+from ...observer import Observable
+
+
 class ConnectionBase:
+
+    on_received = Observable()
+    on_connected = Observable()
+    on_disconnected = Observable()
 
     def __init__(self):
         self._send_queue = Queue()
-
-        self.on_received = None
-        self.on_connected = None
-        self.on_disconnected = None
 
         self._received_raw = b''
         self._thread = None
@@ -36,9 +39,8 @@ class ConnectionBase:
 
             messages.append(message)
 
-        if callable(self.on_received):
-            for message in messages:
-                self.on_received(message)
+        for message in messages:
+            self.on_received(message)
 
     def send(self, data):
         length_encoded = pack("H", len(data)) + data
@@ -53,8 +55,7 @@ class ConnectionBase:
 
         send_queue = self._send_queue
 
-        if callable(self.on_connected):
-            self.on_connected()
+        self.on_connected()
 
         while all(f.is_set() for f in alive_flags):
             while True:
@@ -84,8 +85,7 @@ class ConnectionBase:
 
                 self._on_received(data)
 
-        if callable(self.on_disconnected):
-            self.on_disconnected()
+        self.on_disconnected()
 
         sock.shutdown(SHUT_RDWR)
         sock.close()
@@ -153,8 +153,7 @@ class Server(ConnectionBase):
     def disconnect(self):
         self._is_connected_event.clear()
 
-        if callable(self.on_disconnected):
-            self.on_disconnected()
+        self.on_disconnected()
 
     def _run_threaded(self):
         sock = socket(AF_INET, SOCK_STREAM)

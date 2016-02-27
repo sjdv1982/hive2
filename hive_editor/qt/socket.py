@@ -203,7 +203,8 @@ class Socket(QGraphicsItem):
 
         elif event.button() == Qt.MiddleButton or \
                 (event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier):
-            self.parent_node_ui.view.on_socket_interact(self)
+            print("INTERAC")
+            self.parent_node_ui.view.gui_on_socket_interact(self)
 
     def mouseMoveEvent(self, event):
         connection = self._dragging_connection

@@ -29,9 +29,6 @@ class NodeContextPanelBase(QWidget):
 
         self.on_node_updated(node)
 
-    def refresh(self):
-        self.on_node_updated(self._node)
-
     def _clear_layout(self):
         layout = self._layout
 
@@ -40,7 +37,7 @@ class NodeContextPanelBase(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
-    def _draw_configuration(self, node):
+    def _update_layout(self, node):
         raise NotImplementedError
 
     def on_node_updated(self, node):
@@ -49,7 +46,7 @@ class NodeContextPanelBase(QWidget):
         if node is None:
             return
 
-        self._draw_configuration(node)
+        self._update_layout(node)
 
 
 class ArgumentsPanel(NodeContextPanelBase):
@@ -61,7 +58,7 @@ class ArgumentsPanel(NodeContextPanelBase):
         line.setFrameShadow(QFrame.Sunken)
         return line
 
-    def _draw_configuration(self, node):
+    def _update_layout(self, node):
         layout = self._layout
 
         # Meta Args
@@ -113,7 +110,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                     node_manager.set_param_value(node, "args", name, value)
 
                 controller.value = value
-                controller.on_changed = on_changed
+                controller.on_changed.subscribe(on_changed)
 
                 layout.addRow(self.tr(name), widget)
 
@@ -140,7 +137,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                     node_manager.set_param_value(node, 'cls_args', name, value)
 
                 controller.value = value
-                controller.on_changed = on_changed
+                controller.on_changed.subscribe(on_changed)
 
                 layout.addRow(self.tr(name), widget)
 
@@ -154,7 +151,7 @@ class ConfigurationPanel(ArgumentsPanel):
         module, class_name = import_module_from_path(import_path)
         open_url(module.__file__)
 
-    def _draw_configuration(self, node):
+    def _update_layout(self, node):
         layout = self._layout
 
         widget = QClickableLabel(node.import_path)
@@ -170,7 +167,7 @@ class ConfigurationPanel(ArgumentsPanel):
 
         layout.addRow(self._create_divider())
 
-        super()._draw_configuration(node)
+        super()._update_layout(node)
 
 
 class FoldingPanel(NodeContextPanelBase):
@@ -183,7 +180,7 @@ class FoldingPanel(NodeContextPanelBase):
         self._node_manager.unfold_pin(pin)
         self.on_node_updated(pin.node)
 
-    def _draw_configuration(self, node):
+    def _update_layout(self, node):
         layout = self._layout
 
         for name, pin in node.inputs.items():
@@ -204,7 +201,7 @@ class FoldingPanel(NodeContextPanelBase):
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
-                widget = ArgumentsPanel()
+                widget = ArgumentsPanel(self._node_manager)
 
                 target_connection = next(iter(pin.connections))
                 target_pin = target_connection.output_pin

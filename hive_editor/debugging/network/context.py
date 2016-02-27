@@ -18,6 +18,7 @@ from .network import Server, Client
 
 from ...importer import get_hook
 from ...models import model
+from ...observer import Observable
 
 HivemapConnection = namedtuple("Connection", "from_node from_name to_node to_name")
 
@@ -94,8 +95,8 @@ class NetworkDebugContext(DebugContextBase):
         self._id_generator = id_generator()
 
         self._client = Client(host, port)
-        self._client.on_received = self._on_received_response
-        self._client.on_disconnected = self._on_disconnected
+        self._client.on_received.subscribe(self._on_received_response)
+        self._client.on_disconnected.subscribe(self._on_disconnected)
 
         self._breakpoints = {}
         if logger is None:
@@ -378,16 +379,18 @@ class EditorDebugController:
     Unique to Hivemap type for active session.
     """
 
+    on_push_out = Observable()
+    on_pull_in = Observable()
+    on_trigger = Observable()
+    on_pre_trigger = Observable()
+    on_breakpoint_hit = Observable()
+    on_breakpoint_added = Observable()
+    on_breakpoint_removed = Observable()
+    on_io = Observable()
+
     def __init__(self, file_path):
         self._breakpoints = set()
         self._file_path = file_path
-
-        self.on_push_out = None
-        self.on_pull_in = None
-        self.on_trigger = None
-        self.on_pretrigger = None
-        self.on_breakpoint_hit = None
-        self.on_io = None
 
         self._request_close = None
 
@@ -403,7 +406,8 @@ class EditorDebugController:
         self._request_close()
 
     def on_closed(self):
-        pass
+        for breakpoint in self._breakpoints:
+            self.on_breakpoint_removed(breakpoint)
 
     def add_breakpoint(self, bee_name):
         assert bee_name not in self._breakpoints
@@ -411,12 +415,14 @@ class EditorDebugController:
 
         data = pack_pascal_string(bee_name)
         self.send_operation(OpCodes.add_breakpoint, data)
+        self.on_breakpoint_added(bee_name)
 
     def remove_breakpoint(self, bee_name):
         self._breakpoints.remove(bee_name)
         data = pack_pascal_string(bee_name)
 
         self.send_operation(OpCodes.remove_breakpoint, data)
+        self.on_breakpoint_removed(bee_name)
 
     def skip_breakpoint(self, bee_name):
         if bee_name not in self._breakpoints:
@@ -433,8 +439,7 @@ class EditorDebugController:
         offset = read_bytes
 
         if opcode == OpCodes.hit_breakpoint:
-            if callable(self.on_breakpoint_hit):
-                self.on_breakpoint_hit(source_container_name)
+            self.on_breakpoint_hit(source_container_name)
 
         else:
             target_container_name, read_bytes = unpack_pascal_string(data, offset=offset)
@@ -442,26 +447,25 @@ class EditorDebugController:
 
             if opcode == OpCodes.push_out:
                 value, read_bytes = unpack_pascal_string(data, offset=offset)
-                if callable(self.on_push_out):
-                    self.on_push_out(source_container_name, target_container_name, value)
+                self.on_push_out(source_container_name, target_container_name, value)
 
             elif opcode == OpCodes.pull_in:
                 value, read_bytes = unpack_pascal_string(data, offset=offset)
-                if callable(self.on_push_out):
-                    self.on_pull_in(source_container_name, target_container_name, value)
+                self.on_pull_in(source_container_name, target_container_name, value)
 
             elif opcode == OpCodes.trigger:
-                if callable(self.on_push_out):
-                    self.on_trigger(source_container_name, target_container_name)
+                self.on_trigger(source_container_name, target_container_name)
 
             elif opcode == OpCodes.pretrigger:
-                if callable(self.on_push_out):
-                    self.on_pretrigger(source_container_name, target_container_name)
+                self.on_pre_trigger(source_container_name, target_container_name)
 
 
 class NetworkDebugSession:
     """Interface to editor debugging features"""
     debug_controller_class = EditorDebugController
+
+    on_created_controller = Observable()
+    on_destroyed_controller = Observable()
 
     def __init__(self):
         self._container_id_to_filepath = {}
@@ -469,9 +473,6 @@ class NetworkDebugSession:
 
         self._breakpoints = {}
         self._debug_controllers = {}
-
-        self.on_created_controller = None
-        self.on_destroyed_controller = None
 
         self._request_close = None
         self._send_data = None
@@ -486,8 +487,7 @@ class NetworkDebugSession:
         controller.send_operation = partial(self._send_data_from, container_id)
         controller._request_close = self.close
 
-        if callable(self.on_created_controller):
-            self.on_created_controller(controller)
+        self.on_created_controller(controller)
 
         return controller
 
@@ -533,8 +533,7 @@ class NetworkDebugSession:
         for controller in self._debug_controllers.values():
             controller.on_closed()
 
-            if callable(self.on_destroyed_controller):
-                self.on_destroyed_controller(controller)
+            self.on_destroyed_controller(controller)
 
     def close(self):
         self._request_close()
@@ -545,14 +544,14 @@ class NetworkDebugManager:
 
     session_class = NetworkDebugSession
 
+    on_created_session = Observable()
+    on_closed_session = Observable()
+
     def __init__(self, host=None, port=None):
         self._server = Server(host, port)
-        self._server.on_received = self._on_received
-        self._server.on_connected = self._on_connected
-        self._server.on_disconnected = self._on_disconnected
-
-        self.on_created_session = None
-        self.on_closed_session = None
+        self._server.on_received.subscribe(self._on_received)
+        self._server.on_connected.subscribe(self._on_connected)
+        self._server.on_disconnected.subscribe(self._on_disconnected)
 
         self._session = None
         self._server.launch()
@@ -566,8 +565,7 @@ class NetworkDebugManager:
         session._send_data = partial(self._send_data, session)
         session._request_close = partial(self._session_request_close, session)
 
-        if callable(self.on_created_session):
-            self.on_created_session(session)
+        self.on_created_session(session)
 
         return session
 
@@ -581,8 +579,7 @@ class NetworkDebugManager:
 
         session.on_closed()
 
-        if callable(self.on_closed_session):
-            self.on_closed_session(session)
+        self.on_closed_session(session)
 
         session._request_close = None
         session._send_data = None

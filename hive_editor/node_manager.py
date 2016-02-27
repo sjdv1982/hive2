@@ -8,6 +8,7 @@ from .history import CommandHistoryManager
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
 from .node import FOLD_NODE_IMPORT_PATH, NodeTypes
+from .observer import Observable
 from .utils import start_value_from_type, is_identifier, \
     camelcase_to_underscores
 
@@ -46,6 +47,18 @@ class NodeConnectionError(Exception):
 
 class NodeManager(object):
 
+    on_node_created = Observable()
+    on_node_destroyed = Observable()
+    on_node_moved = Observable()
+    on_node_renamed = Observable()
+
+    on_connection_created = Observable()
+    on_connection_destroyed = Observable()
+    on_connection_reordered = Observable()
+
+    on_pin_folded = Observable()
+    on_pin_unfolded = Observable()
+
     def __init__(self, history, logger=None):
         if history is None:
             history = CommandHistoryManager()
@@ -60,18 +73,6 @@ class NodeManager(object):
 
         self.docstring = ""
         self.nodes = {}
-
-        self.on_node_created = None
-        self.on_node_destroyed = None
-        self.on_node_moved = None
-        self.on_node_renamed = None
-
-        self.on_connection_created = None
-        self.on_connection_destroyed = None
-        self.on_connection_reordered = None
-
-        self.on_pin_folded = None
-        self.on_pin_unfolded = None
 
         if logger is None:
             logger = logging.getLogger(repr(self))
@@ -104,8 +105,7 @@ class NodeManager(object):
         connection.connect()
 
         # Ask GUI to perform connection
-        if callable(self.on_connection_created):
-            self.on_connection_created(connection)
+        self.on_connection_created(connection)
 
         output_pin = connection.output_pin
         input_pin = connection.input_pin
@@ -140,8 +140,7 @@ class NodeManager(object):
         :param connection: connection object
         """
         # Ask GUI to perform connection
-        if callable(self.on_connection_destroyed):
-            self.on_connection_destroyed(connection)
+        self.on_connection_destroyed(connection)
 
         connection.delete()
 
@@ -171,8 +170,7 @@ class NodeManager(object):
         output_pin.reorder_target(connection, index)
 
         # Ask GUI to reorder connection
-        if callable(self.on_connection_reordered):
-            self.on_connection_reordered(connection, index)
+        self.on_connection_reordered(connection, index)
 
         self.history.record_command(lambda: self.reorder_connection(connection, index),
                                     lambda: self.reorder_connection(connection, old_index))
@@ -184,8 +182,7 @@ class NodeManager(object):
         """
         self.nodes[node.name] = node
 
-        if callable(self.on_node_created):
-            self.on_node_created(node)
+        self.on_node_created(node)
 
         for pin in node.inputs.values():
             assert not pin.is_folded, (pin.name, pin.node)
@@ -193,8 +190,7 @@ class NodeManager(object):
         self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
 
         # Ensure node restored to original place
-        if callable(self.on_node_moved):
-            self.on_node_moved(node, node.position)
+        self.on_node_moved(node, node.position)
 
     def create_bee(self, import_path, params=None):
         """Create a bee node with the given import path"""
@@ -256,8 +252,7 @@ class NodeManager(object):
         for output_pin in node.outputs.values():
             self.delete_connections(list(output_pin.connections))
 
-        if callable(self.on_node_destroyed):
-            self.on_node_destroyed(node)
+        self.on_node_destroyed(node)
 
         self.nodes.pop(node.name)
 
@@ -299,7 +294,7 @@ class NodeManager(object):
 
         original_value = params_dict[name]
         params_dict[name] = value
-        print("RECORD", params_dict)
+
         self.history.record_command(lambda: self.set_param_value(node, param_type, name, value),
                                     lambda: self.set_param_value(node, param_type, name, original_value))
 
@@ -337,8 +332,7 @@ class NodeManager(object):
         with node.make_writable():
             node.name = name
 
-        if callable(self.on_node_renamed):
-            self.on_node_renamed(node, name)
+        self.on_node_renamed(node, name)
 
         self.history.record_command(lambda: self.rename_node(node, name),
                                     lambda: self.rename_node(node, old_name))
@@ -367,8 +361,7 @@ class NodeManager(object):
                 new_position = other_node.position[0] + dx, other_node.position[1] + dy
                 self.reposition_node(other_node, new_position)
 
-        if callable(self.on_node_moved):
-            self.on_node_moved(node, position)
+        self.on_node_moved(node, position)
 
         self.history.record_command(lambda: self.reposition_node(node, position),
                                     lambda: self.reposition_node(node, old_position))
@@ -406,8 +399,7 @@ class NodeManager(object):
 
         pin.is_folded = True
 
-        if callable(self.on_pin_folded):
-            self.on_pin_folded(pin)
+        self.on_pin_folded(pin)
 
         self.history.record_command(lambda: self.fold_pin(pin), lambda: self.unfold_pin(pin))
 
@@ -421,8 +413,7 @@ class NodeManager(object):
 
         pin.is_folded = False
 
-        if callable(self.on_pin_unfolded):
-            self.on_pin_unfolded(pin)
+        self.on_pin_unfolded(pin)
 
         self.history.record_command(lambda: self.unfold_pin(pin), lambda: self.fold_pin(pin))
 

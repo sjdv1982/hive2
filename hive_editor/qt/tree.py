@@ -1,11 +1,15 @@
 from __future__ import print_function, absolute_import
 
+from .qt_core import *
 from .qt_gui import *
 
 
 class TreeWidget(QTreeWidget):
 
-    def __init__(self, title="", parent=None, on_selected=None):
+    on_selected = Signal(str)
+    on_right_click = Signal(str, QEvent)
+
+    def __init__(self, parent=None):
         QTreeWidget.__init__(self, parent)
         self.setColumnCount(1)
         self.setHeaderHidden(True)
@@ -17,9 +21,6 @@ class TreeWidget(QTreeWidget):
         self.itemPressed.connect(self._on_item_pressed)
         self.setDragEnabled(True)
 
-        self.on_selected = on_selected
-        self.on_right_click = None
-
     def contextMenuEvent(self, event):
         item = self.selectedItems()[0]
 
@@ -30,16 +31,14 @@ class TreeWidget(QTreeWidget):
             return
 
         path = '.'.join(key)
-        if callable(self.on_right_click):
-            self.on_right_click(path, event)
+        self.on_right_click(path, event)
 
     def _on_item_pressed(self, item, column):
         if id(item) in self._widget_id_to_key:
             key = self._widget_id_to_key[id(item)]
 
-            if callable(self.on_selected):
-                path = '.'.join(key)
-                self.on_selected(path)
+            path = '.'.join(key)
+            self.on_selected.emit(path)
 
             self.setDragEnabled(True)
         else:

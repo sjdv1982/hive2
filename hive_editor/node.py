@@ -57,11 +57,6 @@ class IOPin(object):
         # Read only view
         self.connections = ListView(self._connections)
 
-        # Callbacks
-        self.on_connected = None
-        self.on_disconnected = None
-        self.validate_connection = None
-
     @property
     def is_trigger(self):
         return self._is_trigger
@@ -136,11 +131,6 @@ class IOPin(object):
         return False
 
     def can_connect_to(self, other_pin, is_source):
-        # Custom validator
-        if callable(self.validate_connection):
-            if not self.validate_connection(self, other_pin, is_source):
-                return False
-
         # If a restricted data type
         for data_type in self._restricted_data_types:
             if identifiers_match(other_pin.data_type, data_type, support_untyped=False):
@@ -180,9 +170,6 @@ class IOPin(object):
         # Mimic aesthetics
         self.mimic_other_pin(other_pin)
 
-        if callable(self.on_connected):
-            self.on_connected(self, other_pin)
-
     def remove_connection(self, connection):
         self._connections.remove(connection)
 
@@ -196,9 +183,6 @@ class IOPin(object):
             self._connection_count -= 1
 
         self.unmimic_other_pin(other_pin)
-
-        if callable(self.on_connected):
-            self.on_disconnected(self, other_pin)
 
     def reorder_target(self, connection, index):
         current_index = self._connections.index(connection)

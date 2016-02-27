@@ -273,7 +273,7 @@ class NodeEditorSpace(QWidget):
         self.file_path = file_path
 
         self._history = CommandHistoryManager()
-        self._history.on_updated = self._on_history_updated
+        self._history.on_updated.subscribe(self._on_history_updated)
 
         self._node_manager = NodeManager(self._history)
 
@@ -281,16 +281,16 @@ class NodeEditorSpace(QWidget):
         layout.addWidget(self._view)
 
         # Node manager to view
-        nm = self._node_manager
-        nm.on_node_created = self._on_node_created
-        nm.on_node_destroyed = self._on_node_destroyed
-        nm.on_node_moved = self._on_node_moved
-        nm.on_node_renamed = self._on_node_renamed
-        nm.on_connection_created = self._on_connection_created
-        nm.on_connection_destroyed = self._on_connection_destroyed
-        nm.on_connection_reordered = self._on_connection_reordered
-        nm.on_pin_folded = self._on_pin_folded
-        nm.on_pin_unfolded = self._on_pin_unfolded
+        node_manager = self._node_manager
+        node_manager.on_node_created.subscribe(self._on_node_created)
+        node_manager.on_node_destroyed.subscribe(self._on_node_destroyed)
+        node_manager.on_node_moved.subscribe(self._on_node_moved)
+        node_manager.on_node_renamed.subscribe(self._on_node_renamed)
+        node_manager.on_connection_created.subscribe(self._on_connection_created)
+        node_manager.on_connection_destroyed.subscribe(self._on_connection_destroyed)
+        node_manager.on_connection_reordered.subscribe(self._on_connection_reordered)
+        node_manager.on_pin_folded.subscribe(self._on_pin_folded)
+        node_manager.on_pin_unfolded.subscribe(self._on_pin_unfolded)
 
         self._history_id = self._history.command_id
         self._last_saved_id = self._history_id
@@ -345,37 +345,41 @@ class NodeEditorSpace(QWidget):
     def project_path(self):
         return self._project_path
 
+    @property
+    def debug_controller(self):
+        return self._debug_controller
+
     def _pin_to_bee_container_name(self, pin):
         return "{}.{}".format(pin.node.name, pin.name)
 
-    def on_debugging_started(self, debug_controller):
+    def on_debugging_started(self, controller):
         if self.has_unsaved_changes:
             reply = QMessageBox.warning(self, 'Revert Changes', "This file has unsaved changes, and a debugger has been launched. Do you want to reset them?",
                                         QMessageBox.Yes, QMessageBox.No)
 
             if reply != QMessageBox.Yes:
-                debug_controller.close()
+                controller.close()
                 return
 
             self.load()
 
-        self._debug_controller = debug_controller
+        self._debug_controller = controller
         self._debug_widget.show()
 
-        # TODO clean this mess up
         # TODO make debug controller trigger UI?
-        debug_controller.on_push_out = lambda source_name, target_name, value: \
-            self._on_debug_operation(source_name, target_name, operation="push-out", value=value)
-        debug_controller.on_pull_in = lambda source_name, target_name, value: \
-            self._on_debug_operation(source_name, target_name, operation="pull-in", value=value)
-        debug_controller.on_trigger = partial(self._on_debug_operation, operation="trigger")
-        debug_controller.on_pre_trigger = partial(self._on_debug_operation, operation="pre-trigger")
-        debug_controller.on_added_breakpoint = self._on_breakpoint_added
-        debug_controller.on_removed_breakpoint = self._on_breakpoint_removed
+        controller.on_push_out.subscribe(lambda source_name, target_name, value:
+                                               self._on_debug_operation(source_name, target_name,
+                                                                        operation="push-out", value=value))
+        controller.on_pull_in.subscribe(lambda source_name, target_name, value:
+                                              self._on_debug_operation(source_name, target_name,
+                                                                       operation="pull-in", value=value))
+        controller.on_trigger.subscribe(partial(self._on_debug_operation, operation="trigger"))
+        controller.on_pre_trigger.subscribe(partial(self._on_debug_operation, operation="pre-trigger"))
+        controller.on_breakpoint_hit.subscribe(self._debug_widget.set_pending_breakpoint)
+        controller.on_breakpoint_added.subscribe(self._on_breakpoint_added)
+        controller.on_breakpoint_removed.subscribe(self._on_breakpoint_removed)
 
-        debug_controller.on_breakpoint_hit = self._debug_widget.set_pending_breakpoint
-
-        self._debug_widget.on_skip_breakpoint.connect(debug_controller.skip_breakpoint)
+        self._debug_widget.on_skip_breakpoint.connect(controller.skip_breakpoint)
 
     def _on_debug_operation(self, source_name, target_name, operation, value=None):
         self._debug_widget.log_operation(source_name, target_name, operation, value)
@@ -397,17 +401,13 @@ class NodeEditorSpace(QWidget):
     def on_debugging_finished(self):
         debug_controller = self._debug_controller
 
-        debug_controller.on_push_out = None
-        debug_controller.on_pull_in = None
-        debug_controller.on_trigger = None
-        debug_controller.on_pre_trigger = None
-        debug_controller.on_added_breakpoint = None
-        debug_controller.on_removed_breakpoint = None
-        debug_controller.on_breakpoint_hit = None
-
-        # Cleanup breakpoints
-        for breakpoint in debug_controller.breakpoints:
-            self._on_breakpoint_removed(breakpoint)
+        debug_controller.on_push_out.clear()
+        debug_controller.on_pull_in.clear()
+        debug_controller.on_trigger.clear()
+        debug_controller.on_pre_trigger.clear()
+        debug_controller.on_breakpoint_added.clear()
+        debug_controller.on_breakpoint_removed.clear()
+        debug_controller.on_breakpoint_hit.clear()
 
         self._debug_controller = None
 
@@ -420,10 +420,6 @@ class NodeEditorSpace(QWidget):
         self._history_id = command_id
 
         has_unsaved_changes = self.has_unsaved_changes
-
-        if has_unsaved_changes:
-            self._configuration_widget.refresh()
-            self._folding_widget.refresh()
 
         # Stop debugging if history is updated!
         if has_unsaved_changes and self.is_debugging:
@@ -617,11 +613,9 @@ class NodeEditorSpace(QWidget):
 
         if bee_container_name not in debug_controller.breakpoints:
             debug_controller.add_breakpoint(bee_container_name)
-            self._on_breakpoint_added(bee_container_name)
 
         else:
             debug_controller.remove_breakpoint(bee_container_name)
-            self._on_breakpoint_removed(bee_container_name)
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node

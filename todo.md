@@ -1,3 +1,3 @@
-Support advanced UI design (Spyder)
-Support remote debugging
-Support Hive processes &/ fsm
+- [ ] Support advanced UI design (Spyder)
+- [x] Support remote debugging
+- [ ] Support Hive processes &/ fsm

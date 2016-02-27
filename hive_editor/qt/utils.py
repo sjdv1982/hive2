@@ -1,9 +1,11 @@
 from collections import OrderedDict
 
 from hive import is_subtype
+
 from .colour_button import QColorButton
 from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
     QColor, QToolButton, QIcon, QPixmap
+from ..observer import Observable
 
 INT_RANGE = -999, 999
 FLOAT_RANGE = -999.0, 999.0
@@ -12,14 +14,14 @@ FLOAT_STEP = 0.1
 
 class WidgetController:
 
+    on_changed = Observable()
+
     def __init__(self, getter, setter):
-        self.on_changed = None
         self.setter = setter
         self.getter = getter
 
     def _on_changed(self):
-        if callable(self.on_changed):
-            self.on_changed(self.getter())
+        self.on_changed(self.getter())
 
     @property
     def value(self):

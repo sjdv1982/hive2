@@ -49,8 +49,8 @@ class MainWindow(QMainWindow):
         self._setup_menus()
 
         self.debugger = QtNetworkDebugManager()
-        self.debugger.on_closed_session = self._on_closed_debug_session
-        self.debugger.on_created_session = self._on_created_debug_session
+        self.debugger.on_closed_session.subscribe(self._on_closed_debug_session)
+        self.debugger.on_created_session.subscribe(self._on_created_debug_session)
 
         self.hive_finder = HiveFinder()
 
@@ -309,8 +309,9 @@ class MainWindow(QMainWindow):
 
         # Stop debugging if editor is closed
         if self.debugger.session is not None:
-            if self.debugger.session.is_debugging_hivemap(widget.file_path):
-                self.debugger.session.close()
+            if widget.file_path:
+                if self.debugger.session.is_debugging_hivemap(widget.file_path):
+                    self.debugger.session.close()
 
         widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window, self.preview_window,
                        self.console_window, self.debug_window)
@@ -510,16 +511,16 @@ class MainWindow(QMainWindow):
         clear_imported_hivemaps()
 
     def refresh_project_tree(self):
-        hive_widget = TreeWidget(title="Path")
-        hive_widget.on_selected = partial(self._on_selected_tree_node, node_type=NodeTypes.HIVE)
+        hive_widget = TreeWidget()
         hive_widget.load_items(self.hive_finder.find_hives())
-        hive_widget.on_right_click = partial(self.show_hive_edit_menu, hive_widget)
+        hive_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.HIVE))
+        hive_widget.on_right_click.connect(partial(self.show_hive_edit_menu, hive_widget))
 
         self.hive_window.setWidget(hive_widget)
 
-        bee_widget = TreeWidget(title="Path")
-        bee_widget.on_selected = partial(self._on_selected_tree_node, node_type=NodeTypes.BEE)
+        bee_widget = TreeWidget()
         bee_widget.load_items(found_bees)
+        bee_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.BEE))
 
         self.bee_window.setWidget(bee_widget)
 
@@ -653,13 +654,13 @@ class MainWindow(QMainWindow):
         editor.on_debugging_finished()
 
     def _on_created_debug_session(self, debug_session):
-        debug_session.on_created_controller = self._on_created_debug_controller
-        debug_session.on_destroyed_controller = self._on_destroyed_debug_controller
+        debug_session.on_created_controller.subscribe(self._on_created_debug_controller)
+        debug_session.on_destroyed_controller.subscribe(self._on_destroyed_debug_controller)
 
         self.debug_window.show()
 
     def _on_closed_debug_session(self, debug_session):
-        debug_session.on_created_controller = None
-        debug_session.on_destroyed_controller = None
+        debug_session.on_created_controller.unsubscribe(self._on_created_debug_controller)
+        debug_session.on_destroyed_controller.unsubscribe(self._on_destroyed_debug_controller)
 
         self.debug_window.close()
