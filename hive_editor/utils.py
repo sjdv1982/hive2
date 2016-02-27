@@ -192,7 +192,7 @@ def import_from_path(import_path):
         raise ImportError from err
 
 
-def import_path_to_hivemap_path(import_path, *additional_paths):
+def import_path_to_hivemap_path(import_path, additional_paths):
     module_path, class_name = import_path.rsplit(".", 1)
 
     try:

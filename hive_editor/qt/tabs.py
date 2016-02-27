@@ -1,7 +1,12 @@
+from .qt_core import *
 from .qt_gui import *
 
 
 class TabViewWidget(QTabWidget):
+
+    on_changed = Signal(int)
+    on_removed = Signal(int)
+    on_inserted = Signal(int)
 
     def __init__(self):
         QTabWidget.__init__(self)
@@ -11,9 +16,6 @@ class TabViewWidget(QTabWidget):
         self.tabCloseRequested.connect(self.removeTab)
         self.currentChanged.connect(self._tab_changed)
 
-        self.on_inserted = None
-        self.on_removed = None
-        self.on_changed = None
         self.check_tab_closable = None
 
         self._current_tab_index = None
@@ -37,15 +39,12 @@ class TabViewWidget(QTabWidget):
         previous_index = self._current_tab_index
         self._current_tab_index = index
 
-        if callable(self.on_changed):
-            self.on_changed(self, previous_index)
+        self.on_changed.emit(previous_index)
 
     def tabRemoved(self, index):
-        if callable(self.on_removed):
-            self.on_removed(self)
+        self.on_removed.emit(index)
 
     def tabInserted(self, index):
-        if callable(self.on_inserted):
-            self.on_inserted(self)
+        self.on_inserted.emit(index)
 
 

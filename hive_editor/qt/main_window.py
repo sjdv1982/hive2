@@ -84,6 +84,7 @@ class MainWindow(QMainWindow):
                 html = f.read().replace("%LOCALDIR%", local_dir)
 
             web_view.setHtml(html)
+
         else:
             url = QUrl("https://github.com/agoose77/hive2/wiki")
             web_view.load(url)
@@ -156,7 +157,7 @@ class MainWindow(QMainWindow):
         self.tab_widget = TabViewWidget()
         self.setCentralWidget(self.tab_widget)
 
-        self.tab_widget.on_changed = self._on_tab_changed
+        self.tab_widget.on_changed.connect(self._on_tab_changed)
         self.tab_widget.check_tab_closable = self._check_tab_closable
 
         # Left window
@@ -194,10 +195,25 @@ class MainWindow(QMainWindow):
         mime_data = event.mimeData()
 
         if mime_data.hasFormat('text/uri-list'):
-            urls = mime_data.urls()
+            file_paths = [u.toLocalFile() for u in mime_data.urls()]
 
-            for url in urls:
-                self._open_file(url.toLocalFile())
+            if len(file_paths) == 1:
+                file_path = file_paths[0]
+
+                # If its a folder, try loading project
+                if os.path.isdir(file_path):
+                    reply = QMessageBox.warning(self, 'Open Project', "A directory was dropped onto the editor, "
+                                                                      "attempt to load project?",
+                                                QMessageBox.Yes, QMessageBox.No)
+
+                    if reply != QMessageBox.Yes:
+                        return
+
+                    self._open_project(file_path)
+
+            else:
+                for file_path in file_paths:
+                    self._open_file(file_path)
 
         elif mime_data.hasFormat('text/plain'):
             hivemap_text = mime_data.text()
@@ -217,8 +233,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         try:
             self.close_open_tabs()
+
         except PermissionError:
             event.ignore()
+
         else:
             event.accept()
 
@@ -232,6 +250,7 @@ class MainWindow(QMainWindow):
 
         if value is None:
             directory_name = "<No project>"
+
         else:
             directory_name = os.path.basename(value)
 
@@ -297,10 +316,12 @@ class MainWindow(QMainWindow):
                        self.console_window, self.debug_window)
         return True
 
-    def _on_tab_changed(self, tab_menu, previous_index=None):
+    def _on_tab_changed(self, previous_index=None):
+        tab_widget = self.tab_widget
+
         # Exit last open view
         if previous_index is not None:
-            previous_widget = tab_menu.widget(previous_index)
+            previous_widget = tab_widget.widget(previous_index)
             if isinstance(previous_widget, NodeEditorSpace):
                 previous_widget.on_exit(self.docstring_window, self.folding_window, self.configuration_window,
                                         self.preview_window, self.console_window, self.debug_window)
@@ -308,7 +329,7 @@ class MainWindow(QMainWindow):
         # Update UI elements
         self._update_menu_options()
 
-        widget = tab_menu.currentWidget()
+        widget = tab_widget.currentWidget()
 
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
@@ -445,15 +466,15 @@ class MainWindow(QMainWindow):
             return
 
         directory_path = dialogue.selectedFiles()[0]
-        self.close_project()
         self._open_project(directory_path)
 
     def reload_project(self):
         directory = self.project_directory
-        self.close_project()
         self._open_project(directory)
 
     def _open_project(self, directory_path):
+        self.close_project()
+
         # Load HIVES from project
         self.hive_finder.additional_paths = {directory_path, }
 
@@ -498,8 +519,9 @@ class MainWindow(QMainWindow):
 
         bee_widget = TreeWidget(title="Path")
         bee_widget.on_selected = partial(self._on_selected_tree_node, node_type=NodeTypes.BEE)
-        self.bee_window.setWidget(bee_widget)
         bee_widget.load_items(found_bees)
+
+        self.bee_window.setWidget(bee_widget)
 
     def show_hive_edit_menu(self, hive_widget, import_path, event):
         # Can only edit .hivemaps
@@ -574,7 +596,7 @@ class MainWindow(QMainWindow):
             self.tab_widget.setCurrentWidget(editor)
 
         except ValueError:
-            editor = self.add_editor_space(file_path=file_path)
+            self.add_editor_space(file_path=file_path)
 
             # Rename tab
             name = self._get_display_name(file_path, allow_untitled=False)

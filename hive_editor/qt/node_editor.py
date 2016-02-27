@@ -164,6 +164,8 @@ class QDebugControlWidget(QWidget):
 
 class QDebugWidget(QWidget):
 
+    on_skip_breakpoint = Signal(str)
+
     def __init__(self, max_history_entries=15):
         QWidget.__init__(self)
 
@@ -196,8 +198,6 @@ class QDebugWidget(QWidget):
 
         self._max_history_entries = max_history_entries
 
-        self.on_skip_breakpoint = None
-
     def _skip_active_breakpoint(self):
         item = self._breakpoint_list.currentItem()
         if item is None:
@@ -206,8 +206,7 @@ class QDebugWidget(QWidget):
         breakpoint_name = item.text()
         self._breakpoint_list.setCurrentItem(None)
 
-        if callable(self.on_skip_breakpoint):
-            self.on_skip_breakpoint(breakpoint_name)
+        self.on_skip_breakpoint.emit(breakpoint_name)
 
     def add_breakpoint(self, name):
         if name in self._text_to_item:
@@ -376,7 +375,7 @@ class NodeEditorSpace(QWidget):
 
         debug_controller.on_breakpoint_hit = self._debug_widget.set_pending_breakpoint
 
-        self._debug_widget.on_skip_breakpoint = debug_controller.skip_breakpoint
+        self._debug_widget.on_skip_breakpoint.connect(debug_controller.skip_breakpoint)
 
     def _on_debug_operation(self, source_name, target_name, operation, value=None):
         self._debug_widget.log_operation(source_name, target_name, operation, value)
@@ -694,7 +693,6 @@ class NodeEditorSpace(QWidget):
         return params
 
     def add_node_at(self, position, import_path, node_type):
-        print("ADD")
         if node_type == NodeTypes.BEE:
             inspector = self._node_manager.bee_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
@@ -703,18 +701,20 @@ class NodeEditorSpace(QWidget):
         else:
             # Check Hive's hivemap isn't currently open
             if self.file_path is not None:
+                # Try and import the hivemap
+                additional_paths = [self._project_path] if self._project_path else []
+
                 # Check we don't have a source file
-                if callable(self.get_hivemap_path):
-                    try:
-                        hivemap_file_path = self.get_hivemap_path(import_path)
+                try:
+                    hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
 
-                    except ValueError:
-                        pass
+                except ValueError:
+                    pass
 
-                    else:
-                        if hivemap_file_path == self.file_path:
-                            QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
-                            return
+                else:
+                    if hivemap_file_path == self.file_path:
+                        QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
+                        return
 
             inspector = self._node_manager.hive_node_inspector.inspect(import_path)
             params = self._execute_inspector(inspector)
@@ -724,7 +724,7 @@ class NodeEditorSpace(QWidget):
         view_position = self._view.mapFromGlobal(position)
         scene_position = self._view.mapToScene(view_position)
         pos = scene_position.x(), scene_position.y()
-        print("ADD", position, view_position, scene_position, pos)
+
         self._node_manager.reposition_node(node, pos)
 
     def add_node_at_mouse(self, import_path, node_type):
