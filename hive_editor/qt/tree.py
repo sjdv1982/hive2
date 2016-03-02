@@ -31,7 +31,7 @@ class TreeWidget(QTreeWidget):
             return
 
         path = '.'.join(key)
-        self.on_right_click(path, event)
+        self.on_right_click.emit(path, event)
 
     def _on_item_pressed(self, item, column):
         if id(item) in self._widget_id_to_key:
