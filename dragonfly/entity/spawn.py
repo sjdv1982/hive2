@@ -48,7 +48,7 @@ def build_spawn(cls, i, ex, args, meta_args):
 
     # Process instantiator
     if meta_args.spawn_hive:
-        i.instantiator = Instantiator(forward_events='all', bind_process='dependent')
+        i.instantiator = Instantiator(forward_events='all', bind_process='child')
 
         # Pull entity to instantiator
         hive.connect(i.pull_entity, i.instantiator.entity)
