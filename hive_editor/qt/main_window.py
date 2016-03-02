@@ -23,6 +23,12 @@ area_classes = {
 
 
 def dict_to_delimited(data, delimiter, name_path=()):
+    """Convert a nested dictionary to a sequence of delimited strings.
+
+    :param data: dictionary object
+    :param delimiter: delimiter string
+    :param name_path: root for all paths e.g ('some', 'root)
+    """
     for name, value in data.items():
         new_name_path = name_path + (name,)
 

@@ -15,12 +15,19 @@ class MimicFlags(object):
     SHAPE = 2
 
 
+PIN_MODES = {'pull', 'push', 'any'}
+IO_TYPES = {'input', 'output'}
+
+
 class IOPin(object):
 
     def __init__(self, node, name, io_type, data_type, mode="pull", max_connections=-1, restricted_types=None,
                  mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
         self.name = name
         self.is_folded = False
+
+        assert io_type in IO_TYPES, "Invalid io type for pin: '{}".format(io_type)
+        assert mode in PIN_MODES, "Invalid mode for pin: '{}'".format(mode)
 
         # Non-permitted connection types
         if restricted_types is None:
@@ -40,7 +47,7 @@ class IOPin(object):
         # Read only
         self._colour = get_colour(data_type)
         self._data_type = data_type
-        self._mode = mode # "any" for any connection
+        self._mode = mode
         self._is_trigger = identifiers_match(data_type, "trigger", support_untyped=False)
         self._io_type = io_type
         self._node = node
@@ -54,8 +61,10 @@ class IOPin(object):
         self._count_proxies = count_proxies
         self._max_connections = max_connections
 
-        # Read only view
-        self.connections = ListView(self._connections)
+    # Read only view
+    @property
+    def connections(self):
+        return ListView(self._connections)
 
     @property
     def is_trigger(self):

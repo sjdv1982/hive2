@@ -21,7 +21,7 @@ class Parameter(object):
     data_type = None
     options = None
 
-    class NoValue:
+    class NoValue(object):
         pass
 
 

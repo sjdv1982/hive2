@@ -3,20 +3,25 @@ from weakref import WeakKeyDictionary
 
 
 class ObservableInstance:
+    """Implements the Observer pattern to notify arbitrary listeners of events"""
 
     def __init__(self):
         self._observers = []
 
     def clear(self):
+        """Unsubscribe all observers"""
         self._observers.clear()
 
-    def unsubscribe(self, observer):
-        self._observers.remove(observer)
-
     def subscribe(self, observer):
+        """Add an observer to the observer list"""
         self._observers.append(observer)
 
+    def unsubscribe(self, observer):
+        """Remove an observer from the observer list"""
+        self._observers.remove(observer)
+
     def __call__(self, *args, **kwargs):
+        """Call all observers with provided arguments"""
         for observer in self._observers:
             try:
                 observer(*args, **kwargs)
@@ -26,6 +31,7 @@ class ObservableInstance:
 
 
 class Observable:
+    """Descriptor object to instantiate ObservableInstance for class instances"""
 
     def __init__(self):
         self._instances = WeakKeyDictionary()

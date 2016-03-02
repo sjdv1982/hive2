@@ -12,7 +12,7 @@ def set_debug_context(context):
     _debug_context = context
 
 
-class DebugContextBase:
+class DebugContextBase(object):
 
     def __enter__(self):
         set_debug_context(self)

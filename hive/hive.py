@@ -395,7 +395,7 @@ F
         return self
 
 
-class MetaHivePrimitive:
+class MetaHivePrimitive(object):
     """Primitive container to instantiate Hive with particular meta arguments"""
 
     _hive_object_cls = None

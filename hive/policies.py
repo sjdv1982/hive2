@@ -10,7 +10,7 @@ class MatchmakingPolicyError(HiveException):
     pass
 
 
-class MatchmakingPolicy:
+class MatchmakingPolicy(object):
 
     limits = (-1, -1)
 
