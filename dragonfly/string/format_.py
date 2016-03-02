@@ -22,6 +22,9 @@ def build_format(i, ex, args, meta_args):
     for index, field in enumerate(fields):
         literal_text = field[1]
 
+        if literal_text is None:
+            continue
+
         if not literal_text.isidentifier():
             field_name = "field_{}".format(index)
             indexed_fields.append(field_name)

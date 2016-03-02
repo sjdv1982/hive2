@@ -332,7 +332,7 @@ class NodeEditorSpace(QWidget):
 
         self._debug_widget = QDebugWidget()
         self._debug_controller = None
-        self._debug_blink_time = 1
+        self._debug_blink_time = 0.1
 
         self._project_path = project_path
 

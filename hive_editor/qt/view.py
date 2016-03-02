@@ -155,7 +155,8 @@ class NodeView(QGraphicsView):
         self._moved_gui_nodes = set()
         self._position_busy = False
 
-        self.setScene(NodeUIScene(self))
+        scene = NodeUIScene(self)
+        self.setScene(scene)
 
         self.focused_socket = None
         self.hovered_node = None
@@ -164,6 +165,10 @@ class NodeView(QGraphicsView):
         self.type_info_widget.setZValue(1e4)
         self.scene().addItem(self.type_info_widget)
         self.type_info_widget.setVisible(False)
+
+        # Set rubber band drag
+
+        self.setDragMode(QGraphicsView.RubberBandDrag)
 
     def on_socket_hover_enter(self, socket, event=None):
         widget = self.type_info_widget
@@ -410,13 +415,10 @@ class NodeView(QGraphicsView):
                 self.setCursor(Qt.ClosedHandCursor)
                 self._panning = True
 
-            else:
-                QGraphicsView.mousePressEvent(self, event)
-
         # Handle augmented selection
         elif event.button() == Qt.LeftButton:
             # Handle connection deletion
-            if event.modifiers() == Qt.ControlModifier:
+            if event.modifiers() == Qt.ShiftModifier:
                 self._cut_start_position = self.mapToScene(event.pos())
 
                 # Create visible path
@@ -451,8 +453,9 @@ class NodeView(QGraphicsView):
                         connection.set_active(False)
                         self._active_connection = None
 
-                QGraphicsView.mousePressEvent(self, event)
                 self.update()
+
+            QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, mouseEvent):
         if self._panning:
@@ -483,7 +486,6 @@ class NodeView(QGraphicsView):
             self.setCursor(Qt.ArrowCursor)
             self._last_pan_point = QPoint()
             self._panning = False
-            NodeView._panning = False
 
         # Draw cutting tool
         elif self._slice_path is not None:

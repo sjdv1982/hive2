@@ -325,15 +325,12 @@ class Node(QGraphicsWidget):
         if event.button() == Qt.RightButton:
             pass
 
-        if event.button() == Qt.LeftButton:
-            if event.modifiers() == Qt.ShiftModifier:
-                self.setSelected(not self.isSelected())
-
         else:
             QGraphicsWidget.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         self.view.gui_finished_move()
+
         QGraphicsWidget.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):

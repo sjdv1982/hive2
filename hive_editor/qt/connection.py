@@ -96,6 +96,8 @@ class Connection(QGraphicsItem):
         self.setZValue(-1.0)
         self.set_active(False)
 
+        self._blink_depth = 0
+
     @property
     def start_socket(self):
         if self._start_socket is None:
@@ -239,9 +241,14 @@ class Connection(QGraphicsItem):
         timer = QTimer()
 
         def on_finished():
-            self._pen.setWidth(self._pen_width)
-            self.update()
+            self._blink_depth -= 1
 
+            # Allow multiple blinks without flashing
+            if not self._blink_depth:
+                self._pen.setWidth(self._pen_width)
+                self.update()
+
+        self._blink_depth += 1
         timer.singleShot(1000 * time, on_finished)
 
     def set_active(self, active):

@@ -18,7 +18,11 @@ class ImportClass:
 
         hook = hive_editor.get_hook()
 
-        container_parent_class = self._hive.parent._hive_object._hive_parent_class
+        # Find first runtime info object and assume is the only one required
+        first_runtime_info = set(self._hive._hive_runtime_info).pop()
+        parent = first_runtime_info.parent()
+        container_parent_class = parent._hive_object._hive_parent_class
+
         try:
             directory = os.path.dirname(hook.get_path_of_class(container_parent_class))
 
