@@ -20,7 +20,7 @@ def redirect_stderr(stream):
 
 class QConsole(QWidget):
 
-    def __init__(self, prefix='>>>', local_dict=None, max_history=15):
+    def __init__(self, prefix='>>>', local_dict=None, max_history=15, display_text=""):
         super().__init__()
 
         self.layout = QVBoxLayout()
@@ -49,15 +49,8 @@ class QConsole(QWidget):
         self._history = deque(maxlen=max_history)
         self._max_history = max_history
         self._current_command = -1
-        self._text = """
- Hive GUI console.
 
- Available modules:
- ------------------------------
-  editor - current node editor
-  window - main window
- ------------------------------
-"""
+        self._text = display_text
         self.display_widget.setText(self._text)
         self._prefix = prefix
 

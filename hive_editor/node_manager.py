@@ -397,7 +397,8 @@ class NodeManager(object):
 
             # TODO account for width of node and auto-arrange
 
-        pin.is_folded = True
+        with pin.make_writable():
+            pin.is_folded = True
 
         self.on_pin_folded(pin)
 
@@ -411,7 +412,8 @@ class NodeManager(object):
         assert pin.is_folded
         assert pin.connections
 
-        pin.is_folded = False
+        with pin.make_writable():
+            pin.is_folded = False
 
         self.on_pin_unfolded(pin)
 

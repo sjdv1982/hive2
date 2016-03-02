@@ -19,13 +19,10 @@ PIN_MODES = {'pull', 'push', 'any'}
 IO_TYPES = {'input', 'output'}
 
 
-class IOPin(object):
+class IOPin(ProtectedContainer):
 
     def __init__(self, node, name, io_type, data_type, mode="pull", max_connections=-1, restricted_types=None,
                  mimic_flags=MimicFlags.NONE, is_virtual=False, count_proxies=False):
-        self.name = name
-        self.is_folded = False
-
         assert io_type in IO_TYPES, "Invalid io type for pin: '{}".format(io_type)
         assert mode in PIN_MODES, "Invalid mode for pin: '{}'".format(mode)
 
@@ -45,6 +42,10 @@ class IOPin(object):
             mimic_flags |= MimicFlags.SHAPE
 
         # Read only
+        with self.make_writable():
+            self.is_folded = False
+
+        self._name = name
         self._colour = get_colour(data_type)
         self._data_type = data_type
         self._mode = mode
@@ -62,6 +63,12 @@ class IOPin(object):
         self._max_connections = max_connections
 
     # Read only view
+    is_folded = RestrictedAttribute()
+
+    @property
+    def name(self):
+        return self._name
+
     @property
     def connections(self):
         return ListView(self._connections)
@@ -134,8 +141,11 @@ class IOPin(object):
             target_pin = target_connection.output_pin
 
             # If other pin is in use else where
-            if len(target_pin.connections) == 1:
-                return True
+            if len(target_pin.connections) > 1:
+                return False
+
+            # Only allow variables to be folded
+            return target_pin.node.import_path == FOLD_NODE_IMPORT_PATH
 
         return False
 

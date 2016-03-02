@@ -318,7 +318,17 @@ class NodeEditorSpace(QWidget):
 
         self._folding_widget = FoldingPanel(self._node_manager)
         self._preview_widget = PreviewWidget(self._node_manager)
-        self._console_widget = QConsole(local_dict=dict(editor=self))
+        display_text = """
+ Hive GUI console.
+
+ Globals and useful attributes:
+ ----------------------------------------------------------------
+  editor                  - current node editor
+  editor.debug_controller - current debug controller if debugging
+  editor.node_manager     - current internal node manager
+ ----------------------------------------------------------------
+"""
+        self._console_widget = QConsole(local_dict=dict(editor=self), display_text=display_text)
 
         self._debug_widget = QDebugWidget()
         self._debug_controller = None

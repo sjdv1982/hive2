@@ -255,13 +255,13 @@ class MainWindow(QMainWindow):
         self._project_directory = value
 
         if value is None:
-            directory_name = "<No project>"
+            project_name = "<No project>"
 
         else:
-            directory_name = os.path.basename(value)
+            project_name = value
 
         # Rename project
-        title = self.project_name_template.format(directory_name)
+        title = self.project_name_template.format(project_name)
         self.setWindowTitle(title)
 
     def _get_display_name(self, file_path, allow_untitled=True):
