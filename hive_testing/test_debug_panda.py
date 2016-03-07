@@ -39,14 +39,16 @@ if False:
     debug_context = NetworkDebugContext()
 
 else:
-    from io import StringIO
-    as_file = StringIO()
-    debug_context = FileDebugContext(as_file)
+    if False:
+        from io import StringIO
+        file_ = StringIO()
+    else:
+        from os import path
+        filepath = path.join(path.dirname(__file__), "test_debug.csv")
+        file_ = open(filepath, "w", newline="")
+    debug_context = FileDebugContext(file_)
 
 with debug_context:
     my_hive = MyHive()
     my_hive.run()
 
-
-as_file.seek(0)
-print(as_file.read(), "DART")
