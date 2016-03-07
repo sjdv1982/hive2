@@ -1,20 +1,25 @@
 Hivemap (
   hives = HiveNodeArray (
     HiveNode (
-      identifier = 'transistor',
-      import_path = 'dragonfly.std.Transistor',
+      identifier = 'keyboard',
+      import_path = 'dragonfly.io.Keyboard',
       position = Coordinate2D (
-        x = 13.0,
-        y = -147.0,
+        x = -208.0,
+        y = -48.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'data_type',
+          identifier = 'mode',
           data_type = 'str',
-          value = 'str',
+          value = 'single key',
         ),
       ),
       args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 'w',
+        ),
       ),
       folded_pins = StringArray (
       ),
@@ -48,25 +53,20 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'keyboard',
-      import_path = 'dragonfly.io.Keyboard',
+      identifier = 'transistor',
+      import_path = 'dragonfly.std.Transistor',
       position = Coordinate2D (
-        x = -208.0,
-        y = -48.0,
+        x = 13.0,
+        y = -147.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
-          identifier = 'mode',
+          identifier = 'data_type',
           data_type = 'str',
-          value = 'single key',
+          value = 'str',
         ),
       ),
       args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'key',
-          data_type = 'str',
-          value = 'w',
-        ),
       ),
       folded_pins = StringArray (
       ),
@@ -91,16 +91,37 @@ Hivemap (
     ),
   ),
   bees = BeeNodeArray (
+    BeeNode (
+      identifier = 'entry',
+      import_path = 'hive.entry',
+      position = Coordinate2D (
+        x = -197.0,
+        y = 90.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+    ),
   ),
   helpers = HelperNodeArray (
   ),
   connections = ConnectionArray (
     Connection (
-      from_node = 'transistor',
-      output_name = 'result',
-      to_node = 'print',
-      input_name = 'value_in',
-      is_trigger = False,
+      from_node = 'keyboard',
+      output_name = 'on_pressed',
+      to_node = 'transistor',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'entry',
+      output_name = 'output',
+      to_node = 'transistor',
+      input_name = 'trigger',
+      is_trigger = True,
     ),
     Connection (
       from_node = 'value',
@@ -110,11 +131,11 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'keyboard',
-      output_name = 'on_pressed',
-      to_node = 'transistor',
-      input_name = 'trigger',
-      is_trigger = True,
+      from_node = 'transistor',
+      output_name = 'result',
+      to_node = 'print',
+      input_name = 'value_in',
+      is_trigger = False,
     ),
   ),
   docstring = '',

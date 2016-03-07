@@ -1,8 +1,10 @@
 import dragonfly
 import hive
 
+from contextlib import contextmanager
+from hive.debug import FileDebugContext
 from hive_editor.debugging.network import NetworkDebugContext
-from panda_project.launcher import Launcher
+from panda_project.basic_keyboard import BasicKeyboard
 
 
 class MyHiveClass:
@@ -23,18 +25,28 @@ def build_my_hive(cls, i, ex, args):
     ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, identifier="entity.spawn")
     ex.get_register_template = hive.socket(cls.set_register_template, "entity.register_template")
 
-    i.main_hive = Launcher()
+    i.main_hive = BasicKeyboard()
 
 
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
 
-DO_DEBUG = True
+@contextmanager
+def no_context():
+    yield
+    return
 
-if DO_DEBUG:
+if False:
     debug_context = NetworkDebugContext()
-    with debug_context:
-        my_hive = MyHive()
-        my_hive.run()
+
 else:
+    from io import StringIO
+    as_file = StringIO()
+    debug_context = FileDebugContext(as_file)
+
+with debug_context:
     my_hive = MyHive()
     my_hive.run()
+
+
+as_file.seek(0)
+print(as_file.read(), "DART")
