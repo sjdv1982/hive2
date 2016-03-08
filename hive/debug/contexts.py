@@ -38,6 +38,7 @@ class DebugContextBase(object):
 
 
 class ReportedDebugContextBase(DebugContextBase):
+    """Base class for connection and trigger listener callbacks"""
 
     def report_trigger(self, source_ref, target_ref):
         raise NotImplementedError
@@ -86,6 +87,7 @@ class FileDebugContext(ReportedDebugContextBase):
     """
 
     class _NoData:
+        """Placeholder for omitted arguments"""
         pass
 
     def __init__(self, file_):

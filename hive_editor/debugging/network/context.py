@@ -167,6 +167,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
         bee_runtime_infos = bee._hive_runtime_info
         if bee_runtime_infos is not None:
+            # Iterate over parent infos, find path relative to parent's container (to find parent_node_name.bee_name)
             for info in bee._hive_runtime_info:
                 parent_ref, bee_name = info
                 parent = parent_ref()
@@ -175,6 +176,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
                 if parent_runtime_infos is None:
                     continue
 
+                # For each parent runtime info, store path relative to top-level container
                 for parent_info in parent._hive_runtime_info:
                     container_ref, node_name = parent_info
 
@@ -204,13 +206,15 @@ class NetworkDebugContext(ReportedDebugContextBase):
             if to_identifier not in name_to_hive:
                 continue
 
-            connection = HivemapConnection(from_identifier, connection.output_name, to_identifier, connection.input_name)
+            connection = HivemapConnection(from_identifier, connection.output_name,
+                                           to_identifier, connection.input_name)
             connections.add(connection)
 
         return connections
 
     @lru_cache()
     def _find_container_pair_info(self, source_bee_ref, target_bee_ref):
+        """Find the source bee name, target bee name and container hivemap file_path from two bee references"""
         source_bee = source_bee_ref()
         target_bee = target_bee_ref()
 
@@ -262,6 +266,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
     @lru_cache()
     def _get_container_hive_id(self, container_hive_path):
+        """Generate a unique id for a given file-path"""
         hive_id = next(self._id_generator)
         self._send_container_hive_id(hive_id, container_hive_path)
         return hive_id
