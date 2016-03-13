@@ -1,5 +1,6 @@
 from .actor import *
 from .bind import bind_info
+from .collision import Collision
 from .destroy import Destroy
 from .get_entity import GetEntity
 from .instantiate import Instantiator

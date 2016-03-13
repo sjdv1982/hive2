@@ -41,6 +41,7 @@ class MoveClass:
 def declare_move(meta_args):
     meta_args.bound = hive.parameter("bool", False)
     meta_args.coordinate_system = hive.parameter("str", 'absolute', options={'absolute', 'relative'})
+    # TODO advanced: if relative, allow choose to_self to disable input (or maybe use bool)
 
 
 def build_move(cls, i, ex, args, meta_args):
