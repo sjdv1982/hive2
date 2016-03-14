@@ -19,6 +19,10 @@ class _PhysicsManagerClass:
     def update(self):
         self._world.do_physics(1/self.tick_rate)
 
+    def register_entity(self, name, entity):
+        rb = entity.find("**-BulletRigidBodyNode")
+        print(rb)
+
 
 def build_physics_manager(cls, i, ex, args):
     i.tick_rate = hive.property(cls, "tick_rate", 'int')
@@ -30,6 +34,8 @@ def build_physics_manager(cls, i, ex, args):
 
     i.on_tick = hive.triggerable(i.do_update)
     ex.tick = hive.entry(i.on_tick)
+
+    ex.get_register_entity = hive.plugin(cls.register_entity, "entity.register_template")
 
 
 PhysicsManager = hive.hive("PhysicsManager", build_physics_manager, cls=_PhysicsManagerClass)
