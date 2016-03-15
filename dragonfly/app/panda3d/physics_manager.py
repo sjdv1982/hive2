@@ -9,6 +9,7 @@ class _PhysicsManagerClass:
         self._world.set_gravity(0, 0, -9.807)
 
         self.tick_rate = None
+        self.time = 0.0
 
     def add_rigid_body(self, rigid_body):
         self._world.attach_rigid_body(rigid_body)
@@ -18,10 +19,20 @@ class _PhysicsManagerClass:
 
     def update(self):
         self._world.do_physics(1/self.tick_rate)
+        self.time += 1/self.tick_rate
 
-    def register_entity(self, name, entity):
-        rb = entity.find("**-BulletRigidBodyNode")
-        print(rb)
+    @hive.types(entity='entity')
+    def on_entity_spawned(self, entity):
+        parent = entity.get_parent()
+        rb = parent.find("+BulletRigidBodyNode")
+        self._world.attach_rigid_body(rb.node())
+        print("ADD")
+
+    @hive.types(entity='entity')
+    def on_entity_destroyed(self, entity):
+        parent = entity.get_parent()
+        rb = parent.find("+BulletRigidBodyNode")
+        self._world.remove_rigid_body(rb.node())
 
 
 def build_physics_manager(cls, i, ex, args):
@@ -35,7 +46,11 @@ def build_physics_manager(cls, i, ex, args):
     i.on_tick = hive.triggerable(i.do_update)
     ex.tick = hive.entry(i.on_tick)
 
-    ex.get_register_entity = hive.plugin(cls.register_entity, "entity.register_template")
+    i.push_entity_spawned = hive.push_in(cls.on_entity_spawned)
+    ex.on_entity_spawned = hive.antenna(i.push_entity_spawned)
+
+    i.push_entity_destroyed = hive.push_in(cls.on_entity_destroyed)
+    ex.on_entity_destroyed = hive.antenna(i.push_entity_destroyed)
 
 
 PhysicsManager = hive.hive("PhysicsManager", build_physics_manager, cls=_PhysicsManagerClass)

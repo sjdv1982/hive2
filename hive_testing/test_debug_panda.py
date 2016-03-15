@@ -18,33 +18,22 @@ def create_cube():
 
     nodepath = NodePath(node)
     entity.wrt_reparent_to(nodepath)
+
     return nodepath
-    # np = render.attachNewNode(node)
-    # np.setPos(0, 0, 2)
 
 
 class MyHiveClass:
 
     def __init__(self, tick_rate=60):
-        self._templates = {'cube': create_cube()}
+        self._factories = {'cube': create_cube}
 
-    def set_register_template(self, register_template):
-        for name, entity in self._templates.items():
-            register_template(name, entity)
-
-    def set_spawn_entity(self, spawn_entity):
-        self._spawn_entity = spawn_entity
-
-    def spawn(self, template_name):
-        print("SPAN", template_name )
-        return self._spawn_entity(template_name)
+    def set_register_factory(self, register_factory):
+        for name, factory in self._factories.items():
+            register_factory(name, factory)
 
 
 def build_my_hive(cls, i, ex, args):
-    ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, identifier="entity.spawn")
-    ex.get_register_template = hive.socket(cls.set_register_template, "entity.register_template",
-                                           policy=hive.MultipleRequired)
-
+    ex.get_register_template = hive.socket(cls.set_register_factory, "entity.register_factory")
     i.main_hive = Launcher()
 
 

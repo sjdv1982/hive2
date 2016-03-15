@@ -50,6 +50,8 @@ def build_mainloop(cls, i, ex, args):
     # Connect physics
     hive.connect(i.tick, i.physics_manager.tick)
     hive.connect(i.pull_tick_rate, i.physics_manager.tick_rate)
+    hive.connect(i.entity_api.entity_spawned, i.physics_manager.on_entity_spawned)
+    hive.connect(i.entity_api.entity_destroyed, i.physics_manager.on_entity_destroyed)
 
     # Send tick event and step Panda
     i.on_tick = hive.triggerable(cls.on_tick)
