@@ -4,8 +4,8 @@ from ..bind import BindInfo, BindClassDefinition
 
 
 definition = BindClassDefinition()
-
 bind_mode = definition.parameter("bind_entity", "str", 'bound', {'none', 'bound', 'unbound'})
+
 with definition.condition(bind_mode != "none"):
     definition.forward_plugin("entity.position.get.absolute")
     definition.forward_plugin("entity.position.get.relative")
@@ -77,9 +77,7 @@ class EntityCls(factory.external_class):
     def get_config(self):
         config = {}
 
-        bound_to_entity = self._hive._hive_object._hive_meta_args_frozen.bind_entity == 'bound'
-
-        if bound_to_entity:
+        if hasattr(self._hive, 'entity'):
             self._hive.entity()
             config['entity'] = self.entity
 

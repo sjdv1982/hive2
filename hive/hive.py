@@ -214,7 +214,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         for builder, builder_cls in self._hive_parent_class._builders:
             if builder_cls is not None and isfunction(builder_cls.__init__):
                 init_signature = signature(builder_cls.__init__)
-                print(init_plus_args, self._hive_builder_kwargs, builder_cls)
+
                 try:
                     init_signature.bind(*init_plus_args, **self._hive_builder_kwargs)
 

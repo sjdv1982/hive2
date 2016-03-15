@@ -1,6 +1,8 @@
 import dragonfly
 import hive
 
+import hive_editor
+
 from hive_editor.debugging.network import NetworkDebugContext
 from panda_project.launcher import Launcher
 

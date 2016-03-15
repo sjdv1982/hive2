@@ -1,4 +1,5 @@
 from csv import writer as csv_writer
+from functools import lru_cache
 from weakref import ref
 
 from ..ppin import PullIn
@@ -104,6 +105,7 @@ class FileDebugContext(ReportedDebugContextBase):
     def report_pull_in(self, source_ref, target_ref, data):
         self._write_reported_operation("pull-in", source_ref, target_ref, data)
 
+    @lru_cache()
     def _get_absolute_name(self, bee_ref):
         bee = bee_ref()
 
@@ -144,6 +146,7 @@ class FileDebugContext(ReportedDebugContextBase):
         super(FileDebugContext, self).__exit__(exc_type, exc_val, exc_tb)
 
         debug_writer = csv_writer(self._file, dialect='excel')
+        debug_writer.writerow("Operation", "Source", "Target", "Value(?)")
         debug_writer.writerows(self._lines)
 
         self._lines.clear()
