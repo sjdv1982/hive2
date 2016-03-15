@@ -6,12 +6,10 @@ from itertools import product
 from logging import getLogger
 from struct import pack, unpack_from, calcsize
 from threading import Event
-from weakref import WeakKeyDictionary, ref
+from weakref import WeakKeyDictionary
 
-from hive.debug import DebugContextBase
+from hive.debug import ReportedDebugContextBase
 from hive.mixins import Nameable
-from hive.ppin import PullIn
-from hive.ppout import PushOut
 
 from .utils import pack_pascal_string, unpack_pascal_string
 from .network import Server, Client
@@ -35,58 +33,12 @@ class OpCodes:
      remove_breakpoint, hit_breakpoint) = range(9)
 
 
-class DebugBeeBase:
-
-    def __init__(self, debug_context, source_ref, target_ref):
-        self._debug_context = debug_context
-        self._source_ref = source_ref
-        self._target_ref = target_ref
-
-
-class DebugPushOutTarget(DebugBeeBase):
-
-    def __getattr__(self, name):
-        return getattr(self._target_ref(), name)
-
-    def push(self, value):
-        self._debug_context.report_push_out(self._source_ref, self._target_ref, value)
-        self._target_ref().push(value)
-
-
-class DebugPullInSource(DebugBeeBase):
-
-    def __getattr__(self, name):
-        return getattr(self._source_ref(), name)
-
-    def pull(self):
-        # TODO: exception handling hooks
-        self._pretrigger.push()
-        value = self._get_value()
-
-        self._debug_context.report_pull_in(self._source_ref, self._target_ref, value)
-
-        self._trigger.push()
-        return value
-
-
-class DebugTriggerTarget(DebugBeeBase):
-
-    def __call__(self):
-        self._debug_context.report_trigger(self._source_ref, self._target_ref,)
-
-
-class DebugPretriggerTarget(DebugBeeBase):
-
-    def __call__(self):
-        self._debug_context.report_pretrigger(self._source_ref, self._target_ref,)
-
-
 ContainerCandidates = namedtuple("ContainerCandidates", "containers paths")
 ContainerPairInfo = namedtuple("PairInfo", "source_container_name target_container_name hivemap_path")
 ContainerBeeReference = namedtuple("ContainerBeeReference", "container_id bee_container_name")
 
 
-class NetworkDebugContext(DebugContextBase):
+class NetworkDebugContext(ReportedDebugContextBase):
 
     def __init__(self, logger=None, host=None, port=None):
         self._container_hives = WeakKeyDictionary()
@@ -111,29 +63,6 @@ class NetworkDebugContext(DebugContextBase):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._client.stop()
         super().__exit__(exc_type, exc_val, exc_tb)
-
-    def build_connection(self, source, target):
-        if isinstance(source, PushOut):
-            target = DebugPushOutTarget(self, ref(source), ref(target))
-
-        elif isinstance(target, PullIn):
-            source = DebugPullInSource(self, ref(source), ref(target))
-
-        target._hive_connect_target(source)
-        source._hive_connect_source(target)
-
-    def build_trigger(self, source, target, pre):
-        target_func = target._hive_trigger_target()
-
-        if pre:
-            callable_target = DebugPretriggerTarget(self, ref(source), ref(target))
-            source._hive_pretrigger_source(callable_target)
-            source._hive_pretrigger_source(target_func)
-
-        else:
-            callable_target = DebugTriggerTarget(self, ref(source), ref(target))
-            source._hive_trigger_source(callable_target)
-            source._hive_trigger_source(target_func)
 
     def _clear_breakpoints(self):
         for breakpoint in self._breakpoints.values():
