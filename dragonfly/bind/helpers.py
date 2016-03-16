@@ -189,7 +189,7 @@ class BindClassFactory:
 
     def build_environment_hive(self):
         environment_class = self.create_environment_class()
-        return hive.dyna_hive("{}Environment".format(self._name), self.environment_builder,
+        return hive.meta_hive("{}Environment".format(self._name), self.environment_builder,
                               declarator=self.environment_declarator, cls=environment_class)
 
     def external_declarator(self, meta_args):
