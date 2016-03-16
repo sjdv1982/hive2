@@ -6,8 +6,12 @@ class EntityClass:
     def __init__(self):
         self._entities = []
         self._entity_hive_destructors = {}
+        self._factories = {}
 
-        self._templates = {}
+        self._hive = hive.get_run_hive()
+
+        self.entity_last_destroyed = None
+        self.entity_last_spawned = None
 
     def set_absolute_position(self, entity, position):
         entity.set_pos(entity.get_top(), position)
@@ -50,12 +54,24 @@ class EntityClass:
         return entity.get_python_tag(name)
 
     def spawn_entity(self, class_name):
-        entity_template = self._templates[class_name]
-        entity = entity_template.copy_to(base.render)
+        factory = self._factories[class_name]
+
+        entity = factory()
+        entity.reparent_to(base.render)
+
         self._entities.append(entity)
+
+        # Spawned callback
+        self.entity_last_spawned = entity
+        self._hive.entity_spawned.push()
+
         return entity
 
     def destroy_entity(self, entity):
+        # Destroyed callback
+        self.entity_last_destroyed = entity
+        self._hive.entity_destroyed.push()
+
         if entity in self._entity_hive_destructors:
             destructors = self._entity_hive_destructors.pop(entity)
 
@@ -63,14 +79,13 @@ class EntityClass:
                 callback()
 
         self._entities.remove(entity)
-
         entity.detach_node()
 
     def register_hive_destructor(self, entity, destructor):
         self._entity_hive_destructors.setdefault(entity, []).append(destructor)
 
-    def register_entity_template(self, template_name, template):
-        self._templates[template_name] = template
+    def register_entity_factory(self, template_name, factory):
+        self._factories[template_name] = factory
 
 
 def build_entity(cls, i, ex, args):
@@ -110,10 +125,19 @@ def build_entity(cls, i, ex, args):
                                   export_to_parent=True)
     ex.destroy_entity = hive.plugin(cls.destroy_entity, identifier="entity.destroy",
                                     export_to_parent=True)
-    ex.register_entity_template = hive.plugin(cls.register_entity_template, "entity.register_template",
+    ex.register_entity_factory = hive.plugin(cls.register_entity_factory, "entity.register_factory",
                                               export_to_parent=True)
     ex.register_hive_destructor = hive.plugin(cls.register_hive_destructor, "entity.register_destructor",
                                               export_to_parent=True)
+
+    # Push out entity destroyed
+    i.entity_last_destroyed = hive.property(cls, "entity_last_destroyed", "entity")
+    i.push_entity_destroyed = hive.push_out(i.entity_last_destroyed)
+    ex.entity_destroyed = hive.output(i.push_entity_destroyed)
+
+    i.entity_last_spawned = hive.property(cls, "entity_last_spawned", "entity")
+    i.push_entity_spawned = hive.push_out(i.entity_last_spawned)
+    ex.entity_spawned = hive.output(i.push_entity_spawned)
 
 
 EntityAPI = hive.hive("EntityAPI", build_entity, cls=EntityClass)

@@ -1,12 +1,12 @@
 import hive
 
-from .classes import BindContext
+from .classes import BindContext, get_active_bind_environments, get_bind_bases
 
 
 class BindEnvironmentClass:
     """Process environment which embeds a bound hive.
 
-    Exposes relevant plugins and sockets to embedded hive.
+    Exposes relevant plugins
     """
 
     def __init__(self, context):
@@ -46,7 +46,7 @@ def declare_build_environment(meta_args):
 
 
 def build_bind_environment(cls, i, ex, args, meta_args):
-    """Provides sockets and plugins to new embedded hive instance"""
+    """Provides plugins to new embedded hive instance"""
     ex.hive = meta_args.hive_class()
 
     # Startup / End callback
@@ -68,11 +68,9 @@ class InstantiatorClass:
 
     def __init__(self):
         self._plugin_getters = []
-        self._socket_getters = []
         self._config_getters = []
 
         self._plugins = None
-        self._sockets = None
 
         self._hive = hive.get_run_hive()
         self._active_hives = []
@@ -88,23 +86,18 @@ class InstantiatorClass:
     def _create_context(self):
         """Create context object for new hive instances.
 
-        Pass cached plugins and sockets, and request configuration data.
+        Pass cached plugins, and request configuration data.
         """
         if self._plugins is None:
             self._plugins = plugins = {}
             for getter in self._plugin_getters:
                 plugins.update(getter())
 
-        if self._sockets is None:
-            self._sockets = sockets = {}
-            for getter in self._socket_getters:
-                sockets.update(getter())
-
         config = {}
         for getter in self._config_getters:
             config.update(getter())
 
-        return BindContext(self._plugins, self._sockets, config)
+        return BindContext(self._plugins, config)
 
     def add_get_plugins(self, get_plugins):
         """Add plugin context source
@@ -112,13 +105,6 @@ class InstantiatorClass:
         :param get_plugins: plugins context getter
         """
         self._plugin_getters.append(get_plugins)
-
-    def add_get_sockets(self, get_sockets):
-        """Add socket context source
-
-        :param get_sockets: sockets context getter
-        """
-        self._socket_getters.append(get_sockets)
 
     def add_get_config(self, get_config):
         """Add config context source
@@ -151,7 +137,6 @@ class InstantiatorClass:
 
         bind_meta_args = self._hive._hive_object._hive_meta_args_frozen
         bind_class = self.bind_meta_class(bind_meta_args=bind_meta_args, hive_class=self.hive_class)
-
         self.last_created = environment_hive = bind_class(context)
 
         # Notify bind classes of new hive instance (environment_hive)
@@ -194,8 +179,6 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins",
                                      policy=hive.MultipleOptional)
-    ex.add_get_sockets = hive.socket(cls.add_get_sockets, identifier="bind.get_sockets",
-                                     policy=hive.MultipleOptional)
     ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
 
     # Bind instantiator
@@ -205,3 +188,18 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
 
 Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorClass)
+
+
+def create_instantiator(*bind_infos):
+    """Create instantiator Hive for particular BindInfo sequence
+
+    :param bind_infos: BindInfos to embed
+    """
+    def build_instantiator(i, ex, args, meta_args):
+        bind_environments = get_active_bind_environments(bind_infos, meta_args)
+
+        # Update bind environment to use new bases
+        environment_class = i.bind_meta_class.start_value
+        i.bind_meta_class.start_value = environment_class.extend("BindEnvironment", bases=tuple(bind_environments))
+
+    return Instantiator.extend("Instantiator", builder=build_instantiator, bases=get_bind_bases(bind_infos))

@@ -5,11 +5,11 @@ import hive
 
 
 keyboard_mapping = {'lcontrol': 'left_control', 'lshift': 'left_shift', 'ralt': 'right_alt', 'rcontrol': 'right_control',
-               'lalt': 'left_alt', 'space': 'space', 'escape': 'escape', 'home': 'home', 'insert': 'insert',
-               'backspace': 'backspace', 'shift': 'shift', 'rshift': 'right_shift', 'page_up': 'page_up',
-               'page_down': 'page_down', 'tab': 'tab', 'delete': 'delete', 'end': 'end', 'enter': 'enter',
-               'arrow_up': 'arrow_up', 'arrow_down': 'arrow_down', 'arrow_left': 'arrow_left',
-               'arrow_right': 'arrow_right'}
+                   'lalt': 'left_alt', 'space': 'space', 'escape': 'escape', 'home': 'home', 'insert': 'insert',
+                   'backspace': 'backspace', 'shift': 'shift', 'rshift': 'right_shift', 'page_up': 'page_up',
+                   'page_down': 'page_down', 'tab': 'tab', 'delete': 'delete', 'end': 'end', 'enter': 'enter',
+                   'arrow_up': 'arrow_up', 'arrow_down': 'arrow_down', 'arrow_left': 'arrow_left',
+                   'arrow_right': 'arrow_right'}
 
 keyboard_mapping.update({x: x for x in string.digits})
 keyboard_mapping.update(zip(string.ascii_lowercase, string.ascii_lowercase))

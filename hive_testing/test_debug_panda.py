@@ -1,54 +1,53 @@
 import dragonfly
 import hive
 
-from contextlib import contextmanager
-from hive.debug import FileDebugContext
+import hive_editor
+
 from hive_editor.debugging.network import NetworkDebugContext
-from panda_project.basic_keyboard import BasicKeyboard
+from panda_project.launcher import Launcher
+
+
+def create_cube():
+    entity = loader.loadModel("panda_project/cube.egg")
+    from panda3d.bullet import BulletBoxShape, BulletRigidBodyNode
+    from panda3d.core import NodePath
+
+    shape = BulletBoxShape((0.5, 0.5, 0.5))
+
+    node = BulletRigidBodyNode('Box')
+    node.setMass(1.0)
+    node.addShape(shape)
+
+    nodepath = NodePath(node)
+    entity.wrt_reparent_to(nodepath)
+
+    return nodepath
 
 
 class MyHiveClass:
 
-    def set_register_template(self, register_template):
-        cube = loader.loadModel("panda_project/cube.egg")
-        register_template("cube", cube)
+    def __init__(self, tick_rate=60):
+        self._factories = {'cube': create_cube}
 
-    def set_spawn_entity(self, spawn_entity):
-        self._spawn_entity = spawn_entity
-
-    def spawn(self, template_name):
-        print("SPAN", template_name )
-        return self._spawn_entity(template_name)
+    def set_register_factory(self, register_factory):
+        for name, factory in self._factories.items():
+            register_factory(name, factory)
 
 
 def build_my_hive(cls, i, ex, args):
-    ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, identifier="entity.spawn")
-    ex.get_register_template = hive.socket(cls.set_register_template, "entity.register_template")
-
-    i.main_hive = BasicKeyboard()
+    ex.get_register_template = hive.socket(cls.set_register_factory, "entity.register_factory")
+    i.main_hive = Launcher()
 
 
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
 
-@contextmanager
-def no_context():
-    yield
-    return
+DO_DEBUG = False
 
-if False:
+if DO_DEBUG:
     debug_context = NetworkDebugContext()
-
+    with debug_context:
+        my_hive = MyHive()
+        my_hive.run()
 else:
-    if False:
-        from io import StringIO
-        file_ = StringIO()
-    else:
-        from os import path
-        filepath = path.join(path.dirname(__file__), "test_debug.csv")
-        file_ = open(filepath, "w", newline="")
-    debug_context = FileDebugContext(file_)
-
-with debug_context:
     my_hive = MyHive()
     my_hive.run()
-

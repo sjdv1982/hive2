@@ -1,8 +1,8 @@
 from collections import namedtuple
 
 
-BindInfo = namedtuple("BindInfo", "name bind_hive get_environments")
-BindContext = namedtuple("BindContext", "plugins sockets config")
+BindInfo = namedtuple("BindInfo", "name bind_hive get_environment")
+BindContext = namedtuple("BindContext", "plugins config")
 
 
 def get_bind_bases(bind_infos):
@@ -12,4 +12,10 @@ def get_bind_bases(bind_infos):
 
 def get_active_bind_environments(bind_infos, meta_args):
     """Return tuple of base classes for bind-environments from tuple of required bind infos and meta args wrapper"""
-    return tuple((env for b_i in bind_infos for env in b_i.get_environments(meta_args)))
+    environments = []
+    for info in bind_infos:
+        environment = info.get_environment(meta_args)
+        if environment:
+            environments.append(environment)
+
+    return tuple(environments)

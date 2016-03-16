@@ -2,6 +2,7 @@ import hive
 
 from .input_handler import InputHandler
 from .entity_api import EntityAPI
+from .physics_manager import PhysicsManager
 
 from ..mainloop import Mainloop as _Mainloop
 from ...event import EventHive, EventHandler
@@ -12,17 +13,14 @@ class MainloopClass:
     def __init__(self, max_framerate=60):
         from direct.showbase.ShowBase import ShowBase
 
-        self.base = ShowBase()
+        self._base = ShowBase()
         self._hive = hive.get_run_hive()
 
         self._read_event = None
         self._add_handler = None
 
     def on_tick(self):
-        self._read_event(("pre_tick",))
-
         base.taskMgr.step()
-        self._hive._input_manager.update()
 
         self._read_event(("tick",))
 
@@ -43,8 +41,21 @@ def build_mainloop(cls, i, ex, args):
     i.event_manager = EventHive(export_namespace=True)
     i.input_manager = InputHandler(export_namespace=True)
     i.entity_api = EntityAPI(export_namespace=True)
+    i.physics_manager = PhysicsManager(export_namespace=True)
 
+    # Connect input manager
+    hive.connect(i.tick, i.input_manager.update)
     hive.connect(i.input_manager.event, i.event_manager.event_in)
+
+    # Connect physics
+    hive.connect(i.tick, i.physics_manager.tick)
+    hive.connect(i.pull_tick_rate, i.physics_manager.tick_rate)
+    hive.connect(i.entity_api.entity_spawned, i.physics_manager.on_entity_spawned)
+    hive.connect(i.entity_api.entity_destroyed, i.physics_manager.on_entity_destroyed)
+
+    # Send tick event and step Panda
+    i.on_tick = hive.triggerable(cls.on_tick)
+    hive.trigger(i.tick, i.on_tick)
 
     # Get read event
     ex.get_dispatcher = hive.socket(cls.set_event_dispatcher, "event.process")
@@ -52,9 +63,6 @@ def build_mainloop(cls, i, ex, args):
 
     # Add startup and stop callbacks
     ex.main_on_started = hive.plugin(cls.on_started, identifier="on_started")
-
-    i.on_tick = hive.triggerable(cls.on_tick)
-    hive.trigger(i.tick, i.on_tick)
 
 
 Mainloop = _Mainloop.extend("Mainloop", build_mainloop, builder_cls=MainloopClass)

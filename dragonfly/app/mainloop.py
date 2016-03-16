@@ -58,6 +58,10 @@ def build_mainloop(cls, i, ex, args):
     ex.run = hive.entry(i.run)
     ex.stop = hive.entry(i.stop)
 
+    i.tick_rate = hive.property(cls, "tick_rate", 'int')
+    i.pull_tick_rate = hive.pull_out(i.tick_rate)
+    ex.tick_rate = hive.output(i.pull_tick_rate)
+
     ex.get_tick_rate = hive.plugin(cls.get_tick_rate, identifier="app.get_tick_rate")
     ex.quit = hive.plugin(cls.stop, identifier="app.quit")
 
