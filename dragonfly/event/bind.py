@@ -23,14 +23,10 @@ class EventBindClass(factory.external_class):
         self.leader = None
 
     def get_config(self):
-        meta_args = self._hive._hive_object._hive_meta_args_frozen
-        forward_events = meta_args.forward_events
-
-        config = {'forward_events': forward_events}
-
-        if forward_events == 'by_leader':
+        config = {}
+        if hasattr(self._hive, "event_leader"):
             # Pull leader
-            self._hive.leader()
+            self._hive.event_leader()
             config["leader"] = self.leader
 
         return config
@@ -58,9 +54,7 @@ class EventEnvironmentClass(factory.environment_class):
         self._main_add_handler = context.plugins['event.add_handler']
         self._main_remove_handler = context.plugins['event.remove_handler']
 
-        forward_events = context.config['forward_events']
-
-        if forward_events == 'by_leader':
+        if "leader" in context.config:
             self._leader = context.config['leader']
             self._main_handler = EventHandler(self.handle_event, self._leader)
 

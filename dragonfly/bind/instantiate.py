@@ -95,6 +95,7 @@ class InstantiatorClass:
 
         config = {}
         for getter in self._config_getters:
+            print(getter(),getter)
             config.update(getter())
 
         return BindContext(self._plugins, config)

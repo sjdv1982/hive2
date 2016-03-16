@@ -39,10 +39,10 @@ class EntityEnvironmentClass(factory.environment_class):
         super().__init__(context)
 
         self._hive = hive.get_run_hive()
-        self._entity = context.config['entity']
 
         # Add reference to this hive for this entity
-        if self._entity is not None:
+        if "entity" in context.config:
+            self._entity = context.config["entity"]
             register_destructor = context.plugins['entity.register_destructor']
             register_destructor(self._entity, self.destroy)
 
@@ -73,6 +73,7 @@ class EntityCls(factory.external_class):
         super().__init__()
 
         self._hive = hive.get_run_hive()
+        self.entity = None
 
     def get_config(self):
         config = {}
@@ -80,9 +81,6 @@ class EntityCls(factory.external_class):
         if hasattr(self._hive, 'entity'):
             self._hive.entity()
             config['entity'] = self.entity
-
-        else:
-            config['entity'] = None
 
         return config
 

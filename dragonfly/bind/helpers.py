@@ -23,7 +23,7 @@ class BindClassDefinition:
         self._parameters = {}
 
     def forward_plugin(self, identifier, plugin_policy=hive.MultipleOptional, socket_policy=hive.SingleRequired,
-                   declare_for_environment=True):
+                       declare_for_environment=True):
         condition_stack = self._condition_stack.copy()
         plugin_entry = PluginEntry(identifier, plugin_policy, socket_policy, declare_for_environment, condition_stack)
         self._plugin_entries.append(plugin_entry)
@@ -42,22 +42,23 @@ class BindClassDefinition:
         return BindClassFactory(name, self._parameters.copy(), self._plugin_entries.copy())
 
 
-def build_operator(operator):
+def build_operator(operator_):
 
     def wrapper(self, right):
         if not isinstance(right, Operand):
             right = Value(right)
 
-        return Operation(operator, self, right)
+        return Operation(operator_, self, right)
 
     return wrapper
 
 
 class Operand:
+    """Base class for operands, which can form either side of an operation"""
 
     __and__ = build_operator(operator.and_)
     __or__ = build_operator(operator.or_)
-    __ne__= build_operator(operator.ne)
+    __ne__ = build_operator(operator.ne)
     __contains__ = build_operator(operator.contains)
     __add__ = build_operator(operator.add)
     __sub__ = build_operator(operator.sub)
@@ -69,6 +70,7 @@ class Operand:
 
 
 class Value(Operand):
+    """A static value operand"""
 
     def __init__(self, value):
         super().__init__()
@@ -80,6 +82,7 @@ class Value(Operand):
 
 
 class Variable(Operand):
+    """A dynamic named operand"""
 
     def __init__(self, name):
         super().__init__()
@@ -92,10 +95,10 @@ class Variable(Operand):
 
 class Operation(Operand):
 
-    def __init__(self, operator, left, right):
+    def __init__(self, operator_, left, right):
         super().__init__()
 
-        self._operator = operator
+        self._operator = operator_
         self._left = left
         self._right = right
 
@@ -157,6 +160,7 @@ class BindClassFactory:
 
         cls_dict = {}
 
+        # For each plugin, create a capture function to be used by a capture-socket
         for attr_name, plugin_entry in self._plugins.items():
             def capture_plugin(self_binder, plugin, forwarded_io=plugin_entry):
                 self_binder._plugins[forwarded_io.identifier] = plugin
@@ -177,6 +181,7 @@ class BindClassFactory:
 
         cls_dict = {}
 
+        # For each plugin, create a getter function to be used by a getter plugin
         for attr_name, plugin_entry in self._plugins.items():
             def get_captured_plugin(self_environment, *args, forwarded_io=plugin_entry, **kwargs):
                 plugin = self_environment._plugins[forwarded_io.identifier]
