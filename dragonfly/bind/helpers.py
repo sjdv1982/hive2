@@ -238,9 +238,9 @@ class BindClassFactory:
                 setattr(ex, attr_name, plugin)
 
     def builds_external(self, func):
-        """Environment builder decorator.
+        """External builder decorator.
 
-        Adds configured bind-plugin sockets to bind environment class
+        Adds configured bind-plugin sockets to bind External class
 
         :param func: subsequent builder
         """
@@ -264,6 +264,37 @@ class BindClassFactory:
             func(cls, i, ex, args, meta_args)
 
         return builder
+
+    def declares_external(self, func):
+        """External declarator decorator.
+
+        Adds bind parameters to external meta args wrapper
+
+        :param func: subsequent declarator
+        """
+
+        @wraps(func)
+        def declarator(meta_args):
+            self.external_declarator(meta_args)
+            func(meta_args)
+
+        return declarator
+
+    def declares_environment(self, func):
+        """Environment declarator decorator.
+
+        Adds bind parameters to environment meta args wrapper
+
+        :param func: subsequent declarator
+        """
+
+        @wraps(func)
+        def declarator(meta_args):
+            self.environment_declarator(meta_args)
+            func(meta_args)
+
+        return declarator
+
 
 # Example usage
 """
