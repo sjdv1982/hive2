@@ -14,7 +14,7 @@ with definition.condition(forward_events != "none"):
 factory = definition.build("BindEvent")
 
 
-class EventBindClass(factory.external_class):
+class EventBindClass(factory.create_external_class()):
 
     def __init__(self):
         super().__init__()
@@ -43,7 +43,7 @@ def build_bind(cls, i, ex, args, meta_args):
 BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=factory.external_declarator, cls=EventBindClass)
 
 
-class EventEnvironmentClass(factory.environment_class):
+class EventEnvironmentClass(factory.create_environment_class()):
 
     def __init__(self, context):
         super().__init__(context)

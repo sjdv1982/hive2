@@ -1,11 +1,12 @@
-import hive
-from hive.parameter import HiveParameter
-
 from contextlib import contextmanager
 from collections import namedtuple
 from functools import wraps
 import operator
 from string import punctuation
+
+import hive
+from hive.parameter import HiveParameter
+
 
 punctuation_no_underscore = punctuation.replace("_", "")
 
@@ -129,22 +130,11 @@ class BindClassFactory:
 
         self._name = name
 
-        self._external_class = self._build_external_class()
-        self._environment_class = self._build_environment_class()
-
     @property
     def name(self):
         return self._name
 
-    @property
-    def external_class(self):
-        return self._external_class
-
-    @property
-    def environment_class(self):
-        return self._environment_class
-
-    def _build_external_class(self):
+    def create_external_class(self):
         class_name = "ExternalBindClass"
 
         class BinderClassBase:
@@ -170,7 +160,7 @@ class BindClassFactory:
 
         return type(class_name, (BinderClassBase,), cls_dict)
 
-    def _build_environment_class(self):
+    def create_environment_class(self):
         class_name = "EnvironmentBindClass"
 
         class BinderClassBase:
@@ -191,6 +181,16 @@ class BindClassFactory:
             cls_dict[attr_name] = get_captured_plugin
 
         return type(class_name, (BinderClassBase,), cls_dict)
+
+    def build_external_hive(self):
+        external_class = self.create_external_class()
+        return hive.dyna_hive("{}External".format(self._name), self.external_builder,
+                              declarator=self.external_declarator, cls=external_class)
+
+    def build_environment_hive(self):
+        environment_class = self.create_environment_class()
+        return hive.dyna_hive("{}Environment".format(self._name), self.environment_builder,
+                              declarator=self.environment_declarator, cls=environment_class)
 
     def external_declarator(self, meta_args):
         """Adds bind parameters to meta args wrapper"""

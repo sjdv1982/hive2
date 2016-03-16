@@ -33,7 +33,7 @@ with definition.condition(bind_mode != "none"):
 factory = definition.build("BindEntity")
 
 
-class EntityEnvironmentClass(factory.environment_class):
+class EntityEnvironmentClass(factory.create_environment_class()):
 
     def __init__(self, context):
         super().__init__(context)
@@ -67,7 +67,7 @@ EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment
                                    cls=EntityEnvironmentClass)
 
 
-class EntityCls(factory.external_class):
+class EntityCls(factory.create_external_class()):
 
     def __init__(self):
         super().__init__()

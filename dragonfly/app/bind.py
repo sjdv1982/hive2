@@ -8,11 +8,12 @@ definition.forward_plugin("app.quit")
 definition.forward_plugin("app.get_tick_rate")
 
 factory = definition.build("BindApp")
+
 AppEnvironment = hive.meta_hive("AppEnvironment", factory.environment_builder, factory.environment_declarator,
-                                cls=factory.environment_class)
+                                cls=factory.create_environment_class())
 
 
-class AppBindClass(factory.external_class):
+class AppBindClass(factory.create_external_class()):
 
     def on_started(self):
         pass
