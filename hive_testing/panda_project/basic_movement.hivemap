@@ -1,0 +1,588 @@
+Hivemap (
+  hives = HiveNodeArray (
+    HiveNode (
+      identifier = 'Up',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -501.0,
+        y = -153.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 'w',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'this',
+      import_path = 'dragonfly.entity.This',
+      position = Coordinate2D (
+        x = -193.0,
+        y = -238.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'displacement',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 60.0,
+        y = -13.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'vector',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 0.1, 0.0)',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'displacement_0',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 26.0,
+        y = 128.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'vector',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, -0.1, 0.0)',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'Left',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -501.0,
+        y = 24.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 'a',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'move_3',
+      import_path = 'dragonfly.entity.Move',
+      position = Coordinate2D (
+        x = -84.0,
+        y = -118.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'coordinate_system',
+          data_type = 'str',
+          value = 'relative',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'displacement',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'switch_3_0',
+      import_path = 'dragonfly.logic.Switch',
+      position = Coordinate2D (
+        x = -231.0,
+        y = 141.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'move_1_1',
+      import_path = 'dragonfly.entity.Move',
+      position = Coordinate2D (
+        x = -82.0,
+        y = 108.25,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'coordinate_system',
+          data_type = 'str',
+          value = 'relative',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'displacement',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'switch_3',
+      import_path = 'dragonfly.logic.Switch',
+      position = Coordinate2D (
+        x = -240.0,
+        y = -161.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'move_1_0_0',
+      import_path = 'dragonfly.entity.Move',
+      position = Coordinate2D (
+        x = -84.0,
+        y = 40.25,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'coordinate_system',
+          data_type = 'str',
+          value = 'relative',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'displacement',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'switch_2_0',
+      import_path = 'dragonfly.logic.Switch',
+      position = Coordinate2D (
+        x = -235.0,
+        y = 41.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'Down',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -497.0,
+        y = -57.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 's',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'tick',
+      import_path = 'dragonfly.event.Tick',
+      position = Coordinate2D (
+        x = -375.0,
+        y = -246.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'activate_on_start',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+    ),
+    HiveNode (
+      identifier = 'move_1_0',
+      import_path = 'dragonfly.entity.Move',
+      position = Coordinate2D (
+        x = -80.0,
+        y = -35.5,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'coordinate_system',
+          data_type = 'str',
+          value = 'relative',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'displacement',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'Right',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -499.0,
+        y = 118.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 'd',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'switch_1_0',
+      import_path = 'dragonfly.logic.Switch',
+      position = Coordinate2D (
+        x = -233.0,
+        y = -48.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'displacement_0_0',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 22.0,
+        y = 161.5,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'vector',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(-0.1, 0.0, 0.0)',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'displacement_0_1',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 32.0,
+        y = 310.5,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'vector',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.1, 0.0, 0.0)',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+  ),
+  bees = BeeNodeArray (
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'Up',
+      output_name = 'is_pressed',
+      to_node = 'switch_3',
+      input_name = 'input',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'this',
+      output_name = 'entity',
+      to_node = 'move_1_1',
+      input_name = 'other_entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'this',
+      output_name = 'entity',
+      to_node = 'move_1_0_0',
+      input_name = 'other_entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'this',
+      output_name = 'entity',
+      to_node = 'move_1_0',
+      input_name = 'other_entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'this',
+      output_name = 'entity',
+      to_node = 'move_3',
+      input_name = 'other_entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'displacement',
+      output_name = 'value_out',
+      to_node = 'move_3',
+      input_name = 'displacement',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'displacement_0',
+      output_name = 'value_out',
+      to_node = 'move_1_0',
+      input_name = 'displacement',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'Left',
+      output_name = 'is_pressed',
+      to_node = 'switch_2_0',
+      input_name = 'input',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'switch_3_0',
+      output_name = 'true',
+      to_node = 'move_1_1',
+      input_name = 'trig',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'switch_3',
+      output_name = 'true',
+      to_node = 'move_3',
+      input_name = 'trig',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'switch_2_0',
+      output_name = 'true',
+      to_node = 'move_1_0_0',
+      input_name = 'trig',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'Down',
+      output_name = 'is_pressed',
+      to_node = 'switch_1_0',
+      input_name = 'input',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'tick',
+      output_name = 'on_tick',
+      to_node = 'switch_1_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'tick',
+      output_name = 'on_tick',
+      to_node = 'switch_2_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'tick',
+      output_name = 'on_tick',
+      to_node = 'switch_3_0',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'tick',
+      output_name = 'on_tick',
+      to_node = 'switch_3',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'Right',
+      output_name = 'is_pressed',
+      to_node = 'switch_3_0',
+      input_name = 'input',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'switch_1_0',
+      output_name = 'true',
+      to_node = 'move_1_0',
+      input_name = 'trig',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'displacement_0_0',
+      output_name = 'value_out',
+      to_node = 'move_1_0_0',
+      input_name = 'displacement',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'displacement_0_1',
+      output_name = 'value_out',
+      to_node = 'move_1_1',
+      input_name = 'displacement',
+      is_trigger = False,
+    ),
+  ),
+  docstring = '',
+)
