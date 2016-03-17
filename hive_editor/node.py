@@ -140,12 +140,8 @@ class IOPin(ProtectedContainer):
             target_connection = next(iter(self.connections))
             target_pin = target_connection.output_pin
 
-            # If other pin is in use else where
-            if len(target_pin.connections) > 1:
-                return False
-
             # Only allow variables to be folded
-            return target_pin.node.import_path == FOLD_NODE_IMPORT_PATH
+            return target_pin.node.is_foldable
 
         return False
 
@@ -294,6 +290,14 @@ class Node(ProtectedContainer):
     @property
     def params_info(self):
         return DictView({k: DictView(v) for k, v in self._params_info.items()})
+
+    @property
+    def is_foldable(self):
+        all_connections = sum(len(p.connections) for p in self._outputs.values())
+        all_connections += sum(len(p.connections) for p in self._inputs.values())
+
+        # If other pin is in use else where
+        return all_connections <= 1
 
     position = RestrictedAttribute()
     name = RestrictedAttribute()
