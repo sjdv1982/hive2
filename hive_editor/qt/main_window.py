@@ -42,7 +42,7 @@ def dict_to_delimited(data, delimiter, name_path=()):
 
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
-    hivemap_extension = ".hivemap"
+    hivemap_extension = "hivemap"
     untitled_file_name = "<Unsaved>"
 
     def __init__(self):
@@ -203,9 +203,7 @@ class MainWindow(QMainWindow):
         if mime_data.hasFormat('text/uri-list'):
             file_paths = [u.toLocalFile() for u in mime_data.urls()]
 
-            if len(file_paths) == 1:
-                file_path = file_paths[0]
-
+            for file_path in file_paths:
                 # If its a folder, try loading project
                 if os.path.isdir(file_path):
                     reply = QMessageBox.warning(self, 'Open Project', "A directory was dropped onto the editor, "
@@ -217,8 +215,7 @@ class MainWindow(QMainWindow):
 
                     self._open_project(file_path)
 
-            else:
-                for file_path in file_paths:
+                else:
                     self._open_file(file_path)
 
         elif mime_data.hasFormat('text/plain'):
@@ -585,8 +582,8 @@ class MainWindow(QMainWindow):
 
     def open_file(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
-        dialogue.setDefaultSuffix("hivemap")
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*{})".format(self.hivemap_extension)))
+        dialogue.setDefaultSuffix(self.hivemap_extension)
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self.hivemap_extension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptOpen)
 
@@ -618,8 +615,8 @@ class MainWindow(QMainWindow):
         assert isinstance(widget, NodeEditorSpace)
 
         dialogue = QFileDialog(self, caption="Save Hivemap")
-        dialogue.setDefaultSuffix("hivemap")
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*{})".format(self.hivemap_extension)))
+        dialogue.setDefaultSuffix(self.hivemap_extension)
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self.hivemap_extension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptSave)
 

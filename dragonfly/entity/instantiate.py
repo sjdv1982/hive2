@@ -6,4 +6,4 @@ from ..event import bind_info as event_bind_info
 
 
 bind_infos = (app_bind_info, event_bind_info, entity_bind_info)
-Instantiator = create_instantiator(bind_infos)
+Instantiator = create_instantiator(*bind_infos)
