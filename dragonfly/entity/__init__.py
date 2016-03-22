@@ -11,3 +11,4 @@ from .position import Position
 from .spawn import Spawn
 from .tag import Tag
 from .this import This
+from .visibility import Visibility

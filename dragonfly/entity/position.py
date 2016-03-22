@@ -71,15 +71,12 @@ def build_position(cls, i, ex, args, meta_args):
         ex.position = hive.output(i.pull_position)
 
     else:
-        i.pull_position = hive.pull_in(i.position)
-        ex.position = hive.antenna(i.pull_position)
-
-        ex.trig = hive.entry(i.pull_position)
+        i.push_position = hive.push_in(i.position)
+        ex.position = hive.antenna(i.push_position)
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
             ex.get_get_position = hive.socket(cls.set_get_position, identifier="entity.position.get.absolute")
-
             i.do_get_position = hive.triggerable(cls.do_get_position)
 
         else:
@@ -103,15 +100,15 @@ def build_position(cls, i, ex, args, meta_args):
         else:
             ex.get_set_position = hive.socket(cls.set_set_position, identifier="entity.position.set.relative")
             i.do_set_position = hive.triggerable(cls.do_set_relative_position)
-            hive.trigger(i.pull_position, i.pull_other_entity)
+            hive.trigger(i.push_position, i.pull_other_entity)
 
         if meta_args.bound:
-            hive.trigger(i.pull_position, i.do_get_entity)
+            hive.trigger(i.push_position, i.do_get_entity)
 
         else:
-            hive.trigger(i.pull_position, i.pull_entity)
+            hive.trigger(i.push_position, i.pull_entity)
 
-        hive.trigger(i.pull_position, i.do_set_position)
+        hive.trigger(i.push_position, i.do_set_position)
 
 
 Position = hive.dyna_hive("Position", build_position, declare_position, cls=PositionClass)

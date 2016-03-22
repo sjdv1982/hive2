@@ -4,9 +4,10 @@ from ..bind import BindInfo, BindClassDefinition
 
 
 definition = BindClassDefinition()
-bind_mode = definition.parameter("bind_entity", "str", 'bound', {'none', 'bound', 'unbound'})
+bind_mode_param = definition.parameter("bind_entity", "str", 'bound', {'none', 'bound', 'unbound'})
 
-with definition.condition(bind_mode != "none"):
+
+with definition.condition(bind_mode_param != "none"):
     definition.forward_plugin("entity.position.get.absolute")
     definition.forward_plugin("entity.position.get.relative")
     definition.forward_plugin("entity.position.set.absolute")
@@ -25,10 +26,14 @@ with definition.condition(bind_mode != "none"):
     definition.forward_plugin("entity.tag.get")
     definition.forward_plugin("entity.tag.set")
 
+    definition.forward_plugin("entity.visibility.get")
+    definition.forward_plugin("entity.visibility.set")
+
     definition.forward_plugin("entity.destroy")
     definition.forward_plugin("entity.spawn")
 
     definition.forward_plugin("entity.register_destructor")
+
 
 factory = definition.build("BindEntity")
 
@@ -52,6 +57,48 @@ class EntityEnvironmentClass(factory.create_environment_class()):
     def get_bound_entity(self):
         return self._entity
 
+    def get_bound_pos_abs(self):
+        return self._plugins["entity.bound.position.get.absolute"](self._entity)
+
+    def get_bound_pos_rel(self, other):
+        return self._plugins["entity.bound.position.get.relative"](self._entity, other)
+
+    def get_bound_ori_abs(self):
+        return self._plugins["entity.bound.orientation.get.absolute"](self._entity)
+
+    def get_bound_ori_rel(self, other):
+        return self._plugins["entity.bound.orientation.get.relative"](self._entity, other)
+
+    def set_bound_pos_abs(self, position):
+        self._plugins["entity.bound.position.set.absolute"](self._entity, position)
+
+    def set_bound_pos_rel(self, other, position):
+        self._plugins["entity.bound.position.set.relative"](self._entity, other, position)
+
+    def set_bound_ori_abs(self, orientation):
+        self._plugins["entity.bound.orientation.set.absolute"](self._entity, orientation)
+
+    def set_bound_ori_rel(self, other, orientation):
+        self._plugins["entity.bound.orientation.set.relative"](self._entity, other, orientation)
+
+    def get_bound_tag(self, name):
+        return self._plugins['entity.tag.get'](self._entity, name)
+
+    def set_bound_tag(self, name, value):
+        self._plugins['entity.tag.set'](self._entity, name, value)
+
+    def get_bound_parent(self, name):
+        return self._plugins['entity.parent.get'](self._entity, name)
+
+    def set_bound_parent(self, name, value):
+        self._plugins['entity.parent.set'](self._entity, name, value)
+
+    def get_bound_visibility(self, name):
+        return self._plugins['entity.visibility.get'](self._entity, name)
+
+    def set_bound_visibility(self, name, value):
+        self._plugins['entity.visibility.set'](self._entity, name, value)
+
 
 @factory.builds_environment
 def build_entity_environment(cls, i, ex, args, meta_args):
@@ -59,8 +106,31 @@ def build_entity_environment(cls, i, ex, args, meta_args):
 
     Provides appropriate sockets and plugins for event interface
     """
-    if meta_args.bind_meta_args.bind_entity == "bound":
-        ex.get_bound_entity = hive.plugin(cls.get_bound_entity, identifier="entity.get_bound")
+    if meta_args.bind_meta_args.bind_entity != "bound":
+        return
+
+    ex.get_bound_entity = hive.plugin(cls.get_bound_entity, "entity.get_bound")
+
+    ex.get_bound_position_absolute = hive.plugin(cls.get_bound_pos_abs, "entity.bound.position.get.absolute")
+    ex.set_bound_position_absolute = hive.plugin(cls.set_bound_pos_abs, "entity.bound.position.set.absolute")
+    ex.get_bound_position_relative = hive.plugin(cls.get_bound_pos_rel, "entity.bound.position.get.relative")
+    ex.set_bound_position_relative = hive.plugin(cls.set_bound_pos_rel, "entity.bound.position.set.relative")
+
+    ex.get_bound_orientation_absolute = hive.plugin(cls.get_bound_ori_abs, "entity.bound.orientation.get.absolute")
+    ex.set_bound_orientation_absolute = hive.plugin(cls.set_bound_ori_abs, "entity.bound.orientation.set.absolute")
+    ex.get_bound_orientation_relative = hive.plugin(cls.get_bound_ori_rel, "entity.bound.orientation.get.relative")
+    ex.set_bound_orientation_relative = hive.plugin(cls.set_bound_ori_rel, "entity.bound.orientation.set.relative")
+
+    ex.get_bound_parent = hive.plugin(cls.get_bound_parent, "entity.bound.parent.get")
+    ex.set_bound_parent = hive.plugin(cls.set_bound_parent, "entity.bound.parent.set")
+
+    ex.get_bound_tag = hive.plugin(cls.get_bound_tag, "entity.bound.tag.get")
+    ex.set_bound_tag = hive.plugin(cls.set_bound_tag, "entity.bound.tag.set")
+
+    ex.get_bound_visibility = hive.plugin(cls.get_bound_visibility, "entity.bound.visibility.get")
+    ex.set_bound_visibility = hive.plugin(cls.set_bound_visibility, "entity.bound.visibility.set")
+
+    ex.bound_destroy = hive.plugin(cls.bound_destroy, "entity.bound.destroy")
 
 
 EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment, factory.environment_declarator,
@@ -76,13 +146,11 @@ class EntityCls(factory.create_external_class()):
         self.entity = None
 
     def get_config(self):
-        config = {}
-
         if hasattr(self._hive, 'entity'):
             self._hive.entity()
-            config['entity'] = self.entity
+            return dict(entity=self.entity)
 
-        return config
+        return {}
 
 
 @factory.builds_external

@@ -53,6 +53,16 @@ class EntityClass:
     def get_tag(self, entity, name):
         return entity.get_python_tag(name)
 
+    def set_visibility(self, entity, visible):
+        if visible:
+            entity.show()
+
+        else:
+            entity.hide()
+
+    def get_visibility(self, entity):
+        return entity.is_hidden()
+
     def spawn_entity(self, class_name):
         factory = self._factories[class_name]
 
@@ -117,6 +127,11 @@ def build_entity(cls, i, ex, args):
     ex.set_tag = hive.plugin(cls.set_tag, identifier="entity.tag.set",
                              export_to_parent=True)
     ex.get_tag = hive.plugin(cls.get_tag, identifier="entity.tag.get",
+                             export_to_parent=True)
+
+    ex.set_visibility = hive.plugin(cls.set_visibility, identifier="entity.visibility.set",
+                             export_to_parent=True)
+    ex.get_visibility = hive.plugin(cls.get_visibility, identifier="entity.visibility.get",
                              export_to_parent=True)
 
     ex.get_entity = hive.plugin(lambda name: None, identifier="entity.get", export_to_parent=True)

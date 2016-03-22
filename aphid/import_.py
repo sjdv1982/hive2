@@ -1,7 +1,14 @@
+from contextlib import contextmanager
 import os
 
 import hive
 import hive_editor
+
+
+@contextmanager
+def _no_context():
+    yield
+    return
 
 
 class ImportClass:
@@ -19,7 +26,11 @@ class ImportClass:
         hook = hive_editor.get_hook()
 
         # Find first runtime info object and assume is the only one required
-        first_runtime_info = set(self._hive._hive_runtime_info).pop()
+        runtime_infos = self._hive._hive_runtime_info
+        if not runtime_infos:
+            raise RuntimeError("This hive does not have any runtime info objects (not a child of a hive)")
+
+        first_runtime_info = set(runtime_infos).pop()
         parent = first_runtime_info.parent()
         container_parent_class = parent._hive_object._hive_parent_class
 
@@ -27,13 +38,13 @@ class ImportClass:
             directory = os.path.dirname(hook.get_path_of_class(container_parent_class))
 
         except ValueError:
-            module = __import__(self.import_path, fromlist=[sub_module_name])
+            context = _no_context
 
         else:
             context = hook.temporary_relative_context(directory)
 
-            with context:
-                module = __import__(self.import_path, fromlist=[sub_module_name])
+        with context:
+            module = __import__(self.import_path, fromlist=[sub_module_name])
 
         self.module = module
 

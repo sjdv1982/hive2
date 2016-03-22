@@ -71,10 +71,8 @@ def build_orientation(cls, i, ex, args, meta_args):
         ex.orientation = hive.output(i.pull_orientation)
 
     else:
-        i.pull_orientation = hive.pull_in(i.orientation)
-        ex.orientation = hive.antenna(i.pull_orientation)
-
-        ex.trig = hive.entry(i.pull_orientation)
+        i.push_orientation = hive.push_in(i.orientation)
+        ex.orientation = hive.antenna(i.push_orientation)
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
@@ -103,15 +101,15 @@ def build_orientation(cls, i, ex, args, meta_args):
         else:
             ex.get_set_orientation = hive.socket(cls.set_set_orientation, identifier="entity.orientation.set.relative")
             i.do_set_orientation = hive.triggerable(cls.do_set_relative_orientation)
-            hive.trigger(i.pull_orientation, i.pull_other_entity)
+            hive.trigger(i.push_orientation, i.pull_other_entity)
 
         if meta_args.bound:
-            hive.trigger(i.pull_orientation, i.do_get_entity)
+            hive.trigger(i.push_orientation, i.do_get_entity)
 
         else:
-            hive.trigger(i.pull_orientation, i.pull_entity)
+            hive.trigger(i.push_orientation, i.pull_entity)
 
-        hive.trigger(i.pull_orientation, i.do_set_orientation)
+        hive.trigger(i.push_orientation, i.do_set_orientation)
 
 
 Orientation = hive.dyna_hive("Orientation", build_orientation, declare_orientation, cls=OrientationClass)

@@ -112,20 +112,13 @@ class Operation(Operand):
         return self._operator(left_value, right_value)
 
 
-def sanitise_identifier(identifier, prefix):
-    """Convert string identifier to underscore delimited string"""
-    return prefix + "_" + identifier.replace(".", "_").replace(punctuation_no_underscore, "").replace(" ", "_")
-
-
 class BindClassFactory:
     """Generates bind class and bind environments for binding Hives"""
 
     def __init__(self, name, parameters, plugin_entries):
         assert name.isidentifier()
 
-        prefix = "{}_capture".format(name)
-
-        self._plugins = {sanitise_identifier(e.identifier, prefix): e for e in plugin_entries}
+        self._plugins = {self.sanitise_identifier(e.identifier): e for e in plugin_entries}
         self._parameters = parameters
 
         self._name = name
@@ -133,6 +126,12 @@ class BindClassFactory:
     @property
     def name(self):
         return self._name
+
+
+    @staticmethod
+    def sanitise_identifier(identifier):
+        """Convert string identifier to underscore delimited string"""
+        return identifier.replace(".", "_").replace(punctuation_no_underscore, "").replace(" ", "_")
 
     def create_external_class(self):
         class_name = "ExternalBindClass"
@@ -170,6 +169,8 @@ class BindClassFactory:
                 self_binder._config = context.config
 
         cls_dict = {}
+
+        # TODO if bottleneck, set attribute on class instance at runtime (instead of looking up from dict)
 
         # For each plugin, create a getter function to be used by a getter plugin
         for attr_name, plugin_entry in self._plugins.items():
