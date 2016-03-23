@@ -64,7 +64,7 @@ def declare_h(meta_args):
     meta_args.i = hive.parameter("int", 3)
     meta_args.root = hive.parameter("bool", True)
 
-SomeHive = hive.dyna_hive("H1", build_h, cls=C, declarator=declare_h)
+SomeHive = hive.dyna_hive("H1", build_h, builder_cls=C, declarator=declare_h)
 
 # This works
 h1 = SomeHive(name="OtherHive")

@@ -155,4 +155,4 @@ def build_entity(cls, i, ex, args):
     ex.entity_spawned = hive.output(i.push_entity_spawned)
 
 
-EntityAPI = hive.hive("EntityAPI", build_entity, cls=EntityClass)
+EntityAPI = hive.hive("EntityAPI", build_entity, builder_cls=EntityClass)

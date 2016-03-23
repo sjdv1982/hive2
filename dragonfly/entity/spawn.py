@@ -55,7 +55,8 @@ def build_spawn(cls, i, ex, args, meta_args):
 
         # Get last created
         ex.hive_class = hive.antenna(i.instantiator.hive_class)
-        ex.hive_last_created = hive.output(i.instantiator.last_created)
+        ex.last_process_id = hive.output(i.instantiator.last_process_id)
+        ex.stop_process = hive.antenna(i.instantiator.stop_process)
 
         # Instantiate
         hive.trigger(i.trigger, i.instantiator.create)
@@ -67,4 +68,4 @@ def build_spawn(cls, i, ex, args, meta_args):
     ex.spawn = hive.entry(i.on_triggered)
 
 
-Spawn = hive.dyna_hive("Spawn", build_spawn, declarator=declare_spawn, cls=SpawnClass)
+Spawn = hive.dyna_hive("Spawn", build_spawn, declarator=declare_spawn, builder_cls=SpawnClass)

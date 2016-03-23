@@ -21,4 +21,4 @@ def build_quit(cls, i, ex, args):
     ex.do_quit = hive.entry(i.do_quit)
 
 
-Quit = hive.hive("Quit", build_quit, cls=_Quit)
+Quit = hive.hive("Quit", build_quit, builder_cls=_Quit)

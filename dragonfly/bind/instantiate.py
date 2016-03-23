@@ -3,6 +3,13 @@ import hive
 from .classes import BindContext, get_active_bind_environments, get_bind_bases
 
 
+def id_generator():
+    i = 0
+    while True:
+        yield i
+        i += 1
+
+
 class BindEnvironmentClass:
     """Process environment which embeds a bound hive.
 
@@ -73,11 +80,12 @@ class InstantiatorClass:
         self._plugins = None
 
         self._hive = hive.get_run_hive()
-        self._active_hives = []
+        self._active_hives = {}
 
         self._bind_class_creation_callbacks = []
+        self._process_id_generator = id_generator()
 
-        self.last_created = None
+        self.last_created_process_id = None
         self.bind_meta_class = None
 
         # Runtime attributes
@@ -90,6 +98,7 @@ class InstantiatorClass:
         """
         if self._plugins is None:
             self._plugins = plugins = {}
+
             for getter in self._plugin_getters:
                 plugins.update(getter())
 
@@ -120,14 +129,16 @@ class InstantiatorClass:
         """
         self._bind_class_creation_callbacks.append(on_created)
 
-    def forget_hive(self, child_hive):
+    @hive.types(process_id="int.id.process")
+    def stop_hive(self, process_id):
         """Forget child hive when it is stopped"""
-        self._active_hives.remove(child_hive)
+        instance = self._active_hives.pop(process_id)
+        instance.on_stopped()
 
     def on_stopped(self):
         """Stop all child hives if instantiator is stopped"""
-        for child_hive in self._active_hives[:]:
-            child_hive.on_stopped()
+        for instance_id in list(self._active_hives.keys()):
+            self.stop_hive(instance_id)
 
     def instantiate(self):
         context = self._create_context()
@@ -137,18 +148,20 @@ class InstantiatorClass:
 
         bind_meta_args = self._hive._hive_object._hive_meta_args_frozen
         bind_class = self.bind_meta_class(bind_meta_args=bind_meta_args, hive_class=self.hive_class)
-        self.last_created = environment_hive = bind_class(context)
+
+        # Create Hive and track ID
+        environment_hive = bind_class(context)
+        process_id = next(self._process_id_generator)
+
+        # Store ID of process
+        self.last_created_process_id = process_id
+        self._active_hives[process_id] = environment_hive
 
         # Notify bind classes of new hive instance (environment_hive)
         for callback in self._bind_class_creation_callbacks:
             callback(environment_hive)
 
-        # Deregister hive if it is stopped
-        on_stopped = hive.plugin(lambda: self.forget_hive(environment_hive))
-        hive.connect(on_stopped, environment_hive.get_on_stopped)
-
         environment_hive.on_started()
-        self._active_hives.append(environment_hive)
 
 
 def declare_instantiator(meta_args):
@@ -159,7 +172,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
     """Instantiates a Hive class at runtime"""
     # If this is built now, then it won't perform matchmaking, so use meta hive
     bind_meta_class = hive.meta_hive("BindEnvironment", build_bind_environment, declare_build_environment,
-                                     cls=BindEnvironmentClass)
+                                      builder_cls=BindEnvironmentClass)
     i.bind_meta_class = hive.property(cls, "bind_meta_class", "class", bind_meta_class)
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
@@ -170,15 +183,17 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     ex.create = hive.entry(i.do_instantiate)
 
-    ex.last_created_hive = hive.property(cls, "last_created", "process")
-    i.pull_last_created = hive.pull_out(ex.last_created_hive)
-    ex.last_created = hive.output(i.pull_last_created)
+    ex.process_id = hive.property(cls, "last_created_process_id", "int.id.process")
+    i.pull_process_id = hive.pull_out(ex.process_id)
+    ex.last_process_id = hive.output(i.pull_process_id)
+
+    i.push_stop_process = hive.push_in(cls.stop_hive)
+    ex.stop_process = hive.antenna(i.push_stop_process)
 
     # Bind class plugin
     ex.on_created = hive.socket(cls.add_on_created, identifier="bind.on_created", policy=hive.MultipleOptional)
 
-    ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins",
-                                     policy=hive.MultipleOptional)
+    ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins", policy=hive.MultipleOptional)
     ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
 
     # Bind instantiator
@@ -187,10 +202,10 @@ def build_instantiator(cls, i, ex, args, meta_args):
         ex.on_stopped = hive.plugin(cls.on_stopped, identifier="on_stopped")
 
 
-Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, cls=InstantiatorClass)
+Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, builder_cls=InstantiatorClass)
 
 
-def create_instantiator(*bind_infos):
+def create_instantiator(*bind_infos, docstring=""):
     """Create instantiator Hive for particular BindInfo sequence
 
     :param bind_infos: BindInfos to embed
@@ -201,5 +216,7 @@ def create_instantiator(*bind_infos):
         # Update bind environment to use new bases
         environment_class = i.bind_meta_class.start_value
         i.bind_meta_class.start_value = environment_class.extend("BindEnvironment", bases=tuple(bind_environments))
+
+    build_instantiator.__doc__ = docstring
 
     return Instantiator.extend("Instantiator", builder=build_instantiator, bases=get_bind_bases(bind_infos))

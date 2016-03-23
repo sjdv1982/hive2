@@ -53,4 +53,4 @@ def build_physics_manager(cls, i, ex, args):
     ex.on_entity_destroyed = hive.antenna(i.push_entity_destroyed)
 
 
-PhysicsManager = hive.hive("PhysicsManager", build_physics_manager, cls=_PhysicsManagerClass)
+PhysicsManager = hive.hive("PhysicsManager", build_physics_manager, builder_cls=_PhysicsManagerClass)

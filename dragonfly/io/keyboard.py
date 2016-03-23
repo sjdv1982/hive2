@@ -95,4 +95,4 @@ def build_keyboard(cls, i, ex, args, meta_args):
         ex.key_released = hive.output(i.pull_key_released)
 
 
-Keyboard = hive.dyna_hive("Keyboard", build_keyboard, declarator=declare_keyboard, cls=Keyboard_)
+Keyboard = hive.dyna_hive("Keyboard", build_keyboard, declarator=declare_keyboard, builder_cls=Keyboard_)

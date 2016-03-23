@@ -825,16 +825,16 @@ class HiveBuilder(object):
 
 
 # TODO options for namespaces (old frame/hive distinction)
-def hive(name, builder=None, cls=None, bases=()):
-    return HiveBuilder.extend(name, builder, cls, bases=bases)
+def hive(name, builder=None, builder_cls=None, bases=()):
+    return HiveBuilder.extend(name, builder, builder_cls, bases=bases)
 
 
-def dyna_hive(name, builder, declarator, cls=None, bases=()):
-    return HiveBuilder.extend(name, builder, cls, declarator=declarator, is_dyna_hive=True, bases=bases)
+def dyna_hive(name, builder, declarator, builder_cls=None, bases=()):
+    return HiveBuilder.extend(name, builder, builder_cls, declarator=declarator, is_dyna_hive=True, bases=bases)
 
 
-def meta_hive(name, builder, declarator, cls=None, bases=()):
-    return HiveBuilder.extend(name, builder, cls, declarator=declarator, is_dyna_hive=False, bases=bases)
+def meta_hive(name, builder, declarator, builder_cls=None, bases=()):
+    return HiveBuilder.extend(name, builder, builder_cls, declarator=declarator, is_dyna_hive=False, bases=bases)
 
 
 #==========Hive construction path=========

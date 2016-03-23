@@ -57,4 +57,4 @@ def build_collision(cls, i, ex, args):
     ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
 
-Collision = hive.hive("Collision", build_collision, cls=_CollisionClass)
+Collision = hive.hive("Collision", build_collision, builder_cls=_CollisionClass)

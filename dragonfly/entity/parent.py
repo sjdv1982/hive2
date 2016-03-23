@@ -68,4 +68,4 @@ def build_parent(cls, i, ex, args, meta_args):
         hive.trigger(i.push_parent, i.set_parent)
 
 
-Parent = hive.dyna_hive("Parent", build_parent, declare_parent, cls=ParentClass)
+Parent = hive.dyna_hive("Parent", build_parent, declare_parent, builder_cls=ParentClass)
