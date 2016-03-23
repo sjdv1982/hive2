@@ -134,6 +134,7 @@ class BindClassFactory:
         return identifier.replace(".", "_").replace(punctuation_no_underscore, "").replace(" ", "_")
 
     def create_external_class(self):
+        """Create the External Hive class"""
         class_name = "ExternalBindClass"
 
         class BinderClassBase:
@@ -160,6 +161,7 @@ class BindClassFactory:
         return type(class_name, (BinderClassBase,), cls_dict)
 
     def create_environment_class(self):
+        """Create the Environment Hive class"""
         class_name = "EnvironmentBindClass"
 
         class BinderClassBase:

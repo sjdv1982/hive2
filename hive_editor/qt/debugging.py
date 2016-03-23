@@ -45,9 +45,3 @@ class DeferredExecute(QEvent):
 
     def process(self):
         self.func(*self.args, **self.kwargs)
-
-
-# TODO DEBUG
-# When connection is updated, make bold (width(10)
-# Make breakpoint text red
-# During debugging session, lock canvas(?) but allow debug features?

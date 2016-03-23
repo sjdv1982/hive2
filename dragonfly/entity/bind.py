@@ -99,6 +99,9 @@ class EntityEnvironmentClass(factory.create_environment_class()):
     def set_bound_visibility(self, name, value):
         self._plugins['entity.visibility.set'](self._entity, name, value)
 
+    def bound_destroy(self):
+        self._plugins['entity.destroy'](self._entity)
+
 
 @factory.builds_environment
 def build_entity_environment(cls, i, ex, args, meta_args):

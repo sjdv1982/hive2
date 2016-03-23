@@ -9,7 +9,6 @@ from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
-
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
@@ -376,7 +375,6 @@ class NodeEditorSpace(QWidget):
         self._debug_controller = controller
         self._debug_widget.show()
 
-        # TODO make debug controller trigger UI?
         controller.on_push_out.subscribe(lambda source_name, target_name, value:
                                                self._on_debug_operation(source_name, target_name,
                                                                         operation="push-out", value=value))
