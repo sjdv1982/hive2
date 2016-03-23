@@ -182,6 +182,7 @@ class Node(QGraphicsWidget):
         QGraphicsWidget.__init__(self)
 
         self._spacing_constant = 5.0
+        self._roundness = 3
 
         self._label = QGraphicsSimpleTextItem(self)
         self._label.setBrush(self.labels_color)
@@ -301,7 +302,7 @@ class Node(QGraphicsWidget):
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()
-        shape.addRoundedRect(self.rect(), 2, 2)
+        shape.addRoundedRect(self.rect(), self._roundness, self._roundness)
 
         painter.setPen(self._shapePen)
         painter.setBrush(self._brush)

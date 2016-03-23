@@ -1,64 +1,11 @@
 Hivemap (
   hives = HiveNodeArray (
     HiveNode (
-      identifier = 'spawn',
-      import_path = 'dragonfly.entity.Spawn',
-      position = Coordinate2D (
-        x = -197.0,
-        y = -324.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'spawn_hive',
-          data_type = 'bool',
-          value = 'True',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'entity_class',
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'position',
-      import_path = 'dragonfly.entity.Position',
-      position = Coordinate2D (
-        x = 149.0,
-        y = -164.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'bound',
-          data_type = 'bool',
-          value = 'False',
-        ),
-        InstanceParameter (
-          identifier = 'coordinate_system',
-          data_type = 'str',
-          value = 'absolute',
-        ),
-        InstanceParameter (
-          identifier = 'mode',
-          data_type = 'str',
-          value = 'set',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
       identifier = 'on_start',
       import_path = 'dragonfly.event.OnStart',
       position = Coordinate2D (
-        x = -328.0,
-        y = -164.0,
+        x = -427.0,
+        y = -199.0,
       ),
       meta_args = InstanceParameterArray (
       ),
@@ -73,157 +20,14 @@ Hivemap (
       identifier = 'print',
       import_path = 'dragonfly.io.Print',
       position = Coordinate2D (
-        x = 306.0,
-        y = -260.0,
+        x = 251.0,
+        y = -302.0,
       ),
       meta_args = InstanceParameterArray (
       ),
       args = InstanceParameterArray (
       ),
       folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'name',
-      import_path = 'dragonfly.std.Variable',
-      position = Coordinate2D (
-        x = -138.0,
-        y = -133.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'str',
-          value = 'str',
-        ),
-      ),
-      args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'str',
-          value = 'BasicMovement',
-        ),
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'transistor',
-      import_path = 'dragonfly.std.Transistor',
-      position = Coordinate2D (
-        x = 178.0,
-        y = -296.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'str',
-          value = 'str',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'position_0',
-      import_path = 'dragonfly.std.Variable',
-      position = Coordinate2D (
-        x = -322.0,
-        y = -98.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'data_type',
-          data_type = 'str',
-          value = 'vector',
-        ),
-      ),
-      args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'start_value',
-          data_type = 'tuple',
-          value = '(0.0, 17.0, 10.0)',
-        ),
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'format_spawn_str',
-      import_path = 'dragonfly.string.Format',
-      position = Coordinate2D (
-        x = 55.0,
-        y = -326.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'format_string',
-          data_type = 'str',
-          value = '{entity} {hive} Spawned!',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'attr',
-      import_path = 'dragonfly.op.Attr',
-      position = Coordinate2D (
-        x = -359.0,
-        y = -323.0,
-      ),
-      meta_args = InstanceParameterArray (
-        InstanceParameter (
-          identifier = 'object_type',
-          data_type = 'str',
-          value = 'module',
-        ),
-        InstanceParameter (
-          identifier = 'attribute_type',
-          data_type = 'str',
-          value = 'class',
-        ),
-        InstanceParameter (
-          identifier = 'mode',
-          data_type = 'str',
-          value = 'get',
-        ),
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'name',
-      ),
-      cls_args = InstanceParameterArray (
-      ),
-    ),
-    HiveNode (
-      identifier = 'import_',
-      import_path = 'aphid.import_.Import',
-      position = Coordinate2D (
-        x = -471.0,
-        y = -319.0,
-      ),
-      meta_args = InstanceParameterArray (
-      ),
-      args = InstanceParameterArray (
-      ),
-      folded_pins = StringArray (
-        'import_path',
       ),
       cls_args = InstanceParameterArray (
       ),
@@ -255,11 +59,95 @@ Hivemap (
       ),
     ),
     HiveNode (
-      identifier = 'transistor1',
+      identifier = 'transistor',
       import_path = 'dragonfly.std.Transistor',
       position = Coordinate2D (
-        x = -89.0,
-        y = -127.0,
+        x = 157.0,
+        y = -254.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'str',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'attr',
+      import_path = 'dragonfly.op.Attr',
+      position = Coordinate2D (
+        x = -359.0,
+        y = -323.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'object_type',
+          data_type = 'str',
+          value = 'module',
+        ),
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'get',
+        ),
+        InstanceParameter (
+          identifier = 'attribute_type',
+          data_type = 'str',
+          value = 'class',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'name',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'position',
+      import_path = 'dragonfly.entity.Position',
+      position = Coordinate2D (
+        x = -15.0,
+        y = -206.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'coordinate_system',
+          data_type = 'str',
+          value = 'absolute',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'False',
+        ),
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'set',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'position_0',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -430.0,
+        y = -133.0,
       ),
       meta_args = InstanceParameterArray (
         InstanceParameter (
@@ -269,9 +157,61 @@ Hivemap (
         ),
       ),
       args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'tuple',
+          value = '(0.0, 17.0, 10.0)',
+        ),
       ),
       folded_pins = StringArray (
-        'value',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'spawn',
+      import_path = 'dragonfly.entity.Spawn',
+      position = Coordinate2D (
+        x = -197.0,
+        y = -324.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'spawn_hive',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'entity_class',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'name',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = -138.0,
+        y = -133.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'str',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'str',
+          value = 'BasicMovement',
+        ),
+      ),
+      folded_pins = StringArray (
       ),
       cls_args = InstanceParameterArray (
       ),
@@ -302,33 +242,72 @@ Hivemap (
       cls_args = InstanceParameterArray (
       ),
     ),
+    HiveNode (
+      identifier = 'format_spawn_str',
+      import_path = 'dragonfly.string.Format',
+      position = Coordinate2D (
+        x = 6.0,
+        y = -340.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'format_string',
+          data_type = 'str',
+          value = '{entity} {hive} Spawned!',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'transistor1',
+      import_path = 'dragonfly.std.Transistor',
+      position = Coordinate2D (
+        x = -197.0,
+        y = -162.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'vector',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'import_',
+      import_path = 'aphid.import_.Import',
+      position = Coordinate2D (
+        x = -471.0,
+        y = -319.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'import_path',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
   ),
   bees = BeeNodeArray (
   ),
   helpers = HelperNodeArray (
   ),
   connections = ConnectionArray (
-    Connection (
-      from_node = 'spawn',
-      output_name = 'entity_last_created',
-      to_node = 'format_spawn_str',
-      input_name = 'entity',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'spawn',
-      output_name = 'entity_last_created',
-      to_node = 'position',
-      input_name = 'entity',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'spawn',
-      output_name = 'last_process_id',
-      to_node = 'format_spawn_str',
-      input_name = 'hive',
-      is_trigger = False,
-    ),
     Connection (
       from_node = 'on_start',
       output_name = 'on_started',
@@ -351,10 +330,10 @@ Hivemap (
       is_trigger = True,
     ),
     Connection (
-      from_node = 'name',
+      from_node = 'entity_class',
       output_name = 'value_out',
-      to_node = 'attr',
-      input_name = 'name',
+      to_node = 'spawn',
+      input_name = 'entity_class',
       is_trigger = False,
     ),
     Connection (
@@ -365,10 +344,52 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
+      from_node = 'attr',
+      output_name = 'value',
+      to_node = 'spawn',
+      input_name = 'hive_class',
+      is_trigger = False,
+    ),
+    Connection (
       from_node = 'position_0',
       output_name = 'value_out',
       to_node = 'transistor1',
       input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'spawn',
+      output_name = 'entity_last_created',
+      to_node = 'format_spawn_str',
+      input_name = 'entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'spawn',
+      output_name = 'entity_last_created',
+      to_node = 'position',
+      input_name = 'entity',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'spawn',
+      output_name = 'last_process_id',
+      to_node = 'format_spawn_str',
+      input_name = 'hive',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'name',
+      output_name = 'value_out',
+      to_node = 'attr',
+      input_name = 'name',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'import_path',
+      output_name = 'value_out',
+      to_node = 'import_',
+      input_name = 'import_path',
       is_trigger = False,
     ),
     Connection (
@@ -379,27 +400,6 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'attr',
-      output_name = 'value',
-      to_node = 'spawn',
-      input_name = 'hive_class',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'import_',
-      output_name = 'module',
-      to_node = 'attr',
-      input_name = 'object_',
-      is_trigger = False,
-    ),
-    Connection (
-      from_node = 'entity_class',
-      output_name = 'value_out',
-      to_node = 'spawn',
-      input_name = 'entity_class',
-      is_trigger = False,
-    ),
-    Connection (
       from_node = 'transistor1',
       output_name = 'result',
       to_node = 'position',
@@ -407,10 +407,10 @@ Hivemap (
       is_trigger = False,
     ),
     Connection (
-      from_node = 'import_path',
-      output_name = 'value_out',
-      to_node = 'import_',
-      input_name = 'import_path',
+      from_node = 'import_',
+      output_name = 'module',
+      to_node = 'attr',
+      input_name = 'object_',
       is_trigger = False,
     ),
   ),
