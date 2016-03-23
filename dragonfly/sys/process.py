@@ -3,7 +3,7 @@ import hive
 
 class ProcessClass:
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # Callbacks
         self._on_stopped = []
         self._on_started = []

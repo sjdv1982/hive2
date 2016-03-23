@@ -172,7 +172,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
     """Instantiates a Hive class at runtime"""
     # If this is built now, then it won't perform matchmaking, so use meta hive
     bind_meta_class = hive.meta_hive("BindEnvironment", build_bind_environment, declare_build_environment,
-                                      builder_cls=BindEnvironmentClass)
+                                     builder_cls=BindEnvironmentClass)
     i.bind_meta_class = hive.property(cls, "bind_meta_class", "class", bind_meta_class)
 
     i.do_instantiate = hive.triggerable(cls.instantiate)
