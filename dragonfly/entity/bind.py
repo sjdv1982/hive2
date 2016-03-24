@@ -48,11 +48,6 @@ class EntityEnvironmentClass(factory.create_environment_class()):
         # Add reference to this hive for this entity
         if "entity" in context.config:
             self._entity = context.config["entity"]
-            register_destructor = context.plugins['entity.register_destructor']
-            register_destructor(self._entity, self.destroy)
-
-    def destroy(self):
-        self._hive.on_stopped()
 
     def get_bound_entity(self):
         return self._entity

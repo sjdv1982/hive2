@@ -135,7 +135,7 @@ class InstantiatorClass:
         instance = self._active_hives.pop(process_id)
         instance.on_stopped()
 
-    def on_stopped(self):
+    def stop_all_processes(self):
         """Stop all child hives if instantiator is stopped"""
         for instance_id in list(self._active_hives.keys()):
             self.stop_hive(instance_id)
@@ -159,7 +159,7 @@ class InstantiatorClass:
 
         # Notify bind classes of new hive instance (environment_hive)
         for callback in self._bind_class_creation_callbacks:
-            callback(environment_hive)
+            callback(process_id, environment_hive)
 
         environment_hive.on_started()
 
@@ -191,7 +191,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
     ex.stop_process = hive.antenna(i.push_stop_process)
 
     # Bind class plugin
-    ex.on_created = hive.socket(cls.add_on_created, identifier="bind.on_created", policy=hive.MultipleOptional)
+    ex.bind_on_created = hive.socket(cls.add_on_created, identifier="bind.on_created", policy=hive.MultipleOptional)
 
     ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins", policy=hive.MultipleOptional)
     ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
@@ -199,7 +199,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
     # Bind instantiator
     if meta_args.bind_process == 'child':
         # Add startup and stop callbacks
-        ex.on_stopped = hive.plugin(cls.on_stopped, identifier="on_stopped")
+        ex.on_stopped = hive.plugin(cls.stop_all_processes, identifier="on_stopped")
 
 
 Instantiator = hive.dyna_hive("Instantiator", build_instantiator, declare_instantiator, builder_cls=InstantiatorClass)

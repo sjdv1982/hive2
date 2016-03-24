@@ -27,7 +27,7 @@ def declare_destroy(meta_args):
 
 
 def build_destroy(cls, i, ex, args, meta_args):
-    """Apply a position delta to an entity"""
+    """Destroy an entity"""
     i.trig_destroy = hive.triggerfunc(cls.destroy)
     i.do_destroy = hive.triggerable(i.trig_destroy)
     ex.destroy = hive.entry(i.do_destroy)

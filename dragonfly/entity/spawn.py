@@ -7,15 +7,25 @@ class SpawnClass:
 
     def __init__(self):
         self._spawn_entity = None
+        self._register_destructor = None
 
         self.entity_class = None
         self.entity_last_created = None
+
+        self._hive = hive.get_run_hive()
 
     def set_spawn_entity(self, spawn_entity):
         self._spawn_entity = spawn_entity
 
     def do_spawn_entity(self):
-        self.entity_last_created = self._spawn_entity(self.entity_class, )
+        self.entity_last_created = self._spawn_entity(self.entity_class)
+
+    def on_entity_process_created(self, process_id, entity_hive):
+        destructor = lambda: self._hive._instantiator.stop_process.push(process_id)
+        self._register_destructor(self.entity_last_created, destructor)
+
+    def set_register_destructor(self, register_destructor):
+        self._register_destructor = register_destructor
 
 
 def declare_spawn(meta_args):
@@ -25,6 +35,10 @@ def declare_spawn(meta_args):
 def build_spawn(cls, i, ex, args, meta_args):
     """Spawn an entity into the scene"""
     ex.get_spawn_entity = hive.socket(cls.set_spawn_entity, "entity.spawn")
+
+    # Associate entity with this hive so it is safely destroyed
+    ex.get_register_destructor = hive.socket(cls.set_register_destructor, "entity.register_destructor")
+    ex.on_entity_process_instantiated = hive.plugin(cls.on_entity_process_created, "bind.on_created")
 
     i.entity_class = hive.property(cls, "entity_class", "str.id")
     i.pull_class = hive.pull_in(i.entity_class)
@@ -57,6 +71,8 @@ def build_spawn(cls, i, ex, args, meta_args):
         ex.hive_class = hive.antenna(i.instantiator.hive_class)
         ex.last_process_id = hive.output(i.instantiator.last_process_id)
         ex.stop_process = hive.antenna(i.instantiator.stop_process)
+        ex.pause_events = hive.antenna(i.instantiator.pause_events)
+        ex.resume_events = hive.antenna(i.instantiator.resume_events)
 
         # Instantiate
         hive.trigger(i.trigger, i.instantiator.create)

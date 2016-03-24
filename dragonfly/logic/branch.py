@@ -32,4 +32,4 @@ def build_switch(i, ex, args, meta_args):
     ex.trigger = hive.entry(i.trigger)
 
 
-Switch = hive.dyna_hive("Switch", build_switch, declare_switch)
+Branch = hive.dyna_hive("Switch", build_switch, declare_switch)
