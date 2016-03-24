@@ -100,7 +100,7 @@ class EntityEnvironmentClass(factory.create_environment_class()):
         self._plugins['entity.visibility.set'](self._entity, name, value)
 
     def bound_destroy(self):
-        self._plugins['entity.destroy'](self._entity)
+        self._plugins['entity.bound.destroy']()
 
 
 @factory.builds_environment
@@ -137,7 +137,7 @@ def build_entity_environment(cls, i, ex, args, meta_args):
 
 
 EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment, factory.environment_declarator,
-                                   cls=EntityEnvironmentClass)
+                                    builder_cls=EntityEnvironmentClass)
 
 
 class EntityCls(factory.create_external_class()):
@@ -166,7 +166,7 @@ def build_bind(cls, i, ex, args, meta_args):
         ex.entity = hive.antenna(i.pull_entity)
 
 
-BindEntity = hive.dyna_hive("BindEntity", build_bind, declarator=factory.external_declarator, cls=EntityCls)
+BindEntity = hive.dyna_hive("BindEntity", build_bind, declarator=factory.external_declarator, builder_cls=EntityCls)
 
 
 def get_environment(meta_args):

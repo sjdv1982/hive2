@@ -40,7 +40,7 @@ def build_bind(cls, i, ex, args, meta_args):
         ex.event_leader = hive.antenna(i.pull_event_leader)
 
 
-BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=factory.external_declarator, cls=EventBindClass)
+BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=factory.external_declarator, builder_cls=EventBindClass)
 
 
 class EventEnvironmentClass(factory.create_environment_class()):
@@ -96,7 +96,7 @@ def build_event_environment(cls, i, ex, args, meta_args):
 
 
 EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
-                                  cls=EventEnvironmentClass)
+                                   builder_cls=EventEnvironmentClass)
 
 
 def get_environment(meta_args):

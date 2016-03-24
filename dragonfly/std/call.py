@@ -6,8 +6,8 @@ import hive
 def create_func(expression):
     prev_namespace = dict(locals())
     exec(expression, prev_namespace)
-    new_keys = (k for k in locals() if not k in prev_namespace)
-    print(list(new_keys))
+    new_keys = (k for k in locals() if k not in prev_namespace)
+
     for key, value in dict(locals()).items():
         if key in prev_namespace:
             continue

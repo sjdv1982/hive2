@@ -34,4 +34,4 @@ def build_get_entity(cls, i, ex, args):
     hive.trigger(i.pull_entity, i.do_get_entity, pretrigger=True)
 
 
-GetEntity = hive.hive("GetEntity", build_get_entity, cls=EntityClass)
+GetEntity = hive.hive("GetEntity", build_get_entity, builder_cls=EntityClass)

@@ -3,7 +3,7 @@ import hive
 
 class ProcessClass:
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # Callbacks
         self._on_stopped = []
         self._on_started = []
@@ -35,4 +35,4 @@ def build_process(cls, i, ex, args):
     ex.on_stopped = hive.entry(i.on_stopped)
 
 
-Process = hive.hive("Process", build_process, cls=ProcessClass)
+Process = hive.hive("Process", build_process, builder_cls=ProcessClass)

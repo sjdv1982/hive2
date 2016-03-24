@@ -1,0 +1,309 @@
+Hivemap (
+  hives = HiveNodeArray (
+    HiveNode (
+      identifier = 'show',
+      import_path = 'dragonfly.std.Transistor',
+      position = Coordinate2D (
+        x = 54.0,
+        y = -49.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'toggle',
+      import_path = 'dragonfly.logic.Toggle',
+      position = Coordinate2D (
+        x = -62.0,
+        y = -71.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'visibility',
+      import_path = 'dragonfly.entity.Visibility',
+      position = Coordinate2D (
+        x = 160.0,
+        y = -8.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'set',
+        ),
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'destroy',
+      import_path = 'dragonfly.entity.Destroy',
+      position = Coordinate2D (
+        x = 132.0,
+        y = -109.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'bound',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'cycle',
+      import_path = 'dragonfly.logic.Cycle',
+      position = Coordinate2D (
+        x = -3.0,
+        y = -168.0,
+      ),
+      meta_args = InstanceParameterArray (
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'period_in',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'value',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 0.0,
+        y = 0.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'bool',
+          value = 'True',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'on_t_key',
+      import_path = 'dragonfly.io.Keyboard',
+      position = Coordinate2D (
+        x = -190.0,
+        y = -154.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'mode',
+          data_type = 'str',
+          value = 'single key',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'key',
+          data_type = 'str',
+          value = 't',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'period_in',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 13.0,
+        y = -81.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'int',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'int',
+          value = '4',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'value_0',
+      import_path = 'dragonfly.std.Variable',
+      position = Coordinate2D (
+        x = 20.0,
+        y = 127.0,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'start_value',
+          data_type = 'bool',
+          value = 'False',
+        ),
+      ),
+      folded_pins = StringArray (
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+    HiveNode (
+      identifier = 'hide',
+      import_path = 'dragonfly.std.Transistor',
+      position = Coordinate2D (
+        x = 25.0,
+        y = 45.5,
+      ),
+      meta_args = InstanceParameterArray (
+        InstanceParameter (
+          identifier = 'data_type',
+          data_type = 'str',
+          value = 'bool',
+        ),
+      ),
+      args = InstanceParameterArray (
+      ),
+      folded_pins = StringArray (
+        'value',
+      ),
+      cls_args = InstanceParameterArray (
+      ),
+    ),
+  ),
+  bees = BeeNodeArray (
+  ),
+  helpers = HelperNodeArray (
+  ),
+  connections = ConnectionArray (
+    Connection (
+      from_node = 'show',
+      output_name = 'result',
+      to_node = 'visibility',
+      input_name = 'visibility',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'toggle',
+      output_name = 'trig_a',
+      to_node = 'show',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'toggle',
+      output_name = 'trig_b',
+      to_node = 'hide',
+      input_name = 'trigger',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'cycle',
+      output_name = 'trig_out',
+      to_node = 'destroy',
+      input_name = 'destroy',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'value',
+      output_name = 'value_out',
+      to_node = 'show',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'on_t_key',
+      output_name = 'on_pressed',
+      to_node = 'cycle',
+      input_name = 'trig_in',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'on_t_key',
+      output_name = 'on_pressed',
+      to_node = 'toggle',
+      input_name = 'trig_in',
+      is_trigger = True,
+    ),
+    Connection (
+      from_node = 'period_in',
+      output_name = 'value_out',
+      to_node = 'cycle',
+      input_name = 'period_in',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'value_0',
+      output_name = 'value_out',
+      to_node = 'hide',
+      input_name = 'value',
+      is_trigger = False,
+    ),
+    Connection (
+      from_node = 'hide',
+      output_name = 'result',
+      to_node = 'visibility',
+      input_name = 'visibility',
+      is_trigger = False,
+    ),
+  ),
+  docstring = '',
+)

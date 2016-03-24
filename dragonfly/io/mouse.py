@@ -79,4 +79,4 @@ def build_mouse(cls, i, ex, args):
     ex.is_pressed = hive.output(i.pull_is_pressed)
 
 
-Mouse = hive.hive("Mouse", build_mouse, cls=Mouse_)
+Mouse = hive.hive("Mouse", build_mouse, builder_cls=Mouse_)

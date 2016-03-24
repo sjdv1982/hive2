@@ -50,6 +50,7 @@ class _Mainloop(object):
 
 
 def build_mainloop(cls, i, ex, args):
+    """Blocking fixed-timestep trigger generator"""
     i.tick = hive.triggerfunc()
     i.stop = hive.triggerable(cls.stop)
     i.run = hive.triggerable(cls.run)

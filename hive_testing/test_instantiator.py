@@ -1,62 +1,53 @@
-from dragonfly.instance import Instantiator
+from dragonfly.bind import create_instantiator
 
 import dragonfly
 import hive
-from dragonfly.event import EventHive
-from dragonfly.gen import Next
+from dragonfly.event import EventHive, bind_info
 from dragonfly.std import Variable
 
 
 def build_some_instance(i, ex, args):
-    args.name = hive.parameter("str")
-    i.some_var = hive.attribute("str", args.name)
+    i.some_var = hive.attribute("str")
     ex.on_tick = dragonfly.event.Tick()
     i.mod = hive.modifier(lambda self: print(self, self._some_var))
     hive.connect(ex.on_tick, i.mod)
 
+    def on_stopped():
+        print("I am closed!")
 
+    ex.on_closed = hive.plugin(on_stopped, "on_stopped")
+
+
+Instantiator = create_instantiator(bind_info)
 SomeHive = hive.hive("SomeHive", build_some_instance)
-import sys
-sys.modules['this.that'] = type("", (), {'other': SomeHive})
 
 
 def build_my_hive(i, ex, args):
     ex.events = EventHive()
 
     # Create instantiator, but don't add events by leader
-    ex.instantiator = Instantiator(bind_event='all')
+    ex.instantiator = Instantiator(forward_events='all')
 
     # Create args dict
-    i.import_path = Variable("str", "this.that.other")
-    hive.connect(i.import_path, ex.instantiator.import_path)
-
-    # Create args dict
-    i.args = Variable("dict", {'name': 'a'})
-    hive.connect(i.args, ex.instantiator.args)
-
-    # Create bind id getter
-    i.bind_id_getter = Next(("str", "id"))
-    i.gen = Variable("object", iter(range(1000)))
-    hive.connect(i.gen, i.bind_id_getter)
-    hive.connect(i.bind_id_getter, ex.instantiator.bind_id)
+    i.hive_class = Variable("class", start_value=SomeHive)
+    hive.connect(i.hive_class, ex.instantiator.hive_class)
 
 
 MyHive = hive.hive("MyHive", build_my_hive)
 my_hive = MyHive()
 
 my_hive.instantiator.create()
-a = my_hive.instantiator.last_created_hive
+pid_a = my_hive.instantiator.last_process_id.pull()
 
-my_hive._args.data['name'] = 'b'
 my_hive.instantiator.create()
-b = my_hive.instantiator.last_created_hive
+pid_b = my_hive.instantiator.last_process_id.pull()
 
-my_hive._args.data['name'] = 'c'
 my_hive.instantiator.create()
-c = my_hive.instantiator.last_created_hive
+pid_c = my_hive.instantiator.last_process_id.pull()
 
 my_hive.events.read_event.plugin()(("tick",))
+print(pid_a, pid_b, pid_c)
 print("Closing A!")
-a.close()
-
-my_hive.events.read_event.plugin()(("tick",))
+my_hive.instantiator.stop_process.push(pid_a)
+#
+# my_hive.events.read_event.plugin()(("tick",))

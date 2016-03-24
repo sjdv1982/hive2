@@ -53,11 +53,11 @@ def build_watch(cls, i, ex, args, meta_args):
     ex.on_changed = hive.hook(i.on_changed)
 
     if meta_args.mode == 'pull':
-        ex.get_add_handler = hive.socket(cls.set_add_handler,
-                                         identifier="event.add_handler")
+        ex.get_add_handler = hive.socket(cls.set_add_handler, identifier="event.add_handler")
+
     else:
         i.compare_values = hive.triggerable(cls.compare_values)
         hive.trigger(i.value_in, i.compare_values)
 
 
-Watch = hive.dyna_hive("Watch", build_watch, declare_watch, cls=WatchClass)
+Watch = hive.dyna_hive("Watch", build_watch, declare_watch, builder_cls=WatchClass)

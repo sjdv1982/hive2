@@ -36,4 +36,4 @@ def build_keyboard(cls, i, ex, args):
     ex.trig_out = hive.hook(i.trig_out)
 
 
-Keyboard = hive.hive("Keyboard", build_keyboard, cls=Keyboard_)
+Keyboard = hive.hive("Keyboard", build_keyboard, builder_cls=Keyboard_)

@@ -46,6 +46,7 @@ def build_dog(cls, i, ex, args):
 
 DogHive = hive.hive("dog", build_dog, Dog)
 
+
 def build_puppy(i, ex, args):
     i.wowo = hive.modifier(lambda x:x)
     ex.wowo = hive.entry(i.wowo)
