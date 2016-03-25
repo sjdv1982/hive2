@@ -90,6 +90,7 @@ class InstantiatorClass:
 
         # Runtime attributes
         self.hive_class = None
+        self.args = None
 
     def _create_context(self):
         """Create context object for new hive instances.
@@ -143,9 +144,6 @@ class InstantiatorClass:
     def instantiate(self):
         context = self._create_context()
 
-        # Pull a new bind ID and args dict
-        self._hive.hive_class()
-
         bind_meta_args = self._hive._hive_object._hive_meta_args_frozen
         bind_class = self.bind_meta_class(bind_meta_args=bind_meta_args, hive_class=self.hive_class)
 
@@ -175,13 +173,16 @@ def build_instantiator(cls, i, ex, args, meta_args):
                                      builder_cls=BindEnvironmentClass)
     i.bind_meta_class = hive.property(cls, "bind_meta_class", "class", bind_meta_class)
 
-    i.do_instantiate = hive.triggerable(cls.instantiate)
+    i.trig_instantiate = hive.triggerfunc(cls.instantiate)
+    i.do_instantiate = hive.triggerable(i.trig_instantiate)
 
     i.hive_class = hive.property(cls, "hive_class", "class")
     i.pull_hive_class = hive.pull_in(i.hive_class)
     ex.hive_class = hive.antenna(i.pull_hive_class)
 
     ex.create = hive.entry(i.do_instantiate)
+
+    hive.trigger(i.trig_instantiate, i.pull_hive_class, pretrigger=True)
 
     ex.process_id = hive.property(cls, "last_created_process_id", "int.id.process")
     i.pull_process_id = hive.pull_out(ex.process_id)
@@ -192,7 +193,6 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     # Bind class plugin
     ex.bind_on_created = hive.socket(cls.add_on_created, identifier="bind.on_created", policy=hive.MultipleOptional)
-
     ex.add_get_plugins = hive.socket(cls.add_get_plugins, identifier="bind.get_plugins", policy=hive.MultipleOptional)
     ex.add_get_config = hive.socket(cls.add_get_config, identifier="bind.get_config", policy=hive.MultipleOptional)
 
