@@ -90,8 +90,6 @@ class CodeHighlighter(QSyntaxHighlighter):
 
 class CodeEditor(QTextEdit):
 
-    textChanged = Signal()
-
     def __init__(self):
         super(CodeEditor, self).__init__()
 

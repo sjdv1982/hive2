@@ -90,7 +90,6 @@ class InstantiatorClass:
 
         # Runtime attributes
         self.hive_class = None
-        self.args = None
 
     def _create_context(self):
         """Create context object for new hive instances.
