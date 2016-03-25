@@ -44,12 +44,37 @@ class EventHandler:
                     self.callback()
 
 
-class EventManager:
+class EventDispatcher:
 
     def __init__(self):
-        self.handlers = []
+        self._handlers = []
 
-        self.event_in = None
+    @property
+    def has_handlers(self):
+        return bool(self._handlers)
+
+    def add_handler(self, handler):
+        self._handlers.append(handler)
+        self._handlers.sort()
+
+    def remove_handler(self, handler):
+        self._handlers.remove(handler)
+        self._handlers.sort()
+
+    def clear_handlers(self):
+        self._handlers.clear()
+
+    def handle_event(self, event):
+        for handler in self._handlers:
+            handler(event)
+
+
+class EventHiveClass(EventDispatcher):
+
+    def __init__(self):
+        super(EventHiveClass, self).__init__()
+
+        self.pushed_event = None
 
     def on_started(self):
         self.handle_event(("start",))
@@ -58,19 +83,7 @@ class EventManager:
         self.handle_event(("stop",))
 
     def on_event_in(self):
-        self.handle_event(self.event_in)
-
-    def add_handler(self, handler):
-        self.handlers.append(handler)
-        self.handlers.sort()
-
-    def remove_handler(self, handler):
-        self.handlers.remove(handler)
-        self.handlers.sort()
-
-    def handle_event(self, event):
-        for handler in self.handlers:
-            handler(event)
+        self.handle_event(self.pushed_event)
 
 
 def event_builder(cls, i, ex, args):
@@ -83,7 +96,7 @@ def event_builder(cls, i, ex, args):
     ex.on_started = hive.plugin(cls.on_started, identifier="on_started")
 
     # Allow events to be pushed in
-    i.event_in = hive.property(cls, 'event_in', 'tuple')
+    i.event_in = hive.property(cls, 'pushed_event', 'tuple')
     i.push_event = hive.push_in(i.event_in)
     ex.event_in = hive.antenna(i.push_event)
 
@@ -91,6 +104,6 @@ def event_builder(cls, i, ex, args):
     hive.trigger(i.push_event, i.on_event_in)
 
 
-EventHive = hive.hive("EventHive", event_builder, EventManager)
+EventHive = hive.hive("EventHive", event_builder, EventHiveClass)
 
 

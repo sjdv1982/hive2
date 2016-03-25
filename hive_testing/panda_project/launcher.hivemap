@@ -202,7 +202,7 @@ Hivemap (
     ),
     HiveNode (
       identifier = 'tick',
-      import_path = 'dragonfly.event.Tick',
+      import_path = 'dragonfly.event.OnTick',
       position = Coordinate2D (
         x = -319.0,
         y = 59.0,

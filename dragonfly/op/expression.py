@@ -1,9 +1,11 @@
 import ast
-
 import hive
 
+from math import *
+import math
 
-namespace = ("sqrt",)
+
+namespace = tuple(n for n in dir(math) if not n.startswith("_"))
 
 
 class NodeVisitor(ast.NodeVisitor):

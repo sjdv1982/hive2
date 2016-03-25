@@ -51,4 +51,5 @@ def build_tick(cls, i, ex, args):
     i.disable = hive.triggerable(cls.disable)
     ex.disable = hive.entry(i.disable)
 
-Tick = hive.hive("Tick", build_tick, builder_cls=_TickCls)
+
+OnTick = hive.hive("OnTick", build_tick, builder_cls=_TickCls)

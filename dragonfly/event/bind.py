@@ -1,7 +1,7 @@
 from weakref import WeakValueDictionary
 
 import hive
-from .event import EventHandler
+from .event import EventHandler, EventDispatcher
 from ..bind import BindInfo, BindClassDefinition
 
 
@@ -72,7 +72,7 @@ class EventEnvironmentClass(factory.create_environment_class()):
     def __init__(self, context):
         super().__init__(context)
 
-        self._handlers = []
+        self._dispatcher = EventDispatcher()
         self._hive = hive.get_run_hive()
 
         self._main_add_handler = context.plugins['event.add_handler']
@@ -85,14 +85,16 @@ class EventEnvironmentClass(factory.create_environment_class()):
         self._handler_is_registered = False
 
     def _update_listener_state(self):
-        needs_deregistration = not (self._handlers and self._can_process_events) and self._handler_is_registered
-        needs_registration = self._handlers and self._can_process_events and not self._handler_is_registered
+        has_handlers = self._dispatcher.has_handlers
+
+        needs_unregistration = not (has_handlers and self._can_process_events) and self._handler_is_registered
+        needs_registration = has_handlers and self._can_process_events and not self._handler_is_registered
 
         if needs_registration:
             self._main_add_handler(self._main_handler)
             self._handler_is_registered = True
 
-        elif needs_deregistration:
+        elif needs_unregistration:
             self._main_remove_handler(self._main_handler)
             self._handler_is_registered = False
 
@@ -109,22 +111,19 @@ class EventEnvironmentClass(factory.create_environment_class()):
         self._update_listener_state()
 
     def add_handler(self, handler):
-        self._handlers.append(handler)
-
+        self._dispatcher.add_handler(handler)
         self._update_listener_state()
 
     def remove_handler(self, handler):
-        self._handlers.remove(handler)
-
+        self._dispatcher.remove_handler(handler)
         self._update_listener_state()
 
     def handle_event(self, event):
-        for handler in self._handlers:
-            handler(event)
+        self._dispatcher.handle_event(event)
 
     def on_closed(self):
         """Disconnect from external event stream"""
-        self._handlers.clear()
+        self._dispatcher.clear_handlers()
 
         self._update_listener_state()
 
