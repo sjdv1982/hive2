@@ -455,7 +455,7 @@ class NodeView(QGraphicsView):
 
                 self.update()
 
-            QGraphicsView.mousePressEvent(self, event)
+        QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, mouseEvent):
         if self._panning:

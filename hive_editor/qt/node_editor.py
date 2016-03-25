@@ -422,7 +422,7 @@ class NodeEditorSpace(QWidget):
         # Reset debug widget
         self._debug_widget.clear_history()
         self._debug_widget.clear_breakpoints()
-        self._debug_widget.on_skip_breakpoint = None
+        self._debug_widget.on_skip_breakpoint.disconnect()
 
     def _on_history_updated(self, command_id):
         self._history_id = command_id

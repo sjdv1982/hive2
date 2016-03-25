@@ -5,7 +5,6 @@ import hive
 
 class _RandomCls:
 
-    @hive.types(seed="float")
     def __init__(self, seed=None):
         self.rng = RNG()
         self.rng.seed(seed)
@@ -17,7 +16,6 @@ class _RandomCls:
         self.uniform_min = None
         self.uniform_max = None
 
-    @hive.types(seed='float')
     def set_seed(self, seed):
         self.rng.seed(seed)
 

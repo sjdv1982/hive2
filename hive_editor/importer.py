@@ -25,7 +25,7 @@ class HiveModuleLoader:
                     cls = class_from_filepath(self.path)
 
                 except Exception as exc:
-                    raise ImportError from exc
+                    raise ImportError(module_path) from exc
 
                 self.classes.add(cls)
 
