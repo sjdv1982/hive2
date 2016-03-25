@@ -21,18 +21,26 @@ class _PhysicsManagerClass:
         self._world.do_physics(1/self.tick_rate)
         self.time += 1/self.tick_rate
 
+    def get_velocity_absolute(self, rb):
+        node = rb # TODO
+        return tuple(node.get_linear_velocity())
+
+    def set_velocity_absolute(self, rb, vel):
+        node = rb # TODO
+        return node.set_linear_velocity(*vel)
+
     @hive.types(entity='entity')
     def on_entity_spawned(self, entity):
         parent = entity.get_parent()
-        rb = parent.find("+BulletRigidBodyNode")
-        self._world.attach_rigid_body(rb.node())
+        nodepath = parent.find("+BulletRigidBodyNode")
+        self._world.attach_rigid_body(nodepath.node())
         print("ADD")
 
     @hive.types(entity='entity')
     def on_entity_destroyed(self, entity):
         parent = entity.get_parent()
-        rb = parent.find("+BulletRigidBodyNode")
-        self._world.remove_rigid_body(rb.node())
+        nodepath = parent.find("+BulletRigidBodyNode")
+        self._world.remove_rigid_body(nodepath.node())
 
 
 def build_physics_manager(cls, i, ex, args):
