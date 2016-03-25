@@ -38,7 +38,7 @@ def build_foreach(i, ex, args, meta_args):
 
     i.do_trig = hive.triggerfunc()
     i.trig_in = hive.triggerable(i.do_trig)
-    ex.trig_in = hive.entry(i.trig_in)
+    ex.start = hive.entry(i.trig_in)
 
     i.break_ = hive.attribute('bool', False)
 

@@ -12,5 +12,5 @@ setup(name='HIVE',
 
       # Project uses reStructuredText, so ensure that the docutils get
       # installed or upgraded on the target machine
-      install_requires=['PyQt4'],
+      install_requires=['PyQt4', 'pygments'],
       )

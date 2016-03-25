@@ -1,9 +1,9 @@
 from collections import OrderedDict
-
 from hive import is_subtype
 
 from .colour_button import QColorButton
-from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QTextEdit, QFont, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
+from .code_editor import CodeEditor
+from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
     QColor, QToolButton, QIcon, QPixmap
 from ..observer import Observable
 
@@ -54,16 +54,14 @@ def _create_str():
 
 
 def _create_code():
-    widget = QTextEdit()
-    widget.setCurrentFont(QFont("Consolas"))
+    widget = CodeEditor()
 
     getter = widget.toPlainText
     setter = lambda value: widget.setPlainText(value)
 
     controller = WidgetController(getter, setter)
 
-    def on_changed(value=None):
-        widget.setCurrentFont(QFont("Consolas"))
+    def on_changed():
         controller._on_changed()
 
     widget.textChanged.connect(on_changed)
