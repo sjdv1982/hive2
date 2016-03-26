@@ -138,9 +138,7 @@ def get_io_info(hive_object):
 
     pin_order = []
 
-    for bee_name in external_bees:
-        bee = getattr(external_bees, bee_name)
-
+    for bee_name, bee in external_bees.items():
         # Find IO pins
         exported_bee = bee.export()
 

@@ -10,20 +10,32 @@ HiveArgsExtraction = namedtuple("HiveArgsExtraction", "args kwargs parameter_val
 
 class MappingObject(object):
 
+    _RESTRICTED_ATTRIBUTES = set()
+
     def __init__(self):
         self._members = OrderedDict()
 
-    _RESTRICTED_ATTRIBUTES = set()
-
     @property
-    def _CLS_NAME(self):
+    def _repr_name(self):
         return self.__class__.__name__
 
     def _repr_message(self, message):
-        return "{}: {}".format(self._CLS_NAME, message)
+        return "{}: {}".format(self._repr_name, message)
 
     def _validate_attribute(self, name, value):
         pass
+
+    def keys(self):
+        return self._members.keys()
+
+    def items(self):
+        return self._members.items()
+
+    def values(self):
+        return self._members.values()
+
+    def to_ordered_dict(self):
+        return self._members.copy()
 
     def __setattr__(self, name, value):
         if name in self._RESTRICTED_ATTRIBUTES:
@@ -53,22 +65,18 @@ class MappingObject(object):
 
         object.__delattr__(self, name)
 
+    def __contains__(self, item):
+        return item in self._members
+
     def __bool__(self):
         return bool(self._members)
 
     def __dir__(self):
         return tuple(self._members)
 
-    def __iter__(self):
-        return iter(self._members)
-
     def __repr__(self):
         member_pairs = ("{} = {}".format(k, v) for k, v in self._members.items())
         return self._repr_message("\n\t{}".format("\n\t".join(member_pairs)))
-
-    @property
-    def members(self):
-        return self._members.copy()
 
 
 class HiveObjectWrapper(MappingObject):
@@ -81,7 +89,7 @@ class HiveObjectWrapper(MappingObject):
         super(HiveObjectWrapper, self).__init__()
 
     @property
-    def _CLS_NAME(self):
+    def _repr_name(self):
         return "{}.{}".format(self._hive_object_cls.__name__, self._WRAPPER_NAME)
 
 
@@ -144,8 +152,8 @@ class FrozenArgsView(MappingObject):
         self._wrapper = wrapper
 
     @property
-    def _CLS_NAME(self):
-        return "{}[frozen]".format(self._wrapper._CLS_NAME)
+    def _repr_name(self):
+        return "{}[frozen]".format(self._wrapper._repr_name)
 
     def __delattr_(self, name):
         raise AttributeError(self._repr_message("attributes cannot be removed"))
@@ -261,7 +269,7 @@ class HiveParentWrapper(MappingObject):
         super(HiveParentWrapper, self).__init__()
 
     @property
-    def _CLS_NAME(self):
+    def _repr_name(self):
         return "{}.{}".format(self._hive_parent_cls.__name__, self._WRAPPER_NAME)
 
 
