@@ -210,6 +210,11 @@ class HiveNodeInspector:
                 # Convert options into InspectorOptions
                 options = OrderedDict()
                 for name, arg_data in builder_args.items():
-                    options[name] = InspectorOption(arg_data.data_type, arg_data.default, arg_data.options)
+                    if arg_data.optional:
+                        options[name] = InspectorOption(arg_data.data_type, options=arg_data.options)
+
+                    else:
+                        options[name] = InspectorOption(arg_data.data_type, default=arg_data.default,
+                                                        options=arg_data.options)
 
                 yield ("cls_args", options)

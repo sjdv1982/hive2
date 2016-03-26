@@ -9,7 +9,7 @@ from hive.antenna import HiveAntenna
 from hive.output import HiveOutput
 
 from collections import OrderedDict, namedtuple
-from inspect import getargspec
+from inspect import signature
 from itertools import chain
 from os import path
 from re import sub as re_sub
@@ -94,8 +94,8 @@ def get_builder_class_args(hive_cls):
     builder_args = OrderedDict()
 
     # Find first builder class
-    for builder, cls in hive_cls._builders:
-        if cls is None:
+    for builder, builder_class in hive_cls._builders:
+        if builder_class is None:
             continue
 
         # Same arguments are provided to all bind classes
@@ -105,26 +105,18 @@ def get_builder_class_args(hive_cls):
         return builder_args
 
     # Get init func
-    init_func = cls.__init__
+    init_func = builder_class.__init__
     arg_types = hive.get_argument_types(init_func)
     arg_options = hive.get_argument_options(init_func)
 
-    arg_spec = getargspec(init_func)
-    defaults = arg_spec.defaults if arg_spec.defaults else []
-
-    # Ignore self
-    arg_names = arg_spec.args[1:]
-
-    # Populate defaults
-    arg_defaults = {}
-    for arg_name, default_value in zip(reversed(arg_names), reversed(defaults)):
-        arg_defaults[arg_name] = default_value
+    cls_signature = signature(builder_class)
 
     # Construct argument pairs
-    for arg_name in arg_names:
-        arg_data = ArgOption(optional=arg_name in arg_defaults, default=arg_defaults.get(arg_name),
-                             options=arg_options.get(arg_name), data_type=arg_types.get(arg_name))
-        builder_args[arg_name] = arg_data
+    for name, parameter in cls_signature.parameters.items():
+        is_optional = parameter.default is not parameter._empty
+        default = parameter.default if is_optional else None
+        builder_args[name] = ArgOption(optional=is_optional, default=default, options=arg_options.get(name),
+                                       data_type=arg_types.get(name))
 
     return builder_args
 

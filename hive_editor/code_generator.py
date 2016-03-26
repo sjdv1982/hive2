@@ -82,7 +82,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             non_meta_args.update(cls_args)
             meta_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in meta_args.items()])
             arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in non_meta_args.items()])
-            statement = "i.{} = {}({})()".format(hive_name, import_path, meta_arg_pairs, arg_pairs)
+            statement = "i.{} = {}({})({})".format(hive_name, import_path, meta_arg_pairs, arg_pairs)
 
         # One stage instantiation
         else:

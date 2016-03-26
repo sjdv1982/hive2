@@ -1,5 +1,5 @@
 from collections import defaultdict
-from inspect import isfunction, signature
+from inspect import signature
 from weakref import ref
 
 from .classes import (HiveInternalWrapper, HiveExportableWrapper, HiveArgsWrapper, HiveMetaArgsWrapper, ResolveBee,
