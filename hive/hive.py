@@ -696,7 +696,7 @@ class HiveBuilder(object):
 
             # Find bees at set them on parent
             for bee_name in importable_from_child:
-                assert not hasattr(externals, bee_name)
+                assert not hasattr(externals, bee_name), bee_name
                 bee = getattr(child_hive, bee_name)
                 setattr(externals, bee_name, bee)
 

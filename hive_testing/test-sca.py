@@ -6,7 +6,7 @@ import sys
 current_directory = os.path.split(os.path.abspath(__file__))[0]
 sys.path.append(current_directory + "/" + "..")
 
-from dragonfly.event import EventHive
+from dragonfly.event import EventManager
 from sca.sensors import Keyboard
 from sca.controllers import AND
 from sca.actuators import Debug
@@ -25,7 +25,7 @@ def build_some_hive(i, ex, args):
     hive.connect(ex.and_.trig_out, ex.debug.trig_in)
 
 
-MyHive = EventHive.extend("EMyHive", build_some_hive)
+MyHive = EventManager.extend("EMyHive", build_some_hive)
 
 h = MyHive()
 h.keyboard.key = "w"

@@ -2,7 +2,7 @@ from dragonfly.bind import create_instantiator
 
 import dragonfly
 import hive
-from dragonfly.event import EventHive, bind_info
+from dragonfly.event import EventManager, bind_info
 from dragonfly.std import Variable
 
 
@@ -23,7 +23,7 @@ SomeHive = hive.hive("SomeHive", build_some_instance)
 
 
 def build_my_hive(i, ex, args):
-    ex.events = EventHive()
+    ex.events = EventManager()
 
     # Create instantiator, but don't add events by leader
     ex.instantiator = Instantiator(forward_events='all')

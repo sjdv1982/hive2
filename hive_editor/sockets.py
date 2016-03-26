@@ -32,7 +32,7 @@ def get_colour(data_type):
         elif base_type == "id":
             return colours[2]
 
-        elif base_type == "str":
+        elif base_type in ("str", "bytes"):
             return colours[3]
 
         elif base_type == "int":

@@ -104,6 +104,6 @@ def event_builder(cls, i, ex, args):
     hive.trigger(i.push_event, i.on_event_in)
 
 
-EventHive = hive.hive("EventHive", event_builder, EventHiveClass)
+EventManager = hive.hive("EventHive", event_builder, EventHiveClass)
 
 

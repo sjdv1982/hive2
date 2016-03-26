@@ -7,6 +7,7 @@ def declare_format(meta_args):
     meta_args.format_string = hive.parameter("str", "{}")
 
 
+# TODO make non-attr names editable
 def build_format(i, ex, args, meta_args):
     """Interface to Python string value formatting"""
     formatter = string.Formatter()

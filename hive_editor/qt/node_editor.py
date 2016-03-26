@@ -9,6 +9,7 @@ from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
+
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
@@ -75,9 +76,8 @@ class SourceCodePreviewDialogue(QDialog):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        text_editor = QTextEdit()
-        text_editor.setCurrentFont(QFont("Consolas"))
-        text_editor.setPlainText(code)
+        text_editor, controller = create_widget("str.code")
+        controller.value = code
 
         self.setAttribute(Qt.WA_DeleteOnClose)
         layout.addWidget(text_editor)

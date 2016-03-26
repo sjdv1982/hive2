@@ -5,7 +5,7 @@ from .entity_api import EntityAPI
 from .physics_manager import PhysicsManager
 
 from ..mainloop import Mainloop as _Mainloop
-from ...event import EventHive, EventHandler
+from ...event import EventManager, EventHandler
 
 
 class MainloopClass:
@@ -38,7 +38,7 @@ class MainloopClass:
 
 
 def build_mainloop(cls, i, ex, args):
-    i.event_manager = EventHive(export_namespace=True)
+    i.event_manager = EventManager(export_namespace=True)
     i.input_manager = InputHandler(export_namespace=True)
     i.entity_api = EntityAPI(export_namespace=True)
     i.physics_manager = PhysicsManager(export_namespace=True)

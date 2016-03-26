@@ -161,8 +161,7 @@ class HiveNodeInspector:
         """
         wrapper_options = OrderedDict()
 
-        for arg_name in wrapper:
-            param = getattr(wrapper, arg_name)
+        for arg_name, param in wrapper.items():
             data_type = param.data_type if param.data_type else ''
             options = param.options
 

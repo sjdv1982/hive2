@@ -47,7 +47,7 @@
 #
 # print(debug.report.stack, ostack)
 
-from dragonfly.event.event import EventHandler, EventHive
+from dragonfly.event.event import EventHandler, EventManager
 
 
 class MyHiveCls:
@@ -72,7 +72,7 @@ def my_hive_builder(cls, i, ex, args):
     hive.connect(ex.add_handler, ex.some_socket)
 
 
-MyHive = EventHive.extend("M", my_hive_builder, MyHiveCls)
+MyHive = EventManager.extend("M", my_hive_builder, MyHiveCls)
 my_hive = MyHive()
 
 
