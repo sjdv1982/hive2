@@ -204,17 +204,14 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Args to instantiate builder-class instances
         self._hive_builder_args = remaining_args
         self._hive_builder_kwargs = remaining_kwargs
-            
-        # Used to check calling signature of builderclass.__init__
-        init_plus_args = (None,) + self._hive_builder_args
 
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
-            if builder_cls is not None and isfunction(builder_cls.__init__):
-                init_signature = signature(builder_cls.__init__)
+            if builder_cls is not None:
+                init_signature = signature(builder_cls)
 
                 try:
-                    init_signature.bind(*init_plus_args, **self._hive_builder_kwargs)
+                    init_signature.bind(*self._hive_builder_args, **self._hive_builder_kwargs)
 
                 except TypeError as err:
                     raise TypeError("{}.{}".format(builder_cls.__name__, err.args[0]))
