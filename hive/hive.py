@@ -422,13 +422,13 @@ class HiveBuilder(object):
         if cls._declarators and not cls._is_dyna_hive:
             return hive_object_cls._hive_get_meta_primitive()
 
-        self = hive_object_cls(*args, **kwargs)
+        hive_object = hive_object_cls(*args, **kwargs)
 
         if get_mode() == "immediate":
-            return self.instantiate()
+            return hive_object.instantiate()
 
         else:
-            return self
+            return hive_object
 
     @classmethod
     @memoize
