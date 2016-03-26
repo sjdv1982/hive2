@@ -8,13 +8,13 @@ import hive
 
 from ...event import OnTick
 
+# TODO datagrams
+
 
 class TCPServerClass:
 
-    SELECT_INTERVAL = 0.01
-    RECV_SIZE = 1024
-
-    def __init__(self):
+    @hive.types(select_interval='float', buffer_size='int')
+    def __init__(self, select_interval=0.01, buffer_size=1024):
         self.local_address = None
 
         self._socket = socket(AF_INET, SOCK_STREAM)
@@ -36,6 +36,9 @@ class TCPServerClass:
 
         self._hive = hive.get_run_hive()
         self._thread = Thread(target=self._handle_connections_threaded, daemon=True)
+
+        self._buffer_size = buffer_size
+        self._select_interval = select_interval
 
         # TODO cleanup functions to close thread
 
@@ -111,7 +114,7 @@ class TCPServerClass:
         socket_to_address = {}
 
         while True:
-            readable, _, _ = select(active_sockets, (), (), self.SELECT_INTERVAL)
+            readable, _, _ = select(active_sockets, (), (), self._select_interval)
 
             # Receive data
             for sock in readable:
@@ -127,7 +130,7 @@ class TCPServerClass:
                     self._connected_queue.put(address)
 
                 else:
-                    data = sock.recv(self.RECV_SIZE)
+                    data = sock.recv(self._buffer_size)
                     address = socket_to_address.pop(sock)
 
                     if not data:

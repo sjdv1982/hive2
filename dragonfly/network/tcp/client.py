@@ -10,11 +10,8 @@ from ...event import OnTick
 
 class TCPClientClass:
 
-    SELECT_INTERVAL = 0.01
-    RECV_SIZE = 1024
-
-    @hive.types(local_address="tuple")
-    def __init__(self, local_address=("localhost", 0)):
+    @hive.types(local_address="tuple", select_interval='float', buffer_size='int')
+    def __init__(self, local_address=("localhost", 0), select_interval=0.01, buffer_size=1024):
         self._local_address = local_address
         self._socket = socket(AF_INET, SOCK_STREAM)
         self._socket.bind(local_address)
@@ -31,6 +28,9 @@ class TCPClientClass:
 
         self._hive = hive.get_run_hive()
         self._thread = Thread(target=self._handle_connections_threaded, daemon=True)
+
+        self._buffer_size = buffer_size
+        self._select_interval = select_interval
 
         # TODO cleanup functions to close thread
 
@@ -79,11 +79,11 @@ class TCPClientClass:
         outgoing_queue = self._outgoing_queue
 
         while True:
-            readable, _, _ = select([main_socket], (), (), self.SELECT_INTERVAL)
+            readable, _, _ = select([main_socket], (), (), self._select_interval)
 
             # Receive data
             for sock in readable:
-                data, address = sock.recvfrom(self.RECV_SIZE)
+                data, address = sock.recvfrom(self._buffer_size)
                 if not data:
                     # On disconnected
                     self._connected_state = False

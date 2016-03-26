@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from hive import is_subtype
+from sys import float_info
 
 from .colour_button import QColorButton
 from .code_editor import CodeEditor
@@ -7,8 +8,11 @@ from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QWidget, QHBoxLayout, Q
     QColor, QToolButton, QIcon, QPixmap
 from ..observer import Observable
 
-INT_RANGE = -999, 999
-FLOAT_RANGE = -999.0, 999.0
+MAX_INT = 2 ** 16 - 1
+MAX_FLOAT = float_info.max
+
+INT_RANGE = -MAX_INT, MAX_INT
+FLOAT_RANGE = -MAX_FLOAT, MAX_FLOAT
 FLOAT_STEP = 0.1
 
 
