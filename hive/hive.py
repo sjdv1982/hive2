@@ -438,7 +438,8 @@ class HiveBuilder(object):
         :param kwargs: Parameter keyword arguments
         """
         hive_object_dict = {'__doc__': cls.__doc__, "_hive_parent_class": cls}
-        hive_object_cls = type("HiveObject<{}>".format(cls.__name__), (HiveObject,), hive_object_dict)
+        hive_object_cls_name = "HiveObject<{}>".format(cls.__name__)
+        hive_object_cls = type(hive_object_cls_name, (HiveObject,), hive_object_dict)
 
         hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls)
         hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls)
@@ -528,8 +529,8 @@ class HiveBuilder(object):
             if isinstance(bee, Stateful):
                 run_hive_class_dict[bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
 
-        hive_object_cls._hive_runtime_class = type("{}::run_hive".format(hive_object_cls.__name__), (RuntimeHive,),
-                                                   run_hive_class_dict)
+        run_hive_cls_name = "{}::run_hive".format(hive_object_cls.__name__)
+        hive_object_cls._hive_runtime_class = type(run_hive_cls_name, (RuntimeHive,), run_hive_class_dict)
         return hive_object_cls
 
     @classmethod
