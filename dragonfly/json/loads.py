@@ -15,12 +15,12 @@ def build_loads(i, ex, args):
     ex.result = hive.output(i.pull_result)
 
     i.pull_object = hive.pull_in(i.object_)
-    ex.object_ = hive.attribute(i.pull_object)
+    ex.object_ = hive.antenna(i.pull_object)
 
     i.do_loads = hive.modifier(do_loads)
 
     hive.trigger(i.pull_result, i.pull_object, pretrigger=True)
-    hive.trigger(i.pull_object, i.do_dums)
+    hive.trigger(i.pull_object, i.do_loads)
 
 
-Dumps = hive.hive("Dumps", build_loads)
+Loads = hive.hive("Loads", build_loads)

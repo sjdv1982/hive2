@@ -15,12 +15,12 @@ def build_dumps(i, ex, args):
     ex.result = hive.output(i.pull_result)
 
     i.pull_object = hive.pull_in(i.object_)
-    ex.object_ = hive.attribute(i.pull_object)
+    ex.object_ = hive.antenna(i.pull_object)
 
     i.do_dumps = hive.modifier(do_dumps)
 
     hive.trigger(i.pull_result, i.pull_object, pretrigger=True)
-    hive.trigger(i.pull_object, i.do_dums)
+    hive.trigger(i.pull_object, i.do_dumps)
 
 
 Dumps = hive.hive("Dumps", build_dumps)

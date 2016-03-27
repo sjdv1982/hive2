@@ -131,10 +131,11 @@ class TCPServerClass:
 
                 else:
                     data = sock.recv(self._buffer_size)
-                    address = socket_to_address.pop(sock)
+                    address = socket_to_address[sock]
 
                     if not data:
                         del address_to_socket[address]
+                        del socket_to_address[sock]
                         active_sockets.remove(sock)
 
                         # On disconnected
