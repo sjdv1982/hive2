@@ -16,6 +16,18 @@ class MappingObject(object):
         self._members = OrderedDict()
 
     @property
+    def _names(self):
+        return self._members.keys()
+
+    @property
+    def _values(self):
+        return self._members.values()
+
+    @property
+    def _items(self):
+        return self._members.items()
+
+    @property
     def _repr_name(self):
         return self.__class__.__name__
 
@@ -24,15 +36,6 @@ class MappingObject(object):
 
     def _validate_attribute(self, name, value):
         pass
-
-    def keys(self):
-        return self._members.keys()
-
-    def items(self):
-        return self._members.items()
-
-    def values(self):
-        return self._members.values()
 
     def to_ordered_dict(self):
         return self._members.copy()
@@ -73,6 +76,9 @@ class MappingObject(object):
 
     def __dir__(self):
         return tuple(self._members)
+
+    def __iter__(self):
+        return iter(self._members)
 
     def __repr__(self):
         member_pairs = ("{} = {}".format(k, v) for k, v in self._members.items())

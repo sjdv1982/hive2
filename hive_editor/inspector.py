@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
-from hive import validation_enabled_as
-from .utils import import_from_path, get_builder_class_args
+from hive import validation_enabled_as, MetaHivePrimitive, HiveBuilder
+from .utils import hive_import_from_path, get_builder_class_args
 
 
 class InspectorOption:
@@ -161,7 +161,7 @@ class HiveNodeInspector:
         """
         wrapper_options = OrderedDict()
 
-        for arg_name, param in wrapper.items():
+        for arg_name, param in wrapper._items:
             data_type = param.data_type if param.data_type else ''
             options = param.options
 
@@ -186,20 +186,30 @@ class HiveNodeInspector:
         """
         with validation_enabled_as(False):
             # Import and prepare hive
-            hive_cls = import_from_path(import_path)
+            import_result = hive_import_from_path(import_path)
 
-            # Prepare args wrapper
-            hive_cls._hive_build_meta_args_wrapper()
+            # If it is a meta-hive-primitive, don't have to get meta args
+            if import_result.is_meta_primitive:
+                hive_object_cls = import_result.cls._hive_object_cls
+                hive_cls = hive_object_cls._hive_parent_class
 
-            meta_args_wrapper = hive_cls._hive_meta_args
-            if meta_args_wrapper:
-                meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
-
-                # Create HiveObject class
-                _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
-
+            # Otherwise, determine if the hive-builder needs meta args to produce hiveobject class
             else:
-                hive_object_cls = hive_cls._hive_build(())
+                hive_cls = import_result.cls
+
+                # Build the meta-args wrapper
+                hive_cls._hive_build_meta_args_wrapper()
+
+                # If the meta-args wrapper is not empty
+                meta_args_wrapper = hive_cls._hive_meta_args
+                if meta_args_wrapper:
+                    meta_args = yield ("meta_args", self._scrape_wrapper(meta_args_wrapper))
+
+                    # Create HiveObject class
+                    _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
+
+                else:
+                    hive_object_cls = hive_cls._hive_build(())
 
             args_wrapper = hive_object_cls._hive_args
             if args_wrapper:
@@ -211,10 +221,10 @@ class HiveNodeInspector:
                 options = OrderedDict()
                 for name, arg_data in builder_args.items():
                     if arg_data.optional:
-                        options[name] = InspectorOption(arg_data.data_type, options=arg_data.options)
-
-                    else:
                         options[name] = InspectorOption(arg_data.data_type, default=arg_data.default,
                                                         options=arg_data.options)
+
+                    else:
+                        options[name] = InspectorOption(arg_data.data_type, options=arg_data.options)
 
                 yield ("cls_args", options)

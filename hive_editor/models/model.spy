@@ -5,30 +5,19 @@ Type InstanceParameter {
 }
 
 
-Type BaseNode {
+Type InstanceParameterGroup {
+    String identifier
+    InstanceParameterArray params
+}
+
+
+Type Node {
   String identifier
+  Enum family("BEE", "HIVE")
   String import_path
   Coordinate2D position = Coordinate2D(0, 0)
-
-  InstanceParameterArray meta_args = []
-  InstanceParameterArray args = []
-
+  InstanceParameterGroupArray parameter_groups
   StringArray folded_pins = []
-}
-
-
-Type HelperNode:BaseNode{
-
-}
-
-
-Type BeeNode:BaseNode{
-}
-
-
-Type HiveNode:BaseNode{
-  # Instantiation data
-  InstanceParameterArray cls_args = []
 }
 
 
@@ -51,9 +40,7 @@ Type Parameter {
 
 
 Type Hivemap {
-  HiveNodeArray hives = []
-  BeeNodeArray bees = []
-  HelperNodeArray helpers = []
+  NodeArray nodes = []
 
   ConnectionArray connections = []
   String docstring = ""

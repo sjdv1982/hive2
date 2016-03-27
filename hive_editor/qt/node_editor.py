@@ -664,8 +664,8 @@ class NodeEditorSpace(QWidget):
         self._node_manager.docstring = self._docstring_widget.toPlainText()
 
     def _execute_inspector(self, inspector):
-        params = {"meta_args": {}, "args": {}, "cls_args": {}}
-        inspection_info = {"meta_args": {}, "args": {}, "cls_args": {}}
+        params = {}
+        inspection_info = {}
 
         previous_values = None
         while True:

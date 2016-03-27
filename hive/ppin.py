@@ -13,7 +13,7 @@ def get_callable_data_type(target):
     if len(arg_types) > 1:
         raise ValueError("Target must have only one argument")
 
-    return next(iter(arg_types.values()), ())
+    return next(iter(arg_types.values()), None)
 
 
 class PPInBase(Antenna, ConnectTarget, TriggerSource, Bindable, Nameable):

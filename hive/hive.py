@@ -82,7 +82,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
                 exposed_bees = []
 
                 external_bees = hive_object._hive_ex
-                for bee_name, bee in external_bees.items():
+                for bee_name, bee in external_bees._items:
                     exported_bee = bee.export()
 
                     # TODO: nice exception reporting
@@ -101,7 +101,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
                 # Add internal bees (that are hives, Callable or Stateful) to runtime hive
                 internal_bees = hive_object._hive_i
-                for bee_name, bee in internal_bees.items():
+                for bee_name, bee in internal_bees._items:
                     private_name = "_" + bee_name
 
                     # Some runtime hive attributes are protected
@@ -219,7 +219,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Create ResolveBee wrappers for external interface
         with hive_mode_as("build"):
             external_bees = self.__class__._hive_ex
-            for bee_name, bee in external_bees.items():
+            for bee_name, bee in external_bees._items:
                 target = bee.export()
                 resolve_bee = ResolveBee(target, self)
 
@@ -234,11 +234,6 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         """Return an instance of the runtime Hive for this Hive object."""
         return self._hive_runtime_class(self, self._hive_parent_class._builders)
 
-    @classmethod
-    @memoize
-    def _hive_get_meta_primitive(cls):
-        return type("MetaHivePrimitive::{}".format(cls.__name__), (MetaHivePrimitive,), {'_hive_object_cls': cls})
-
     @staticmethod
     def _hive_can_connect_hive(other):
         return isinstance(other, HiveObject)
@@ -252,7 +247,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         external_bees = cls._hive_ex
         trigger_targets = []
 
-        for bee_name, bee in external_bees.items():
+        for bee_name, bee in external_bees._items:
             exported_bee = bee.export()
 
             if isinstance(exported_bee, TriggerTarget):
@@ -275,7 +270,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         external_bees = cls._hive_ex
         trigger_sources = []
 
-        for bee_name, bee in external_bees.items():
+        for bee_name, bee in external_bees._items:
             exported_bee = bee.export()
 
             if isinstance(exported_bee, TriggerSource):
@@ -295,7 +290,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         # Find source hive ConnectSources
         connect_sources = []
-        for bee_name, bee in externals.items():
+        for bee_name, bee in externals._items:
             exported_bee = bee.export()
 
             if not exported_bee.implements(ConnectSource):
@@ -312,7 +307,7 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
 
         # Find target hive ConnectTargets
         connect_targets = []
-        for bee_name, bee in externals.items():
+        for bee_name, bee in externals._items:
             exported_bee = bee.export()
 
             if not exported_bee.implements(ConnectTarget):
@@ -413,12 +408,11 @@ class HiveBuilder(object):
     _hive_meta_args = None
 
     def __new__(cls, *args, **kwargs):
-        args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
-
         # If MetaHive and not DynaHive
         if cls._declarators and not cls._is_dyna_hive:
-            return hive_object_cls._hive_get_meta_primitive()
+            return cls._hive_get_meta_primitive(*args, **kwargs)
 
+        args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
         hive_object = hive_object_cls(*args, **kwargs)
 
         if get_mode() == "immediate":
@@ -426,6 +420,20 @@ class HiveBuilder(object):
 
         else:
             return hive_object
+
+    @classmethod
+    def _hive_get_meta_primitive(cls, *args, **kwargs):
+        """Return the MetaHivePrimitive subclass associated with the HiveObject class produced for these meta args"""
+        args, kwargs, hive_object_cls = cls._hive_get_hive_object_cls(args, kwargs)
+        assert not args or kwargs, "Meta primitive cannot be passed any runtime-arguments"
+        return cls._hive_create_meta_primitive(hive_object_cls)
+
+    @classmethod
+    @memoize
+    def _hive_create_meta_primitive(cls, hive_object_cls):
+        """Return the MetaHivePrimitive subclass associated with this HiveObject class """
+        return type("MetaHivePrimitive::{}".format(cls.__name__), (MetaHivePrimitive,),
+                    {'_hive_object_cls': hive_object_cls})
 
     @classmethod
     @memoize
@@ -490,7 +498,7 @@ class HiveBuilder(object):
         anonymous_bees = set(registered_bees)
 
         # Find any anonymous bees which are held on object
-        for bee_name, bee in internals.items():
+        for bee_name, bee in internals._items:
             if bee in anonymous_bees:
                 anonymous_bees.remove(bee)
 
@@ -513,7 +521,7 @@ class HiveBuilder(object):
         run_hive_class_dict = {"__doc__": cls.__doc__}
 
         # For internal bees
-        for bee_name, bee in internals.items():
+        for bee_name, bee in internals._items:
             private_bee_name = "_{}".format(bee_name)
 
             # If the bee requires a property interface, build a property
@@ -521,7 +529,7 @@ class HiveBuilder(object):
                 run_hive_class_dict[private_bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
 
         # For external bees
-        for bee_name, bee in externals.items():
+        for bee_name, bee in externals._items:
             # If the bee requires a property interface, build a property
             if isinstance(bee, Stateful):
                 run_hive_class_dict[bee_name] = property(bee._hive_stateful_getter, bee._hive_stateful_setter)
@@ -569,7 +577,7 @@ class HiveBuilder(object):
         child_hives = set()
 
         # Find external hives
-        for bee in externals.values():
+        for bee in externals._values:
             if not bee.implements(HiveObject):
                 continue
 
@@ -579,7 +587,7 @@ class HiveBuilder(object):
             child_hives.add(bee)
 
         # Find internal hives
-        for bee in internals.values():
+        for bee in internals._values:
             if not bee.implements(HiveObject):
                 continue
 
@@ -589,7 +597,7 @@ class HiveBuilder(object):
             child_hives.add(bee)
 
         # Find sockets and plugins that are exportable
-        for bee_name in externals.keys():
+        for bee_name in externals._names:
             # This will have already been handled by parent (as this method is called top-down)
             if bee_name in exported_to_parent:
                 continue
@@ -673,12 +681,12 @@ class HiveBuilder(object):
         child_hives = set()
 
         # Find external hives
-        for bee in externals.values():
+        for bee in externals._values:
             if isinstance(bee, HiveObject):
                 child_hives.add(bee)
 
         # Find internal hives
-        for bee in internals.values():
+        for bee in internals._values:
             if isinstance(bee, HiveObject):
                 child_hives.add(bee)
 
@@ -699,7 +707,7 @@ class HiveBuilder(object):
 
         # Exportable bees to parent if drone
         hive_object_cls._hive_exportable_to_parent = export_to_parent = set()
-        for bee_name, bee in externals.items():
+        for bee_name, bee in externals._items:
             if not (bee.implements(Plugin) or bee.implements(Socket)):
                 continue
 

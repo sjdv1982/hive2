@@ -4,7 +4,7 @@ from os import path
 import hive
 
 from .models import model
-from .utils import import_from_path, underscore_to_camel_case
+from .utils import hive_import_from_path, underscore_to_camel_case
 
 
 def _eval_spyder_string(type_name, value):
@@ -27,11 +27,19 @@ def _get_type_name(value):
     return value.__class__.__name__
 
 
+def parameter_group_dict_to_array(params):
+    return [model.InstanceParameterGroup(n, parameter_dict_to_array(p)) for n, p in params.items()]
+
+
+def parameter_group_array_to_dict(parameter_group_array):
+    return {g.identifier: parameter_array_to_dict(g.params) for g in parameter_group_array}
+
+
 def parameter_array_to_dict(array):
     return {p.identifier: _eval_spyder_string(p.data_type, p.value) for p in array}
 
 
-def dict_to_parameter_array(parameters):
+def parameter_dict_to_array(parameters):
     return [model.InstanceParameter(name, _get_type_name(value), repr(value)) for name, value in parameters.items()]
 
 
@@ -52,109 +60,126 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
 
     declaration_body = []
 
-    # Build hives
-    for spyder_hive in hivemap.hives:
-        hive_name = spyder_hive.identifier
-
-        # Get params
-        meta_args = parameter_array_to_dict(spyder_hive.meta_args)
-        args = parameter_array_to_dict(spyder_hive.args)
-        cls_args = parameter_array_to_dict(spyder_hive.cls_args)
-
-        # Add import path to import set
-        import_path = spyder_hive.import_path
-        root, cls = import_path.rsplit(".", 1)
-        imports.add(root)
-
-        # Find Hive class and inspect it
-        try:
-            hive_cls = import_from_path(import_path)
-
-        except (ImportError, AttributeError):
-            raise ValueError("Invalid import path: {}".format(import_path))
-
-        is_meta_hive = bool(hive_cls._declarators)
-        is_dyna_hive = hive_cls._is_dyna_hive
-
-        # Two stage instantiation
-        if is_meta_hive and not is_dyna_hive:
-            non_meta_args = args.copy()
-            non_meta_args.update(cls_args)
-            meta_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in meta_args.items()])
-            arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in non_meta_args.items()])
-            statement = "i.{} = {}({})({})".format(hive_name, import_path, meta_arg_pairs, arg_pairs)
-
-        # One stage instantiation
-        else:
-            all_args = meta_args.copy()
-            all_args.update(args)
-            all_args.update(cls_args)
-
-            all_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in all_args.items()])
-            statement = "i.{} = {}({})".format(hive_name, import_path, all_arg_pairs)
-
-        declaration_body.append(statement)
-
     wraps_attribute = []
     attribute_name_to_wrapper = {}
 
-    # First pass bees (Standalone bees)
-    for spyder_bee in hivemap.bees:
-        import_path = spyder_bee.import_path
-        identifier = spyder_bee.identifier
-
-        bees[identifier] = spyder_bee
-
-        # Bees that have to be resolved later
-        if import_path in wrapper_import_paths:
-            # If bee wraps an attribute
-            if import_path in wraps_attribute_import_paths:
-                wraps_attribute.append(spyder_bee)
-
-            continue
+    # Build hives
+    for spyder_bee_node in hivemap.nodes:
+        identifier = spyder_bee_node.identifier
+        import_path = spyder_bee_node.import_path
 
         # Get params
-        meta_args = parameter_array_to_dict(spyder_bee.meta_args)
-        args = parameter_array_to_dict(spyder_bee.args)
+        params = parameter_group_array_to_dict(spyder_bee_node.parameter_groups)
 
-        # For attribute
-        if import_path == "hive.attribute":
-            data_type = meta_args['data_type']
-            start_value = args['start_value']
+        # Handle HIVE nodes
+        if spyder_bee_node.family == "HIVE":
+            # Add import path to import set
+            root, cls = import_path.rsplit(".", 1)
+            imports.add(root)
 
-            if args['export']:
-                wrapper_name = "ex"
+            # Find Hive class and inspect it
+            try:
+                import_result = hive_import_from_path(import_path)
+
+            except (ImportError, AttributeError):
+                raise ValueError("Invalid import path: {}".format(import_path))
+
+            args = params.get("args", {})
+            cls_args = params.get("cls_args", {})
+
+            # A pre-configured meta-hive
+            if import_result.is_meta_primitive:
+                all_args = args.copy()
+                all_args.update(cls_args)
+
+                all_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in all_args.items()])
+                statement = "i.{} = {}({})".format(identifier, import_path, all_arg_pairs)
 
             else:
-                wrapper_name = "i"
+                hive_cls = import_result.cls
 
-            declaration_body.append("{}.{} = hive.attribute('{}', {})"
-                                    .format(wrapper_name, identifier, data_type, start_value))
-            attribute_name_to_wrapper[identifier] = wrapper_name
+                is_meta_hive = bool(hive_cls._declarators)
+                is_dyna_hive = hive_cls._is_dyna_hive
 
-        # For modifier
-        elif import_path == "hive.modifier":
-            code = args['code']
-            code_body = "\n    ".join(code.split("\n"))
-            statement = """def {}(self):\n    {}\n""".format(identifier, code_body)
-            declaration_body[:0] = statement.split("\n")
-            declaration_body.append("i.{0} = hive.modifier({0})".format(identifier))
+                meta_args = params.get("meta_args", {})
 
-        elif import_path == "hive.triggerfunc":
-            declaration_body.append("i.{} = hive.triggerfunc()".format(identifier))
+                # Two stage instantiation (an unconfigured meta hive)
+                if is_meta_hive and not is_dyna_hive:
+                    non_meta_args = args.copy()
+                    non_meta_args.update(cls_args)
+                    meta_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in meta_args.items()])
+                    arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in non_meta_args.items()])
+                    statement = "i.{} = {}({})({})".format(identifier, import_path, meta_arg_pairs, arg_pairs)
+
+                # One stage instantiation (a dyna/normal hive)
+                else:
+                    all_args = meta_args.copy()
+                    all_args.update(args)
+                    all_args.update(cls_args)
+
+                    all_arg_pairs = ", ".join(["{}={}".format(k, repr(v)) for k, v in all_args.items()])
+                    statement = "i.{} = {}({})".format(identifier, import_path, all_arg_pairs)
+
+            declaration_body.append(statement)
+
+        # Handle BEE nodes
+        elif spyder_bee_node.family == "BEE":
+            bees[identifier] = spyder_bee_node
+
+            # Bees that have to be resolved later
+            if import_path in wrapper_import_paths:
+                # If bee wraps an attribute
+                if import_path in wraps_attribute_import_paths:
+                    wraps_attribute.append(spyder_bee_node)
+
+                continue
+
+            # For attribute
+            if import_path == "hive.attribute":
+                meta_args = params['meta_args']
+                data_type = meta_args['data_type']
+
+                args = params['args']
+                start_value = args['start_value']
+
+                if args['export']:
+                    wrapper_name = "ex"
+
+                else:
+                    wrapper_name = "i"
+
+                declaration_body.append("{}.{} = hive.attribute('{}', {})"
+                                        .format(wrapper_name, identifier, data_type, start_value))
+                attribute_name_to_wrapper[identifier] = wrapper_name
+
+            # For modifier
+            elif import_path == "hive.modifier":
+                args = params['args']
+                code = args['code']
+
+                code_body = "\n    ".join(code.split("\n"))
+                statement = """def {}(self):\n    {}\n""".format(identifier, code_body)
+                declaration_body[:0] = statement.split("\n")
+                declaration_body.append("i.{0} = hive.modifier({0})".format(identifier))
+
+            elif import_path == "hive.triggerfunc":
+                declaration_body.append("i.{} = hive.triggerfunc()".format(identifier))
+
+        else:
+            raise ValueError(spyder_bee_node.family)
 
     # Second Bee pass (For attribute wrappers)
-    for spyder_bee in wraps_attribute:
-        import_path = spyder_bee.import_path
-
-        meta_args = parameter_array_to_dict(spyder_bee.meta_args)
+    for spyder_bee_node in wraps_attribute:
+        import_path = spyder_bee_node.import_path
+        params = parameter_group_array_to_dict(spyder_bee_node.parameter_groups)
 
         # Get attribute
+        meta_args = params['meta_args']
         attribute_name = meta_args['attribute_name']
         attribute_wrapper = attribute_name_to_wrapper[attribute_name]
 
-        declaration_body.append("i.{} = {}({}.{})".format(spyder_bee.identifier, import_path,
-                                                          attribute_wrapper, attribute_name))
+        declaration_body.append("i.{} = {}({}.{})".format(spyder_bee_node.identifier, import_path, attribute_wrapper,
+                                                          attribute_name))
 
     # At this point, wrappers have attribute, modifier, triggerfunc, pullin, pullout, pushin, pushout
     io_definitions = []
@@ -165,11 +190,11 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
         from_identifier = connection.from_node
         to_identifier = connection.to_node
 
-        pretrigger = False
-
         # From a HIVE
         if from_identifier not in bees:
             source_path = "i.{}.{}".format(from_identifier, connection.output_name)
+
+            is_pre_trigger = False
 
         # From a BEE
         else:
@@ -180,12 +205,9 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
                 io_definitions.append(connection)
                 continue
 
-            # Here bee can be triggerfunc[trigger,pretrigger, ppio[pre,post,value]
+            # Here bee can be triggerfunc [trigger, pretrigger] or a push in/out [pre, post update value]]
             source_path = "i.{}".format(from_identifier)
-
-            # If pretrigger
-            if "pre" in connection.output_name:
-                pretrigger = True
+            is_pre_trigger = "pre" in connection.output_name  # HACK XXX
 
         if to_identifier not in bees:
             target_path = "i.{}.{}".format(to_identifier, connection.input_name)
@@ -203,7 +225,7 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
             target_path = "i.{}".format(to_identifier)
 
         if connection.is_trigger:
-            connectivity_body.append("hive.trigger({}, {}, pretrigger={})".format(source_path, target_path, pretrigger))
+            connectivity_body.append("hive.trigger({}, {}, pretrigger={})".format(source_path, target_path, is_pre_trigger))
 
         else:
             connectivity_body.append("hive.connect({}, {})".format(source_path, target_path))

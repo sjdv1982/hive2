@@ -1,7 +1,7 @@
 from hive import validation_enabled_as
 
 from .node import Node, NodeTypes, MimicFlags
-from .utils import create_hive_object_instance, import_from_path, get_io_info
+from .utils import hive_object_instance_from_import_result, hive_import_from_path, get_io_info
 
 
 class BeeNodeFactory:
@@ -110,23 +110,23 @@ class HiveNodeFactory:
     @classmethod
     def new(cls, name, import_path, params, param_info):
         try:
-            hive_cls = import_from_path(import_path)
+            import_result = hive_import_from_path(import_path)
 
         except (ImportError, AttributeError):
             raise ValueError("Invalid import path: {}".format(import_path))
 
-        return cls.node_from_hive_cls(hive_cls, name, import_path, params, param_info)
+        return cls._node_from_import_result(import_result, name, import_path, params, param_info)
 
     @staticmethod
-    def node_from_hive_cls(hive_cls, name, import_path, params, param_info):
+    def _node_from_import_result(import_result, name, import_path, params, param_info):
         # Allow GUI to instantiate hives without connectivity validation
         with validation_enabled_as(False):
-            hive_object = create_hive_object_instance(hive_cls, params)
+            hive_object = hive_object_instance_from_import_result(import_result, params)
             io_info = get_io_info(hive_object)
 
             # Warning later on, the args and cls_args of hive_object might not correspond to params
-            # Altering the params dict from the UI is safe as it won't affect the pinout on the hiveobject, so these changes
-            # Aren't mirrored to the args wrappers on this hive_object
+            # Altering the params dict from the UI is safe as it won't affect the pin-out on the HiveObject,
+            # so these changes aren't mirrored to the args wrappers on this hive_object
             # Use the params dict instead of re-scraping the hive_object if reading these values
 
             node = Node(name, NodeTypes.HIVE, import_path, params, param_info)

@@ -1,7 +1,7 @@
 import logging
 from keyword import iskeyword
 
-from .code_generator import dict_to_parameter_array, parameter_array_to_dict
+from .code_generator import parameter_group_array_to_dict, parameter_group_dict_to_array
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import CommandHistoryManager
@@ -515,30 +515,23 @@ class NodeManager(object):
         hivemap.docstring = docstring
 
         for node in nodes:
-            # Get node params
-            params = node.params
-
-            # Write to Bee
-            meta_arg_array = dict_to_parameter_array(params.get('meta_args', {}))
-            arg_array = dict_to_parameter_array(params.get('args', {}))
-
+            # Create parameter groups
+            parameter_groups = parameter_group_dict_to_array(node.params)
             folded_pins = [pin_name for pin_name, pin in node.inputs.items() if pin.is_folded]
 
             # Serialise HiveNode instance
             if node.node_type == NodeTypes.HIVE:
-                cls_arg_array = dict_to_parameter_array(params.get('cls_args', {}))
+                family = "HIVE"
 
-                spyder_hive = model.HiveNode(identifier=node.name, import_path=node.import_path, position=node.position,
-                                             meta_args=meta_arg_array, args=arg_array, cls_args=cls_arg_array,
-                                             folded_pins=folded_pins)
+            else:
+                assert node.node_type == NodeTypes.BEE
+                family = "BEE"
 
-                hivemap.hives.append(spyder_hive)
+            spyder_node = model.Node(identifier=node.name, family=family, import_path=node.import_path,
+                                     position=node.position,  parameter_groups=parameter_groups,
+                                     folded_pins=folded_pins)
 
-            # Serialise Bee instance
-            elif node.node_type == NodeTypes.BEE:
-                spyder_bee = model.BeeNode(identifier=node.name, import_path=node.import_path, position=node.position,
-                                           meta_args=meta_arg_array, args=arg_array, folded_pins=folded_pins)
-                hivemap.bees.append(spyder_bee)
+            hivemap.nodes.append(spyder_node)
 
         for node in nodes:
             node_name = node.name
@@ -569,44 +562,30 @@ class NodeManager(object):
         created_nodes = {}
 
         # Load IO bees
-        for spyder_bee in hivemap.bees:
-            import_path = spyder_bee.import_path
+        for spyder_node in hivemap.nodes:
+            import_path = spyder_node.import_path
+            params = parameter_group_array_to_dict(spyder_node.parameter_groups)
 
-            meta_args = parameter_array_to_dict(spyder_bee.meta_args)
-            args = parameter_array_to_dict(spyder_bee.args)
+            if spyder_node.family == "BEE":
+                try:
+                    node = self.create_bee(import_path, params)
 
-            params = {"meta_args": meta_args, "args": args}
+                except Exception as err:
+                    self._logger.exception("Unable to create bee node {}".format(spyder_node.identifier))
+                    continue
 
-            try:
-                node = self.create_bee(import_path, params)
+            else:
+                try:
+                    node = self.create_hive(import_path, params)
 
-            except Exception as err:
-                self._logger.exception("Unable to create node {}".format(spyder_bee.identifier))
-                continue
+                except Exception as err:
+                    self._logger.exception("Unable to create hive node {}".format(spyder_node.identifier))
+                    continue
 
-            node_to_spyder_node[node] = spyder_bee
+                # Specific mapping for HIVE nodes only.
+                node_to_spyder_hive_node[node] = spyder_node
 
-        # Load hives
-        for spyder_hive in hivemap.hives:
-            import_path = spyder_hive.import_path
-
-            meta_args = parameter_array_to_dict(spyder_hive.meta_args)
-            args = parameter_array_to_dict(spyder_hive.args)
-            cls_args = parameter_array_to_dict(spyder_hive.cls_args)
-
-            params = {"meta_args": meta_args, "args": args, "cls_args": cls_args}
-
-            try:
-                node = self.create_hive(import_path, params)
-
-            except Exception as err:
-                self._logger.exception("Unable to create node {}".format(spyder_hive.identifier))
-                continue
-
-            node_to_spyder_node[node] = spyder_hive
-
-            # Specific mapping for Spyder HiveNodes only.
-            node_to_spyder_hive_node[node] = spyder_hive
+            node_to_spyder_node[node] = spyder_node
 
         # Attempt to set common data between IO bees and Hives
         for node, spyder_node in node_to_spyder_node.items():
@@ -628,7 +607,8 @@ class NodeManager(object):
                 to_id = id_to_node_name[connection.to_node]
 
             except KeyError:
-                self._logger.error("Unable to find all nodes in connection: {}, {}".format(connection.from_node, connection.to_node))
+                self._logger.error("Unable to find all nodes in connection: {}, {}".format(connection.from_node,
+                                                                                           connection.to_node))
                 continue
 
             from_node = created_nodes[from_id]
@@ -640,7 +620,8 @@ class NodeManager(object):
 
             except KeyError:
                 self._logger.error("Unable to find all node pins in connection: {}.{}, {}.{}"
-                                   .format(connection.from_node, connection.output_name, connection.to_node, connection.input_name))
+                                   .format(connection.from_node, connection.output_name, connection.to_node,
+                                           connection.input_name))
                 continue
 
             try:
@@ -648,8 +629,8 @@ class NodeManager(object):
 
             except Exception:
                 self._logger.exception("Unable to create connection between {}.{}, {}.{}"
-                                       .format(connection.from_node, connection.output_name,
-                                               connection.to_node, connection.input_name))
+                                       .format(connection.from_node, connection.output_name, connection.to_node,
+                                               connection.input_name))
 
         # Fold folded pins
         for node, spyder_node in node_to_spyder_node.items():

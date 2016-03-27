@@ -98,8 +98,14 @@ class HiveFinder:
                 if name.startswith('_'):
                     continue
 
-                if isclass(value) and issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder:
-                    sub_modules[name] = None
+                if isclass(value):
+                    if issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder:
+                        sub_modules[name] = None
+
+                    elif issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive:
+                        sub_modules[name] = None
+
+                print(name, value)
 
             if is_directory and not sub_modules:
                 self._recurse(base_file_path, relative_file_path, modules)

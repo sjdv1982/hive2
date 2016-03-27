@@ -32,6 +32,7 @@ type_factories = {
 
 
 ArgOption = namedtuple("ArgOption", ("optional", "default", "options", "data_type"))
+HiveImportResult = namedtuple("HiveImportResult", "cls is_meta_primitive")
 
 
 def _get_type_name(value):
@@ -93,30 +94,32 @@ def get_builder_class_args(hive_cls):
     """
     builder_args = OrderedDict()
 
-    # Find first builder class
+    # For each builder, from the bottom of the heirarchy
+    # Find class args and add them to the parameter list
     for builder, builder_class in hive_cls._builders:
         if builder_class is None:
             continue
 
-        # Same arguments are provided to all bind classes
-        break
+        # Get init func
+        init_func = builder_class.__init__
+        arg_types = hive.get_argument_types(init_func)
+        arg_options = hive.get_argument_options(init_func)
 
-    else:
-        return builder_args
+        cls_signature = signature(builder_class)
 
-    # Get init func
-    init_func = builder_class.__init__
-    arg_types = hive.get_argument_types(init_func)
-    arg_options = hive.get_argument_options(init_func)
+        # Construct argument pairs
+        for name, parameter in cls_signature.parameters.items():
+            if name in builder_args:
+                continue
 
-    cls_signature = signature(builder_class)
+            if parameter.kind in (parameter.VAR_KEYWORD, parameter.VAR_POSITIONAL):
+                continue
 
-    # Construct argument pairs
-    for name, parameter in cls_signature.parameters.items():
-        is_optional = parameter.default is not parameter._empty
-        default = parameter.default if is_optional else None
-        builder_args[name] = ArgOption(optional=is_optional, default=default, options=arg_options.get(name),
-                                       data_type=arg_types.get(name))
+            is_optional = parameter.default is not parameter.empty
+            default = parameter.default if is_optional else None
+
+            builder_args[name] = ArgOption(optional=is_optional, default=default, options=arg_options.get(name),
+                                           data_type=arg_types.get(name))
 
     return builder_args
 
@@ -130,7 +133,7 @@ def get_io_info(hive_object):
 
     pin_order = []
 
-    for bee_name, bee in external_bees.items():
+    for bee_name, bee in external_bees._items:
         # Find IO pins
         exported_bee = bee.export()
 
@@ -172,14 +175,19 @@ def import_module_from_path(import_path):
     return __import__(import_path, fromlist=[sub_module_name]), class_name
 
 
-def import_from_path(import_path):
+def hive_import_from_path(import_path):
     module, class_name = import_module_from_path(import_path)
 
     try:
-        return getattr(module, class_name)
+        cls = getattr(module, class_name)
 
     except AttributeError as err:
         raise ImportError from err
+
+    is_meta_primitive = issubclass(cls, hive.MetaHivePrimitive)
+    assert is_meta_primitive or issubclass(cls, hive.HiveBuilder)
+
+    return HiveImportResult(cls, is_meta_primitive)
 
 
 def import_path_to_hivemap_path(import_path, additional_paths):
@@ -210,16 +218,20 @@ def find_source_hivemap(module_path, additional_paths=()):
     raise FileNotFoundError("No hivemap for '{}' exists".format(module_path))
 
 
-def create_hive_object_instance(hive_cls, params):
-    """Import Hive class from import path, and instantiate it using parameter dictionary
+def hive_object_instance_from_import_result(import_result, params):
+    """Instantiate a hive using a parameter dictionary
 
-    :param hive_cls: Hive class object
-    :param params: parameter dictionary (meta_args, args and cls_args)
+    :param import_result: HiveImportResult object (tuple)
+    :param params: dictionary of optional (meta_args (if HiveBuilder), args and cls_args)
     """
     try:
-        # Get HiveObject class
-        meta_args = params.get("meta_args", {})
-        _, _, hive_object_cls = hive_cls._hive_get_hive_object_cls((), meta_args)
+        if import_result.is_meta_primitive:
+            hive_object_cls = import_result.cls._hive_object_cls
+
+        else:
+            # Get HiveObject class
+            meta_args = params.get("meta_args", {})
+            _, _, hive_object_cls = import_result.cls._hive_get_hive_object_cls((), meta_args)
 
         # Get RuntimeHive instance
         args = params.get("args", {}).copy()
@@ -229,7 +241,7 @@ def create_hive_object_instance(hive_cls, params):
         return hive_object_cls(**args)
 
     except Exception as err:
-        raise RuntimeError("Unable to instantiate Hive cls {}: {}".format(hive_cls, err))
+        raise RuntimeError("Unable to instantiate Hive class from {}: {}".format(import_result, err))
 
 
 def camelcase_to_underscores(name):

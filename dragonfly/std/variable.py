@@ -25,3 +25,10 @@ def build_variable(i, ex, args, meta_args):
         hive.trigger(i.pull_value, i.do_pre_output, pretrigger=True)
 
 Variable = hive.dyna_hive("Variable", build_variable, declarator=declare_variable)
+
+# Helpers
+_MetaVariable = Variable.extend("MetaVariable", is_dyna_hive=False)
+VariableStr = _MetaVariable(data_type='str')
+VariableInt = _MetaVariable(data_type='int')
+VariableFloat = _MetaVariable(data_type='float')
+VariableBool = _MetaVariable(data_type='bool')
