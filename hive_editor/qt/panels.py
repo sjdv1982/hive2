@@ -76,10 +76,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                 except KeyError:
                     continue
 
-                # Get data type
-                data_type = inspector_option.data_type
-
-                widget, controller = create_widget(data_type)
+                widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
                 widget.setEnabled(False)
                 controller.value = value
 
@@ -101,9 +98,8 @@ class ArgumentsPanel(NodeContextPanelBase):
             for name, value in args.items():
                 # Get data type
                 inspector_option = arg_data[name]
-                data_type = inspector_option.data_type
 
-                widget, controller = create_widget(data_type)
+                widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
                 widget.controller = controller
 
                 def on_changed(value, name=name, args=args):
@@ -128,9 +124,8 @@ class ArgumentsPanel(NodeContextPanelBase):
             for name, value in cls_args.items():
                 # Get data type
                 inspector_option = cls_arg_data[name]
-                data_type = inspector_option.data_type
 
-                widget, controller = create_widget(data_type)
+                widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
                 widget.controller = controller
 
                 def on_changed(value, name=name, cls_args=cls_args):
