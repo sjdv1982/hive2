@@ -4,7 +4,7 @@ import hive
 
 
 _type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("dict", dict), ("list", list),
-                         ("set", set), ("tuple", tuple)))
+                         ("set", set), ("tuple", tuple), ("bytes", bytes)))
 
 
 def declare_convert(meta_args):

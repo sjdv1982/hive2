@@ -202,7 +202,7 @@ class BindClassFactory:
 
     def external_builder(self, cls, i, ex, args, meta_args):
         """Adds bind-plugin sockets to ex wrapper if conditions allow."""
-        meta_args_dict = meta_args.members
+        meta_args_dict = meta_args.to_ordered_dict()
 
         for attr_name, plugin_entry in self._plugins.items():
             for condition in plugin_entry.condition_stack:
@@ -225,7 +225,7 @@ class BindClassFactory:
 
     def environment_builder(self, cls, i, ex, args, meta_args):
         """Adds bind-plugin plugins to ex wrapper if conditions allow."""
-        meta_args_dict = meta_args.bind_meta_args.members
+        meta_args_dict = meta_args.bind_meta_args.to_ordered_dict()
 
         for attr_name, plugin_entry in self._plugins.items():
             if not plugin_entry.declare_for_environment:

@@ -9,15 +9,18 @@ def do_getitem(self):
     self._value = self._object_[self._name]
 
 
+CONTAINER_TYPES = {"dict": 1}
+
 def declare_item(meta_args):
     meta_args.mode = hive.parameter("str", "get", options={"get", "set"})
-    meta_args.object_type = hive.parameter("str")
-    meta_args.item_type = hive.parameter("str")
+    meta_args.container_type = hive.parameter("str", "dict", CONTAINER_TYPES.keys())
+    meta_args.index_type = hive.parameter("str", "str")
+    meta_args.item_type = hive.parameter("str", "int")
 
 
 def build_item(i, ex, args, meta_args):
     """Set/get item in object"""
-    i.name = hive.attribute("str")
+    i.name = hive.attribute(meta_args.index_type)
     i.value = hive.attribute(meta_args.item_type)
     i.object_ = hive.attribute(meta_args.object_type)
 
