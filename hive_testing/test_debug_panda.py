@@ -4,7 +4,7 @@ import hive
 import hive_editor
 
 from hive_editor.debugging.network import NetworkDebugContext
-from panda_project.launcher import Launcher
+from panda_project.launch import Launch
 
 
 def create_cube():
@@ -36,7 +36,7 @@ class MyHiveClass:
 
 def build_my_hive(cls, i, ex, args):
     ex.get_register_template = hive.socket(cls.set_register_factory, "entity.register_factory")
-    i.main_hive = Launcher()
+    i.main_hive = Launch()
 
 
 MyHive = dragonfly.app.panda3d.Mainloop.extend("MyHive", build_my_hive, builder_cls=MyHiveClass)
