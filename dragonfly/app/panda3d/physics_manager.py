@@ -11,27 +11,30 @@ class _PhysicsManagerClass:
         self.tick_rate = None
         self.time = 0.0
 
-    def add_rigid_body(self, rigid_body):
-        self._world.attach_rigid_body(rigid_body)
-
-    def remove_rigid_body(self, rigid_body):
-        self._world.remove_rigid_body(rigid_body)
+        self._rigid_bodies = {}
 
     def update(self):
-        self._world.do_physics(1/self.tick_rate)
-        self.time += 1/self.tick_rate
+        self._world.do_physics(1./self.tick_rate)
+        self.time += 1./self.tick_rate
 
-    def get_velocity_absolute(self, rb):
-        node = rb # TODO
+    def get_linear_velocity(self, entity_id):
+        node = self._rigid_bodies[entity_id]
         return tuple(node.get_linear_velocity())
 
-    def set_velocity_absolute(self, rb, vel):
-        node = rb # TODO
-        return node.set_linear_velocity(*vel)
+    def set_linear_velocity(self, entity_id, velocity):
+        node = self._rigid_bodies[entity_id]
+        return node.set_linear_velocity(*velocity)
+
+    def get_angular_velocity(self, entity_id):
+        node = self._rigid_bodies[entity_id]
+        return tuple(node.get_angular_velocity())
+
+    def set_angular_velocity(self, entity_id, velocity):
+        node = self._rigid_bodies[entity_id]
+        return node.set_angular_velocity(*velocity)
 
     def on_entity_created(self, entity_id, entity):
         parent = entity.get_parent()
-
         nodepath = parent.find("+BulletRigidBodyNode")
         self._world.attach_rigid_body(nodepath.node())
 
@@ -54,6 +57,14 @@ def build_physics_manager(cls, i, ex, args):
 
     ex.on_entity_destroyed = hive.plugin(cls.on_entity_destroyed, "entity.on_destroyed", policy=hive.SingleRequired)
     ex.on_entity_created = hive.plugin(cls.on_entity_created, "entity.on_created", policy=hive.SingleRequired)
+
+    ex.get_angular_velocity = hive.plugin(cls.get_angular_velocity, "entity.angular_velocity.get",
+                                          export_to_parent=True)
+    ex.set_angular_velocity = hive.plugin(cls.set_angular_velocity, "entity.angular_velocity.set",
+                                          export_to_parent=True)
+
+    ex.get_linear_velocity = hive.plugin(cls.get_linear_velocity, "entity.angular_velocity.get", export_to_parent=True)
+    ex.set_linear_velocity = hive.plugin(cls.set_linear_velocity, "entity.angular_velocity.set", export_to_parent=True)
 
 
 PhysicsManager = hive.hive("PhysicsManager", build_physics_manager, builder_cls=_PhysicsManagerClass)

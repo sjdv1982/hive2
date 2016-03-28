@@ -42,7 +42,7 @@ class AngularClass:
 
 def declare_angular(meta_args):
     meta_args.bound = hive.parameter("bool", True)
-    meta_args.coordinate_system = hive.parameter("str", 'absolute', options={'absolute', 'relative'})
+    meta_args.coordinate_system = hive.parameter("str", 'absolute', options={'absolute'}) #TODO add relative support
     meta_args.mode = hive.parameter("str", "get", options={"get", "set"})
 
 
@@ -75,11 +75,11 @@ def build_angular(cls, i, ex, args, meta_args):
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
-            ex.get_get_angular = hive.socket(cls.set_get_angular, identifier="entity.angular.get.absolute")
+            ex.get_get_angular = hive.socket(cls.set_get_angular, identifier="entity.angular_velocity.get")
             i.do_get_angular = hive.triggerable(cls.do_get_angular)
 
         else:
-            ex.get_get_angular = hive.socket(cls.set_get_angular, identifier="entity.angular.get.relative")
+            ex.get_get_angular = hive.socket(cls.set_get_angular, identifier="entity.angular_velocity.get")
             i.do_get_angular = hive.triggerable(cls.do_get_relative_angular)
             hive.trigger(i.pull_angular, i.pull_other_entity_id, pretrigger=True)
 
@@ -93,11 +93,11 @@ def build_angular(cls, i, ex, args, meta_args):
 
     else:
         if coordinate_system == 'absolute':
-            ex.get_set_angular = hive.socket(cls.set_set_angular, identifier="entity.angular.set.absolute")
+            ex.get_set_angular = hive.socket(cls.set_set_angular, identifier="entity.angular_velocity.set")
             i.do_set_angular = hive.triggerable(cls.do_set_angular)
 
         else:
-            ex.get_set_angular = hive.socket(cls.set_set_angular, identifier="entity.angular.set.relative")
+            ex.get_set_angular = hive.socket(cls.set_set_angular, identifier="entity.angular_velocity.set")
             i.do_set_angular = hive.triggerable(cls.do_set_relative_angular)
             hive.trigger(i.push_angular, i.pull_other_entity_id)
 

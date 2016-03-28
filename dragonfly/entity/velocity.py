@@ -40,7 +40,7 @@ class VelocityClass:
 
 def declare_velocity(meta_args):
     meta_args.bound = hive.parameter("bool", True)
-    meta_args.coordinate_system = hive.parameter("str", 'absolute', options={'absolute', 'relative'})
+    meta_args.coordinate_system = hive.parameter("str", 'absolute', options={'absolute'}) # TODO support relative
     meta_args.mode = hive.parameter("str", "get", options={"get", "set"})
 
 
@@ -74,11 +74,11 @@ def build_velocity(cls, i, ex, args, meta_args):
 
     if meta_args.mode == "get":
         if coordinate_system == 'absolute':
-            ex.get_get_velocity = hive.socket(cls.set_get_velocity, identifier="entity.velocity.get.absolute")
+            ex.get_get_velocity = hive.socket(cls.set_get_velocity, identifier="entity.linear_velocity.get")
             i.do_get_velocity = hive.triggerable(cls.do_get_velocity)
 
         else:
-            ex.get_get_velocity = hive.socket(cls.set_get_velocity, identifier="entity.velocity.get.relative")
+            ex.get_get_velocity = hive.socket(cls.set_get_velocity, identifier="entity.linear_velocity.get")
             i.do_get_velocity = hive.triggerable(cls.do_get_relative_velocity)
             hive.trigger(i.pull_velocity, i.pull_other_entity_id, pretrigger=True)
 
@@ -92,11 +92,11 @@ def build_velocity(cls, i, ex, args, meta_args):
 
     else:
         if coordinate_system == 'absolute':
-            ex.get_set_velocity = hive.socket(cls.set_set_velocity, identifier="entity.velocity.set.absolute")
+            ex.get_set_velocity = hive.socket(cls.set_set_velocity, identifier="entity.linear_velocity.set")
             i.do_set_velocity = hive.triggerable(cls.do_set_velocity)
 
         else:
-            ex.get_set_velocity = hive.socket(cls.set_set_velocity, identifier="entity.velocity.set.relative")
+            ex.get_set_velocity = hive.socket(cls.set_set_velocity, identifier="entity.linear_velocity.set")
             i.do_set_velocity = hive.triggerable(cls.do_set_relative_velocity)
             hive.trigger(i.push_velocity, i.pull_other_entity_id)
 
