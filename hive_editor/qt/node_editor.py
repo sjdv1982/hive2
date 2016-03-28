@@ -13,7 +13,7 @@ from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
-from ..utils import import_path_to_hivemap_path
+from ..utils import import_path_to_hivemap_path, start_value_from_type
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
@@ -51,6 +51,15 @@ class DynamicInputDialogue(QDialog):
     def add_widget(self, name, data_type=None, default=NoValue, options=None):
         widget, controller = create_widget(data_type, options)
 
+        # If has no default, try and guess one
+        if default is self.__class__.NoValue:
+            try:
+                default = start_value_from_type(data_type)
+
+            except TypeError:
+                pass
+
+        # If we have a default, set it
         if default is not self.__class__.NoValue:
             try:
                 controller.value = default

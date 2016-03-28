@@ -75,9 +75,9 @@ def is_identifier(identifier):
     return True
 
 
-def start_value_from_type(data_type, allow_none=False):
+def start_value_from_type(data_type):
     """Attempt to return a unique "starting value" for a given data type"""
-    as_tuple = hive.identifier_to_tuple(data_type, allow_none)
+    as_tuple = hive.identifier_to_tuple(data_type, allow_none=False)
     base_type = as_tuple[0]
 
     try:
