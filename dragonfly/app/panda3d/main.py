@@ -1,8 +1,9 @@
 import hive
 
 from .input_handler import InputHandler
-from .entity_api import EntityAPI
+from .entity_manager import EntityManager
 from .physics_manager import PhysicsManager
+from .transform_manager import TransformManager
 
 from ..mainloop import Mainloop as _Mainloop
 from ...event import EventManager, EventHandler
@@ -40,7 +41,8 @@ class MainloopClass:
 def build_mainloop(cls, i, ex, args):
     i.event_manager = EventManager(export_namespace=True)
     i.input_manager = InputHandler(export_namespace=True)
-    i.entity_api = EntityAPI(export_namespace=True)
+    i.entity_manager = EntityManager(export_namespace=True)
+    i.transform_manager = TransformManager(export_namespace=True)
     i.physics_manager = PhysicsManager(export_namespace=True)
 
     # Connect input manager
@@ -50,8 +52,6 @@ def build_mainloop(cls, i, ex, args):
     # Connect physics
     hive.connect(i.tick, i.physics_manager.tick)
     hive.connect(i.pull_tick_rate, i.physics_manager.tick_rate)
-    hive.connect(i.entity_api.entity_spawned, i.physics_manager.on_entity_spawned)
-    hive.connect(i.entity_api.entity_destroyed, i.physics_manager.on_entity_destroyed)
 
     # Send tick event and step Panda
     i.on_tick = hive.triggerable(cls.on_tick)

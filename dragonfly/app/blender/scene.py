@@ -24,7 +24,7 @@ class SceneClass:
         self._entities = {}
         self.scene = None
 
-    def get_entity(self, identifier):
+    def get_entity_id(self, identifier):
         return self._entities[identifier]
 
     def get_position_absolute(self, entity):
@@ -53,7 +53,7 @@ class SceneClass:
 def build_scene(cls, i, ex, args):
     i.bge_scene = hive.property(cls, "scene")
 
-    ex.get_entity = hive.plugin(cls.get_entity, identifier="entity.get")
+    ex.get_entity_id = hive.plugin(cls.get_entity_id, identifier="entity.get")
     ex.get_position_absolute = hive.plugin(cls.get_position_absolute, identifier="entity.position.absolute.get")
     ex.get_position_relative = hive.plugin(cls.get_position_relative, identifier="entity.position.relative.get")
     ex.get_orientation_absolute = hive.plugin(cls.get_orientation_absolute, identifier="entity.orientation.absolute.get")

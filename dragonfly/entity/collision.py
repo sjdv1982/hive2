@@ -24,8 +24,8 @@ class _CollisionClass:
 
         self._hive.on_collided()
 
-    def set_get_entity(self, get_entity):
-        self._entity = get_entity()
+    def set_get_entity_id(self, get_entity_id):
+        self._entity = get_entity_id()
 
     def set_add_handler(self, add_handler):
         handler = EventHandler(self._on_collision, ('collision', self._entity), mode="leader")
@@ -34,7 +34,7 @@ class _CollisionClass:
 
 def build_collision(cls, i, ex, args):
     """Interface to collision events for bound hive"""
-    i.hit_entity = hive.property(cls, "hit_entity", "entity")
+    i.hit_entity = hive.property(cls, "hit_entity_id", "int.entity_id")
     i.hit_position = hive.property(cls, "hit_position", "vector")
     i.hit_normal = hive.property(cls, "hit_normal", "vector")
     i.hit_impulse = hive.property(cls, "hit_impulse", "vector")
@@ -52,8 +52,7 @@ def build_collision(cls, i, ex, args):
     i.on_collided = hive.triggerfunc()
     ex.on_collided = hive.hook(i.on_collided)
 
-
-    ex.get_get_entity = hive.socket(cls.set_get_entity, "entity.get_bound")
+    ex.get_get_entity_id = hive.socket(cls.set_get_entity_id, "entity.get_bound")
     ex.get_add_handler = hive.socket(cls.set_add_handler, "event.add_handler")
 
 

@@ -4,26 +4,26 @@ import hive
 class ThisClass:
 
     def __init__(self):
-        self._get_entity = None
-        self.entity = None
+        self._get_entity_id = None
+        self.entity_id = None
 
-    def get_entity(self):
-        self.entity = self._get_entity()
+    def get_entity_id(self):
+        self.entity_id = self._get_entity_id()
 
-    def set_get_entity(self, get_entity):
-        self._get_entity = get_entity
+    def set_get_entity_id(self, get_entity_id):
+        self._get_entity_id = get_entity_id
 
 
 def build_this(cls, i, ex, args):
     """Access to current bound entity"""
-    ex.get_bound_entity = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
+    ex.get_bound_entity = hive.socket(cls.set_get_entity_id, identifier="entity.get_bound")
 
-    i.entity = hive.property(cls, "entity", "entity")
-    i.pull_entity = hive.pull_out(i.entity)
-    ex.entity = hive.output(i.pull_entity)
+    i.entity_id = hive.property(cls, "entity_id", "int.entity_id")
+    i.pull_entity_id = hive.pull_out(i.entity_id)
+    ex.entity_id = hive.output(i.pull_entity_id)
 
-    i.do_get_entity = hive.triggerable(cls.get_entity)
-    hive.trigger(i.pull_entity, i.do_get_entity, pretrigger=True)
+    i.do_get_entity_id = hive.triggerable(cls.get_entity_id)
+    hive.trigger(i.pull_entity_id, i.do_get_entity_id, pretrigger=True)
 
 
 This = hive.hive("This", build_this, builder_cls=ThisClass)

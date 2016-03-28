@@ -129,7 +129,7 @@ class InstantiatorClass:
         """
         self._bind_class_creation_callbacks.append(on_created)
 
-    @hive.types(process_id="int.id.process")
+    @hive.types(process_id="int.process_id")
     def stop_hive(self, process_id):
         """Forget child hive when it is stopped"""
         instance = self._active_hives.pop(process_id)
@@ -183,7 +183,7 @@ def build_instantiator(cls, i, ex, args, meta_args):
 
     hive.trigger(i.trig_instantiate, i.pull_hive_class, pretrigger=True)
 
-    ex.process_id = hive.property(cls, "last_created_process_id", "int.id.process")
+    ex.process_id = hive.property(cls, "last_created_process_id", "int.process_id")
     i.pull_process_id = hive.pull_out(ex.process_id)
     ex.last_process_id = hive.output(i.pull_process_id)
 

@@ -7,8 +7,8 @@ class TagClass:
         self._get_tag = None
         self._set_tag = None
 
-        self._get_entity = None
-        self.entity = None
+        self._get_entity_id = None
+        self.entity_id = None
 
         self.tag_name = None
         self.tag_value = None
@@ -19,11 +19,11 @@ class TagClass:
     def set_set_tag(self, set_tag):
         self._set_tag = set_tag
 
-    def set_get_entity(self, get_entity):
-        self._get_entity = get_entity
+    def set_get_entity_id(self, get_entity_id):
+        self._get_entity_id = get_entity_id
 
-    def get_entity(self):
-        self.entity = self._get_entity()
+    def get_entity_id(self):
+        self.entity_id = self._get_entity_id()
 
     def get_tag(self):
         self.tag_value = self._get_tag(self.tag_name)
@@ -41,13 +41,14 @@ def declare_tag(meta_args):
 def build_tag(cls, i, ex, args, meta_args):
     """Access to entity tag API"""
     if meta_args.bound:
-        ex.get_bound = hive.socket(cls.set_get_entity, identifier="entity.get_bound")
-        i.do_get_entity = hive.triggerable(cls.get_entity)
+        ex.get_bound = hive.socket(cls.set_get_entity_id, identifier="entity.get_bound")
+        i.do_get_bound_entity_id = hive.triggerable(cls.get_entity_id)
 
     else:
-        i.entity = hive.property(cls, "entity", "entity")
-        i.do_get_entity = hive.pull_in(i.entity)
-        ex.entity = hive.antenna(i.do_get_entity)
+        i.entity_id = hive.property(cls, "entity_id", "int.entity_id")
+        i.pull_entity_id = hive.pull_in(i.entity_id)
+        ex.entity_id = hive.antenna(i.pull_entity_id)
+        i.do_get_bound_entity_id = hive.triggerable(i.pull_entity_id)
 
     i.tag_name = hive.property(cls, "tag_name", "str")
     i.tag_value = hive.property(cls, "tag_value", meta_args.data_type)
@@ -63,7 +64,7 @@ def build_tag(cls, i, ex, args, meta_args):
 
         i.do_get_tag = hive.triggerable(cls.get_tag)
 
-        hive.trigger(i.pull_tag_value, i.do_get_entity)
+        hive.trigger(i.pull_tag_value, i.do_get_bound_entity_id)
         hive.trigger(i.pull_tag_value, i.pull_tag_name)
         hive.trigger(i.pull_tag_value, i.do_get_tag)
 
@@ -75,7 +76,7 @@ def build_tag(cls, i, ex, args, meta_args):
 
         i.do_get_tag = hive.triggerable(cls.get_tag)
 
-        hive.trigger(i.push_tag_value, i.do_get_entity)
+        hive.trigger(i.push_tag_value, i.do_get_bound_entity_id)
         hive.trigger(i.push_tag_value, i.pull_tag_name)
         hive.trigger(i.push_tag_value, i.do_get_tag)
 
