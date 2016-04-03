@@ -26,8 +26,11 @@ def no_inspector():
 class BeeNodeInspector:
     """Inspect bee nodes for configurable parameters"""
 
-    def __init__(self, find_attributes):
-        self.find_attributes = find_attributes
+    def __init__(self, find_by_import_path):
+        self._find_by_import_path = find_by_import_path
+
+    def _find_attributes(self):
+        return self._find_by_import_path("hive.attribute")
 
     def inspect(self, import_path):
         """Inspect the UI attributes available for a bee with the given import path"""
@@ -96,7 +99,7 @@ class BeeNodeInspector:
         yield ("args", arg_options)
 
     def inspect_pull_in(self):
-        attributes = self.find_attributes()
+        attributes = self._find_attributes()
 
         # Configure meta args
         meta_arg_options = OrderedDict()

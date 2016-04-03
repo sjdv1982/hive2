@@ -86,7 +86,7 @@ class NodeManager(object):
         self._hive_node_factory = HiveNodeFactory()
 
         self._hive_node_inspector = HiveNodeInspector()
-        self._bee_node_inspector = BeeNodeInspector(self._find_attributes)
+        self._bee_node_inspector = BeeNodeInspector(find_by_import_path=self.find_by_import_path)
 
         self.docstring = ""
         self.nodes = {}
@@ -107,8 +107,12 @@ class NodeManager(object):
         identifier = _sanitise_node_name(identifier)
         return _get_unique_name(self.nodes, identifier)
 
-    def _find_attributes(self):
-        return {name: node for name, node in self.nodes.items() if node.import_path == "hive.attribute"}
+    def find_by_import_path(self, import_path):
+        """Return dict of nodes with the given import path
+
+        :param import_path: import python path of node
+        """
+        return {name: node for name, node in self.nodes.items() if node.import_path == import_path}
 
     def _add_connection(self, connection):
         """Connect connection and push to history.
