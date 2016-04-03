@@ -39,7 +39,9 @@ class HiveFinder:
         """
         current_folder_path = os.path.join(base_file_path, relative_folder_path)
         all_file_names = os.listdir(current_folder_path)
-        print(current_folder_path)
+
+        print("Searching {}".format(current_folder_path))
+
         if modules is None:
             modules = OrderedDict()
 
@@ -104,8 +106,6 @@ class HiveFinder:
 
                     elif issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive:
                         sub_modules[name] = None
-
-                print(name, value)
 
             if is_directory and not sub_modules:
                 self._recurse(base_file_path, relative_file_path, modules)

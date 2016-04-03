@@ -308,17 +308,18 @@ class NodeManager(object):
 
     def morph_node(self, node, meta_args):
         with self.history.command_context("morph-node"):
+            # Record the connected target pins for each IO pin by name
             input_name_to_pins = {n: [c.output_pin for c in p.connections] for n, p in node.inputs.items()}
             output_name_to_pins = {n: [c.input_pin for c in p.connections] for n, p in node.outputs.items()}
 
-            # Unfold and track folded pins
+            # Unfold and recorded folded pins
             folded_input_names = []
             for pin_name, pin in node.inputs.items():
                 if pin.is_folded:
                     folded_input_names.append(pin_name)
                     self.unfold_pin(pin)
 
-            # If this node is folded by another, unfold first
+            # If this node is folded by another, unfold first and record pin
             folding_parent_pin = None
             if node.is_folded:
                 folding_parent_pin = next(c.input_pin for p in node.outputs.values()
@@ -327,7 +328,8 @@ class NodeManager(object):
 
             # Copy existing node params
             node_params = {k: dict(d) for k, d in node.params.items()}
-            # Modify meta param value
+
+            # Modify meta params
             node_params['meta_args'] = meta_args
 
             node_import_path = node.import_path
@@ -335,6 +337,7 @@ class NodeManager(object):
             node_position = node.position
             node_type = node.node_type
 
+            # Destroy original node
             self.delete_node(node)
 
             # Create new node
