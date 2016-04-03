@@ -230,13 +230,13 @@ class NodeView(QGraphicsView):
     def set_node_name(self, gui_node, name):
         gui_node.name = name
 
-    def fold_pin(self, socket_row, target_gui_node):
-        self._set_pin_folded(socket_row, target_gui_node, True)
+    def fold_node(self, socket_row, target_gui_node):
+        self._set_node_folded(socket_row, target_gui_node, True)
 
-    def unfold_pin(self, socket_row, target_gui_node):
-        self._set_pin_folded(socket_row, target_gui_node, False)
+    def unfold_node(self, socket_row, target_gui_node):
+        self._set_node_folded(socket_row, target_gui_node, False)
 
-    def _set_pin_folded(self, socket_row, target_gui_node, folded):
+    def _set_node_folded(self, socket_row, target_gui_node, folded):
         target_gui_node.setVisible(not folded)
         socket_row.socket.setVisible(not folded)
 

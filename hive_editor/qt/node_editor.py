@@ -3,77 +3,19 @@ from functools import partial
 
 from .console import QConsole
 from .floating_text import FloatingTextWidget
+from .gui_inspector import DynamicInputDialogue
 from .node import Node
 from .panels import FoldingPanel, ConfigurationPanel
 from .qt_core import *
 from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
-
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
-from ..utils import import_path_to_hivemap_path, start_value_from_type
+from ..utils import import_path_to_hivemap_path
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
-
-
-class DynamicInputDialogue(QDialog):
-
-    class NoValue:
-        pass
-
-    class DialogueCancelled(Exception):
-        pass
-
-    def __init__(self, parent):
-        QDialog.__init__(self, parent)
-
-        buttons_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-
-        buttons_box.accepted.connect(self.accept)
-        buttons_box.rejected.connect(self.reject)
-
-        self.form_group_box = QGroupBox("Form layout")
-
-        self.layout = QFormLayout()
-        self.form_group_box.setLayout(self.layout)
-
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.form_group_box)
-        main_layout.addWidget(buttons_box)
-
-        self.setLayout(main_layout)
-
-        self.value_getters = {}
-        self.values = {}
-
-    def add_widget(self, name, data_type=None, default=NoValue, options=None):
-        widget, controller = create_widget(data_type, options)
-
-        # If has no default, try and guess one
-        if default is self.__class__.NoValue:
-            try:
-                default = start_value_from_type(data_type)
-
-            except TypeError:
-                pass
-
-        # If we have a default, set it
-        if default is not self.__class__.NoValue:
-            try:
-                controller.value = default
-
-            except Exception as err:
-                print(err)
-
-        self.layout.addRow(QLabel(name), widget)
-        self.value_getters[name] = controller.getter
-
-    def accept(self):
-        QDialog.accept(self)
-
-        self.values = {n: v() for n, v in self.value_getters.items()}
 
 
 class SourceCodePreviewDialogue(QDialog):
@@ -448,15 +390,19 @@ class NodeEditorSpace(QWidget):
 
     def _on_node_created(self, node):
         gui_node = Node(node, self._view)
-        self._node_to_qt_node[node] = gui_node
 
+        self._node_to_qt_node[node] = gui_node
         self._view.add_node(gui_node)
+
+        # Default select added node
+        if not self._view.gui_get_selected_nodes():
+            gui_node.setSelected(True)
 
         # Update preview
         self._preview_widget.update_preview()
 
     def _on_node_destroyed(self, node):
-        gui_node = self._node_to_qt_node[node]
+        gui_node = self._node_to_qt_node.pop(node)
         gui_node.on_deleted()
 
         self._view.remove_node(gui_node)
@@ -571,7 +517,7 @@ class NodeEditorSpace(QWidget):
         target_node = target_pin.node
 
         target_gui_node = self._node_to_qt_node[target_node]
-        self._view.fold_pin(socket_row, target_gui_node)
+        self._view.fold_node(socket_row, target_gui_node)
 
     def _on_pin_unfolded(self, pin):
         # Get node
@@ -587,7 +533,7 @@ class NodeEditorSpace(QWidget):
         target_node = target_pin.node
 
         target_gui_node = self._node_to_qt_node[target_node]
-        self._view.unfold_pin(socket_row, target_gui_node)
+        self._view.unfold_node(socket_row, target_gui_node)
 
     # GUI nodes
     def _gui_on_drag_move(self, event):
@@ -674,7 +620,6 @@ class NodeEditorSpace(QWidget):
 
     def _execute_inspector(self, inspector):
         params = {}
-        inspection_info = {}
 
         previous_values = None
         while True:
@@ -704,18 +649,12 @@ class NodeEditorSpace(QWidget):
             # Set result
             params[stage_name] = previous_values = dialogue.values
 
-            # Save inspection stage
-            inspection_info[stage_name] = stage_options
-
         return params
 
     def add_node_at(self, position, import_path, node_type):
-        if node_type == NodeTypes.BEE:
-            inspector = self._node_manager.bee_node_inspector.inspect(import_path)
-            params = self._execute_inspector(inspector)
-            node = self._node_manager.create_bee(import_path, params=params)
+        inspection_generator = self._node_manager.get_inspector_for(node_type).inspect(import_path)
 
-        else:
+        if node_type == NodeTypes.HIVE:
             # Check Hive's hivemap isn't currently open
             if self.file_path is not None:
                 # Try and import the hivemap
@@ -733,10 +672,8 @@ class NodeEditorSpace(QWidget):
                         QMessageBox.critical(self, 'Cyclic Hive', "This Hive Node cannot be added to its own hivemap")
                         return
 
-            inspector = self._node_manager.hive_node_inspector.inspect(import_path)
-            params = self._execute_inspector(inspector)
-            node = self._node_manager.create_hive(import_path, params=params)
-
+        params = self._execute_inspector(inspection_generator)
+        node = self._node_manager.create_node(node_type, import_path, params=params)
 
         view_position = self._view.mapFromGlobal(position)
         scene_position = self._view.mapToScene(view_position)

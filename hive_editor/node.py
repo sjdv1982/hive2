@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 from hive.identifiers import identifiers_match
-
 from .data_views import ListView, DictView
 from .sockets import get_colour, get_shape
 from .protected_container import ProtectedContainer, RestrictedAttribute, RestrictedProperty
@@ -120,11 +119,11 @@ class IOPin(ProtectedContainer):
 
     @property
     def is_foldable(self):
-        # Only hives support folding
-        if self.is_virtual:
+        if self.is_folded:
             return False
 
-        if self.is_folded:
+        # Only hives support folding
+        if self.is_virtual:
             return False
 
         if self.io_type != "input":
@@ -283,7 +282,7 @@ class Node(ProtectedContainer):
     def params(self):
         return DictView({k: DictView(v) for k, v in self._params.items()})
 
-    @params.guarded_getter
+    @params.restricted_getter
     def params(self):
         return self._params
 
@@ -292,7 +291,18 @@ class Node(ProtectedContainer):
         return DictView({k: DictView(v) for k, v in self._params_info.items()})
 
     @property
+    def is_folded(self):
+        for output_pin in self._outputs.values():
+            for connection in output_pin.connections:
+                if connection.input_pin.is_folded:
+                    return True
+        return False
+
+    @property
     def is_foldable(self):
+        if self.is_folded:
+            return False
+
         all_connections = sum(len(p.connections) for p in self._outputs.values())
         all_connections += sum(len(p.connections) for p in self._inputs.values())
 

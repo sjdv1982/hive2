@@ -1,9 +1,12 @@
 from functools import partial
 from webbrowser import open as open_url
 
+from .gui_inspector import DynamicInputDialogue
 from .label import QClickableLabel
 from .qt_gui import *
+from .qt_core import *
 from .utils import create_widget
+from ..inspector import InspectorOption
 from ..utils import import_module_from_path
 
 
@@ -50,13 +53,29 @@ class NodeContextPanelBase(QWidget):
 
 
 class ArgumentsPanel(NodeContextPanelBase):
+    def _edit_meta_args(self, node):
+        dialogue = DynamicInputDialogue(self)
+        dialogue.setAttribute(Qt.WA_DeleteOnClose)
+        dialogue.setWindowTitle("Meta Args")
 
-    @staticmethod
-    def _create_divider():
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        return line
+        # Take inspection data
+        existing_meta_args_view = node.params_info['meta_args']
+        for name, option in existing_meta_args_view.items():
+            # Get default
+            default = option.default
+            if default is InspectorOption.NoValue:
+                default = DynamicInputDialogue.NoValue
+
+            # Allow textarea
+            dialogue.add_widget(name, option.data_type, default, option.options)
+
+        dialogue_result = dialogue.exec_()
+        if dialogue_result == QDialog.Rejected:
+            raise DynamicInputDialogue.DialogueCancelled("Menu cancelled")
+
+        # Set result
+        meta_args = dialogue.values
+        self._node_manager.morph_node(node, meta_args)
 
     def _update_layout(self, node):
         layout = self._layout
@@ -66,13 +85,21 @@ class ArgumentsPanel(NodeContextPanelBase):
         if meta_args:
             meta_arg_data = node.params_info["meta_args"]
 
-            layout.addRow(QLabel("Meta Args:"))
+            # Create container
+            box = QFrame()
+            layout.addRow(self.tr("Meta Args"), box)
+
+            box.setFrameShape(QFrame.StyledPanel)
+            box_layout = QFormLayout()
+            box.setLayout(box_layout)
 
             for name, value in meta_args.items():
                 try:
                     inspector_option = meta_arg_data[name]
 
-                # This happens with hidden args passed to factory (currently only exists for meta args [hive.pull/push in/out])
+                # This happens with hidden args passed to factory (currently only exists for meta args
+                # [hive.pull/push in/out])
+                # Hidden args means that the inspector didn't find these args, but they were passed in the args dict
                 except KeyError:
                     continue
 
@@ -80,20 +107,34 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget.setEnabled(False)
                 controller.value = value
 
-                layout.addRow(self.tr(name), widget)
+                box_layout.addRow(self.tr(name), widget)
+
+                # edit_button = QPushButton('Re-configure')
+                # edit_button.setToolTip("Re-create this node with new meta-args, and attempt to preserve state")
+                #
+                # edit_callback = partial(self._edit_meta_args, node)
+                # edit_button.clicked.connect(edit_callback)
+                #
+                # box_layout.addRow(edit_button)
 
         node_manager = self._node_manager
 
         # Args
-        args = node.params.get('args')
-        if args:
-            # Divider if required
-            if meta_args:
-                layout.addRow(self._create_divider())
+        for wrapper_name, title_name in (("args", "Builder Args"), ("cls_args", "Class Args")):
+            try:
+                args = node.params[wrapper_name]
+            except KeyError:
+                continue
 
-            arg_data = node.params_info["args"]
+            arg_data = node.params_info[wrapper_name]
 
-            layout.addRow(QLabel("Args:"))
+            # Create container
+            box = QFrame()
+            layout.addRow(self.tr(title_name), box)
+
+            box.setFrameShape(QFrame.StyledPanel)
+            box_layout = QFormLayout()
+            box.setLayout(box_layout)
 
             for name, value in args.items():
                 # Get data type
@@ -102,39 +143,13 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
                 widget.controller = controller
 
-                def on_changed(value, name=name, args=args):
+                def on_changed(value, name=name):
                     node_manager.set_param_value(node, "args", name, value)
 
                 controller.value = value
                 controller.on_changed.subscribe(on_changed)
 
-                layout.addRow(self.tr(name), widget)
-
-        # Class Args
-        cls_args = node.params.get('cls_args')
-        if cls_args:
-            # Divider if required
-            if meta_args or args:
-                layout.addRow(self._create_divider())
-
-            cls_arg_data = node.params_info["cls_args"]
-
-            layout.addRow(QLabel("Cls Args:"))
-
-            for name, value in cls_args.items():
-                # Get data type
-                inspector_option = cls_arg_data[name]
-
-                widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
-                widget.controller = controller
-
-                def on_changed(value, name=name, cls_args=cls_args):
-                    node_manager.set_param_value(node, 'cls_args', name, value)
-
-                controller.value = value
-                controller.on_changed.subscribe(on_changed)
-
-                layout.addRow(self.tr(name), widget)
+                box_layout.addRow(self.tr(name), widget)
 
 
 class ConfigurationPanel(ArgumentsPanel):
@@ -159,8 +174,6 @@ class ConfigurationPanel(ArgumentsPanel):
         widget.setPlaceholderText(node.name)
         widget.textChanged.connect(partial(self._rename_node, node))
         layout.addRow(self.tr("&Name"), widget)
-
-        layout.addRow(self._create_divider())
 
         super()._update_layout(node)
 

@@ -91,7 +91,7 @@ class CommandHistoryManager:
         history = CommandHistory(self._logger, name=composite_name)
 
         self._current_history, old_history = history, self._current_history
-        yield
+        yield self
         self._current_history = old_history
 
         if not history.has_commands:

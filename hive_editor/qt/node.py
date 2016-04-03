@@ -1,4 +1,3 @@
-
 from .qt_core import *
 from .qt_gui import *
 # <license>
@@ -194,7 +193,6 @@ class Node(QGraphicsWidget):
         self._shapePen.setWidthF(1.5)
 
         self._brush = QBrush(QColor(*COLOUR_THEMES[node.node_type]))
-        self._deleted = False
 
         self._dropShadowEffect = QGraphicsDropShadowEffect()
         self.setGraphicsEffect(self._dropShadowEffect)
@@ -252,8 +250,6 @@ class Node(QGraphicsWidget):
         return QColor(255, 255, 255)
 
     def on_deleted(self):
-        self._deleted = True
-
         if self.isSelected():
             self.setSelected(False)
 
@@ -289,9 +285,6 @@ class Node(QGraphicsWidget):
         self.view.gui_on_node_right_click(self, event)
 
     def onSelected(self):
-        if self._deleted:
-            return
-
         if self.isSelected():
             self._shapePen.setStyle(Qt.SolidLine)
             self.view.gui_on_node_selected(self)
