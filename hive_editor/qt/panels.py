@@ -109,13 +109,13 @@ class ArgumentsPanel(NodeContextPanelBase):
 
                 box_layout.addRow(self.tr(name), widget)
 
-                # edit_button = QPushButton('Re-configure')
-                # edit_button.setToolTip("Re-create this node with new meta-args, and attempt to preserve state")
-                #
-                # edit_callback = partial(self._edit_meta_args, node)
-                # edit_button.clicked.connect(edit_callback)
-                #
-                # box_layout.addRow(edit_button)
+                edit_button = QPushButton('Re-configure')
+                edit_button.setToolTip("Re-create this node with new meta-args, and attempt to preserve state")
+
+                edit_callback = partial(self._edit_meta_args, node)
+                edit_button.clicked.connect(edit_callback)
+
+                box_layout.addRow(edit_button)
 
         node_manager = self._node_manager
 
