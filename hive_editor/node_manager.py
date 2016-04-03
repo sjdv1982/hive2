@@ -9,17 +9,34 @@ from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
 from .node import FOLD_NODE_IMPORT_PATH, NodeTypes
 from .observer import Observable
-from .utils import start_value_from_type, is_identifier, \
-    camelcase_to_underscores
+from .utils import start_value_from_type, is_identifier, camelcase_to_underscores
 
 
-def _sanitise_variable(variable_name):
+def _sanitise_node_name(variable_name):
     variable_name = variable_name.lstrip('_')
 
-    while not is_identifier(variable_name) or iskeyword(variable_name):
-        variable_name = "{}_".format(variable_name)
+    if ' ' in variable_name:
+        raise ValueError("Invalid name '{}': contains spaces".format(variable_name))
 
+    if variable_name[0].isdigit():
+        raise ValueError("Invalid name '{}': starts with digit".format(variable_name))
+
+    while iskeyword(variable_name):
+        variable_name += "_"
+
+    assert is_identifier(variable_name), "Invalid variable name, expected python identifier"
     return variable_name
+
+
+def _validate_node_name(name):
+    if name.startswith('_'):
+        raise ValueError("Name must not start with '_'")
+
+    if not is_identifier(name):
+        raise ValueError("Name must be valid python identifier: {}".format(name))
+
+    if iskeyword(name):
+        raise ValueError("Name cannot be python keyword: {}".format(name))
 
 
 def _get_unique_name(existing_names, base_name):
@@ -65,8 +82,8 @@ class NodeManager(object):
 
         self.history = history
 
-        self.bee_node_factory = BeeNodeFactory()
-        self.hive_node_factory = HiveNodeFactory()
+        self._bee_node_factory = BeeNodeFactory()
+        self._hive_node_factory = HiveNodeFactory()
 
         self._hive_node_inspector = HiveNodeInspector()
         self._bee_node_inspector = BeeNodeInspector(self._find_attributes)
@@ -86,10 +103,9 @@ class NodeManager(object):
 
     def _unique_name_from_import_path(self, import_path):
         obj_name = import_path.split(".")[-1]
-        as_variable = camelcase_to_underscores(obj_name)
-
-        as_variable = _sanitise_variable(as_variable)
-        return _get_unique_name(self.nodes, as_variable)
+        identifier = camelcase_to_underscores(obj_name)
+        identifier = _sanitise_node_name(identifier)
+        return _get_unique_name(self.nodes, identifier)
 
     def _find_attributes(self):
         return {name: node for name, node in self.nodes.items() if node.import_path == "hive.attribute"}
@@ -213,7 +229,7 @@ class NodeManager(object):
 
         name = self._unique_name_from_import_path(import_path)
         param_info = self._bee_node_inspector.inspect_configured(import_path, params)
-        node = self.bee_node_factory.new(name, import_path, params, param_info)
+        node = self._bee_node_factory.new(name, import_path, params, param_info)
 
         self._add_node(node)
         return node
@@ -233,7 +249,7 @@ class NodeManager(object):
             raise
 
         try:
-            node = self.hive_node_factory.new(name, import_path, params, param_info)
+            node = self._hive_node_factory.new(name, import_path, params, param_info)
 
         except Exception:
             self._logger.error("Failed to instantiate '{}'".format(import_path))
@@ -409,14 +425,7 @@ class NodeManager(object):
         :param name: new name of node
         :param attempt_till_success: if name is not available, find a valid name based upon it
         """
-        if name.startswith('_'):
-            raise ValueError("Name must not start with '_'")
-
-        if not is_identifier(name):
-            raise ValueError("Name must be valid python identifier: {}".format(name))
-
-        if iskeyword(name):
-            raise ValueError("Name cannot be python keyword: {}".format(name))
+        _validate_node_name(name)
 
         if self.nodes.get(name, node) is not node:
             # Try till we succeed
