@@ -4,14 +4,14 @@ from .utils import create_widget
 from ..utils import start_value_from_type
 
 
-class DynamicInputDialogue(QDialog):
+class ConfigurationDialogue(QDialog):
     class NoValue:
         pass
 
     class DialogueCancelled(Exception):
         pass
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         QDialog.__init__(self, parent)
 
         buttons_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

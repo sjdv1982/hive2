@@ -119,9 +119,6 @@ class NodeManager(object):
 
         :param connection: connection to connect
         """
-        self.history.record_command(lambda: self._add_connection(connection),
-                                    lambda: self.delete_connection(connection))
-
         connection.connect()
 
         # Ask GUI to perform connection
@@ -132,6 +129,8 @@ class NodeManager(object):
 
         self._logger.info("Created connection between {}.{} and {}.{}"
                           .format(output_pin.node, output_pin.name, input_pin.node, input_pin.name))
+        self.history.record_command(lambda: self._add_connection(connection),
+                                    lambda: self.delete_connection(connection))
 
     def create_connection(self, output_pin, input_pin):
         """Create connection between two pins.
@@ -164,10 +163,10 @@ class NodeManager(object):
 
         connection.delete()
 
+        self._logger.info("Deleted Connection: {}".format(connection))
+
         self.history.record_command(lambda: self.delete_connection(connection),
                                     lambda: self._add_connection(connection))
-
-        self._logger.info("Deleted Connection: {}".format(connection))
 
     def delete_connections(self, connections):
         """Remove multiple connections from the model (as a composite operation)
@@ -214,16 +213,18 @@ class NodeManager(object):
         for pin in node.inputs.values():
             assert not pin.is_folded, (pin.name, pin.node)
 
-        self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
-
         # Ensure node restored to original place
         self.on_node_moved(node, node.position)
+
+        self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
 
     def create_node(self, node_type, import_path, params=None):
         if node_type == NodeTypes.HIVE:
             return self._create_hive(import_path, params)
+
         elif node_type == NodeTypes.BEE:
             return self._create_bee(import_path, params)
+
         raise ValueError(node_type)
 
     def _create_bee(self, import_path, params=None):
@@ -326,7 +327,7 @@ class NodeManager(object):
 
         self.delete_nodes(nodes_to_delete)
 
-    def morph_node(self, node, meta_args):
+    def morph_node(self, node, params):
         with self.history.command_context("morph-node"):
             # Record the connected target pins for each IO pin by name
             input_name_to_pins = {n: [c.output_pin for c in p.connections] for n, p in node.inputs.items()}
@@ -346,12 +347,6 @@ class NodeManager(object):
                                           for c in p.connections if c.input_pin.is_folded)
                 self.unfold_pin(folding_parent_pin)
 
-            # Copy existing node params
-            node_params = {k: dict(d) for k, d in node.params.items()}
-
-            # Modify meta params
-            node_params['meta_args'] = meta_args
-
             node_import_path = node.import_path
             node_name = node.name
             node_position = node.position
@@ -361,7 +356,7 @@ class NodeManager(object):
             self.delete_node(node)
 
             # Create new node
-            new_node = self.create_node(node_type, node_import_path, node_params)
+            new_node = self.create_node(node_type, node_import_path, params)
 
             # Move and rename
             self.reposition_node(new_node, node_position)
@@ -412,7 +407,8 @@ class NodeManager(object):
         assert param_type in {'cls_args', 'args', 'meta_args'}, "Invalid param type given"
         if param_type == 'meta_args':
             raise ValueError("Meta args wrapper cannot be edited, node must be recreated")
-
+        print("set_param", node, param_type, name, value)
+        print(node.params)
         with node.make_writable():
             params_dict = node.params[param_type]
 

@@ -1,9 +1,10 @@
 import os
 from functools import partial
+from webbrowser import open as open_url
 
 from .console import QConsole
 from .floating_text import FloatingTextWidget
-from .gui_inspector import DynamicInputDialogue
+from .configuration_dialogue import ConfigurationDialogue
 from .node import Node
 from .panels import FoldingPanel, ConfigurationPanel
 from .qt_core import *
@@ -13,7 +14,7 @@ from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
-from ..utils import import_path_to_hivemap_path
+from ..utils import import_path_to_hivemap_path, import_module_from_path
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
@@ -35,8 +36,9 @@ class SourceCodePreviewDialogue(QDialog):
 
 
 class PreviewWidget(QWidget):
+    do_show_code = Signal()
 
-    def __init__(self, node_manager):
+    def __init__(self):
         QWidget.__init__(self)
 
         self._layout = QVBoxLayout()
@@ -45,23 +47,16 @@ class PreviewWidget(QWidget):
         self._preview_view = NodePreviewView()
         self._layout.addWidget(self._preview_view)
 
-        self._node_manager = node_manager
         self._show_source = QPushButton("Show Source")
         self._layout.addWidget(self._show_source)
-        self._show_source.clicked.connect(self._show_code)
+        self._show_source.clicked.connect(self.do_show_code)
 
-    def _show_code(self):
-        hivemap = self._node_manager.to_hivemap()
-        code = hivemap_to_builder_body(hivemap)
-        dialogue = SourceCodePreviewDialogue(self, code)
-        dialogue.show()
-
-    def update_preview(self):
+    def update_preview(self, nodes):
         from ..node import Node
         # Instead of creating a hive object and then using get_io_info, this is more lightweight
         preview_node = Node("<preview>", NodeTypes.HIVE, "<preview>", {}, {})
 
-        for node_name, node in sorted(self._node_manager.nodes.items()):
+        for node_name, node in sorted(nodes.items()):
             # If an input IO bee
             if node.import_path in {"hive.antenna", "hive.entry"}:
                 pin = next(iter(node.outputs.values()))
@@ -264,10 +259,21 @@ class NodeEditorSpace(QWidget):
 
         self._docstring_widget = QTextEdit()
         self._docstring_widget.textChanged.connect(self._docstring_text_updated)
-        self._configuration_widget = ConfigurationPanel(self._node_manager)
 
-        self._folding_widget = FoldingPanel(self._node_manager)
-        self._preview_widget = PreviewWidget(self._node_manager)
+        self._configuration_widget = ConfigurationPanel()
+        self._configuration_widget.do_morph_node.connect(self._do_panel_morph_node)
+        self._configuration_widget.on_import_path_clicked.connect(self._panel_import_path_clicked)
+        self._configuration_widget.set_param_value.connect(self._node_manager.set_param_value)
+        self._configuration_widget.rename_node.connect(self._node_manager.rename_node)
+
+        self._folding_widget = FoldingPanel()
+        self._folding_widget.do_morph_node.connect(self._do_panel_morph_node)
+        self._folding_widget.set_param_value.connect(self._node_manager.set_param_value)
+        self._folding_widget.fold_pin.connect(self._node_manager.fold_pin)
+        self._folding_widget.unfold_pin.connect(self._node_manager.unfold_pin)
+
+        self._preview_widget = PreviewWidget()
+        self._preview_widget.do_show_code.connect(self._preview_show_code)
         display_text = """
  Hive GUI console.
 
@@ -308,6 +314,24 @@ class NodeEditorSpace(QWidget):
     @property
     def debug_controller(self):
         return self._debug_controller
+
+    def _preview_show_code(self):
+        """Show hivemap code in dialogue window"""
+        hivemap = self._node_manager.to_hivemap()
+        code = hivemap_to_builder_body(hivemap)
+        dialogue = SourceCodePreviewDialogue(self, code)
+        dialogue.show()
+
+    def _do_panel_morph_node(self, node):
+        inspector = self._node_manager.get_inspector_for(node.node_type)
+        inspection_generator = inspector.inspect(node.import_path)
+
+        params = self._execute_inspector(inspection_generator)
+        self._node_manager.morph_node(node, params)
+
+    def _panel_import_path_clicked(self, import_path):
+        module, class_name = import_module_from_path(import_path)
+        open_url(module.__file__)
 
     def _pin_to_bee_container_name(self, pin):
         return "{}.{}".format(pin.node.name, pin.name)
@@ -388,6 +412,8 @@ class NodeEditorSpace(QWidget):
         else:
             self.on_save_state_updated.emit(has_unsaved_changes)
 
+        self._preview_widget.update_preview(self._node_manager.nodes)
+
     def _on_node_created(self, node):
         gui_node = Node(node, self._view)
 
@@ -397,9 +423,6 @@ class NodeEditorSpace(QWidget):
         # Default select added node
         if not self._view.gui_get_selected_nodes():
             gui_node.setSelected(True)
-
-        # Update preview
-        self._preview_widget.update_preview()
 
     def _on_node_destroyed(self, node):
         gui_node = self._node_to_qt_node.pop(node)
@@ -438,8 +461,6 @@ class NodeEditorSpace(QWidget):
     def _on_node_renamed(self, node, name):
         gui_node = self._node_to_qt_node[node]
         self._view.set_node_name(gui_node, name)
-
-        self._preview_widget.update_preview()
 
     def _on_connection_created(self, connection):
         output_pin = connection.output_pin
@@ -486,8 +507,6 @@ class NodeEditorSpace(QWidget):
         # Update preview
         self._view.add_connection(gui_connection)
 
-        self._preview_widget.update_preview()
-
     def _on_connection_destroyed(self, connection):
         # Update preview
         gui_connection = self._connection_to_qt_connection.pop(connection)
@@ -495,13 +514,9 @@ class NodeEditorSpace(QWidget):
 
         gui_connection.on_deleted()
 
-        self._preview_widget.update_preview()
-
     def _on_connection_reordered(self, connection, index):
         gui_connection = self._connection_to_qt_connection[connection]
         self._view.reorder_connection(gui_connection, index)
-
-        self._preview_widget.update_preview()
 
     def _on_pin_folded(self, pin):
         # Get node
@@ -629,7 +644,7 @@ class NodeEditorSpace(QWidget):
             except StopIteration:
                 break
 
-            dialogue = DynamicInputDialogue(self)
+            dialogue = ConfigurationDialogue()
             dialogue.setAttribute(Qt.WA_DeleteOnClose)
             dialogue.setWindowTitle(stage_name.replace("_", " ").title())
 
@@ -637,14 +652,14 @@ class NodeEditorSpace(QWidget):
                 # Get default
                 default = option.default
                 if default is InspectorOption.NoValue:
-                    default = DynamicInputDialogue.NoValue
+                    default = ConfigurationDialogue.NoValue
 
                 # Allow textarea
                 dialogue.add_widget(name, option.data_type, default, option.options)
 
             dialogue_result = dialogue.exec_()
             if dialogue_result == QDialog.Rejected:
-                raise DynamicInputDialogue.DialogueCancelled("Menu cancelled")
+                raise ConfigurationDialogue.DialogueCancelled("Menu cancelled")
 
             # Set result
             params[stage_name] = previous_values = dialogue.values
