@@ -14,6 +14,7 @@ from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
 from ..utils import import_path_to_hivemap_path
 
+
 area_classes = {
     "left": Qt.LeftDockWidgetArea,
     "right": Qt.RightDockWidgetArea,
@@ -433,7 +434,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(editor)
 
         completer = QCompleter()
-        completer.setCompletionMode(QCompleter.InlineCompletion)
+        completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         completer.setCaseSensitivity(Qt.CaseSensitive)
 
         editor.setCompleter(completer)
