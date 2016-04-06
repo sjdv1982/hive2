@@ -5,5 +5,5 @@ from .bool_ import BoolOperator
 from .contains import Contains
 from .expression import Expression
 from .interpolate import Interpolate
-from .item import Item
+#from .item import Item
 from .math_ import MathOperator

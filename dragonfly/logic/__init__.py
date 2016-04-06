@@ -4,3 +4,4 @@ from .dictionary import Dictionary
 from .branch import Branch
 from .sorted_ import Sorted
 from .toggle import Toggle
+from .watch import Watch

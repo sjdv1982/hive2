@@ -1,10 +1,9 @@
 import hive
 
-from ..event import EventHandler
+from dragonfly.event import EventHandler
 
 
 class WatchClass:
-
     def __init__(self):
         self._last_value = None
         self.current_value = None

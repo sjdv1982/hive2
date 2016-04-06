@@ -4,4 +4,3 @@ from .call import Call
 from .define import Define
 from .transistor import Transistor
 from .variable import Variable, VariableBool, VariableInt, VariableFloat, VariableStr
-from .watch import Watch
