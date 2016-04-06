@@ -2,13 +2,16 @@ import os
 from functools import partial
 from webbrowser import open as open_url
 
+from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QPoint
+from PyQt5.QtGui import QIcon, QCursor, QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import (QDialog, QWidget, QVBoxLayout, QPushButton, QMessageBox, QSplitter, QTextEdit, QHBoxLayout,
+                             QHeaderView, QTableView, QListWidget, QListWidgetItem, QMenu)
+
 from .console import QConsole
 from .floating_text import FloatingTextWidget
 from .configuration_dialogue import ConfigurationDialogue
 from .node import Node
 from .panels import FoldingPanel, ConfigurationPanel
-from .qt_core import *
-from .qt_gui import *
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_builder_body
@@ -36,7 +39,7 @@ class SourceCodePreviewDialogue(QDialog):
 
 
 class PreviewWidget(QWidget):
-    do_show_code = Signal()
+    do_show_code = pyqtSignal()
 
     def __init__(self):
         QWidget.__init__(self)
@@ -108,8 +111,7 @@ class QDebugControlWidget(QWidget):
 
 
 class QDebugWidget(QWidget):
-
-    on_skip_breakpoint = Signal(str)
+    on_skip_breakpoint = pyqtSignal(str)
 
     def __init__(self, max_history_entries=15):
         QWidget.__init__(self)
@@ -132,7 +134,7 @@ class QDebugWidget(QWidget):
 
         # Apply the model to the list view
         self._history_view.setModel(self._history_model)
-        self._history_view.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self._history_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self._layout.addWidget(splitter)
 
@@ -201,13 +203,12 @@ class QDebugWidget(QWidget):
 
 
 class NodeEditorSpace(QWidget):
+    on_save_state_updated = pyqtSignal(bool)
+    do_open_file = pyqtSignal(str)
+    on_node_context_menu = pyqtSignal(object, object)
 
-    on_save_state_updated = Signal(bool)
-    do_open_file = Signal(str)
-    on_node_context_menu = Signal(object, object)
-
-    on_drag_move = Signal(QEvent)
-    on_dropped = Signal(QEvent, QPoint)
+    on_drag_move = pyqtSignal(QEvent)
+    on_dropped = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, file_path=None, project_path=None):
         QWidget.__init__(self)

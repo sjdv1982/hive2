@@ -1,5 +1,5 @@
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtCore import QObject, QEvent
+from PyQt5.QtWidgets import QApplication
 
 from ..debugging.network import NetworkDebugManager
 

@@ -1,11 +1,10 @@
-from .qt_core import *
-from .qt_webkit import QWebView
+from PyQt5.QtCore import QEvent, pyqtSignal, QPoint
+from PyQt5.QtWebKitWidgets import QWebView
 
 
 class QEditorWebView(QWebView):
-
-    on_drag_move = Signal(QEvent)
-    on_dropped = Signal(QEvent, QPoint)
+    on_drag_move = pyqtSignal(QEvent)
+    on_dropped = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, parent=None):
         QWebView.__init__(self, parent)

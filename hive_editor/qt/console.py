@@ -4,8 +4,9 @@ from collections import deque
 from contextlib import redirect_stdout, contextmanager
 from io import StringIO
 
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QLineEdit
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 
 
 @contextmanager

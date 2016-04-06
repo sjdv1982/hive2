@@ -2,10 +2,13 @@ import os
 import webbrowser
 from functools import partial
 
+from PyQt5.QtCore import Qt, QUrl, QStringListModel
+from PyQt5.QtWidgets import (QMainWindow, QStatusBar, QAction, QDialog, QMessageBox, QFileDialog, QCompleter, QLineEdit,
+                             QWidget, QHBoxLayout, QMenu, QDockWidget)
+from PyQt5.QtGui import QIcon, QKeySequence
+
 from .debugging import QtNetworkDebugManager
 from .node_editor import NodeEditorSpace
-from .qt_core import *
-from .qt_gui import *
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from .web_view import QEditorWebView
@@ -71,7 +74,7 @@ class MainWindow(QMainWindow):
 
         # Set application icon
         icon = QIcon()
-        file_path = os.path.join(os.path.dirname(__file__), "images/hive.png")
+        file_path = os.path.join(os.path.dirname(__file__), "../hive.png")
         icon.addFile(file_path)
         self.setWindowIcon(icon)
 
@@ -80,21 +83,8 @@ class MainWindow(QMainWindow):
         web_view.on_drag_move.connect(self._on_drag_move)
         web_view.on_dropped.connect(self._on_dropped)
 
-        USE_LOCAL_HOME = True
-
-        if USE_LOCAL_HOME:
-            # Load Help data
-            local_dir = os.path.dirname(__file__)
-            html_file_path = os.path.join(local_dir, "home.html")
-
-            with open(html_file_path) as f:
-                html = f.read().replace("%LOCALDIR%", local_dir)
-
-            web_view.setHtml(html)
-
-        else:
-            url = QUrl("https://github.com/agoose77/hive2/wiki")
-            web_view.load(url)
+        url = QUrl("http://agoose77.github.io/hive2/")
+        web_view.setUrl(url)
 
         # Load home page
         self._web_view = web_view

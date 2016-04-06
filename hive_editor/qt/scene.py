@@ -34,7 +34,8 @@
 
 from __future__ import print_function, absolute_import
 
-from .qt_gui import *
+from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtGui import QColor, QPen, QPainter
 
 
 class NodeUIScene(QGraphicsScene):

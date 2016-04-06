@@ -2,13 +2,13 @@
 #
 # This file is part of WikiParser (http://thewikiblog.appspot.com/).
 # Adapted for use in Hive2 - 2016
+from sys import version_info
 
-from .qt_gui import QTextEdit, QFont, QSyntaxHighlighter, QColor, QTextCharFormat
-from .qt_core import Signal
+from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtGui import QFont, QSyntaxHighlighter, QColor, QTextCharFormat
 from pygments.formatter import Formatter
 from pygments.lexers import get_lexer_by_name
 from pygments import highlight
-from sys import version_info
 
 
 def hex_to_qcolor(c):

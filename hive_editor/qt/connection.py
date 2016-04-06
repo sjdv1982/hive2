@@ -2,8 +2,10 @@ import weakref
 from math import *
 from operator import sub
 
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtWidgets import QGraphicsItem
+from PyQt5.QtCore import QPointF, Qt, QLineF, QRectF, QSizeF, QTimer
+from PyQt5.QtGui import QPainterPath, QVector2D, QPen, QColor
+
 from .socket import Socket
 
 
@@ -49,7 +51,7 @@ class Connection(QGraphicsItem):
     _end_socket = None
 
     def __init__(self, start_socket, end_socket=None, id_=None, style="solid", curve=True):
-        QGraphicsItem.__init__(self, None, start_socket.scene())
+        QGraphicsItem.__init__(self, None)
 
         if id_ is None:
             id_ = id(self)
@@ -227,7 +229,8 @@ class Connection(QGraphicsItem):
                 if previous_point is not None:
                     segment = QLineF(previous_point, point)
 
-                    intersect_type, intersect_point = COMPAT_QT_do_intersection(segment, line)
+                    intersect_point = QPointF()
+                    intersect_type = segment.intersect(line, intersect_point)
 
                     if intersect_type == QLineF.BoundedIntersection:
                         return True
@@ -280,9 +283,6 @@ class Connection(QGraphicsItem):
         self.update()
 
     def on_deleted(self):
-        if self.scene():
-            self.scene().removeItem(self)
-
         self.set_end_socket(None)
         self.set_start_socket(None)
 

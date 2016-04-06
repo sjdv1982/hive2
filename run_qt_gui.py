@@ -1,13 +1,13 @@
 # Import PySide classes
 import ctypes
 import sys
+from logging import getLogger, StreamHandler, Formatter, DEBUG
 
-import hive_editor.qt as any_qt
+from PyQt5.QtWidgets import QApplication
+
 import hive_editor.qt.qdarkstyle as qdarkstyle
 from hive_editor.qt.main_window import MainWindow
-from hive_editor.qt.qt_gui import *
 
-from logging import getLogger, StreamHandler, Formatter, DEBUG
 
 # Setup logging
 logger = getLogger()
@@ -21,7 +21,7 @@ logger.setLevel(DEBUG)
 if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=any_qt.IS_PYSIDE))
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 
     # Fix for windows tray icon
     app_id = 'hive2.hive2.1.0'

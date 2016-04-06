@@ -1,5 +1,3 @@
-from .qt_core import *
-from .qt_gui import *
 # <license>
 # Copyright (C) 2011 Andrea Interguglielmi, All rights reserved.
 # This file is part of the coral repository downloaded from http://code.google.com/p/coral-repo.
@@ -38,8 +36,13 @@ from .qt_gui import *
 from collections import OrderedDict
 import weakref
 
+from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtWidgets import QGraphicsWidget, QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QColor, QBrush, QPen, QPainterPath
+
 from .socket import Socket
 from ..node import NodeTypes
+
 
 COLOUR_THEMES = {NodeTypes.HIVE: (0, 0, 0), NodeTypes.BEE: (92, 92, 92), NodeTypes.HELPER: (0, 0, 0, 60)}
 

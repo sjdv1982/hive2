@@ -1,6 +1,6 @@
-from .qt_gui import *
-from .utils import create_widget
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QGroupBox, QFormLayout, QVBoxLayout, QLabel
 
+from .utils import create_widget
 from ..utils import start_value_from_type
 
 

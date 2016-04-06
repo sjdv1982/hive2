@@ -1,8 +1,9 @@
 from functools import partial
 
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QWidget, QFormLayout, QFrame, QLineEdit, QPushButton
+
 from .label import QClickableLabel
-from .qt_gui import *
-from .qt_core import *
 from .utils import create_widget
 
 
@@ -46,8 +47,8 @@ class NodeContextPanelBase(QWidget):
 
 
 class ArgumentsPanel(NodeContextPanelBase):
-    do_morph_node = Signal(object)
-    set_param_value = Signal(object, str, str, object)
+    do_morph_node = pyqtSignal(object)
+    set_param_value = pyqtSignal(object, str, str, object)
 
     def _update_layout(self, node):
         layout = self._layout
@@ -122,8 +123,8 @@ class ArgumentsPanel(NodeContextPanelBase):
 
 
 class ConfigurationPanel(ArgumentsPanel):
-    rename_node = Signal(object, str)
-    on_import_path_clicked = Signal(str)
+    rename_node = pyqtSignal(object, str)
+    on_import_path_clicked = pyqtSignal(str)
 
     def _update_layout(self, node):
         layout = self._layout
@@ -143,12 +144,12 @@ class ConfigurationPanel(ArgumentsPanel):
 
 
 class FoldingPanel(NodeContextPanelBase):
-    fold_pin = Signal(object)
-    unfold_pin = Signal(object)
+    fold_pin = pyqtSignal(object)
+    unfold_pin = pyqtSignal(object)
 
     # For nested configurations
-    do_morph_node = Signal(object)
-    set_param_value = Signal(object, str, str, object)
+    do_morph_node = pyqtSignal(object)
+    set_param_value = pyqtSignal(object, str, str, object)
 
     def _fold_antenna(self, pin):
         self.fold_pin.emit(pin)

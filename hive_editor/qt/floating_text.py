@@ -1,4 +1,5 @@
-from .qt_gui import *
+from PyQt5.QtWidgets import QGraphicsWidget, QGraphicsSimpleTextItem, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QColor, QPainterPath, QBrush
 
 
 class FloatingTextWidget(QGraphicsWidget):

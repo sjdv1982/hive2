@@ -1,13 +1,12 @@
 from __future__ import print_function, absolute_import
 
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtCore import pyqtSignal, QEvent
+from PyQt5.QtWidgets import QTreeWidget, QAbstractItemView, QTreeWidgetItem
 
 
 class TreeWidget(QTreeWidget):
-
-    on_selected = Signal(str)
-    on_right_click = Signal(str, QEvent)
+    on_selected = pyqtSignal(str)
+    on_right_click = pyqtSignal(str, QEvent)
 
     def __init__(self, parent=None):
         QTreeWidget.__init__(self, parent)

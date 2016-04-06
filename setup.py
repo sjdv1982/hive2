@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(name='HIVE',
       version=0.1,
@@ -12,5 +12,5 @@ setup(name='HIVE',
 
       # Project uses reStructuredText, so ensure that the docutils get
       # installed or upgraded on the target machine
-      install_requires=['PyQt4', 'pygments'],
+      install_requires=['PyQt5', 'pygments'],
       )

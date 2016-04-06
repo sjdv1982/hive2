@@ -1,10 +1,10 @@
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtGui import QColor
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtWidgets import QPushButton, QColorDialog
 
 
 class QColorButton(QPushButton):
-
-    colorChanged = Signal()
+    colorChanged = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

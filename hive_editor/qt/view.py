@@ -37,9 +37,11 @@ from __future__ import print_function, absolute_import
 from functools import partial
 from operator import attrgetter
 
+from PyQt5.QtWidgets import QGraphicsView, QShortcut
+from PyQt5.QtCore import Qt, QTimer, QPoint, QEvent, QPointF, pyqtSignal, QLineF, QRectF, QSizeF
+from PyQt5.QtGui import QColor, QPainter, QKeySequence, QPainterPath, QPen, QCursor, QTransform
+
 from .floating_text import FloatingTextWidget
-from .qt_core import *
-from .qt_gui import *
 from .scene import NodeUIScene
 
 
@@ -55,7 +57,7 @@ class NodePreviewView(QGraphicsView):
 
         self.setScene(NodeUIScene())
         self._preview_update_timer = QTimer(self)
-        self.setSceneRect(-5000, -5000, 10000, 10000)
+        # self.setSceneRect(-5000, -5000, 10000, 10000)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -95,21 +97,22 @@ class NodePreviewView(QGraphicsView):
 
 class NodeView(QGraphicsView):
     DEBUGGING_COLOR = QColor(255, 0, 0)
+    MOUSE_STEPS = 15
 
-    on_connection_created = Signal(object, object)
-    on_connection_reordered = Signal(object, int)
-    on_connections_destroyed = Signal(list)
+    on_connection_created = pyqtSignal(object, object)
+    on_connection_reordered = pyqtSignal(object, int)
+    on_connections_destroyed = pyqtSignal(list)
 
-    on_nodes_moved = Signal(object)
-    on_nodes_deleted = Signal(list)
+    on_nodes_moved = pyqtSignal(object)
+    on_nodes_deleted = pyqtSignal(list)
 
-    on_node_selected = Signal(object)
-    on_node_deselected = Signal(object)
-    on_node_right_click = Signal(object, QEvent)
-    on_socket_interact = Signal(object)
+    on_node_selected = pyqtSignal(object)
+    on_node_deselected = pyqtSignal(object)
+    on_node_right_click = pyqtSignal(object, QEvent)
+    on_socket_interact = pyqtSignal(object)
 
-    on_drag_move = Signal(QEvent)
-    on_dropped = Signal(QEvent, QPoint)
+    on_drag_move = pyqtSignal(QEvent)
+    on_dropped = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, parent=None):
         QGraphicsView.__init__(self, parent)
@@ -201,6 +204,7 @@ class NodeView(QGraphicsView):
 
     def add_connection(self, gui_connection):
         self._connections.add(gui_connection)
+        self.scene().addItem(gui_connection)
 
     def remove_connection(self, gui_connection):
         # Unset active connection
@@ -208,6 +212,8 @@ class NodeView(QGraphicsView):
             self._active_connection = None
 
         self._connections.remove(gui_connection)
+        self.scene().removeItem(gui_connection)
+        print("REMOVE")
 
     def reorder_connection(self, gui_connection, index):
         output_socket = gui_connection.start_socket
@@ -504,14 +510,9 @@ class NodeView(QGraphicsView):
             QGraphicsView.mouseReleaseEvent(self, mouseEvent)
 
     def wheelEvent(self, event):
-        if event.orientation() == Qt.Vertical:
-            delta = event.delta()
-
-            if delta > 0:
-                self.zoom += 0.05
-
-            else:
-                self.zoom -= 0.05
+        degrees = event.angleDelta() / 8
+        steps = degrees / self.MOUSE_STEPS
+        self.zoom += self._zoom_increment * steps.y()
 
     @property
     def zoom(self):

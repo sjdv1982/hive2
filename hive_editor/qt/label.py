@@ -1,10 +1,10 @@
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QCursor
 
 
 class QClickableLabel(QLabel):
-
-    clicked = Signal()
+    clicked = pyqtSignal()
 
     def leaveEvent(self, event):
         self.setCursor(QCursor(Qt.ArrowCursor))

@@ -1,12 +1,11 @@
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtWidgets import QTabWidget, QTabBar
+from PyQt5.QtCore import pyqtSignal
 
 
 class TabViewWidget(QTabWidget):
-
-    on_changed = Signal(int)
-    on_removed = Signal(int)
-    on_inserted = Signal(int)
+    on_changed = pyqtSignal(int)
+    on_removed = pyqtSignal(int)
+    on_inserted = pyqtSignal(int)
 
     def __init__(self):
         QTabWidget.__init__(self)

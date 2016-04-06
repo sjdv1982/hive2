@@ -1,12 +1,14 @@
 from collections import OrderedDict
-from hive import is_subtype
 from sys import float_info
 
+from PyQt5.QtWidgets import QSpinBox, QLineEdit, QDoubleSpinBox, QWidget, QHBoxLayout, QCheckBox, QComboBox, QToolButton
+from PyQt5.QtGui import QColor, QIcon, QPixmap
+
+from hive import is_subtype
 from .colour_button import QColorButton
 from .code_editor import CodeEditor
-from .qt_gui import QSpinBox, QLineEdit, QDoubleSpinBox, QWidget, QHBoxLayout, QCheckBox, QComboBox, \
-    QColor, QToolButton, QIcon, QPixmap
 from ..observer import Observable
+
 
 MAX_INT = 2 ** 16 - 1
 MAX_FLOAT = float_info.max

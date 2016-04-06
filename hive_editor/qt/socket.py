@@ -36,8 +36,10 @@ from __future__ import print_function, absolute_import
 
 import weakref
 
-from .qt_core import *
-from .qt_gui import *
+from PyQt5.QtWidgets import QGraphicsItem
+from PyQt5.QtGui import QPen, QColor, QBrush
+from PyQt5.QtCore import QRectF, Qt
+
 from ..node_manager import NodeConnectionError
 from ..sockets import SocketTypes
 
@@ -73,7 +75,7 @@ class Socket(QGraphicsItem):
 
         self._pen.setWidthF(1.0)
 
-        self.setAcceptsHoverEvents(True)
+        self.setAcceptHoverEvents(True)
         self.setToolTip(hover_text)
 
         self._dragging_connection = None
@@ -198,12 +200,13 @@ class Socket(QGraphicsItem):
 
             if self.is_output:
                 connection = self._dragging_connection = Connection(self)
+                self.scene().addItem(connection)
                 connection.setActive(False)
                 connection.show()
 
         elif event.button() == Qt.MiddleButton or \
                 (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
-            print("INTER")
+
             self.parent_node_ui.view.gui_on_socket_interact(self)
 
     def mouseMoveEvent(self, event):
@@ -229,6 +232,8 @@ class Socket(QGraphicsItem):
                 target_socket = connection.find_closest_socket()
 
                 connection.on_deleted()
+                self.scene().removeItem(connection)
+
                 self._dragging_connection = None
 
                 if target_socket is not None:
