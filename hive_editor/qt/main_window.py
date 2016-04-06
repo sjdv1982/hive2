@@ -425,7 +425,8 @@ class MainWindow(QMainWindow):
 
         completer = QCompleter()
         completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
-        completer.setCaseSensitivity(Qt.CaseSensitive)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchContains)
 
         editor.setCompleter(completer)
 
