@@ -113,7 +113,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget, controller = create_widget(inspector_option.data_type, inspector_option.options)
                 widget.controller = controller
 
-                def on_changed(value, name=name):
+                def on_changed(value, name=name, wrapper_name=wrapper_name):
                     self.set_param_value.emit(node, wrapper_name, name, value)
 
                 controller.value = value
