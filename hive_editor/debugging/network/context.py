@@ -192,7 +192,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
     @lru_cache()
     def _get_hivemap_connections(self, file_path):
         hivemap = model.Hivemap.fromfile(file_path)
-        name_to_hive = {hive.identifier: hive for hive in hivemap.hives}
+        name_to_hive = {n.identifier: n for n in hivemap.nodes if n.family == "HIVE"}
 
         connections = set()
 
