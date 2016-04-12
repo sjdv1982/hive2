@@ -1,6 +1,17 @@
 import hive
+import string
 
 from ..event import EventHandler
+
+_SPECIAL_KEYCODES = ['left_control', 'left_shift', 'right_alt', 'right_control', 'left_alt', 'space', 'escape', 'home',
+                     'insert', 'backspace', 'shift', 'right_shift', 'page_up', 'page_down', 'tab', 'delete', 'end',
+                     'enter',
+                     'arrow_up', 'arrow_down', 'arrow_left', 'arrow_right']
+
+ALL_KEYCODES = list(string.ascii_lowercase)
+ALL_KEYCODES.extend(string.digits)
+ALL_KEYCODES.extend(string.punctuation)
+ALL_KEYCODES.extend(_SPECIAL_KEYCODES)
 
 
 class Keyboard_:
@@ -64,8 +75,8 @@ def build_keyboard(cls, i, ex, args, meta_args):
     if meta_args.mode == 'single key':
         ex.on_event = hive.socket(cls.add_single_listener, identifier="event.add_handler")
 
-        args.key = hive.parameter("str", "w")
-        i.key = hive.property(cls, "key", "str", args.key)
+        args.key = hive.parameter("str.keycode", "w")
+        i.key = hive.property(cls, "key", "str.keycode", args.key)
 
         i.push_key = hive.push_in(i.key)
         ex.key = hive.antenna(i.push_key)
@@ -86,11 +97,11 @@ def build_keyboard(cls, i, ex, args, meta_args):
     else:
         ex.on_event = hive.socket(cls.add_any_listener, identifier="event.add_handler")
 
-        i.key_pressed = hive.property(cls, 'key_pressed', data_type='str')
+        i.key_pressed = hive.property(cls, 'key_pressed', data_type='str.keycode')
         i.pull_key_pressed = hive.push_out(i.key_pressed)
         ex.key_pressed = hive.output(i.pull_key_pressed)
 
-        i.key_released = hive.property(cls, 'key_released', data_type='str')
+        i.key_released = hive.property(cls, 'key_released', data_type='str.keycode')
         i.pull_key_released = hive.push_out(i.key_released)
         ex.key_released = hive.output(i.pull_key_released)
 

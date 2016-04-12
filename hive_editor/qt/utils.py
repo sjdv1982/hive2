@@ -7,6 +7,7 @@ from PyQt5.QtGui import QColor, QIcon, QPixmap
 from hive import is_subtype
 from .colour_button import QColorButton
 from .code_editor import CodeEditor
+from .key_selector import QKeySelector
 from ..observer import Observable
 
 
@@ -54,6 +55,23 @@ def _create_str():
         controller._on_changed()
 
     widget.textChanged.connect(on_changed)
+    controller.__on_changed = on_changed
+
+    return widget, controller
+
+
+def _create_key():
+    widget = QKeySelector()
+
+    getter = widget.keycode
+    setter = lambda value: widget.setKeycode(value)
+
+    controller = WidgetController(getter, setter)
+
+    def on_changed(value=None):
+        controller._on_changed()
+
+    widget.keySelected.connect(on_changed)
     controller.__on_changed = on_changed
 
     return widget, controller
@@ -243,6 +261,7 @@ def _create_tuple():
 
 _factories = OrderedDict((
     ('str.code', _create_code),
+    ('str.keycode', _create_key),
     ('str', _create_str),
     ('int', _create_int),
     ('float', _create_float),
