@@ -31,5 +31,3 @@
 [ ] Remove panda and blender from app/
     
 [ ] Make Vector, Euler, Quaternion (...) types operable (add, subtract)
-
-[ ] Support keyboard modifier keys
