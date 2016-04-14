@@ -6,7 +6,7 @@ def declare_complex(meta_args):
 
 
 def build_complex(i, ex, args, meta_args):
-    """Compose/decompose complex number"""
+    """Compose/decompose/conjugate complex number"""
     i.value = hive.attribute('complex')
 
     if meta_args.mode == 'compose':
