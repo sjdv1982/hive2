@@ -427,14 +427,15 @@ class MainWindow(QMainWindow):
         completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         completer.setFilterMode(Qt.MatchContains)
+        completer.setModelSorting(QCompleter.CaseInsensitivelySortedModel)
 
         editor.setCompleter(completer)
 
         model = QStringListModel()
-        completer.setModel(model)
-
         completion_paths = list(dict_to_delimited(self.hive_finder.find_hives(), '.'))
         model.setStringList(completion_paths)
+
+        completer.setModel(model)
 
         def on_return():
             widget = self.tab_widget.currentWidget()

@@ -5,8 +5,7 @@ from ..event import EventHandler
 
 _SPECIAL_KEYCODES = ['left_control', 'left_shift', 'right_alt', 'right_control', 'left_alt', 'space', 'escape', 'home',
                      'insert', 'backspace', 'shift', 'right_shift', 'page_up', 'page_down', 'tab', 'delete', 'end',
-                     'enter',
-                     'arrow_up', 'arrow_down', 'arrow_left', 'arrow_right']
+                     'enter', 'arrow_up', 'arrow_down', 'arrow_left', 'arrow_right']
 
 ALL_KEYCODES = list(string.ascii_lowercase)
 ALL_KEYCODES.extend(string.digits)
