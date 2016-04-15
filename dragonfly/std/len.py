@@ -5,13 +5,9 @@ def do_len(self):
     self._length = len(self._object)
 
 
-def declare_len(meta_args):
-    meta_args.data_type = hive.parameter('str', 'list')
-
-
 def build_len(i, ex, args, meta_args):
     """Determine length of object"""
-    i.object = hive.attribute(meta_args.data_type)
+    i.object = hive.attribute()
     i.pull_object = hive.pull_in(i.object)
     ex.object = hive.antenna(i.pull_object)
 
@@ -25,4 +21,4 @@ def build_len(i, ex, args, meta_args):
     hive.trigger(i.pull_object, i.do_length)
 
 
-Len = hive.dyna_hive("Len", build_len, declare_len)
+Len = hive.hive("Len", build_len)
