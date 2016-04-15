@@ -30,6 +30,7 @@ class QKeySelector(QPushButton):
     def _listenForEvent(self):
         self._listening = True
         self.setText('Waiting for key...')
+        self.grabKeyboard()
 
     def _stopListening(self):
         self._listening = None
@@ -42,3 +43,6 @@ class QKeySelector(QPushButton):
         key_name = pressed_key[len("Key_"):].lower()
         self.setKeycode(key_name)
         self._stopListening()
+
+        event.accept()
+        self.releaseKeyboard()

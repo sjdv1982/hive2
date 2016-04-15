@@ -134,16 +134,6 @@ class NodeView(QGraphicsView):
 
         self.setMouseTracking(True)
 
-        QShortcut(QKeySequence("Delete"), self, self._on_del_key)
-        QShortcut(QKeySequence("Backspace"), self, self._on_backspace_key)
-        QShortcut(QKeySequence("Tab"), self, self._on_tab_key)
-        QShortcut(QKeySequence("+"), self, self._on_plus_key)
-        QShortcut(QKeySequence("-"), self, self._on_minus_key)
-
-        for num in range(1, 10):
-            func = partial(self._on_num_key, num)
-            QShortcut(QKeySequence(str(num)), self, func)
-
         # Path editing
         self._cut_start_position = None
         self._slice_path = None
@@ -213,7 +203,6 @@ class NodeView(QGraphicsView):
 
         self._connections.remove(gui_connection)
         self.scene().removeItem(gui_connection)
-        print("REMOVE")
 
     def reorder_connection(self, gui_connection, index):
         output_socket = gui_connection.start_socket
@@ -308,9 +297,6 @@ class NodeView(QGraphicsView):
 
     def _on_backspace_key(self):
         self._on_del_key()
-
-    def _on_tab_key(self):
-        pass
 
     def _on_plus_key(self):
         active_connection = self._active_connection
@@ -513,6 +499,21 @@ class NodeView(QGraphicsView):
         degrees = event.angleDelta() / 8
         steps = degrees / self.MOUSE_STEPS
         self.zoom += self._zoom_increment * steps.y()
+
+    def keyPressEvent(self, event):
+        button = event.key()
+
+        if event.modifiers() == Qt.NoModifier:
+            if button in (Qt.Key_Delete, Qt.Key_Backspace):
+                self._on_del_key()
+
+            elif button == Qt.Key_Plus:
+                self._on_plus_key()
+
+            elif button == Qt.Key_Minus:
+                self._on_minus_key()
+
+        super().keyPressEvent(event)
 
     @property
     def zoom(self):

@@ -1,20 +1,32 @@
 from functools import partial
 
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QWidget, QFormLayout, QFrame, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QFrame, QLineEdit, QPushButton, QScrollArea
 
 from .label import QClickableLabel
 from .utils import create_widget
 
 
+# TODO fix scrolling
 class NodeContextPanelBase(QWidget):
+
     def __init__(self):
         QWidget.__init__(self)
 
         self._node = None
 
         self._layout = QFormLayout()
-        self.setLayout(self._layout)
+
+        self._widget = QWidget()
+        self._widget.setLayout(self._layout)
+
+        self._scroll_widget = QScrollArea()
+        self._scroll_widget.setWidgetResizable(True)
+        self._scroll_widget.setWidget(self._widget)
+
+        self._main_layout = QVBoxLayout()
+        self._main_layout.addWidget(self._scroll_widget)
+        self.setLayout(self._main_layout)
 
     @property
     def node(self):
@@ -50,21 +62,30 @@ class ArgumentsPanel(NodeContextPanelBase):
     do_morph_node = pyqtSignal(object)
     set_param_value = pyqtSignal(object, str, str, object)
 
+    def __init__(self, show_meta=True, show_compact=False):
+        self._show_meta = show_meta
+        self._show_compact = show_compact
+
+        super().__init__()
+
     def _update_layout(self, node):
         layout = self._layout
 
         # Meta Args
         meta_args = node.params.get('meta_args')
-        if meta_args:
+        if meta_args and self._show_meta:
             meta_arg_data = node.params_info["meta_args"]
 
             # Create container
-            box = QFrame()
-            layout.addRow(self.tr("Meta Args"), box)
+            if self._show_compact:
+                this_layout = layout
 
-            box.setFrameShape(QFrame.StyledPanel)
-            box_layout = QFormLayout()
-            box.setLayout(box_layout)
+            else:
+                box = QFrame()
+                box.setFrameShape(QFrame.StyledPanel)
+                this_layout = QFormLayout()
+                box.setLayout(this_layout)
+                layout.addRow(self.tr("Meta Args"), box)
 
             for name, value in meta_args.items():
                 try:
@@ -80,14 +101,14 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget.setEnabled(False)
                 controller.value = value
 
-                box_layout.addRow(self.tr(name), widget)
+                this_layout.addRow(self.tr(name), widget)
 
             edit_button = QPushButton('Re-configure')
             edit_button.setToolTip("Re-create this node with new meta-args, and attempt to preserve state")
 
             edit_button.clicked.connect(lambda: self.do_morph_node.emit(node))
 
-            box_layout.addRow(edit_button)
+            this_layout.addRow(edit_button)
 
         # Args
         for wrapper_name, title_name in (("args", "Builder Args"), ("cls_args", "Class Args")):
@@ -99,12 +120,14 @@ class ArgumentsPanel(NodeContextPanelBase):
             arg_data = node.params_info[wrapper_name]
 
             # Create container
-            box = QFrame()
-            layout.addRow(self.tr(title_name), box)
-
-            box.setFrameShape(QFrame.StyledPanel)
-            box_layout = QFormLayout()
-            box.setLayout(box_layout)
+            if self._show_compact:
+                this_layout = layout
+            else:
+                box = QFrame()
+                box.setFrameShape(QFrame.StyledPanel)
+                this_layout = QFormLayout()
+                box.setLayout(this_layout)
+                layout.addRow(self.tr(title_name), box)
 
             for name, value in args.items():
                 # Get data type
@@ -119,7 +142,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                 controller.value = value
                 controller.on_changed.subscribe(on_changed)
 
-                box_layout.addRow(self.tr(name), widget)
+                this_layout.addRow(self.tr(name), widget)
 
 
 class ConfigurationPanel(ArgumentsPanel):
@@ -181,7 +204,7 @@ class FoldingPanel(NodeContextPanelBase):
                 button.clicked.connect(on_clicked)
 
                 # Display inline configuration of folded pin
-                widget = ArgumentsPanel()
+                widget = ArgumentsPanel(show_meta=False, show_compact=True)
                 widget.set_param_value.connect(self.set_param_value)
                 widget.do_morph_node.connect(self.do_morph_node)
 
