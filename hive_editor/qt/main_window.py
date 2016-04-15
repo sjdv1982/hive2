@@ -108,7 +108,8 @@ class MainWindow(QMainWindow):
                                             triggered=self.close_project)
         self.refresh_project_action = QAction("Reload Project", menu_bar, statusTip="Reload the current project",
                                               triggered=self.reload_project)
-        self.insert_action = QAction("&Insert", menu_bar, shortcut=QKeySequence(self.tr(".", "  Insert from path")),
+        self.insert_action = QAction("&Insert", menu_bar, shortcut=QKeySequence(self.tr("CTRL+SPACE",
+                                                                                        "Insert from import path")),
                                      statusTip="Insert node from path", triggered=self.insert_from_path)
         self.select_all_action = QAction("Select &All", menu_bar, shortcut=QKeySequence.SelectAll,
                                          statusTip="Select all nodes", triggered=self.select_all_operation)
