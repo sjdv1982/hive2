@@ -1,11 +1,6 @@
 import hive
 
 
-def empty_iterable():
-    raise StopIteration
-    yield
-
-
 def declare_foreach(meta_args):
     meta_args.data_type = hive.parameter("str", "int")
 

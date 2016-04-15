@@ -12,7 +12,7 @@ def build_zip(i, ex, args):
     ex.a = hive.antenna(i.pull_a)
     ex.b = hive.antenna(i.pull_b)
 
-    i.result = hive.attribute()
+    i.result = hive.attribute("iterator")
     i.pull_result = hive.pull_out(i.result)
     ex.result = hive.output(i.pull_result)
 

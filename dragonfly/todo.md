@@ -8,21 +8,23 @@
 [x] Make entity API more component-like 
 
 ## String
-[ ] Startswith
+[x] Startswith
 [ ] Strip
-[ ] Replace
+[x] Replace
 [ ] Split
 [ ] Is [alpha, alphanum ...] PULL out bool
 
 ## Numeric
-[ ] Abs
+[x] Abs
 
 ## Complex
-[ ] Real
-[ ] Imag
-[ ] Conjugate
+[x] Real
+[x] Imag
+[x] Conjugate
 
-[ ] Maybe have List, tuple, ... directories
+[ ] Maybe have List, tuple, ... dicts
+[ ] Make list, tuple etc pull in container
+[ ] Dict has get/set item {pull in}, view (keys, items, values), pop, setdefault, get
 
 [ ] Read File [PUSH|lines, length, ...]
 [ ] Write File # Maybe both of these replace input/print, and we optionally allow stdin? (advanced mode?)
