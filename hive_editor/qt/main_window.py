@@ -1,5 +1,8 @@
 import os
 import webbrowser
+import subprocess
+from sys import executable as EXECUTABLE_PATH
+from os import path
 from functools import partial
 
 from PyQt5.QtCore import Qt, QUrl, QStringListModel
@@ -12,6 +15,8 @@ from .node_editor import NodeEditorSpace
 from .tabs import TabViewWidget
 from .tree import TreeWidget
 from .web_view import QEditorWebView
+
+from .. import tools
 from ..finder import found_bees, HiveFinder
 from ..importer import clear_imported_hivemaps, get_hook
 from ..node import NodeTypes
@@ -145,6 +150,12 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(self.console_window.toggleViewAction())
         self.view_menu.addAction(self.preview_window.toggleViewAction())
 
+        self.run_menu = QMenu("&Run")
+        self.run_panda_action = QAction("Launch &Panda3D", menu_bar,
+                                        shortcut=QKeySequence(self.tr("CTRL+P", "Launch  in Panda3D")),
+                                        triggered=self._launch_panda3d)
+        self.run_menu.addAction(self.run_panda_action)
+
         self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
                                    triggered=self.goto_help_page)
 
@@ -224,6 +235,14 @@ class MainWindow(QMainWindow):
                 editor = self.add_editor_space()
 
             editor.add_node_at(position, *self._accept_dropped_node_info())
+
+    def _launch_panda3d(self):
+        interpreter_path = EXECUTABLE_PATH
+        editor = self.tab_widget.currentWidget()
+
+        launch_path = path.join(tools.__path__[0], "launch_panda.py")
+        commands = [interpreter_path, launch_path, editor.file_path, "debug"]
+        process = subprocess.Popen(commands)
 
     def closeEvent(self, event):
         try:
@@ -366,7 +385,7 @@ class MainWindow(QMainWindow):
         show_save_as = False
 
         show_edit = False
-
+        show_run = False
         show_insert = False
 
         menu_bar = self.menuBar()
@@ -388,6 +407,7 @@ class MainWindow(QMainWindow):
             show_save_as = True
             show_save = widget.file_path is not None
             show_edit = True
+            show_run = True
             show_insert = True
 
         self.save_action.setVisible(show_save)
@@ -406,6 +426,9 @@ class MainWindow(QMainWindow):
 
         if show_edit:
             menu_bar.addMenu(self.edit_menu)
+
+        if show_run:
+            menu_bar.addMenu(self.run_menu)
 
         menu_bar.addAction(self.help_action)
 
