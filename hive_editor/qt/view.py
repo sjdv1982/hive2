@@ -298,7 +298,7 @@ class NodeView(QGraphicsView):
     def _on_backspace_key(self):
         self._on_del_key()
 
-    def _on_plus_key(self):
+    def _on_key_up(self):
         active_connection = self._active_connection
         if active_connection is not None:
             start_socket = active_connection.start_socket
@@ -308,9 +308,9 @@ class NodeView(QGraphicsView):
 
         focused_socket = self.focused_socket
         if focused_socket is not None:
-            focused_socket._on_plus_key()
+            focused_socket._on_key_up()
 
-    def _on_minus_key(self):
+    def _on_key_down(self):
         active_connection = self._active_connection
         if active_connection is not None:
             start_socket = active_connection.start_socket
@@ -320,7 +320,7 @@ class NodeView(QGraphicsView):
 
         focused_socket = self.focused_socket
         if focused_socket is not None:
-            focused_socket._on_minus_key()
+            focused_socket._on_key_down()
 
     def _on_num_key(self, num):
         pass
@@ -503,15 +503,15 @@ class NodeView(QGraphicsView):
     def keyPressEvent(self, event):
         button = event.key()
 
-        if event.modifiers() == Qt.NoModifier:
+        if event.modifiers() in (Qt.NoModifier, Qt.KeypadModifier):
             if button in (Qt.Key_Delete, Qt.Key_Backspace):
                 self._on_del_key()
 
-            elif button == Qt.Key_Plus:
-                self._on_plus_key()
+            elif button == Qt.Key_Up:
+                self._on_key_up()
 
-            elif button == Qt.Key_Minus:
-                self._on_minus_key()
+            elif button == Qt.Key_Down:
+                self._on_key_down()
 
         super().keyPressEvent(event)
 

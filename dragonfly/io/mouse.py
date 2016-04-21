@@ -15,6 +15,9 @@ class Mouse_:
         self.pos_x = 0.0
         self.pos_y = 0.0
 
+        self.dx = 0.0
+        self.dy = 0.0
+
         self.is_pressed = False
 
     def _on_button_down(self):
@@ -26,7 +29,16 @@ class Mouse_:
         self._hive._on_released()
 
     def on_moved(self, leader):
-        self.pos_x, self.pos_y = leader[0]
+        old_x = self.pos_x
+        old_y = self.pos_y
+        pos_x, pos_y = leader[0]
+
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+
+        self.dx = pos_x - old_x
+        self.dy = pos_y - old_y
+
         self._hive._on_moved()
 
     def get_pattern(self, state):
@@ -73,6 +85,14 @@ def build_mouse(cls, i, ex, args):
     i.pos_y = hive.property(cls, "pos_y", "float")
     i.pull_y = hive.pull_out(i.pos_y)
     ex.y = hive.output(i.pull_y)
+
+    i.dx = hive.property(cls, "dx", "float")
+    i.pull_dx = hive.pull_out(i.dx)
+    ex.dx = hive.output(i.pull_dx)
+
+    i.dy = hive.property(cls, "dy", "float")
+    i.pull_dy = hive.pull_out(i.dy)
+    ex.dy = hive.output(i.pull_dy)
 
     i.is_pressed = hive.property(cls, "is_pressed", "bool")
     i.pull_is_pressed = hive.pull_out(i.is_pressed)

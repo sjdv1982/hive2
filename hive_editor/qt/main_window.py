@@ -183,8 +183,9 @@ class MainWindow(QMainWindow):
         self.console_window = self.create_subwindow("Console", "bottom", closeable=True)
         self.debug_window = self.create_subwindow("Debugging", "bottom", closeable=True)
 
-        # Close breakpoints by default
+        # Close breakpoints and console windows by default
         self.debug_window.close()
+        self.console_window.close()
 
         # Make tabs
         self.tabifyDockWidget(self.bee_window, self.hive_window)
