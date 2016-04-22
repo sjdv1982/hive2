@@ -12,6 +12,7 @@ with definition.condition(forward_events != "none"):
     definition.forward_plugin("event.add_handler", declare_for_environment=False)
     definition.forward_plugin("event.remove_handler", declare_for_environment=False)
 
+
 factory = definition.build("BindEvent")
 
 
@@ -64,7 +65,7 @@ def build_bind(cls, i, ex, args, meta_args):
     ex.on_created = hive.plugin(cls.on_created, "bind.on_created")
 
 
-BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=factory.external_declarator, builder_cls=EventBindClass)
+_BindEvent = hive.dyna_hive("BindEvent", build_bind, declarator=factory.external_declarator, builder_cls=EventBindClass)
 
 
 class EventEnvironmentClass(factory.create_environment_class()):
@@ -151,15 +152,15 @@ def build_event_environment(cls, i, ex, args, meta_args):
     ex.resume_events = hive.entry(i.resume_events)
 
 
-EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
+_EventEnvironment = hive.meta_hive("EventEnvironment", build_event_environment, declare_event_environment,
                                   builder_cls=EventEnvironmentClass)
 
 
 def get_environment(meta_args):
     if meta_args.forward_events != 'none':
-        return EventEnvironment
+        return _EventEnvironment
 
     return None
 
 
-bind_info = BindInfo(factory.name, BindEvent, get_environment)
+bind_info = BindInfo(factory.name, _BindEvent, get_environment)

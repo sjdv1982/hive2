@@ -1,9 +1,9 @@
 from __future__ import print_function
 
+import hive
 import time
 
-import hive
-from ..sys.process import Process
+from ..sys.process import Process as _Process
 
 
 class _Mainloop(object):
@@ -67,4 +67,4 @@ def build_mainloop(cls, i, ex, args):
     ex.quit = hive.plugin(cls.stop, identifier="app.quit")
 
 
-Mainloop = Process.extend("Mainloop", build_mainloop, _Mainloop)
+Mainloop = _Process.extend("Mainloop", build_mainloop, _Mainloop)

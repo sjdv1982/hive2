@@ -129,7 +129,7 @@ def build_entity_environment(cls, i, ex, args, meta_args):
     ex.bound_destroy = hive.plugin(cls.bound_destroy, "entity.bound.destroy")
 
 
-EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment, factory.environment_declarator,
+_EntityEnvironment = hive.meta_hive("EntityEnvironment", build_entity_environment, factory.environment_declarator,
                                    builder_cls=EntityEnvironmentClass)
 
 
@@ -159,14 +159,14 @@ def build_bind(cls, i, ex, args, meta_args):
         ex.entity_id = hive.antenna(i.pull_entity_id)
 
 
-BindEntity = hive.dyna_hive("BindEntity", build_bind, declarator=factory.external_declarator, builder_cls=EntityCls)
+_BindEntity = hive.dyna_hive("BindEntity", build_bind, declarator=factory.external_declarator, builder_cls=EntityCls)
 
 
 def get_environment(meta_args):
     if meta_args.bind_entity != 'none':
-        return EntityEnvironment
+        return _EntityEnvironment
 
     return None
 
 
-bind_info = BindInfo("entity", BindEntity, get_environment)
+bind_info = BindInfo("entity", _BindEntity, get_environment)

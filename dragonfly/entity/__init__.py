@@ -1,4 +1,3 @@
-from . import actor
 from .bind import bind_info
 from .collision import Collision
 from .destroy import Destroy
