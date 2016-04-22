@@ -5,8 +5,8 @@ from .entity_manager import EntityManager
 from .physics_manager import PhysicsManager
 from .transform_manager import TransformManager
 
-from ..mainloop import Mainloop as _Mainloop
-from ...event import EventManager, EventHandler
+from ..app import Mainloop as _Mainloop
+from ..event import EventManager, EventHandler
 
 
 class MainloopClass:

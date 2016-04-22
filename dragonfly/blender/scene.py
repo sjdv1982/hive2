@@ -1,7 +1,7 @@
 import hive
 
-from ...bind import Instantiator as _Instantiator
-from ...event import bind_info as event_bind_info
+from ..bind import Instantiator as _Instantiator
+from ..event import bind_info as event_bind_info
 
 bind_infos = (event_bind_info,)
 
