@@ -5,7 +5,7 @@ def do_len(self):
     self._length = len(self._object)
 
 
-def build_len(i, ex, args, meta_args):
+def build_len(i, ex, args):
     """Determine length of object"""
     i.object = hive.attribute()
     i.pull_object = hive.pull_in(i.object)

@@ -1,7 +1,7 @@
 import hive
 
 
-def build_decompose(i, ex, args, meta_args):
+def build_decompose(i, ex, args):
     """Decompose complex number into real and imaginary components"""
     i.value = hive.attribute('complex')
     i.real = hive.attribute('float')

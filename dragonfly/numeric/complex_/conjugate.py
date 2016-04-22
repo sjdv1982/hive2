@@ -1,7 +1,7 @@
 import hive
 
 
-def build_conjugate(i, ex, args, meta_args):
+def build_conjugate(i, ex, args):
     """Calculate the complex conjugate of a complex number"""
     i.value = hive.attribute('complex')
     i.conjugate = hive.attribute('complex')
