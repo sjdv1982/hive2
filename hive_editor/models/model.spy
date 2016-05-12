@@ -1,0 +1,47 @@
+Type InstanceParameter {
+  String identifier
+  String data_type
+  String value
+}
+
+
+Type InstanceParameterGroup {
+    String identifier
+    InstanceParameterArray params
+}
+
+
+Type Node {
+  String identifier
+  Enum family("BEE", "HIVE")
+  String import_path
+  Coordinate2D position = Coordinate2D(0, 0)
+  InstanceParameterGroupArray parameter_groups
+  StringArray folded_pins = []
+}
+
+
+Type Connection {
+  String from_node
+  String output_name
+
+  String to_node
+  String input_name
+
+  # For trigger connections
+  Bool is_trigger
+}
+
+
+Type Parameter {
+  String identifier
+  String class_name
+}
+
+
+Type Hivemap {
+  NodeArray nodes = []
+
+  ConnectionArray connections = []
+  String docstring = ""
+}

@@ -2,15 +2,16 @@ from collections import namedtuple
 from itertools import product
 
 from .classes import HiveBee
+from .debug import get_debug_context
+from .identifiers import identifiers_match
 from .manager import get_mode, memoize, register_bee
 from .mixins import ConnectSourceBase, ConnectSourceDerived, ConnectTargetBase, ConnectTargetDerived, Bee, Bindable, \
     Exportable
-from .tuple_type import types_match
 
 ConnectionCandidate = namedtuple("ConnectionCandidate", ("bee_name", "data_type"))
 
 
-def find_connection_candidates(sources, targets, require_types=True):
+def find_connection_candidates(sources, targets, support_untyped=False):
     """Finds appropriate connections between ConnectionSources and ConnectionTargets
 
     :param sources: connection sources
@@ -23,10 +24,7 @@ def find_connection_candidates(sources, targets, require_types=True):
         source_data_type = source_candidate.data_type
         target_data_type = target_candidate.data_type
 
-        if require_types and not (source_data_type and target_data_type):
-            continue
-
-        if not types_match(source_data_type, target_data_type):
+        if not identifiers_match(source_data_type, target_data_type, support_untyped):
             continue
 
         candidates.append((source_candidate, target_candidate))
@@ -51,7 +49,7 @@ def find_connections_between_hives(source_hive, target_hive):
     candidates = find_connection_candidates(connect_sources, connect_targets)
 
     if not candidates:
-        candidates = find_connection_candidates(connect_sources, connect_targets, require_types=False)
+        candidates = find_connection_candidates(connect_sources, connect_targets)
 
     if not candidates:
         raise ValueError("No matching connections found")
@@ -68,7 +66,8 @@ def find_connections_between_hives(source_hive, target_hive):
     return source_bee, target_bee
 
 
-def build_connection(source, target):
+def resolve_endpoints(source, target):
+    """Resolve connect targets that are hives"""
     # TODO: register connection, or insert a listener function in between
     hive_source = isinstance(source, ConnectSourceDerived)
     hive_target = isinstance(target, ConnectTargetDerived)
@@ -77,19 +76,30 @@ def build_connection(source, target):
     if hive_source and hive_target:
         source, target = find_connections_between_hives(source, target)
 
-    else: 
+    else:
         if hive_source:
             source = source._hive_get_connect_source(target)
 
         elif hive_target:
             target = target._hive_get_connect_target(source)
 
+    return source, target
+
+
+def build_connection(source, target):
+    source, target = resolve_endpoints(source, target)
+
     # raises an Exception if incompatible
     source._hive_is_connectable_source(target)
     target._hive_is_connectable_target(source)
 
-    target._hive_connect_target(source)
-    source._hive_connect_source(target)
+    debug_context = get_debug_context()
+    if debug_context is not None:
+        debug_context.build_connection(source, target)
+
+    else:
+        target._hive_connect_target(source)
+        source._hive_connect_source(target)
 
 
 class Connection(Bindable):
@@ -118,13 +128,13 @@ class Connection(Bindable):
 class ConnectionBee(HiveBee):
 
     def __init__(self, source, target):
-        super().__init__()
+        super(ConnectionBee, self).__init__()
 
         self.source = source
         self.target = target
 
     def __repr__(self):
-        return "<ConnectionBee\n\t{}\n\t{}>".format(*self.args)
+        return "<{}: ({}, {})>".format(self.__class__.__name__, *self.args)
 
     @memoize
     def getinstance(self, hive_object):

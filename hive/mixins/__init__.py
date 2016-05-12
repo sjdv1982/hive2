@@ -1,6 +1,11 @@
+from collections import namedtuple
+
+BoundRuntimeInfo = namedtuple("BoundRuntimeInfo", "parent name")
+
+
 class Bee(object):
     _hive_object_cls = None
-    _hive_bee_name = ()
+    _hive_wrapper_name = None
 
     def implements(self, cls):
         return isinstance(self, cls)
@@ -16,7 +21,7 @@ class Parameter(object):
     data_type = None
     options = None
 
-    class NoValue:
+    class NoValue(object):
         pass
 
 
@@ -30,14 +35,21 @@ class Bindable(object):
     pass
 
 
+class Nameable(object):
+
+    _hive_runtime_info = None
+
+    def add_runtime_info(self, parent, name):
+        info = BoundRuntimeInfo(parent, name)
+
+        if self._hive_runtime_info is None:
+            self._hive_runtime_info = set()
+
+        self._hive_runtime_info.add(info)
+
+
 class Callable(Bee):
     pass
-
-
-class Closable(Bee):
-
-    def close(self):
-        raise NotImplementedError
 
 
 class Exportable(Bee):

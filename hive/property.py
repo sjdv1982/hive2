@@ -1,11 +1,10 @@
-from .hive import HiveMethodWrapper
-from .mixins import Stateful, Exportable, Bindable, Parameter
-from .tuple_type import tuple_type
-from .manager import get_mode, get_building_hive, memoize
 from weakref import WeakSet
 
+from .mixins import Stateful, Exportable, Bindable, Parameter, Nameable
+from .manager import get_mode, get_building_hive, memoize
 
-class Property(Stateful, Bindable, Exportable):
+
+class Property(Stateful, Bindable, Exportable, Nameable):
     """Interface to bind class attributes"""
 
     export_only = False
@@ -16,7 +15,7 @@ class Property(Stateful, Bindable, Exportable):
         self._attr = attr
         self._bound = WeakSet()
 
-        self.data_type = tuple_type(data_type)
+        self.data_type = data_type
         self.start_value = start_value
 
     def _hive_stateful_getter(self, run_hive):
@@ -50,18 +49,21 @@ class Property(Stateful, Bindable, Exportable):
         if start_value is not None or not hasattr(instance, self._attr):
 
             if isinstance(start_value, Parameter):
-                start_value = start_value.get_runtime_value(run_hive)
+                start_value = run_hive._hive_object._hive_args_frozen.get_parameter_value(start_value)
 
             setattr(instance, self._attr, start_value)
 
         return self
+
+    def __repr__(self):
+        return "<{} '{}'>".format(self.__class__.__name__, self._attr)
 
 
 def property(cls, attr, data_type=None, start_value=None):
     if get_mode() == "immediate":
         raise ValueError("hive.property cannot be used in immediate mode")
 
-    else:
-        assert isinstance(cls, HiveMethodWrapper), "hive.property(cls) must be the cls argument in" \
-                                                   " build(cls, i, ex, args)"
-        return Property(cls._cls, attr, data_type, start_value)
+    from .classes import HiveClassProxy
+    assert isinstance(cls, HiveClassProxy), "hive.property(cls) must be the cls argument in build(cls, i, ex, args)"
+
+    return Property(cls._cls, attr, data_type, start_value)

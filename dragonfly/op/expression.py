@@ -1,9 +1,11 @@
-import hive
 import ast
+import hive
 
 from math import *
+import math
 
-namespace = ("sqrt",)
+
+namespace = tuple(n for n in dir(math) if not n.startswith("_"))
 
 
 class NodeVisitor(ast.NodeVisitor):
@@ -39,6 +41,7 @@ def func(self, {}):
 
 def declare_expression(meta_args):
     meta_args.expression = hive.parameter("str", "")
+    meta_args.result_type = hive.parameter('str', "int")
 
 
 def build_expression(i, ex, args, meta_args):
@@ -52,12 +55,12 @@ def build_expression(i, ex, args, meta_args):
 
     variable_names = [x.id for x in visited_nodes if isinstance(x, ast.Name)]
 
-    i.result = hive.attribute("float")
+    i.result = hive.attribute(meta_args.result_type)
     i.pull_result = hive.pull_out(i.result)
     ex.result = hive.output(i.pull_result)
 
     for name in variable_names:
-        attribute = hive.attribute("float")
+        attribute = hive.attribute()
         setattr(i, name, attribute)
 
         pull_in = hive.pull_in(attribute)

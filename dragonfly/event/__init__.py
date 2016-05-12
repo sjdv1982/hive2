@@ -1,6 +1,8 @@
-from .event import EventHandler, EventHive, EventManager
+from .add_head import AddHead
+from .bind import bind_info
+from .dispatch import Dispatch
+from .event import EventHandler, EventManager, EventDispatcher
 from .listener import Listener
-from .quit_ import OnQuit
-from .start_ import OnStart
-from .tick import Tick
-
+from .start import OnStart
+from .stop import OnStop
+from .tick import OnTick

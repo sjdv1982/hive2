@@ -1,10 +1,7 @@
-SPECIAL_NAMES = ("parent", "implements") #TODO: auto? export?
+SPECIAL_NAMES = ("parent", "implements", "instantiate") #TODO: auto? export?
 
 from .hive_bee import HiveBee
+from .hive_wrappers import HiveExportableWrapper, HiveInternalWrapper, HiveArgsWrapper, HiveMetaArgsWrapper
+from .hive_class_proxy import HiveClassProxy
 from .pusher import Pusher
-from .hive_internal import HiveInternals
-from .hive_args import HiveArgs
-from .hive_export import HiveExportables
 from .resolve_bee import ResolveBee
-from .hive_method import Method
-

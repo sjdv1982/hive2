@@ -4,35 +4,35 @@ from hive.compatability import next
 
 
 def next_modifier(self):
-    generator = self._generator
+    iterator = self._iterator
 
-    if generator is None:
-        self._pull_generator()
-        if generator is self._generator:
+    if iterator is None:
+        self._pull_iterator()
+        if iterator is self._iterator:
             raise StopIteration("Could not pull a new generator")
 
-        generator = self._generator
+        iterator = self._iterator
 
     try:
-        self._result = next(generator)
+        self._result = next(iterator)
 
     except StopIteration:
-        self._generator = None
+        self._iterator = None
         next_modifier(self)
 
 
 def declare_next(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
 
 
 def build_next(i, ex, args, meta_args):
     """Iterate over generator object, output new value when pulled"""
-    i.generator = hive.attribute()
-    i.generator_in = hive.pull_in(i.generator)
-    ex.generator = hive.antenna(i.generator_in)
+    i.iterator = hive.attribute("iterator")
+    i.iterator_in = hive.pull_in(i.iterator)
+    ex.iterator = hive.antenna(i.iterator_in)
 
-    i.pull_generator = hive.triggerfunc()
-    hive.trigger(i.pull_generator, i.generator_in)
+    i.pull_iterator = hive.triggerfunc()
+    hive.trigger(i.pull_iterator, i.iterator_in)
 
     i.result = hive.attribute(meta_args.data_type)
     i.pull_value = hive.pull_out(i.result)

@@ -1,43 +1,43 @@
 # Import PySide classes
-import os
+import ctypes
 import sys
+from logging import getLogger, StreamHandler, Formatter, DEBUG
 
-import hive_gui.qt as pyside_gui
-import hive_gui.qt.qdarkstyle as qdarkstyle
-from hive_gui.qt.main_window import MainWindow
-from hive_gui.qt.qt_core import *
-from hive_gui.qt.qt_gui import *
-from hive_gui.qt.qt_webkit import *
+from PyQt5.QtWidgets import QApplication
+
+import hive_editor.qt.qdarkstyle as qdarkstyle
+from hive_editor.qt.main_window import MainWindow
+
+
+# Setup logging
+logger = getLogger()
+handler = StreamHandler()
+formatter = Formatter('%(asctime)s %(name)-12s %(levelname)-5s %(message)s', datefmt='%I:%M:%S %p')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(DEBUG)
+
 
 if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet(pyside=False))
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+
+    # Fix for windows tray icon
+    app_id = 'hive2.hive2.1.0'
+    try:
+        windll = ctypes.windll
+
+    except AttributeError:
+        pass
+
+    else:
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     window = MainWindow()
     window.resize(1024, 768)
 
     window.show()
-
-    # Add Help page
-    home_page = QWebView()
-
-    USE_LOCAL_HOME = True
-
-    if USE_LOCAL_HOME:
-        # Load Help data
-        local_dir = pyside_gui.__path__[0]
-        html_file_name = os.path.join(local_dir, "home.html")
-
-        with open(html_file_name) as f:
-            html = f.read().replace("%LOCALDIR%", local_dir)
-
-        home_page.setHtml(html)
-    else:
-        url = QUrl("https://github.com/agoose77/hive2/wiki")
-        home_page.load(url)
-
-    window.load_home_page(home_page)
 
     # Enter Qt application main loop
     app.exec_()

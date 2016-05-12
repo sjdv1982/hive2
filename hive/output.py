@@ -12,7 +12,7 @@ class HiveOutput(Output, Exportable):
         self._target = target
 
     def __repr__(self):
-        return "<Output: {}::{}>".format(self._hive_object_cls, self._target)
+        return "<{}: {}>".format(self.__class__.__name__, self._target)
 
     @memoize
     def export(self):

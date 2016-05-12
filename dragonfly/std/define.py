@@ -18,11 +18,13 @@ def func():
 
     return func
 
+
 def declare_define(meta_args):
     meta_args.definition = hive.parameter(("str", "code"))
 
 # GEN / FUNC modifiers operate on args - different to build
 # Call node - output generator OR result
+
 
 def build_define(i, ex, args, meta_args):
     """Define callable object from expression"""

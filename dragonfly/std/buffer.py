@@ -2,7 +2,7 @@ import hive
 
 
 def declare_buffer(meta_args):
-    meta_args.data_type = hive.parameter("tuple", ("int",))
+    meta_args.data_type = hive.parameter("str", "int")
     meta_args.mode = hive.parameter("str", "push", options={'push', 'pull'})
 
 
@@ -15,25 +15,25 @@ def build_buffer(i, ex, args, meta_args):
     Can be used to cache changing values
     """
     args.start_value = hive.parameter(meta_args.data_type, None)
-    ex.value = hive.attribute(meta_args.data_type, args.start_value)
+    i.cached_value = hive.attribute(meta_args.data_type, args.start_value)
 
     if meta_args.mode == "push":
-        i.input = hive.push_in(ex.value)
-        ex.input = hive.antenna(i.input)
+        i.push_value = hive.push_in(i.cached_value)
+        ex.value = hive.antenna(i.push_value)
 
-        i.output = hive.push_out(ex.value)
-        ex.output = hive.output(i.output)
+        i.push_cached_value = hive.push_out(i.cached_value)
+        ex.cached_value = hive.output(i.push_cached_value)
 
-        ex.trigger = hive.entry(i.output)
+        ex.output = hive.entry(i.push_cached_value)
 
     elif meta_args.mode == "pull":
-        i.input = hive.pull_in(ex.value)
-        ex.input = hive.antenna(i.input)
+        i.pull_value = hive.pull_in(i.cached_value)
+        ex.value = hive.antenna(i.pull_value)
 
-        i.output = hive.pull_out(ex.value)
-        ex.output = hive.output(i.output)
+        i.pull_cached_value = hive.pull_out(i.cached_value)
+        ex.cached_value = hive.output(i.pull_cached_value)
 
-        ex.trigger = hive.entry(i.input)
+        ex.update_cache = hive.entry(i.pull_value)
 
 
 Buffer = hive.dyna_hive("Buffer", build_buffer, declarator=declare_buffer)

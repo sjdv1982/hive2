@@ -1,5 +1,6 @@
-import hive
 import string
+
+import hive
 
 
 def declare_any(meta_args):
@@ -24,19 +25,20 @@ def build_any(i, ex, args, meta_args):
     """Trigger output if any inputs evaluate to True"""
     # On pull
     func = build_any_func(meta_args.count)
-    i.trigger = hive.modifier(func)
+    i.run_any = hive.modifier(func)
 
     i.result = hive.attribute(meta_args.data_type, False)
-    pull_out = hive.pull_out(i.result)
-    ex.output = hive.output(pull_out)
+    i.pull_result = hive.pull_out(i.result)
+    ex.result = hive.output(i.pull_result)
 
-    hive.trigger(pull_out, i.trigger, pretrigger=True)
+    hive.trigger(i.pull_result, i.run_any, pretrigger=True)
 
     for index, char in zip(range(meta_args.count), string.ascii_lowercase):
         variable = hive.attribute(meta_args.data_type, False)
         setattr(i, char, variable)
 
         pull_in = hive.pull_in(variable)
+        setattr(i, "pull_{}".format(char), pull_in)
 
         antenna = hive.antenna(pull_in)
         setattr(ex, char, antenna)

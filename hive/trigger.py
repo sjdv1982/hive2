@@ -1,17 +1,23 @@
 from .classes import HiveBee
+from .debug import get_debug_context
 from .manager import get_mode, memoize, register_bee
 from .mixins import TriggerSourceBase, TriggerTargetBase, Bee, Bindable, TriggerTargetDerived
 
 
 def build_trigger(source, target, pre):
     # TODO: register connection, or insert a listener function in between
-    target_func = target._hive_trigger_target()
-
-    if pre:
-        source._hive_pretrigger_source(target_func)
+    debug_context = get_debug_context()
+    if debug_context is not None:
+        debug_context.build_trigger(source, target, pre)
 
     else:
-        source._hive_trigger_source(target_func)
+        target_func = target._hive_trigger_target()
+
+        if pre:
+            source._hive_pretrigger_source(target_func)
+
+        else:
+            source._hive_trigger_source(target_func)
 
 
 class Trigger(Bindable):
@@ -37,7 +43,7 @@ class Trigger(Bindable):
 class TriggerBee(HiveBee):
 
     def __init__(self, source, target, pretrigger):
-        super().__init__()
+        super(TriggerBee, self).__init__()
 
         self.source = source
         self.target = target

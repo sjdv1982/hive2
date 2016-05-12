@@ -1,0 +1,2 @@
+class HiveException(Exception):
+    pass

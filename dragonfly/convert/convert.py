@@ -4,12 +4,12 @@ import hive
 
 
 _type_map = OrderedDict((("str", str), ("bool", bool), ("int", int), ("float", float), ("dict", dict), ("list", list),
-                         ("set", set), ("tuple", tuple)))
+                         ("set", set), ("tuple", tuple), ("bytes", bytes)))
 
 
 def declare_convert(meta_args):
-    meta_args.from_data_type = hive.parameter("tuple", ("int",))
-    meta_args.to_data_type = hive.parameter("tuple", ("int",))
+    meta_args.from_data_type = hive.parameter("str", "int")
+    meta_args.to_data_type = hive.parameter("str", "int")
     meta_args.mode = hive.parameter("str", "pull", {"push", "pull"})
     meta_args.conversion = hive.parameter("str", "duck", {"duck", "cast"})
 
@@ -40,7 +40,9 @@ def build_convert(i, ex, args, meta_args):
 
     # For casting (explicit conversion)
     if meta_args.conversion == "cast":
-        to_base_type_name = meta_args.to_data_type[0]
+        to_type_tuple = hive.identifier_to_tuple(meta_args.to_data_type)
+        to_base_type_name = to_type_tuple[0]
+
         value_cls = _type_map[to_base_type_name]
 
         def converter(self):
