@@ -20,9 +20,6 @@ def generate_bee_name():
         yield "bee {}".format(i)
 
 
-it_generate_bee_name = generate_bee_name()
-
-
 class RuntimeHiveInstantiator(Bindable):
     """Instantiator Bee to instantiate runtime hives.
 
@@ -503,13 +500,15 @@ class HiveBuilder(object):
                 anonymous_bees.remove(bee)
 
         # Save anonymous bees to internal wrapper, with unique names
+
+        sequential_bee_names = generate_bee_name()
         for bee in registered_bees:
             if bee not in anonymous_bees:
                 continue
 
             # Find unique name for bee
             while True:
-                bee_name = next(it_generate_bee_name)
+                bee_name = next(sequential_bee_names)
                 if not hasattr(internals, bee_name):
                     break
 
