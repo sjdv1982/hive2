@@ -13,11 +13,12 @@ from .mixins import *
 from .policies import MatchmakingPolicyError
 
 
-def generate_bee_name():
+def gen_sequence_bee_names():
+    """Sequential generator of "bee names"""
     i = 0
     while True:
         i += 1
-        yield "bee {}".format(i)
+        yield "anonymous_bee_{}".format(i)
 
 
 class RuntimeHiveInstantiator(Bindable):
@@ -501,7 +502,7 @@ class HiveBuilder(object):
 
         # Save anonymous bees to internal wrapper, with unique names
 
-        sequential_bee_names = generate_bee_name()
+        sequential_bee_names = gen_sequence_bee_names()
         for bee in registered_bees:
             if bee not in anonymous_bees:
                 continue
