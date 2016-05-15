@@ -19,7 +19,7 @@ class Method(Bindable, Callable, Exportable, Nameable):
     @memoize
     def bind(self, run_hive):
         cls = self._builder_cls
-        instance = run_hive._hive_build_class_instances[cls]
+        instance = run_hive._hive_build_class_to_instance[cls]
 
         return self._func.__get__(instance)
 

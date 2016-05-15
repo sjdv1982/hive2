@@ -44,7 +44,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
     _hive_bee_name = ()
     _hive_object = None
-    _hive_build_class_instances = None
+    _hive_build_class_to_instance = None
     _hive_bee_instances = None
     _bee_names = None
     _drones = None
@@ -52,7 +52,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
         self._hive_object = hive_object
-        self._hive_build_class_instances = {}
+        self._hive_build_class_to_instance = {}
         self._hive_bee_instances = {}
         self._bee_names = ["_drones"]
         self._drones = []
@@ -65,12 +65,12 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             for builder, builder_cls in builders:
 
                 if builder_cls is not None:
-                    assert builder_cls not in self._hive_build_class_instances, builder_cls
+                    assert builder_cls not in self._hive_build_class_to_instance, builder_cls
 
                     # Do not initialise instance yet
                     build_class_instance = builder_cls.__new__(builder_cls)
 
-                    self._hive_build_class_instances[builder_cls] = build_class_instance
+                    self._hive_build_class_to_instance[builder_cls] = build_class_instance
                     self._drones.append(build_class_instance)
 
                     build_class_instance.__init__(*args, **kwargs)
@@ -378,6 +378,25 @@ F
         return self
 
 
+def validate_external_name(attr_name):
+    """Raise AttributeError if attribute name belongs to HiveObject or RuntimeHive"""
+    if hasattr(HiveObject, attr_name):
+        raise AttributeError('Cannot overwrite special attribute HiveObject.{}'.format(attr_name))
+
+    if hasattr(RuntimeHive, attr_name):
+        raise AttributeError('Cannot overwrite special attribute RuntimeHive.{}'.format(attr_name))
+
+
+def validate_internal_name(attr_name):
+    """Raise AttributeError if attribute name prefixed with underscore belongs to HiveObject or RuntimeHive"""
+    internal_name = "_{}".format(attr_name)
+    if hasattr(HiveObject, internal_name):
+        raise AttributeError('Cannot overwrite special attribute HiveObject.{}'.format(attr_name))
+
+    if hasattr(RuntimeHive, internal_name):
+        raise AttributeError('Cannot overwrite special attribute RuntimeHive.{}'.format(attr_name))
+
+
 class MetaHivePrimitive(object):
     """Primitive container to instantiate Hive with particular meta arguments"""
 
@@ -444,8 +463,10 @@ class HiveBuilder(object):
         hive_object_cls_name = "HiveObject<{}>".format(cls.__name__)
         hive_object_cls = type(hive_object_cls_name, (HiveObject,), hive_object_dict)
 
-        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls)
-        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls)
+        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls,
+                                                                  validator=lambda n, v: validate_internal_name(n))
+        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls,
+                                                                     validator=lambda n, v: validate_external_name(n))
         hive_object_cls._hive_args = args = HiveArgsWrapper(hive_object_cls)
 
         # Get frozen meta args
@@ -480,7 +501,6 @@ class HiveBuilder(object):
 
             if is_root:
                 tracked_policies = []
-
                 cls._hive_build_connectivity(hive_object_cls, tracked_policies)
 
                 if get_validation_enabled():

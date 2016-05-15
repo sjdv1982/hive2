@@ -1,6 +1,7 @@
 import os
 import webbrowser
 import subprocess
+
 from sys import executable as EXECUTABLE_PATH
 from os import path
 from functools import partial

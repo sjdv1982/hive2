@@ -11,6 +11,8 @@ from .node import FOLD_NODE_IMPORT_PATH, NodeTypes
 from .observer import Observable
 from .utils import start_value_from_type, is_identifier, camelcase_to_underscores
 
+from hive import validate_external_name
+
 
 def _sanitise_node_name(variable_name):
     variable_name = variable_name.lstrip('_')
@@ -37,6 +39,9 @@ def _validate_node_name(name):
 
     if iskeyword(name):
         raise ValueError("Name cannot be python keyword: {}".format(name))
+
+    # Check that the wrapper *can* be assigned this name
+    validate_external_name(name)
 
 
 def _get_unique_name(existing_names, base_name):
@@ -197,8 +202,10 @@ class NodeManager(object):
     def get_inspector_for(self, node_type):
         if node_type == NodeTypes.HIVE:
             return self._hive_node_inspector
+
         elif node_type == NodeTypes.BEE:
             return self._bee_node_inspector
+
         raise ValueError(node_type)
 
     def _add_node(self, node):
@@ -368,6 +375,7 @@ class NodeManager(object):
             for name, pins in input_name_to_pins.items():
                 try:
                     input_pin = new_node.inputs[name]
+
                 except KeyError:
                     continue
 
@@ -381,6 +389,7 @@ class NodeManager(object):
             for name, pins in output_name_to_pins.items():
                 try:
                     output_pin = new_node.outputs[name]
+
                 except KeyError:
                     continue
 
@@ -407,8 +416,7 @@ class NodeManager(object):
         assert param_type in {'cls_args', 'args', 'meta_args'}, "Invalid param type given"
         if param_type == 'meta_args':
             raise ValueError("Meta args wrapper cannot be edited, node must be recreated")
-        print("set_param", node, param_type, name, value)
-        print(node.params)
+
         with node.make_writable():
             params_dict = node.params[param_type]
 
@@ -425,8 +433,6 @@ class NodeManager(object):
         :param name: new name of node
         :param attempt_till_success: if name is not available, find a valid name based upon it
         """
-        _validate_node_name(name)
-
         if self.nodes.get(name, node) is not node:
             # Try till we succeed
             if attempt_till_success:
@@ -434,6 +440,8 @@ class NodeManager(object):
 
             else:
                 raise ValueError("Can't rename {} to {}".format(node, name))
+
+        _validate_node_name(name)
 
         # Change key
         old_name = node.name

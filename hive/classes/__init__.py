@@ -1,4 +1,4 @@
-SPECIAL_NAMES = ("parent", "implements", "instantiate") #TODO: auto? export?
+HIVE_OBJECT_NAMES = ("parent", "implements", "instantiate")
 
 from .hive_bee import HiveBee
 from .hive_wrappers import HiveExportableWrapper, HiveInternalWrapper, HiveArgsWrapper, HiveMetaArgsWrapper

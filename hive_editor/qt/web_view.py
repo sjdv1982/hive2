@@ -1,13 +1,13 @@
 from PyQt5.QtCore import QEvent, pyqtSignal, QPoint
-from PyQt5.QtWebKitWidgets import QWebView
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 
-class QEditorWebView(QWebView):
+class QEditorWebView(QWebEngineView):
     on_drag_move = pyqtSignal(QEvent)
     on_dropped = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, parent=None):
-        QWebView.__init__(self, parent)
+        super(QWebEngineView, self).__init__(parent)
 
         self.setAcceptDrops(True)
 
