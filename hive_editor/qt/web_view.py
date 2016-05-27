@@ -7,11 +7,13 @@ class QEditorWebView(QWebEngineView):
     on_dropped = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, parent=None):
-        super(QWebEngineView, self).__init__(parent)
+        super(QEditorWebView, self).__init__(parent)
 
         self.setAcceptDrops(True)
 
-    def dragMoveEvent(self, event):
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
         self.on_drag_move.emit(event)
 
     def dropEvent(self, event):

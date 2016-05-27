@@ -10,11 +10,10 @@ from .utils import create_widget
 # TODO fix scrolling
 class NodeContextPanelBase(QWidget):
 
-    def __init__(self):
-        QWidget.__init__(self)
+    def __init__(self, parent=None):
+        super(NodeContextPanelBase, self).__init__(parent)
 
         self._node = None
-
         self._layout = QFormLayout()
 
         self._widget = QWidget()
@@ -62,11 +61,11 @@ class ArgumentsPanel(NodeContextPanelBase):
     do_morph_node = pyqtSignal(object)
     set_param_value = pyqtSignal(object, str, str, object)
 
-    def __init__(self, show_meta=True, show_compact=False):
+    def __init__(self, parent=None, show_meta=True, show_compact=False):
         self._show_meta = show_meta
         self._show_compact = show_compact
 
-        super().__init__()
+        super(ArgumentsPanel, self).__init__(parent)
 
     def _update_layout(self, node):
         layout = self._layout
@@ -163,7 +162,7 @@ class ConfigurationPanel(ArgumentsPanel):
         widget.textChanged.connect(partial(self.rename_node.emit, node))
         layout.addRow(self.tr("&Name"), widget)
 
-        super()._update_layout(node)
+        super(ConfigurationPanel, self)._update_layout(node)
 
 
 class FoldingPanel(NodeContextPanelBase):

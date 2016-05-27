@@ -9,7 +9,8 @@ class TreeWidget(QTreeWidget):
     on_right_click = pyqtSignal(str, QEvent)
 
     def __init__(self, parent=None):
-        QTreeWidget.__init__(self, parent)
+        super(TreeWidget, self).__init__(parent)
+
         self.setColumnCount(1)
         self.setHeaderHidden(True)
 

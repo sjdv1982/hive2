@@ -45,5 +45,3 @@ class TabViewWidget(QTabWidget):
 
     def tabInserted(self, index):
         self.on_inserted.emit(index)
-
-

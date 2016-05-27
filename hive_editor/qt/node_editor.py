@@ -5,15 +5,18 @@ from webbrowser import open as open_url
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QPoint
 from PyQt5.QtGui import QIcon, QCursor, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import (QDialog, QWidget, QVBoxLayout, QPushButton, QMessageBox, QSplitter, QTextEdit, QHBoxLayout,
-                             QHeaderView, QTableView, QListWidget, QListWidgetItem, QMenu)
+                             QHeaderView, QTableView, QListWidget, QListWidgetItem, QMenu, QMainWindow, QDockWidget,
+                             QLabel)
 
 from .console import QConsole
 from .floating_text import FloatingTextWidget
 from .configuration_dialogue import ConfigurationDialogue
 from .node import Node
 from .panels import FoldingPanel, ConfigurationPanel
+from .tree import TreeWidget
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
+
 from ..code_generator import hivemap_to_builder_body
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
@@ -41,8 +44,8 @@ class SourceCodePreviewDialogue(QDialog):
 class PreviewWidget(QWidget):
     do_show_code = pyqtSignal()
 
-    def __init__(self):
-        QWidget.__init__(self)
+    def __init__(self, parent=None):
+        super(PreviewWidget, self).__init__(parent)
 
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
@@ -202,19 +205,15 @@ class QDebugWidget(QWidget):
         self._text_to_item.clear()
 
 
-class NodeEditorSpace(QWidget):
+class NodeEditorSpace(QMainWindow):
     on_save_state_updated = pyqtSignal(bool)
     do_open_file = pyqtSignal(str)
     on_node_context_menu = pyqtSignal(object, object)
 
-    on_drag_move = pyqtSignal(QEvent)
-    on_dropped = pyqtSignal(QEvent, QPoint)
+    on_dropped_for_parent = pyqtSignal(QEvent, QPoint)
 
     def __init__(self, file_path=None, project_path=None):
-        QWidget.__init__(self)
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        super(NodeEditorSpace, self).__init__()
 
         self.file_path = file_path
 
@@ -224,7 +223,9 @@ class NodeEditorSpace(QWidget):
         self._node_manager = NodeManager(self._history)
 
         self._view = NodeView(self)
-        layout.addWidget(self._view)
+
+        self.setDockNestingEnabled(True)
+        self.setCentralWidget(self._view)
 
         # Node manager to view
         node_manager = self._node_manager
@@ -275,7 +276,8 @@ class NodeEditorSpace(QWidget):
 
         self._preview_widget = PreviewWidget()
         self._preview_widget.do_show_code.connect(self._preview_show_code)
-        display_text = """
+
+        console_display_text = """
  Hive GUI console.
 
  Globals and useful attributes:
@@ -285,13 +287,43 @@ class NodeEditorSpace(QWidget):
   editor.node_manager     - current internal node manager
  ----------------------------------------------------------------
 """
-        self._console_widget = QConsole(local_dict=dict(editor=self), display_text=display_text)
+        self._console_widget = QConsole(local_dict=dict(editor=self), display_text=console_display_text)
 
-        self._debug_widget = QDebugWidget()
+        self._debug_active_widget = QDebugWidget()
         self._debug_controller = None
         self._debug_blink_time = 0.1
+        self._debug_inactive_widget = QLabel("No debugging session currently active")
+        self._debug_inactive_widget.setAlignment(Qt.AlignCenter)
+
+        self._hive_widget = TreeWidget()
+        self._bee_widget = TreeWidget()
+
+        # TODO rename windows to _prefix
+        self._bee_window = self._create_subwindow("Bees", "left", closeable=True, widget=self._bee_widget)
+        self._hive_window = self._create_subwindow("Hives", "left", closeable=True, widget=self._hive_widget)
+        self._folding_window = self._create_subwindow("Folding", "right", closeable=True, widget=self._folding_widget)
+        self._preview_window = self._create_subwindow("Preview", "left", closeable=True, widget=self._preview_widget)
+        self._debug_window = self._create_subwindow("Debugging", "bottom", closeable=True,
+                                                    widget=self._debug_inactive_widget)
+        self._console_window = self._create_subwindow("Console", "bottom", closeable=True, widget=self._console_widget)
+        self._configuration_window = self._create_subwindow("Configuration", "right", closeable=True,
+                                                            widget=self._configuration_widget)
+        self._docstring_window = self._create_subwindow("Docstring", "left", closeable=True,
+                                                        widget=self._docstring_widget)
+
+        # Close breakpoints and console windows by default
+        self._debug_window.close()
+
+        # Make tabs
+        self.tabifyDockWidget(self._bee_window, self._hive_window)
+        self.tabifyDockWidget(self._docstring_window, self._preview_window)
+        self.tabifyDockWidget(self._debug_window, self._console_window)
 
         self._project_path = project_path
+        self._pending_dropped_node_info = None
+
+        # Permitted MIME types to delegate to parent
+        self.parent_drop_mime_types = set()
 
         if file_path is not None:
             self.load(file_path)
@@ -315,6 +347,36 @@ class NodeEditorSpace(QWidget):
     @property
     def debug_controller(self):
         return self._debug_controller
+
+    def _accept_dropped_node_info(self):
+        info, self._pending_dropped_node_info = self._pending_dropped_node_info, None
+        return info
+
+    def _on_selected_tree_node(self, path, node_type):
+        self._pending_dropped_node_info = path, node_type
+
+    def _create_subwindow(self, title, position, closeable=False, widget=None):
+        area_classes = {
+            "left": Qt.LeftDockWidgetArea,
+            "right": Qt.RightDockWidgetArea,
+            "top": Qt.TopDockWidgetArea,
+            "bottom": Qt.BottomDockWidgetArea,
+        }
+        area = area_classes[position]
+
+        window = QDockWidget(title, self)
+        features = QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable
+        if closeable:
+            features |= QDockWidget.DockWidgetClosable
+
+        window.setFeatures(features)
+
+        if widget is not None:
+            window.setWidget(widget)
+
+        self.addDockWidget(area, window)
+
+        return window
 
     def _preview_show_code(self):
         """Show hivemap code in dialogue window"""
@@ -349,7 +411,7 @@ class NodeEditorSpace(QWidget):
             self.load()
 
         self._debug_controller = controller
-        self._debug_widget.show()
+        self._debug_window.setWidget(self._debug_active_widget)
 
         controller.on_push_out.subscribe(lambda source_name, target_name, value:
                                                self._on_debug_operation(source_name, target_name,
@@ -359,14 +421,14 @@ class NodeEditorSpace(QWidget):
                                                                        operation="pull-in", value=value))
         controller.on_trigger.subscribe(partial(self._on_debug_operation, operation="trigger"))
         controller.on_pre_trigger.subscribe(partial(self._on_debug_operation, operation="pre-trigger"))
-        controller.on_breakpoint_hit.subscribe(self._debug_widget.set_pending_breakpoint)
+        controller.on_breakpoint_hit.subscribe(self._debug_active_widget.set_pending_breakpoint)
         controller.on_breakpoint_added.subscribe(self._on_breakpoint_added)
         controller.on_breakpoint_removed.subscribe(self._on_breakpoint_removed)
 
-        self._debug_widget.on_skip_breakpoint.connect(controller.skip_breakpoint)
+        self._debug_active_widget.on_skip_breakpoint.connect(controller.skip_breakpoint)
 
     def _on_debug_operation(self, source_name, target_name, operation, value=None):
-        self._debug_widget.log_operation(source_name, target_name, operation, value)
+        self._debug_active_widget.log_operation(source_name, target_name, operation, value)
 
         source_node_name, source_pin_name = source_name.split(".")
         target_node_name, target_pin_name = target_name.split(".")
@@ -396,9 +458,11 @@ class NodeEditorSpace(QWidget):
         self._debug_controller = None
 
         # Reset debug widget
-        self._debug_widget.clear_history()
-        self._debug_widget.clear_breakpoints()
-        self._debug_widget.on_skip_breakpoint.disconnect()
+        self._debug_active_widget.clear_history()
+        self._debug_active_widget.clear_breakpoints()
+        self._debug_active_widget.on_skip_breakpoint.disconnect()
+
+        self._debug_window.setWidget(self._debug_inactive_widget)
 
     def _on_history_updated(self, command_id):
         self._history_id = command_id
@@ -432,7 +496,7 @@ class NodeEditorSpace(QWidget):
         self._view.remove_node(gui_node)
 
     def _on_breakpoint_added(self, bee_container_name):
-        self._debug_widget.add_breakpoint(bee_container_name)
+        self._debug_active_widget.add_breakpoint(bee_container_name)
 
         node_name, pin_name = bee_container_name.split('.')
         node = self.node_manager.nodes[node_name]
@@ -443,7 +507,7 @@ class NodeEditorSpace(QWidget):
         self._view.enable_socket_debugging(gui_node, socket_row)
 
     def _on_breakpoint_removed(self, bee_container_name):
-        self._debug_widget.remove_breakpoint(bee_container_name)
+        self._debug_active_widget.remove_breakpoint(bee_container_name)
 
         # Visual
         node_name, pin_name = bee_container_name.split('.')
@@ -553,10 +617,27 @@ class NodeEditorSpace(QWidget):
 
     # GUI nodes
     def _gui_on_drag_move(self, event):
-        self.on_drag_move.emit(event)
+        mime_data = event.mimeData()
+        formats = mime_data.formats()
+
+        if 'application/x-qabstractitemmodeldatalist' in formats:
+            event.accept()
+
+        elif self.parent_drop_mime_types.intersection(formats):
+            event.accept()
+
+        else:
+            event.ignore()
 
     def _gui_on_dropped(self, event, pos):
-        self.on_dropped.emit(event, pos)
+        mime_data = event.mimeData()
+        formats = mime_data.formats()
+
+        if 'application/x-qabstractitemmodeldatalist' in formats:
+            self.add_node_at(pos, *self._accept_dropped_node_info())
+
+        elif self.parent_drop_mime_types.intersection(formats):
+            self.on_dropped_for_parent.emit(event, pos)
 
     def _gui_connection_created(self, start_socket, end_socket):
         start_pin = start_socket.parent_socket_row.pin
@@ -598,22 +679,27 @@ class NodeEditorSpace(QWidget):
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
+        self._gui_hive_edit(node.import_path, event.screenPos())
 
+    def _gui_tree_hive_edit(self, import_path, event):
+        self._gui_hive_edit(import_path, event.globalPos())
+
+    def _gui_hive_edit(self, import_path, global_pos):
         # Try and import the hivemap
         additional_paths = [self._project_path] if self._project_path else []
 
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = import_path_to_hivemap_path(node.import_path, additional_paths)
+            hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
 
         except ValueError:
             return
 
         menu = QMenu(self)
-        edit_hivemap_action = menu.addAction("Edit Hivemap")
+        edit_action = menu.addAction("Edit Hivemap")
+        called_action = menu.exec_(global_pos)
 
-        action = menu.exec_(event.screenPos())
-        if action != edit_hivemap_action:
+        if called_action != edit_action:
             return
 
         self.do_open_file.emit(hivemap_file_path)
@@ -805,23 +891,23 @@ class NodeEditorSpace(QWidget):
     def load_from_text(self, text):
         self._node_manager.load_string(text)
 
-    def on_enter(self, docstring_window, folding_window, configuration_window, preview_window,
-                 console_window, debug_window):
-        docstring_window.setWidget(self._docstring_widget)
-        folding_window.setWidget(self._folding_widget)
-        configuration_window.setWidget(self._configuration_widget)
-        preview_window.setWidget(self._preview_widget)
-        console_window.setWidget(self._console_widget)
-        debug_window.setWidget(self._debug_widget)
+    def update_hive_tree(self, hives):
+        self._hive_widget = TreeWidget()
+        self._hive_widget.load_items(hives)
 
+        self._hive_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.HIVE))
+        self._hive_window.setWidget(self._hive_widget)
+        self._hive_widget.on_right_click.connect(self._gui_tree_hive_edit)
+
+    def update_bee_tree(self, bees):
+        self._hive_widget = TreeWidget()
+        self._hive_widget.load_items(bees)
+        self._bee_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.BEE))
+        self._bee_window.setWidget(self._bee_widget)
+
+    def on_enter(self):
         # Set visibility
-        self._debug_widget.setVisible(self.is_debugging)
+        self._debug_active_widget.setVisible(self.is_debugging)
 
-    def on_exit(self, docstring_window, folding_window, configuration_window, preview_window,
-                console_window, debug_window):
-        docstring_window.setWidget(QWidget())
-        folding_window.setWidget(QWidget())
-        configuration_window.setWidget(QWidget())
-        preview_window.setWidget(QWidget())
-        console_window.setWidget(QWidget())
-        debug_window.setWidget(QWidget())
+    def on_exit(self):
+        pass

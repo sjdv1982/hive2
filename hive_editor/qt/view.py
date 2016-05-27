@@ -513,7 +513,7 @@ class NodeView(QGraphicsView):
             elif button == Qt.Key_Down:
                 self._on_key_down()
 
-        super().keyPressEvent(event)
+        super(NodeView, self).keyPressEvent(event)
 
     @property
     def zoom(self):
