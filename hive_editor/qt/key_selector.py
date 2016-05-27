@@ -48,7 +48,7 @@ keymap[Qt.Key_Minus] = "-"
 keymap[Qt.Key_Plus] = "+"
 keymap[Qt.Key_Equal] = "="
 keymap[Qt.Key_Asterisk] = "*"
-keymap[Qt.Key_Hash] = "#"
+#keymap[Qt.Hash] = "#"
 
 keymap[Qt.Key_Down] = 'arrow_down'
 keymap[Qt.Key_Left] = 'arrow_left'

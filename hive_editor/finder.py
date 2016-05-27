@@ -26,15 +26,20 @@ class HiveFinder:
         self._root_paths = {_hive_lib_dir, }
         self.additional_paths = set(additional_paths)
 
-        self._found_hives = None
+        self._path_to_hives = None
+        self._all_hives = None
 
     @staticmethod
     def create_initial_search_path(path):
         return FinderPathEntry(None, path),
 
     @property
-    def found_hives(self):
-        return self._found_hives.copy()
+    def all_hives(self):
+        return self._all_hives.copy()
+
+    @property
+    def hives_by_path(self):
+        return self._path_to_hives.copy()
 
     def _recurse(self, search_path, modules=None, _tracked_classes=None):
         """Recursively find hive names from module path.
@@ -149,11 +154,17 @@ class HiveFinder:
         return modules
 
     def reload(self):
-        tree = OrderedDict()
+        path_to_hives = {}
+        all_hives = OrderedDict()
 
         # Import stdlib modules
         for base_directory_path in self._root_paths | self.additional_paths:
+            path_to_hives[base_directory_path] = path_hives = OrderedDict()
             search_path = self.create_initial_search_path(base_directory_path)
-            self._recurse(search_path, modules=tree)
+            self._recurse(search_path, modules=path_hives)
 
-        self._found_hives = tree
+            # Update total hives too
+            all_hives.update(path_hives)
+
+        self._path_to_hives = path_to_hives
+        self._all_hives = all_hives

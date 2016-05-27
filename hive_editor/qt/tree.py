@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QTreeWidget, QAbstractItemView, QTreeWidgetItem
 
 class TreeWidget(QTreeWidget):
     on_selected = pyqtSignal(str)
+    on_double_click = pyqtSignal(str)
     on_right_click = pyqtSignal(str, QEvent)
 
     def __init__(self, parent=None):
@@ -18,8 +19,16 @@ class TreeWidget(QTreeWidget):
         self.all_items = {}
         self._widget_id_to_key = {}
         self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.itemPressed.connect(self._on_item_pressed)
+        self.itemPressed.connect(self._on_item_clicked)
+        self.itemDoubleClicked.connect(self._on_item_double_clicked)
         self.setDragEnabled(True)
+
+    def clear(self):
+        self._keys.clear()
+        self.all_items.clear()
+        self._widget_id_to_key.clear()
+
+        super(TreeWidget, self).clear()
 
     def contextMenuEvent(self, event):
         item = self.selectedItems()[0]
@@ -33,7 +42,7 @@ class TreeWidget(QTreeWidget):
         path = '.'.join(key)
         self.on_right_click.emit(path, event)
 
-    def _on_item_pressed(self, item, column):
+    def _on_item_clicked(self, item, column):
         if id(item) in self._widget_id_to_key:
             key = self._widget_id_to_key[id(item)]
 
@@ -44,16 +53,32 @@ class TreeWidget(QTreeWidget):
         else:
             self.setDragEnabled(False)
 
-    def load_items(self, item_dict, path=()):
+    def _on_item_double_clicked(self, item, column):
+        if id(item) in self._widget_id_to_key:
+            key = self._widget_id_to_key[id(item)]
+
+            path = '.'.join(key)
+            self.on_double_click.emit(path)
+
+            self.setDragEnabled(True)
+        else:
+            self.setDragEnabled(False)
+
+    def _load_items(self, item_dict, path):
         for name, child in item_dict.items():
             full_path = path + (name,)
 
             if isinstance(child, dict):
-                self.load_items(child, full_path)
+                self._load_items(child, full_path)
 
             else:
                 assert child is None
                 self.append(full_path)
+
+    def set_items(self, item_dict, path=()):
+        self.clear()
+
+        self._load_items(item_dict, path)
 
     def append(self, key):
         assert key not in self._keys

@@ -8,7 +8,7 @@ from functools import partial
 
 from PyQt5.QtCore import Qt, QUrl, QStringListModel
 from PyQt5.QtWidgets import (QMainWindow, QStatusBar, QAction, QDialog, QMessageBox, QFileDialog, QCompleter, QLineEdit,
-                             QWidget, QHBoxLayout, QMenu, QDockWidget)
+                             QHBoxLayout, QMenu, QDockWidget, QLabel)
 from PyQt5.QtGui import QIcon, QKeySequence
 
 from .debugging import QtNetworkDebugManager
@@ -50,31 +50,75 @@ def dict_to_delimited(data, delimiter, name_path=()):
             yield '.'.join(new_name_path)
 
 
+class ContextAdaptor:
+
+    class _States:
+        null = 0
+        inside = 1
+        outside = 2
+
+    def __init__(self, context):
+        self._context = context
+        self._state = self._States.null
+
+    def enter(self):
+        if self._state is not self._States.null:
+            raise RuntimeError("Context invalid")
+
+        self._state = self._States.inside
+        self._context.__enter__()
+
+    def exit(self):
+        if self._state is not self._States.inside:
+            raise RuntimeError("Context invalid")
+
+        self._state = self._States.outside
+        self._context.__exit__(None, None, None)
+
+
 class MainWindow(QMainWindow):
     project_name_template = "Hive Node Editor - {}"
     hivemap_extension = "hivemap"
     untitled_file_name = "<Unsaved>"
+    no_project_text = "<No Project>"
 
     def __init__(self):
         super(MainWindow, self).__init__()
 
         status_bar = QStatusBar(self)
         self.setStatusBar(status_bar)
-
-        self._setup_windows()
-        self._setup_menus()
+        self.setDockNestingEnabled(True)
+        self.setWindowTitle(self.project_name_template.format(self.no_project_text))
 
         self.debugger = QtNetworkDebugManager()
         self.debugger.on_closed_session.subscribe(self._on_closed_debug_session)
         self.debugger.on_created_session.subscribe(self._on_created_debug_session)
 
+        # Add tab widget
+        self.tab_widget = TabViewWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        self.tab_widget.on_changed.connect(self._on_tab_changed)
+        self.tab_widget.check_tab_closable = self._check_tab_closable
+
+        # Show current hives
+        self._project_hives_active_widget = TreeWidget()
+        self._project_hives_active_widget.on_double_click.connect(self._open_project_hive)
+
+        self._project_hives_inactive_widget = QLabel("No project active")
+        self._project_hives_inactive_widget.setAlignment(Qt.AlignCenter)
+        self._project_hives_window = self.create_subwindow("Project", "right",
+                                                           widget=self._project_hives_inactive_widget)
+
         self.hive_finder = HiveFinder()
         self._current_hive_list = None
 
-        self.project_directory = None
+        self._project_directory = None
         self._project_context = None
 
         self.update_loaded_hives()
+
+        self._setup_menus()
 
         self._clipboard = None
 
@@ -98,6 +142,7 @@ class MainWindow(QMainWindow):
 
     def _setup_menus(self):
         menu_bar = self.menuBar()
+
         self.new_action = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
                                   triggered=self.add_editor_space)
         self.load_action = QAction("&Open...", menu_bar, shortcut=QKeySequence.Open, statusTip="Open an existing file",
@@ -140,6 +185,10 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.copy_action)
         self.edit_menu.addAction(self.paste_action)
 
+        self.view_menu = QMenu("&View")
+
+        self.view_menu.addAction(self._project_hives_window.toggleViewAction())
+
         self.run_menu = QMenu("&Run")
         self.run_panda_action = QAction("Launch &Panda3D", menu_bar,
                                         shortcut=QKeySequence(self.tr("CTRL+P", "Launch  in Panda3D")),
@@ -149,15 +198,11 @@ class MainWindow(QMainWindow):
         self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
                                    triggered=self.goto_help_page)
 
-    def _setup_windows(self):
-        self.setDockNestingEnabled(True)
-
-        # Add tab widget
-        self.tab_widget = TabViewWidget()
-        self.setCentralWidget(self.tab_widget)
-
-        self.tab_widget.on_changed.connect(self._on_tab_changed)
-        self.tab_widget.check_tab_closable = self._check_tab_closable
+    def _open_project_hive(self, import_path):
+        # Can only edit .hivemaps
+        additional_paths = [self._project_directory] if self._project_directory else []
+        hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
+        self._open_file(hivemap_file_path)
 
     def _filter_web_drop(self, event):
         """Filter drop events for web view"""
@@ -234,20 +279,6 @@ class MainWindow(QMainWindow):
     @property
     def project_directory(self):
         return self._project_directory
-
-    @project_directory.setter
-    def project_directory(self, value):
-        self._project_directory = value
-
-        if value is None:
-            project_name = "<No project>"
-
-        else:
-            project_name = value
-
-        # Rename project
-        title = self.project_name_template.format(project_name)
-        self.setWindowTitle(title)
 
     def _get_display_name(self, file_path, allow_untitled=True):
         if file_path is None:
@@ -337,14 +368,14 @@ class MainWindow(QMainWindow):
         editor.on_dropped_for_parent.connect(self._on_dropped)
 
         editor.update_bee_tree(found_bees)
-        editor.update_hive_tree(self.hive_finder.found_hives)
+        editor.update_hive_tree(self.hive_finder.all_hives)
 
         # Ask to handle these
         editor.parent_drop_mime_types = {'text/uri-list', 'text/plain'}
 
         return editor
 
-    def create_subwindow(self, title, position, closeable=False):
+    def create_subwindow(self, title, position, closeable=True, widget=None):
         area_classes = {
             "left": Qt.LeftDockWidgetArea,
             "right": Qt.RightDockWidgetArea,
@@ -359,9 +390,9 @@ class MainWindow(QMainWindow):
             features |= QDockWidget.DockWidgetClosable
 
         window.setFeatures(features)
+        if widget is not None:
+            window.setWidget(widget)
 
-        child = QWidget()
-        window.setWidget(child)
         self.addDockWidget(area, window)
         return window
 
@@ -401,6 +432,7 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.save_action)
         self.file_menu.addAction(self.save_as_action)
 
+        menu_bar.addMenu(self.view_menu)
         menu_bar.addAction(self.help_action)
 
     def insert_from_path(self):
@@ -420,7 +452,7 @@ class MainWindow(QMainWindow):
         editor.setCompleter(completer)
 
         model = QStringListModel()
-        completion_paths = list(dict_to_delimited(self.hive_finder.found_hives, '.'))
+        completion_paths = list(dict_to_delimited(self.hive_finder.all_hives, '.'))
         model.setStringList(completion_paths)
 
         completer.setModel(model)
@@ -458,21 +490,32 @@ class MainWindow(QMainWindow):
         self._open_project(directory)
 
     def _open_project(self, directory_path):
+        # Close existing tabs
         self.close_project()
 
         # Load HIVES from project
         self.hive_finder.additional_paths = {directory_path, }
 
         # Set directory
-        self.project_directory = directory_path
+        self._project_directory = directory_path
 
         # Enter import context
         assert self._project_context is None, "Import context should be None!"
-        self._project_context = get_hook().temporary_relative_context(directory_path)
-        self._project_context.__enter__()
+        project_context_manager = get_hook().temporary_relative_context(directory_path)
+
+        self._project_context = ContextAdaptor(project_context_manager)
+        self._project_context.enter()
 
         self.update_loaded_hives()
         self._update_menu_options()
+
+        # Rename window project
+        self.setWindowTitle(self.project_name_template.format(directory_path))
+
+        # Update hives display in project window
+        self._project_hives_window.setWidget(self._project_hives_active_widget)
+        project_hives = self.hive_finder.hives_by_path[directory_path]
+        self._project_hives_active_widget.set_items(project_hives)
 
     def close_open_tabs(self):
         while self.tab_widget.count() > 1:
@@ -482,23 +525,28 @@ class MainWindow(QMainWindow):
         # Close open tabs
         self.close_open_tabs()
 
-        self.hive_finder.additional_paths.clear()
-        self.project_directory = None
-
+        # If project was open
         if self._project_context:
-            self._project_context.__exit__(None, None, None)
+            self._project_context.exit()
             self._project_context = None
+            clear_imported_hivemaps()
+
+            self.hive_finder.additional_paths.clear()
+            self._project_directory = None
+
+        # Rename window project
+        self.setWindowTitle(self.project_name_template.format(self.no_project_text))
 
         self.update_loaded_hives()
         self._update_menu_options()
 
-        clear_imported_hivemaps()
+        self._project_hives_window.setWidget(self._project_hives_inactive_widget)
 
     def update_loaded_hives(self):
         """Update the hive list in loaded editors"""
         self.hive_finder.reload()
 
-        hives = self.hive_finder.found_hives
+        hives = self.hive_finder.all_hives
         bees = found_bees
 
         for i in range(self.tab_widget.count()):

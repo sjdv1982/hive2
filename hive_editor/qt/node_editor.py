@@ -299,17 +299,14 @@ class NodeEditorSpace(QMainWindow):
         self._bee_widget = TreeWidget()
 
         # TODO rename windows to _prefix
-        self._bee_window = self._create_subwindow("Bees", "left", closeable=True, widget=self._bee_widget)
-        self._hive_window = self._create_subwindow("Hives", "left", closeable=True, widget=self._hive_widget)
-        self._folding_window = self._create_subwindow("Folding", "right", closeable=True, widget=self._folding_widget)
-        self._preview_window = self._create_subwindow("Preview", "left", closeable=True, widget=self._preview_widget)
-        self._debug_window = self._create_subwindow("Debugging", "bottom", closeable=True,
-                                                    widget=self._debug_inactive_widget)
-        self._console_window = self._create_subwindow("Console", "bottom", closeable=True, widget=self._console_widget)
-        self._configuration_window = self._create_subwindow("Configuration", "right", closeable=True,
-                                                            widget=self._configuration_widget)
-        self._docstring_window = self._create_subwindow("Docstring", "left", closeable=True,
-                                                        widget=self._docstring_widget)
+        self._bee_window = self._create_subwindow("Bees", "left", widget=self._bee_widget)
+        self._hive_window = self._create_subwindow("Hives", "left", widget=self._hive_widget)
+        self._folding_window = self._create_subwindow("Folding", "right", widget=self._folding_widget)
+        self._preview_window = self._create_subwindow("Preview", "left", widget=self._preview_widget)
+        self._debug_window = self._create_subwindow("Debugging", "bottom", widget=self._debug_inactive_widget)
+        self._console_window = self._create_subwindow("Console", "bottom", widget=self._console_widget)
+        self._configuration_window = self._create_subwindow("Configuration", "right", widget=self._configuration_widget)
+        self._docstring_window = self._create_subwindow("Docstring", "left", widget=self._docstring_widget)
 
         # Close breakpoints and console windows by default
         self._debug_window.close()
@@ -355,7 +352,7 @@ class NodeEditorSpace(QMainWindow):
     def _on_selected_tree_node(self, path, node_type):
         self._pending_dropped_node_info = path, node_type
 
-    def _create_subwindow(self, title, position, closeable=False, widget=None):
+    def _create_subwindow(self, title, position, closeable=True, widget=None):
         area_classes = {
             "left": Qt.LeftDockWidgetArea,
             "right": Qt.RightDockWidgetArea,
@@ -892,16 +889,14 @@ class NodeEditorSpace(QMainWindow):
         self._node_manager.load_string(text)
 
     def update_hive_tree(self, hives):
-        self._hive_widget = TreeWidget()
-        self._hive_widget.load_items(hives)
+        self._hive_widget.set_items(hives)
 
         self._hive_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.HIVE))
         self._hive_window.setWidget(self._hive_widget)
         self._hive_widget.on_right_click.connect(self._gui_tree_hive_edit)
 
     def update_bee_tree(self, bees):
-        self._hive_widget = TreeWidget()
-        self._hive_widget.load_items(bees)
+        self._bee_widget.set_items(bees)
         self._bee_widget.on_selected.connect(partial(self._on_selected_tree_node, node_type=NodeTypes.BEE))
         self._bee_window.setWidget(self._bee_widget)
 
