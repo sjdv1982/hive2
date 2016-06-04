@@ -1,10 +1,5 @@
-from functools import lru_cache
-from os import path
-
-import hive
-
 from .models import model
-from .utils import hive_import_from_path, underscore_to_camel_case
+from .utils import hive_import_from_path
 
 
 def _eval_spyder_string(type_name, value):
@@ -48,12 +43,19 @@ wraps_attribute_import_paths = {"hive.pull_in", "hive.push_in", "hive.push_out",
 wrapper_import_paths = io_import_paths | wraps_attribute_import_paths
 
 
-def hivemap_to_builder_body(hivemap, builder_name="builder"):
+def hivemap_to_python_source(hivemap, class_name, builder_name="builder"):
     """Generate Hive builder from Hivemap
 
     :param hivemap: Hivemap instance
+    :param class_name: name of class
     :param builder_name: name of builder function
     """
+    if not class_name.isidentifier():
+        raise ValueError("Class name must be a Python identifier, not '{}'".format(class_name))
+
+    if not builder_name.isidentifier():
+        raise ValueError("Builder name must be a Python identifier, not '{}'".format(builder_name))
+
     bees = {}
     # Add hive and hive_gui to support declarations and hivemap import machinery
     imports = {"hive", "hive_editor"}
@@ -300,48 +302,13 @@ def hivemap_to_builder_body(hivemap, builder_name="builder"):
 
     # Allow empty hives to be built
     if not body_declaration_statement:
-        function_body = "pass"
+        builder_body = "pass"
 
     else:
-        function_body = body_declaration_statement.replace("\n", "\n    ")
+        builder_body = body_declaration_statement.replace("\n", "\n    ")
 
-    declaration_statement = "{}\n\ndef {}(i, ex, args):\n    {}\n".format(import_statement, builder_name, function_body)
+    declaration_statement = ("{imports}\n\ndef {builder_name}(i, ex, args):\n    {builder_body}\n"
+                             "{class_name} = hive.hive('{class_name}', builder={builder_name})"
+                             .format(imports=import_statement, builder_name=builder_name, builder_body=builder_body,
+                                     class_name=class_name))
     return declaration_statement
-
-
-def builder_from_hivemap(hivemap):
-    """Create Hive builder from hivemap
-
-    :param hivemap: Hivemap instance
-    """
-    build_str = hivemap_to_builder_body(hivemap, builder_name="builder")
-    local_dict = dict(globals())
-    local_dict.update(locals())
-
-    exec(build_str, local_dict, local_dict)
-    return local_dict['builder']
-
-
-def class_from_hivemap(name, hivemap):
-    """Build Hive class from hivemap string
-
-    :param name: name of hive class
-    :param hivemap: Hivemap instance
-    """
-    builder = builder_from_hivemap(hivemap)
-    return hive.hive(name, builder)
-
-
-@lru_cache(maxsize=256)
-def class_from_filepath(filepath):
-    """Build Hive class from hivemap filepath
-
-    :param filepath: path to hivemap
-    """
-    file_name = path.splitext(path.basename(filepath))[0]
-    name = underscore_to_camel_case(file_name)
-
-    with open(filepath, "r") as f:
-        hivemap = model.Hivemap(f.read())
-
-    return class_from_hivemap(name, hivemap)

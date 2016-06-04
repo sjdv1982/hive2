@@ -17,7 +17,7 @@ from .tree import TreeWidget
 from .utils import create_widget
 from .view import NodeView, NodePreviewView
 
-from ..code_generator import hivemap_to_builder_body
+from ..code_generator import hivemap_to_python_source
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
 from ..utils import import_path_to_hivemap_path, import_module_from_path
@@ -298,7 +298,6 @@ class NodeEditorSpace(QMainWindow):
         self._hive_widget = TreeWidget()
         self._bee_widget = TreeWidget()
 
-        # TODO rename windows to _prefix
         self._bee_window = self._create_subwindow("Bees", "left", widget=self._bee_widget)
         self._hive_window = self._create_subwindow("Hives", "left", widget=self._hive_widget)
         self._folding_window = self._create_subwindow("Folding", "right", widget=self._folding_widget)
@@ -378,7 +377,7 @@ class NodeEditorSpace(QMainWindow):
     def _preview_show_code(self):
         """Show hivemap code in dialogue window"""
         hivemap = self._node_manager.to_hivemap()
-        code = hivemap_to_builder_body(hivemap)
+        code = hivemap_to_python_source(hivemap, class_name='PreviewHive')
         dialogue = SourceCodePreviewDialogue(self, code)
         dialogue.show()
 

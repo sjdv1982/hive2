@@ -66,7 +66,7 @@ def _get_unique_name(existing_names, base_name):
 class NodeConnectionError(Exception):
     pass
 
-
+# TODO don't allow single node folding!!!!!
 class NodeManager(object):
 
     on_node_created = Observable()

@@ -21,5 +21,3 @@ def is_method(func):
         return True
 
     return isfunction(func)
-
-

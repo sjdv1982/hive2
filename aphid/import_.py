@@ -1,14 +1,9 @@
-from contextlib import contextmanager
-import os
+from os.path import dirname
+from importlib import import_module
+
 
 import hive
 import hive_editor
-
-
-@contextmanager
-def _no_context():
-    yield
-    return
 
 
 class ImportClass:
@@ -30,23 +25,22 @@ class ImportClass:
         if not runtime_infos:
             raise RuntimeError("This hive does not have any runtime info objects (not a child of a hive)")
 
+        # Find first hive to embed this hive (TODO maybe iterate here)
         first_runtime_info = set(runtime_infos).pop()
         parent = first_runtime_info.parent()
         container_parent_class = parent._hive_object._hive_parent_class
 
+        # Find package of containing hive
         try:
-            directory = os.path.dirname(hook.get_path_of_class(container_parent_class))
+            loader_result = hook.find_loader_result_for_class(container_parent_class)
 
         except ValueError:
-            context = _no_context
+            package = None
 
         else:
-            context = hook.temporary_relative_context(directory)
+            package = loader_result.module.__package__
 
-        with context:
-            module = __import__(self.import_path, fromlist=[sub_module_name])
-
-        self.module = module
+        self.module = import_module(self.import_path, package=package)
 
 
 def build_import(cls, i, ex, args):

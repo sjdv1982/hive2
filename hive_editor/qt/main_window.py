@@ -19,17 +19,9 @@ from .web_view import QEditorWebView
 
 from .. import tools
 from ..finder import found_bees, HiveFinder
-from ..importer import clear_imported_hivemaps, get_hook
+from ..importer import clear_imported_hivemaps, sys_path_add_context
 from ..node import NodeTypes
 from ..utils import import_path_to_hivemap_path
-
-
-area_classes = {
-    "left": Qt.LeftDockWidgetArea,
-    "right": Qt.RightDockWidgetArea,
-    "top": Qt.TopDockWidgetArea,
-    "bottom": Qt.BottomDockWidgetArea,
-}
 
 
 def dict_to_delimited(data, delimiter, name_path=()):
@@ -501,7 +493,7 @@ class MainWindow(QMainWindow):
 
         # Enter import context
         assert self._project_context is None, "Import context should be None!"
-        project_context_manager = get_hook().temporary_relative_context(directory_path)
+        project_context_manager = sys_path_add_context(directory_path)
 
         self._project_context = ContextAdaptor(project_context_manager)
         self._project_context.enter()
@@ -629,7 +621,7 @@ class MainWindow(QMainWindow):
             self.tab_widget.setCurrentWidget(editor)
 
         except ValueError:
-            self.add_editor_space(file_path=file_path)
+            editor = self.add_editor_space(file_path=file_path)
 
             # Rename tab
             name = self._get_display_name(file_path, allow_untitled=False)
@@ -638,6 +630,7 @@ class MainWindow(QMainWindow):
 
         # Update save UI elements now we have a filename
         self._update_menu_options()
+        return editor
 
     def save_as_file(self):
         widget = self.tab_widget.currentWidget()
@@ -676,9 +669,7 @@ class MainWindow(QMainWindow):
         widget.save()
 
     def _on_created_debug_controller(self, debug_controller):
-        self._open_file(debug_controller.file_path)
-
-        editor = self.find_editor_of_file(debug_controller.file_path)
+        editor = self._open_file(debug_controller.file_path)
         editor.on_debugging_started(debug_controller)
 
     def _on_destroyed_debug_controller(self, debug_controller):

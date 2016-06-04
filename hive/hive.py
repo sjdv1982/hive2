@@ -499,18 +499,9 @@ class HiveBuilder(object):
 
             cls._hive_build_namespace(hive_object_cls)
 
+            # Root hives build
             if is_root:
-                tracked_policies = []
-                cls._hive_build_connectivity(hive_object_cls, tracked_policies)
-
-                if get_validation_enabled():
-                    for bee, policy in tracked_policies:
-                        try:
-                            policy.validate()
-
-                        except MatchmakingPolicyError:
-                            print("Error in validating policy of {}".format(bee))
-                            raise
+                cls._hive_build_connectivity(hive_object_cls)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
@@ -559,8 +550,7 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
-    def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies, plugin_map=None, socket_map=None,
-                                 is_root=True):
+    def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies=None, plugin_map=None, socket_map=None):
         """Connect plugins and sockets together by identifier.
 
         If children allow importing of namespace, pass namespace to children.
@@ -570,6 +560,8 @@ class HiveBuilder(object):
 
         # For children of the root hive, we must connect relative to top-most hive
         # This is for the top level (building) hive
+        is_root = tracked_policies is None
+
         if is_root:
             exported_to_parent = set()
 
@@ -577,6 +569,7 @@ class HiveBuilder(object):
             socket_map = defaultdict(list)
 
             bee_source = externals
+            tracked_policies = []
 
         # This method call applies to a HiveObject instance (bee_source)
         else:
@@ -690,7 +683,17 @@ class HiveBuilder(object):
 
         # Now export to child hives
         for child in child_hives:
-            cls._hive_build_connectivity(child, tracked_policies, plugin_map, socket_map, is_root=False)
+            cls._hive_build_connectivity(child, tracked_policies, plugin_map, socket_map)
+
+        # Validate policies
+        if get_validation_enabled():
+            for bee, policy in tracked_policies:
+                try:
+                    policy.validate()
+
+                except MatchmakingPolicyError:
+                    print("Error in validating policy of {}".format(bee))
+                    raise
 
     @classmethod
     def _hive_build_namespace(cls, hive_object_cls):

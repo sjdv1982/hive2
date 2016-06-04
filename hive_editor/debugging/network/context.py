@@ -241,16 +241,16 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
         # Find hivemap file path
         importer = get_hook()
-        get_file_path = importer.get_path_of_class
+        find_loader_result = importer.find_loader_result_for_class
 
         # If this fails, not a hivemap hive
         try:
-            file_path = get_file_path(parent_builder_class)
+            loader_result = find_loader_result(parent_builder_class)
 
         except ValueError:
             return None
 
-        connections = self._get_hivemap_connections(file_path)
+        connections = self._get_hivemap_connections(loader_result.module.__file__)
 
         # Iterate over potential combinations of source names and target names.
         # If they are found in the hivemap connection set, these are the valid names
@@ -415,7 +415,7 @@ class NetworkDebugSession:
         sanitised = self._sanitise_path(file_path)
         return sanitised in self._filepath_to_container_id
 
-    def _create_hivemap_controller(self, container_id, file_path):
+    def _create_hive_debug_controller(self, container_id, file_path):
         # Create debug controller
         controller = self.__class__.debug_controller_class(file_path)
         controller.send_operation = partial(self._send_data_from, container_id)
@@ -431,7 +431,7 @@ class NetworkDebugSession:
         self._container_id_to_filepath[container_id] = sanitised_path
         self._filepath_to_container_id[sanitised_path] = container_id
 
-        self._debug_controllers[container_id] = self._create_hivemap_controller(container_id, sanitised_path)
+        self._debug_controllers[container_id] = self._create_hive_debug_controller(container_id, sanitised_path)
 
     def _send_data_from(self, container_id, opcode, data):
         full_data = pack('BB', opcode, container_id) + data

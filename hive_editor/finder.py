@@ -19,6 +19,9 @@ ROBOTS_TEXT = "robots.txt"
 FinderPathEntry = namedtuple("FinderPair", "name file_path")
 
 
+# Todo produce linear output and then dictionary conversion
+
+
 class HiveFinder:
     """Search utility to find Hive classes in a filesystem"""
 
@@ -132,21 +135,22 @@ class HiveFinder:
 
             # Search module members
             for name, value in sorted(getmembers(module)):
+                if not isclass(value):
+                    continue
+
                 if name.startswith('_'):
                     continue
 
-                if isclass(value):
-                    if value in _tracked_classes:
-                        continue
+                if value in _tracked_classes:
+                    continue
 
-                    if (issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder) or \
-                            (issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive):
-                        sub_modules[name] = None
-                        _tracked_classes.add(value)
+                if ((issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder) or
+                        (issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive)):
+                    sub_modules[name] = None
+                    _tracked_classes.add(value)
 
             # Recurse to child directory, but only if nothing was handled by Python
             if is_directory:
-                print("Traverse", current_file_path)
                 new_path_entry = FinderPathEntry(file_name, current_file_path)
                 new_search_path = search_path + (new_path_entry,)
                 self._recurse(new_search_path, modules, _tracked_classes)

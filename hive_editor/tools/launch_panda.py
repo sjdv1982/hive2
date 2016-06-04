@@ -1,11 +1,12 @@
 from argparse import ArgumentParser
 from contextlib import contextmanager
-from os.path import dirname, basename, splitext
+from os.path import dirname
+from os import chdir
 
 from dragonfly.panda3d import Mainloop
-from hive_editor.importer import get_hook
 from hive_editor.debugging.network import NetworkDebugContext
-from hive_editor.utils import underscore_to_camel_case
+from hive_editor.code_generator import hivemap_to_python_source
+from hive_editor.models import model
 
 
 parser = ArgumentParser(description="Launch Hivemap in Panda3D")
@@ -21,22 +22,23 @@ parser_debug.add_argument('-host', type=str, default=None)
 
 args = parser.parse_args()
 
-# Determine class and module name from filepath
+# Set working directory
 directory = dirname(args.hivemap)
-filename = basename(args.hivemap)
-name = splitext(filename)[0]
-hive_name = underscore_to_camel_case(name)
+chdir(directory)
 
-# Import hivemap
-import_context = get_hook()
-with import_context.temporary_relative_context(directory):
-    module = __import__(name, fromlist=[hive_name])
-    hivemap_class = getattr(module, hive_name)
+hive_class_name = "LaunchHive"
+
+# Load hivemap and produce hive
+hivemap = model.Hivemap.fromfile(args.hivemap)
+source = hivemap_to_python_source(hivemap, hive_class_name)
+namespace = {}
+exec(source, namespace)
+hive_class = namespace[hive_class_name]
 
 
 # Embed inside Panda mainloop hive
 def build_my_hive(i, ex, args):
-    i.main_hive = hivemap_class()
+    i.main_hive = hive_class()
 
 
 MainHive = Mainloop.extend("MyHive", build_my_hive)

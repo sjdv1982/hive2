@@ -252,3 +252,7 @@ def camelcase_to_underscores(name):
 def underscore_to_camel_case(name):
     name = name.capitalize()
     return "".join(x.capitalize() if x else '_' for x in name.split("_"))
+
+
+def is_hivemap(file_path):
+    pass
