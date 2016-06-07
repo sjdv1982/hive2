@@ -1,28 +1,20 @@
 import os
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from fnmatch import filter
-from inspect import isclass, ismodule, getmembers
+from inspect import isclass, getmembers
+from importlib import import_module
 
 import dragonfly
 import hive
 
 
-def _keys_to_dict(keys):
-    return OrderedDict([(k, None) for k in keys])
-
+GUI_CONF_FILENAME = "robots.txt"
 
 _hive_lib_dir = os.path.dirname(dragonfly.__path__[0])
 all_bees = ['hive.attribute', 'hive.antenna', 'hive.output', 'hive.entry', 'hive.hook', 'hive.triggerfunc',
-              'hive.modifier', 'hive.pull_in', 'hive.pull_out', 'hive.push_in', 'hive.push_out']
-
-GUI_CONF_FILENAME = "robots.txt"
-
+            'hive.modifier', 'hive.pull_in', 'hive.pull_out', 'hive.push_in', 'hive.push_out']
 
 FinderPathElement = namedtuple("FinderPathElement", "name file_path")
-FoundHiveElement = namedtuple("FoundHiveElement", "import_path file_path is_hivemap")
-
-
-# Todo produce linear output and then dictionary conversion
 
 
 class HiveFinder:
@@ -116,7 +108,7 @@ class HiveFinder:
 
             # Import the module
             try:
-                module = __import__(import_path, fromlist=[name])
+                module = import_module(import_path)
 
             except ImportError as err:
                 print("Couldn't import {}".format(import_path))
@@ -140,8 +132,8 @@ class HiveFinder:
                         (issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive)):
                     continue
 
-                hive_import_path = '{}.{}'.format(import_path, name)
-                results.append(hive_import_path)
+                hive_reference_path = '{}.{}'.format(import_path, name)
+                results.append(hive_reference_path)
                 _tracked_classes.add(value)
 
             # Recurse to child directory

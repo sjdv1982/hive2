@@ -24,7 +24,7 @@ class HiveNodeMenu:
                         child_path = child
 
                     operator = layout.operator("hive.add_node", text=child)
-                    operator.import_path = child_path
+                    operator.reference_path = child_path
 
         # Create menu class
         menu_cls_dict = dict(draw=draw, bl_idname=repr(id(self)), bl_label=name)

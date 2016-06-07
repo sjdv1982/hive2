@@ -190,8 +190,8 @@ class MainWindow(QMainWindow):
         self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
                                    triggered=self.goto_help_page)
 
-    def _open_project_hive(self, import_path):
-        hivemap_file_path = find_file_path_of_hive_path(import_path)
+    def _open_project_hive(self, reference_path):
+        hivemap_file_path = find_file_path_of_hive_path(reference_path)
         self._open_file(hivemap_file_path)
 
     def _filter_web_drop(self, event):
@@ -453,8 +453,8 @@ class MainWindow(QMainWindow):
             if not isinstance(widget, NodeEditorSpace):
                 return
 
-            import_path = editor.text()
-            widget.add_node_at_mouse(import_path, NodeTypes.HIVE)
+            reference_path = editor.text()
+            widget.add_node_at_mouse(reference_path, NodeTypes.HIVE)
             dialogue.close()
 
         editor.returnPressed.connect(on_return)
@@ -547,9 +547,9 @@ class MainWindow(QMainWindow):
                 widget.update_hive_tree(hives)
                 widget.update_bee_tree(bees)
 
-    def show_hive_edit_menu(self, hive_widget, import_path, event):
+    def show_hive_edit_menu(self, hive_widget, reference_path, event):
         try:
-            hivemap_file_path = find_file_path_of_hive_path(import_path)
+            hivemap_file_path = find_file_path_of_hive_path(reference_path)
 
         except ValueError:
             return

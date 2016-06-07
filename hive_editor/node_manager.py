@@ -7,7 +7,7 @@ from .factory import BeeNodeFactory, HiveNodeFactory
 from .history import CommandHistoryManager
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
-from .node import FOLD_NODE_IMPORT_PATH, NodeTypes
+from .node import FOLD_NODE_REFERENCE_PATH, NodeTypes
 from .observer import Observable
 from .utils import start_value_from_type, is_identifier, camelcase_to_underscores
 
@@ -91,7 +91,7 @@ class NodeManager(object):
         self._hive_node_factory = HiveNodeFactory()
 
         self._hive_node_inspector = HiveNodeInspector()
-        self._bee_node_inspector = BeeNodeInspector(find_by_import_path=self.find_by_import_path)
+        self._bee_node_inspector = BeeNodeInspector(find_by_reference_path=self.find_by_reference_path)
 
         self.docstring = ""
         self.nodes = {}
@@ -106,18 +106,18 @@ class NodeManager(object):
 
         self._logger = logger
 
-    def _unique_name_from_import_path(self, import_path):
-        obj_name = import_path.split(".")[-1]
+    def _unique_name_from_reference_path(self, reference_path):
+        obj_name = reference_path.split(".")[-1]
         identifier = camelcase_to_underscores(obj_name)
         identifier = _sanitise_node_name(identifier)
         return _get_unique_name(self.nodes, identifier)
 
-    def find_by_import_path(self, import_path):
-        """Return dict of nodes with the given import path
+    def find_by_reference_path(self, reference_path):
+        """Return dict of nodes with the given reference path
 
-        :param import_path: import python path of node
+        :param reference_path: reference path of node
         """
-        return {name: node for name, node in self.nodes.items() if node.import_path == import_path}
+        return {name: node for name, node in self.nodes.items() if node.reference_path == reference_path}
 
     def _add_connection(self, connection):
         """Connect connection and push to history.
@@ -225,46 +225,46 @@ class NodeManager(object):
 
         self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
 
-    def create_node(self, node_type, import_path, params=None):
+    def create_node(self, node_type, reference_path, params=None):
         if node_type == NodeTypes.HIVE:
-            return self._create_hive(import_path, params)
+            return self._create_hive(reference_path, params)
 
         elif node_type == NodeTypes.BEE:
-            return self._create_bee(import_path, params)
+            return self._create_bee(reference_path, params)
 
         raise ValueError(node_type)
 
-    def _create_bee(self, import_path, params=None):
-        """Create a bee node with the given import path"""
+    def _create_bee(self, reference_path, params=None):
+        """Create a bee node with the given reference path"""
         if params is None:
             params = {}
 
-        name = self._unique_name_from_import_path(import_path)
-        param_info = self._bee_node_inspector.inspect_configured(import_path, params)
-        node = self._bee_node_factory.new(name, import_path, params, param_info)
+        name = self._unique_name_from_reference_path(reference_path)
+        param_info = self._bee_node_inspector.inspect_configured(reference_path, params)
+        node = self._bee_node_factory.new(name, reference_path, params, param_info)
 
         self._add_node(node)
         return node
 
-    def _create_hive(self, import_path, params=None):
+    def _create_hive(self, reference_path, params=None):
         """Create a hive node with the given path"""
         if params is None:
             params = {}
 
-        name = self._unique_name_from_import_path(import_path)
+        name = self._unique_name_from_reference_path(reference_path)
 
         try:
-            param_info = self._hive_node_inspector.inspect_configured(import_path, params)
+            param_info = self._hive_node_inspector.inspect_configured(reference_path, params)
 
         except Exception:
-            self._logger.error("Failed to inspect '{}'".format(import_path))
+            self._logger.error("Failed to inspect '{}'".format(reference_path))
             raise
 
         try:
-            node = self._hive_node_factory.new(name, import_path, params, param_info)
+            node = self._hive_node_factory.new(name, reference_path, params, param_info)
 
         except Exception:
-            self._logger.error("Failed to instantiate '{}'".format(import_path))
+            self._logger.error("Failed to instantiate '{}'".format(reference_path))
             raise
 
         self._add_node(node)
@@ -354,7 +354,7 @@ class NodeManager(object):
                                           for c in p.connections if c.input_pin.is_folded)
                 self.unfold_pin(folding_parent_pin)
 
-            node_import_path = node.import_path
+            node_reference_path = node.reference_path
             node_name = node.name
             node_position = node.position
             node_type = node.node_type
@@ -363,7 +363,7 @@ class NodeManager(object):
             self.delete_node(node)
 
             # Create new node
-            new_node = self.create_node(node_type, node_import_path, params)
+            new_node = self.create_node(node_type, node_reference_path, params)
 
             # Move and rename
             self.reposition_node(new_node, node_position)
@@ -510,7 +510,7 @@ class NodeManager(object):
                           args=dict(start_value=start_value_from_type(pin.data_type)))
 
             # Create variable node, attempt to call it same as pin
-            target_node = self._create_hive(FOLD_NODE_IMPORT_PATH, params)
+            target_node = self._create_hive(FOLD_NODE_REFERENCE_PATH, params)
             target_pin = next(iter(target_node.outputs.values()))
 
             self.rename_node(target_node, pin.name, attempt_till_success=True)
@@ -648,8 +648,8 @@ class NodeManager(object):
                 assert node.node_type == NodeTypes.BEE
                 family = "BEE"
 
-            spyder_node = model.Node(identifier=node.name, family=family, import_path=node.import_path,
-                                     position=node.position,  parameter_groups=parameter_groups,
+            spyder_node = model.Node(identifier=node.name, family=family, reference_path=node.reference_path,
+                                     position=node.position, parameter_groups=parameter_groups,
                                      folded_pins=folded_pins)
 
             hivemap.nodes.append(spyder_node)
@@ -684,12 +684,12 @@ class NodeManager(object):
 
         # Load IO bees
         for spyder_node in hivemap.nodes:
-            import_path = spyder_node.import_path
+            reference_path = spyder_node.reference_path
             params = parameter_group_array_to_dict(spyder_node.parameter_groups)
 
             if spyder_node.family == "BEE":
                 try:
-                    node = self._create_bee(import_path, params)
+                    node = self._create_bee(reference_path, params)
 
                 except Exception as err:
                     self._logger.exception("Unable to create bee node {}".format(spyder_node.identifier))
@@ -697,7 +697,7 @@ class NodeManager(object):
 
             else:
                 try:
-                    node = self._create_hive(import_path, params)
+                    node = self._create_hive(reference_path, params)
 
                 except Exception as err:
                     self._logger.exception("Unable to create hive node {}".format(spyder_node.identifier))

@@ -19,6 +19,7 @@ Control flow: Generic node manager -> Blender node manager
 - [x] Check out pos/ scene pos discrepancy
 - [x] Add edit undo
 - [x] Add select tools, grab etc
+- [ ] Allow specification of application to open Reference path when clicked 
 
 # General GUI
 - [x] Add docstring to builder function when building from hivemap

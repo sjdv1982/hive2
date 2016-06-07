@@ -5,7 +5,7 @@ from .data_views import ListView, DictView
 from .sockets import get_colour, get_shape
 from .protected_container import ProtectedContainer, RestrictedAttribute, RestrictedProperty
 
-FOLD_NODE_IMPORT_PATH = "dragonfly.std.Variable"
+FOLD_NODE_REFERENCE_PATH = "dragonfly.std.Variable"
 
 
 class MimicFlags(object):
@@ -213,12 +213,12 @@ class NodeTypes(object):
 
 class Node(ProtectedContainer):
 
-    def __init__(self, name, node_type, import_path, params, params_info):
+    def __init__(self, name, node_type, reference_path, params, params_info):
         """
         Container for GUI configuration of HiveObject instance
 
         :param name: unique node name
-        :param import_path: path to find object representing node (may not exist for certain node types)
+        :param reference_path: path to find object representing node (may not exist for certain node types)
         :param params: parameter dictionary containing data about node
         :param params_info: parameter dictionary containing data about params dict
         :return:
@@ -232,7 +232,7 @@ class Node(ProtectedContainer):
 
         # Read only
         self._node_type = node_type
-        self._import_path = import_path
+        self._reference_path = reference_path
 
         self._params = params
         self._params_info = params_info
@@ -259,8 +259,8 @@ class Node(ProtectedContainer):
         return pin
 
     @property
-    def import_path(self):
-        return self._import_path
+    def reference_path(self):
+        return self._reference_path
 
     @property
     def node_type(self):

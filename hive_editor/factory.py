@@ -5,23 +5,23 @@ from .utils import hive_object_instance_from_import_result, hive_import_from_pat
 
 
 class BeeNodeFactory:
-    """Create bee nodes from import paths
+    """Create bee nodes from reference paths
 
     Bees cannot be inspected like Hives because they are the GUI primitives
     """
 
-    def new(self, name, import_path, params, param_info):
-        """Create new Bee node with given name, import path and params dict
+    def new(self, name, reference_path, params, param_info):
+        """Create new Bee node with given name, reference path and params dict
 
         :param name: name of node
-        :param import_path: import path of bee
+        :param reference_path: reference path of bee
         :param params: configuration data for node
         """
-        root, bee_name = import_path.split(".")
+        root, bee_name = reference_path.split(".")
         assert root == "hive"
 
         builder = getattr(self, "build_{}".format(bee_name))
-        node = Node(name, NodeTypes.BEE, import_path, params, param_info)
+        node = Node(name, NodeTypes.BEE, reference_path, params, param_info)
 
         return builder(node)
 
@@ -105,20 +105,20 @@ class BeeNodeFactory:
 
 
 class HiveNodeFactory:
-    """Create HIve nodes from import paths"""
+    """Create Hive nodes from reference paths"""
 
     @classmethod
-    def new(cls, name, import_path, params, param_info):
+    def new(cls, name, reference_path, params, param_info):
         try:
-            import_result = hive_import_from_path(import_path)
+            import_result = hive_import_from_path(reference_path)
 
         except (ImportError, AttributeError):
-            raise ValueError("Invalid import path: {}".format(import_path))
+            raise ValueError("Invalid reference path: {}".format(reference_path))
 
-        return cls._node_from_import_result(import_result, name, import_path, params, param_info)
+        return cls._node_from_import_result(import_result, name, reference_path, params, param_info)
 
     @staticmethod
-    def _node_from_import_result(import_result, name, import_path, params, param_info):
+    def _node_from_import_result(import_result, name, reference_path, params, param_info):
         # Allow GUI to instantiate hives without connectivity validation
         with validation_enabled_as(False):
             hive_object = hive_object_instance_from_import_result(import_result, params)
@@ -129,7 +129,7 @@ class HiveNodeFactory:
             # so these changes aren't mirrored to the args wrappers on this hive_object
             # Use the params dict instead of re-scraping the hive_object if reading these values
 
-            node = Node(name, NodeTypes.HIVE, import_path, params, param_info)
+            node = Node(name, NodeTypes.HIVE, reference_path, params, param_info)
 
             # Set tooltip as docstring
             with node.make_writable():

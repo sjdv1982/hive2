@@ -64,7 +64,7 @@ class PreviewWidget(QWidget):
 
         for node_name, node in sorted(nodes.items()):
             # If an input IO bee
-            if node.import_path in {"hive.antenna", "hive.entry"}:
+            if node.reference_path in {"hive.antenna", "hive.entry"}:
                 pin = next(iter(node.outputs.values()))
                 try:
                     connection = next(iter(pin.connections))
@@ -77,7 +77,7 @@ class PreviewWidget(QWidget):
                 input_pin.mimic_other_pin(remote_pin)
 
             # If an output IO bee
-            if node.import_path in {"hive.output", "hive.hook"}:
+            if node.reference_path in {"hive.output", "hive.hook"}:
                 pin = next(iter(node.inputs.values()))
                 try:
                     connection = next(iter(pin.connections))
@@ -264,7 +264,7 @@ class NodeEditorSpace(QMainWindow):
 
         self._configuration_widget = ConfigurationPanel()
         self._configuration_widget.do_morph_node.connect(self._do_panel_morph_node)
-        self._configuration_widget.on_import_path_clicked.connect(self._panel_import_path_clicked)
+        self._configuration_widget.on_reference_path_clicked.connect(self._panel_reference_path_clicked)
         self._configuration_widget.set_param_value.connect(self._node_manager.set_param_value)
         self._configuration_widget.rename_node.connect(self._node_manager.rename_node)
 
@@ -383,13 +383,13 @@ class NodeEditorSpace(QMainWindow):
 
     def _do_panel_morph_node(self, node):
         inspector = self._node_manager.get_inspector_for(node.node_type)
-        inspection_generator = inspector.inspect(node.import_path)
+        inspection_generator = inspector.inspect(node.reference_path)
 
         params = self._execute_inspector(inspection_generator)
         self._node_manager.morph_node(node, params)
 
-    def _panel_import_path_clicked(self, import_path):
-        module, class_name = import_module_from_hive_path(import_path)
+    def _panel_reference_path_clicked(self, reference_path):
+        module, class_name = import_module_from_hive_path(reference_path)
         open_url(module.__file__)
 
     def _pin_to_bee_container_name(self, pin):
@@ -675,15 +675,15 @@ class NodeEditorSpace(QMainWindow):
 
     def _gui_node_right_clicked(self, gui_node, event):
         node = gui_node.node
-        self._gui_hive_edit(node.import_path, event.screenPos())
+        self._gui_hive_edit(node.reference_path, event.screenPos())
 
-    def _gui_tree_hive_edit(self, import_path, event):
-        self._gui_hive_edit(import_path, event.globalPos())
+    def _gui_tree_hive_edit(self, reference_path, event):
+        self._gui_hive_edit(reference_path, event.globalPos())
 
-    def _gui_hive_edit(self, import_path, global_pos):
+    def _gui_hive_edit(self, reference_path, global_pos):
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = find_file_path_of_hive_path(import_path)
+            hivemap_file_path = find_file_path_of_hive_path(reference_path)
 
         except ValueError:
             return
@@ -746,15 +746,15 @@ class NodeEditorSpace(QMainWindow):
 
         return params
 
-    def add_node_at(self, position, import_path, node_type):
-        inspection_generator = self._node_manager.get_inspector_for(node_type).inspect(import_path)
+    def add_node_at(self, position, reference_path, node_type):
+        inspection_generator = self._node_manager.get_inspector_for(node_type).inspect(reference_path)
 
         if node_type == NodeTypes.HIVE:
             # Check Hive's hivemap isn't currently open
             if self.file_path is not None:
                 # Check we don't have a source file
                 try:
-                    hivemap_file_path = find_file_path_of_hive_path(import_path)
+                    hivemap_file_path = find_file_path_of_hive_path(reference_path)
 
                 except ValueError:
                     pass
@@ -765,7 +765,7 @@ class NodeEditorSpace(QMainWindow):
                         return
 
         params = self._execute_inspector(inspection_generator)
-        node = self._node_manager.create_node(node_type, import_path, params=params)
+        node = self._node_manager.create_node(node_type, reference_path, params=params)
 
         view_position = self._view.mapFromGlobal(position)
         scene_position = self._view.mapToScene(view_position)
@@ -773,11 +773,11 @@ class NodeEditorSpace(QMainWindow):
 
         self._node_manager.reposition_node(node, pos)
 
-    def add_node_at_mouse(self, import_path, node_type):
+    def add_node_at_mouse(self, reference_path, node_type):
         # Get mouse position
         cursor = QCursor()
         q_position = cursor.pos()
-        self.add_node_at(q_position, import_path, node_type)
+        self.add_node_at(q_position, reference_path, node_type)
 
     def select_all(self):
         self._view.select_all()
@@ -811,7 +811,7 @@ class NodeEditorSpace(QMainWindow):
         for node in node_manager.nodes.values():
             # If destination file is a hivemap, don't allow
             try:
-                hivemap_file_path = find_file_path_of_hive_path(node.import_path)
+                hivemap_file_path = find_file_path_of_hive_path(node.reference_path)
 
             except ValueError:
                 continue

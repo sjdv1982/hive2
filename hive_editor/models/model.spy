@@ -14,7 +14,7 @@ Type InstanceParameterGroup {
 Type Node {
   String identifier
   Enum family("BEE", "HIVE")
-  String import_path
+  String reference_path
   Coordinate2D position = Coordinate2D(0, 0)
   InstanceParameterGroupArray parameter_groups
   StringArray folded_pins = []

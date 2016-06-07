@@ -146,16 +146,16 @@ class ArgumentsPanel(NodeContextPanelBase):
 
 class ConfigurationPanel(ArgumentsPanel):
     rename_node = pyqtSignal(object, str)
-    on_import_path_clicked = pyqtSignal(str)
+    on_reference_path_clicked = pyqtSignal(str)
 
     def _update_layout(self, node):
         layout = self._layout
 
-        widget = QClickableLabel(node.import_path)
-        widget.clicked.connect(partial(self.on_import_path_clicked.emit, node.import_path))
+        widget = QClickableLabel(node.reference_path)
+        widget.clicked.connect(partial(self.on_reference_path_clicked.emit, node.reference_path))
 
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
-        layout.addRow(self.tr("Import path"), widget)
+        layout.addRow(self.tr("Reference path"), widget)
 
         widget = QLineEdit()
         widget.setPlaceholderText(node.name)

@@ -3,8 +3,9 @@ from contextlib import contextmanager
 from collections import namedtuple
 from importlib.machinery import ModuleSpec
 from importlib.abc import MetaPathFinder, Loader
-from os.path import basename, splitext, join
-from os import listdir
+from os.path import basename, splitext, join, isdir
+from os import scandir
+
 
 from .code_generator import hivemap_to_python_source
 from .data_views import ListView
@@ -91,7 +92,10 @@ class HivemapModuleFinder(MetaPathFinder):
         for root in path:
             directory = join(root, *split_path[:-1])
 
-            if file_name in listdir(directory):
+            if not isdir(directory):
+                continue
+
+            if file_name in scandir(directory):
                 file_path = join(directory, file_name)
                 break
 
