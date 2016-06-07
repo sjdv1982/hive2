@@ -106,11 +106,17 @@ class HiveFinder:
             names_to_module = names_from_root + (name,)
             import_path = '.'.join(names_to_module)
 
+            # Although modules can be imported using __import__ or importlib.import_module with non-identifier names
+            # It is not safe and breaks the code generator
+            if not all(x.isidentifier() for x in names_to_module):
+                print("Invalid identifier for module: {}".format(import_path))
+                continue
+
             # Import the module
             try:
                 module = import_module(import_path)
 
-            except ImportError as err:
+            except Exception as err:
                 print("Couldn't import {}".format(import_path))
                 import traceback
 

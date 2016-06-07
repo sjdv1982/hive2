@@ -40,9 +40,14 @@ class HivemapModuleLoader(FileLoader):
         name = module.__spec__.name
 
         # Load hivemap
-        hivemap = model.Hivemap.fromfile(self.path)
-        class_name = self._class_name_from_file_path(self.path)
+        try:
+            hivemap = model.Hivemap.fromfile(self.path)
 
+        except Exception as err:
+            print("Unable to load {}".format(self.path))
+            raise ImportError from err
+
+        class_name = self._class_name_from_file_path(self.path)
         python_source = self._source = hivemap_to_python_source(hivemap, class_name=class_name)
 
         try:
