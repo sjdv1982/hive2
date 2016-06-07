@@ -3,7 +3,7 @@
 Defines policies for plugin donation
 """
 
-from hive.exception import HiveException
+from .exception import HiveException
 
 
 class MatchmakingPolicyError(HiveException):

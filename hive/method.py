@@ -1,6 +1,6 @@
-from hive.annotations import update_wrapper
-from hive.manager import get_building_hive, memoize
-from hive.mixins import Bindable, Callable, Exportable, Nameable
+from .annotations import update_wrapper
+from .manager import get_building_hive, memoize
+from .mixins import Bindable, Callable, Exportable, Nameable
 
 
 class Method(Bindable, Callable, Exportable, Nameable):

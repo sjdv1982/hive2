@@ -1,10 +1,9 @@
 from collections import defaultdict
-from inspect import signature
 from weakref import ref
 
 from .classes import (HiveInternalWrapper, HiveExportableWrapper, HiveArgsWrapper, HiveMetaArgsWrapper, ResolveBee,
                       HiveClassProxy)
-from .compatability import next
+from .compatability import next, validate_signature
 from .connect import connect, ConnectionCandidate
 from .identifiers import identifiers_match
 from .manager import (bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, \
@@ -206,10 +205,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
             if builder_cls is not None:
-                init_signature = signature(builder_cls)
 
                 try:
-                    init_signature.bind(*self._hive_builder_args, **self._hive_builder_kwargs)
+                    validate_signature(builder_cls, *self._hive_builder_args, **self._hive_builder_kwargs)
 
                 except TypeError as err:
                     raise TypeError("{}.{}".format(builder_cls.__name__, err.args[0]))

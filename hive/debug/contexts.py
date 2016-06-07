@@ -1,7 +1,7 @@
 from csv import writer as csv_writer
-from functools import lru_cache
 from weakref import ref
 
+from ..compatability import cache
 from ..ppin import PullIn
 from ..ppout import PushOut
 from ..mixins import Nameable
@@ -107,7 +107,7 @@ class FileDebugContext(ReportedDebugContextBase):
     def report_pull_in(self, source_ref, target_ref, data):
         self._write_reported_operation("pull-in", source_ref, target_ref, data)
 
-    @lru_cache()
+    @cache()
     def _get_absolute_name(self, bee_ref):
         bee = bee_ref()
 
