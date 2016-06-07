@@ -172,7 +172,7 @@ class BindClassFactory:
 
         cls_dict = {}
 
-        # TODO if bottleneck, set attribute on class instance at runtime (instead of looking up from dict)
+        # TODO if bottleneck, set plugins on class instance at runtime (instead of looking up from self_environment dict)
 
         # For each plugin, create a getter function to be used by a getter plugin
         for attr_name, plugin_entry in self._plugins.items():

@@ -175,7 +175,6 @@ def import_module_from_hive_path(hive_path):
     return import_module(module_path), class_name
 
 
-# TODO ensure import path is renamed where necessary to hive path
 def hive_import_from_path(hive_path):
     """Import Hive class from hive path
 
