@@ -2,9 +2,9 @@ import sys
 from contextlib import contextmanager
 from collections import namedtuple
 from importlib.machinery import ModuleSpec
-from importlib.abc import MetaPathFinder, Loader
+from importlib.abc import MetaPathFinder, FileLoader
 from os.path import basename, splitext, join, isdir
-from os import scandir
+from os import listdir
 
 
 from .code_generator import hivemap_to_python_source
@@ -16,11 +16,13 @@ from .models import model
 HivemapLoaderResult = namedtuple("HivemapLoaderResult", "module cls class_name")
 
 
-class HivemapModuleLoader(Loader):
+class HivemapModuleLoader(FileLoader):
     """Loader for hivemaps"""
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, fullname, path):
+        super().__init__(fullname, path)
+
+        self._source = None
         self.results = []
 
     def clear_cache(self):
@@ -31,6 +33,9 @@ class HivemapModuleLoader(Loader):
         file_name = splitext(basename(file_path))[0]
         return underscore_to_camel_case(file_name)
 
+    def get_source(self, fullname):
+        return self._source
+
     def exec_module(self, module):
         name = module.__spec__.name
 
@@ -38,7 +43,7 @@ class HivemapModuleLoader(Loader):
         hivemap = model.Hivemap.fromfile(self.path)
         class_name = self._class_name_from_file_path(self.path)
 
-        python_source = hivemap_to_python_source(hivemap, class_name=class_name)
+        python_source = self._source = hivemap_to_python_source(hivemap, class_name=class_name)
 
         try:
             exec(python_source, module.__dict__)
@@ -95,17 +100,20 @@ class HivemapModuleFinder(MetaPathFinder):
             if not isdir(directory):
                 continue
 
-            if file_name in scandir(directory):
+            if file_name in listdir(directory):
                 file_path = join(directory, file_name)
                 break
 
         else:
             return None
 
-        loader = HivemapModuleLoader(file_path)
+        loader = HivemapModuleLoader(fullname, file_path)
         self._loaders.append(loader)
 
-        return ModuleSpec(fullname, loader, origin=file_path, loader_state=None, is_package=False)
+        spec = ModuleSpec(fullname, loader, origin=file_path, loader_state=None, is_package=False)
+        spec.has_location = True
+
+        return spec
 
 
 _finder = None
