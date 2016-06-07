@@ -20,7 +20,7 @@ from .view import NodeView, NodePreviewView
 from ..code_generator import hivemap_to_python_source
 from ..history import CommandHistoryManager
 from ..inspector import InspectorOption
-from ..utils import import_path_to_hivemap_path, import_module_from_path
+from ..utils import find_file_path_of_hive_path, import_module_from_hive_path
 from ..node import MimicFlags, NodeTypes
 from ..node_manager import NodeManager
 
@@ -389,7 +389,7 @@ class NodeEditorSpace(QMainWindow):
         self._node_manager.morph_node(node, params)
 
     def _panel_import_path_clicked(self, import_path):
-        module, class_name = import_module_from_path(import_path)
+        module, class_name = import_module_from_hive_path(import_path)
         open_url(module.__file__)
 
     def _pin_to_bee_container_name(self, pin):
@@ -681,12 +681,9 @@ class NodeEditorSpace(QMainWindow):
         self._gui_hive_edit(import_path, event.globalPos())
 
     def _gui_hive_edit(self, import_path, global_pos):
-        # Try and import the hivemap
-        additional_paths = [self._project_path] if self._project_path else []
-
         # Can only edit .hivemaps
         try:
-            hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
+            hivemap_file_path = find_file_path_of_hive_path(import_path)
 
         except ValueError:
             return
@@ -755,12 +752,9 @@ class NodeEditorSpace(QMainWindow):
         if node_type == NodeTypes.HIVE:
             # Check Hive's hivemap isn't currently open
             if self.file_path is not None:
-                # Try and import the hivemap
-                additional_paths = [self._project_path] if self._project_path else []
-
                 # Check we don't have a source file
                 try:
-                    hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
+                    hivemap_file_path = find_file_path_of_hive_path(import_path)
 
                 except ValueError:
                     pass
@@ -810,9 +804,6 @@ class NodeEditorSpace(QMainWindow):
     def _check_for_cyclic_reference(self, file_path):
         node_manager = self._node_manager
 
-        # Try and import the hivemap
-        additional_paths = [self._project_path] if self._project_path else []
-
         # Check that we aren't attempting to save-as a hivemap of an existing Node instance
         if not os.path.exists(file_path):
             return False
@@ -820,7 +811,7 @@ class NodeEditorSpace(QMainWindow):
         for node in node_manager.nodes.values():
             # If destination file is a hivemap, don't allow
             try:
-                hivemap_file_path = import_path_to_hivemap_path(node.import_path, additional_paths)
+                hivemap_file_path = find_file_path_of_hive_path(node.import_path)
 
             except ValueError:
                 continue

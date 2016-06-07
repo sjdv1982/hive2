@@ -64,23 +64,16 @@ class TreeWidget(QTreeWidget):
         else:
             self.setDragEnabled(False)
 
-    def _load_items(self, item_dict, path):
-        for name, child in item_dict.items():
-            full_path = path + (name,)
-
-            if isinstance(child, dict):
-                self._load_items(child, full_path)
-
-            else:
-                assert child is None
-                self.append(full_path)
-
-    def set_items(self, item_dict, path=()):
+    def set_items(self, items):
         self.clear()
 
-        self._load_items(item_dict, path)
+        for item in items:
+            self.append(item)
 
-    def append(self, key):
+    def append(self, path):
+        assert isinstance(path, str)
+
+        key = path.split('.')
         assert key not in self._keys
         head, tail = key[0], key[1:]
 
@@ -135,8 +128,9 @@ class TreeWidget(QTreeWidget):
                 ww = self.all_items[parent]
                 ww.removeChild(w)
 
-    def remove(self, key):
-        key = tuple(key)
+    def remove(self, path):
+        assert isinstance(path, str)
+        key = path.split('.')
         assert key in self._keys
 
         self._keys.remove(key)

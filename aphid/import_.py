@@ -15,11 +15,6 @@ class ImportClass:
         self.module = None
 
     def do_import_from_path(self):
-        module_parts = self.import_path.split(".")
-        sub_module_name = module_parts[-1]
-
-        hook = hive_editor.get_hook()
-
         # Find first runtime info object and assume is the only one required
         runtime_infos = self._hive._hive_runtime_info
         if not runtime_infos:
@@ -30,7 +25,9 @@ class ImportClass:
         parent = first_runtime_info.parent()
         container_parent_class = parent._hive_object._hive_parent_class
 
-        # Find package of containing hive
+        hook = hive_editor.get_hook()
+
+        # Find the loader result of the hive in which this hive is embedded (to find the __package__)
         try:
             loader_result = hook.find_loader_result_for_class(container_parent_class)
 

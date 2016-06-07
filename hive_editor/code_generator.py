@@ -77,7 +77,7 @@ def hivemap_to_python_source(hivemap, class_name, builder_name="builder"):
         if spyder_bee_node.family == "HIVE":
             # Add import path to import set
             root, cls = import_path.rsplit(".", 1)
-            imports.add(root)
+            imports.add(root) #TODO
 
             # Find Hive class and inspect it
             try:

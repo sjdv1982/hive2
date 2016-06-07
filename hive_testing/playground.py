@@ -39,7 +39,10 @@ mod.__file__ = "SomeFile"
 
 from hive_editor.connection import Connection
 test_string = """
-from .imptest import Imptest
+from .imptest.imptest import Imptest
+from .imptest import imptest as X
+print(Imptest, X)
 i = Imptest()
+print(i)
 """
-#exec(test_string, mod.__dict__)
+exec(test_string, mod.__dict__)

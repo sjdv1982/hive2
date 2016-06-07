@@ -18,10 +18,10 @@ from .tree import TreeWidget
 from .web_view import QEditorWebView
 
 from .. import tools
-from ..finder import found_bees, HiveFinder
-from ..importer import clear_imported_hivemaps, sys_path_add_context
+from ..finder import all_bees, HiveFinder
+from ..importer import clear_imported_hivemaps, sys_path_add_context, module_is_hivemap
 from ..node import NodeTypes
-from ..utils import import_path_to_hivemap_path
+from ..utils import find_file_path_of_hive_path
 
 
 def dict_to_delimited(data, delimiter, name_path=()):
@@ -191,9 +191,7 @@ class MainWindow(QMainWindow):
                                    triggered=self.goto_help_page)
 
     def _open_project_hive(self, import_path):
-        # Can only edit .hivemaps
-        additional_paths = [self._project_directory] if self._project_directory else []
-        hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
+        hivemap_file_path = find_file_path_of_hive_path(import_path)
         self._open_file(hivemap_file_path)
 
     def _filter_web_drop(self, event):
@@ -359,7 +357,7 @@ class MainWindow(QMainWindow):
         editor.do_open_file.connect(self._open_file)
         editor.on_dropped_for_parent.connect(self._on_dropped)
 
-        editor.update_bee_tree(found_bees)
+        editor.update_bee_tree(all_bees)
         editor.update_hive_tree(self.hive_finder.all_hives)
 
         # Ask to handle these
@@ -444,7 +442,7 @@ class MainWindow(QMainWindow):
         editor.setCompleter(completer)
 
         model = QStringListModel()
-        completion_paths = list(dict_to_delimited(self.hive_finder.all_hives, '.'))
+        completion_paths = self.hive_finder.all_hives
         model.setStringList(completion_paths)
 
         completer.setModel(model)
@@ -506,8 +504,9 @@ class MainWindow(QMainWindow):
 
         # Update hives display in project window
         self._project_hives_window.setWidget(self._project_hives_active_widget)
-        project_hives = self.hive_finder.hives_by_path[directory_path]
-        self._project_hives_active_widget.set_items(project_hives)
+        hives_in_project = self.hive_finder.hives_by_path[directory_path]
+        project_hivemaps = [p for p in hives_in_project if module_is_hivemap(__import__(p.rsplit('.', 1)[0]))]
+        self._project_hives_active_widget.set_items(project_hivemaps)
 
     def close_open_tabs(self):
         while self.tab_widget.count() > 1:
@@ -539,7 +538,7 @@ class MainWindow(QMainWindow):
         self.hive_finder.reload()
 
         hives = self.hive_finder.all_hives
-        bees = found_bees
+        bees = all_bees
 
         for i in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(i)
@@ -549,11 +548,8 @@ class MainWindow(QMainWindow):
                 widget.update_bee_tree(bees)
 
     def show_hive_edit_menu(self, hive_widget, import_path, event):
-        # Can only edit .hivemaps
-        additional_paths = [self.project_directory] if self.project_directory else []
-
         try:
-            hivemap_file_path = import_path_to_hivemap_path(import_path, additional_paths)
+            hivemap_file_path = find_file_path_of_hive_path(import_path)
 
         except ValueError:
             return
@@ -650,7 +646,7 @@ class MainWindow(QMainWindow):
         was_untitled = widget.file_path is None
         widget.save(file_path=file_path)
 
-        # Rename tab
+        # Update tab name
         name = self._get_display_name(file_path, allow_untitled=False)
         index = self.tab_widget.currentIndex()
         self.tab_widget.setTabText(index, name)
