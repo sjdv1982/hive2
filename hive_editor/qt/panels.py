@@ -149,13 +149,14 @@ class ConfigurationPanel(ArgumentsPanel):
         layout = self._layout
 
         widget = ClickableLabelWidget(node.reference_path)
+        widget.setToolTip("Python module path + class name of Hive")
         widget.clicked.connect(partial(self.onReferencePathClicked.emit, node.reference_path))
 
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
         layout.addRow(self.tr("Reference path"), widget)
 
         widget = QLineEdit()
-        widget.setPlaceholderText(node.name)
+        widget.setText(node.name)
         widget.textChanged.connect(partial(self.doRenameNode.emit, node))
         layout.addRow(self.tr("&Name"), widget)
 
@@ -187,6 +188,7 @@ class FoldingPanel(NodeContextPanelBase):
 
             if pin.is_foldable:
                 button = QPushButton("Fol&d")
+                button.setToolTip("Collapse pin (and connected node) into this node.\nCreate node for pin if no node exists")
                 on_clicked = partial(self._foldAntenna, pin)
 
                 layout.addRow(self.tr(name), button)
@@ -194,6 +196,7 @@ class FoldingPanel(NodeContextPanelBase):
 
             elif pin.is_folded:
                 button = QPushButton("&Unfold")
+                button.setToolTip("Expand pin (and connected node) out of this node.")
                 on_clicked = partial(self._unfoldAntenna, pin)
 
                 layout.addRow(self.tr(name), button)
