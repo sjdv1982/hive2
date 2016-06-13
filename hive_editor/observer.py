@@ -2,7 +2,7 @@ from traceback import print_exc
 from weakref import WeakKeyDictionary
 
 
-class ObservableInstance:
+class ObservableInstance(object):
     """Implements the Observer pattern to notify arbitrary listeners of events"""
 
     def __init__(self):
@@ -30,7 +30,7 @@ class ObservableInstance:
                 print_exc()
 
 
-class Observable:
+class Observable(object):
     """Descriptor object to instantiate ObservableInstance for class instances"""
 
     def __init__(self):

@@ -6,6 +6,7 @@ from sys import version_info
 
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtGui import QFont, QSyntaxHighlighter, QColor, QTextCharFormat
+
 from pygments.formatter import Formatter
 from pygments.lexers import get_lexer_by_name
 from pygments import highlight
@@ -18,7 +19,7 @@ def hex_to_qcolor(c):
     return QColor(r, g, b)
 
 
-class QFormatter(Formatter):
+class CodeFormatter(Formatter):
 
     def __init__(self, style="", font=None):
         Formatter.__init__(self, style=style)
@@ -97,5 +98,5 @@ class CodeEditor(QTextEdit):
         lexer_name = "python" if version_info.major == 2 else "python3"
         lexer = get_lexer_by_name(lexer_name)
 
-        formatter = QFormatter(style="paraiso-dark", font=QFont("Consolas"))
+        formatter = CodeFormatter(style="paraiso-dark", font=QFont("Consolas"))
         self._highlighter = CodeHighlighter(self.document(), lexer, formatter)

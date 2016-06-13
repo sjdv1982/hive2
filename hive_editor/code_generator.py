@@ -284,7 +284,9 @@ def hivemap_to_python_source(hivemap, class_name, builder_name="builder"):
 
     if docstring:
         new_line = "\n" if "\n" in docstring else ""
-        body_declaration_statement += '"""{}{}"""\n'.format(docstring, new_line)
+        # Escape quotation characters
+        escaped_docstring = docstring.replace("\"", r'\"')
+        body_declaration_statement += '"""{}{}"""\n'.format(escaped_docstring, new_line)
 
     if declaration_body:
         body_declaration_statement += "# Declarations\n{}\n\n".format("\n".join(declaration_body))

@@ -40,7 +40,7 @@ from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsWidget, QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QColor, QBrush, QPen, QPainterPath
 
-from .socket import Socket
+from .socket import QtSocket
 from ..node import NodeTypes
 
 
@@ -49,10 +49,12 @@ COLOUR_THEMES = {NodeTypes.HIVE: (0, 0, 0), NodeTypes.BEE: (92, 92, 92), NodeTyp
 
 class SocketRow(QGraphicsWidget):
 
-    def __init__(self, parent_node_ui, pin):
-        QGraphicsWidget.__init__(self, parent_node_ui)
+    def __init__(self, qt_node, pin):
+        super(SocketRow, self).__init__()
 
-        self._parent_node_ui = weakref.ref(parent_node_ui)
+        assert qt_node is not None
+        self.setParentItem(qt_node)
+        self._parent_node = weakref.ref(qt_node)
         self._pin = pin
         self._spacerConstant = 5.0
         self._label = QGraphicsSimpleTextItem(self)
@@ -60,99 +62,58 @@ class SocketRow(QGraphicsWidget):
         self._socket = None
         self._outputHook = None
 
-        socket_colour = pin.colour
+        socket_colour = QColor(*pin.colour)
         socket_type = pin.shape
 
         if pin.io_type == "input":
-            self._socket = Socket(self, "input", socket_type, order_dependent=True)
-            self._socket.set_colour(socket_colour)
+            self._socket = QtSocket(self, "input", socket_type, order_dependent=True)
+            self._socket.setColor(socket_colour)
 
         else:
-            self._socket = Socket(self, "output", socket_type, order_dependent=True)
-            self._socket.set_colour(socket_colour)
+            self._socket = QtSocket(self, "output", socket_type, order_dependent=True)
+            self._socket.setColor(socket_colour)
+
+        self.setLabelColor(self.defaultColor())
+        self.setLabelText(self._pin.name)
 
         self._socket.setVisible(True)
 
-        self.label_color = self.default_color
-        self.label_text = self._pin.name
+    def parentNode(self):
+        return self._parent_node()
 
-        self.setVisible(True)
-
-    @property
     def pin(self):
         return self._pin
 
-    @property
     def socket(self):
         return self._socket
 
-    @property
-    def default_color(self):
-        return self.parent_node_ui.labels_color
+    def defaultColor(self):
+        return self._parent_node().labelColor()
 
-    @property
-    def label_color(self):
+    def labelColor(self):
         return self._label.brush().color()
 
-    @label_color.setter
-    def label_color(self, color):
+    def setLabelColor(self, color):
         self._label.setBrush(color)
 
-    @property
-    def label_text(self):
+    def labelText(self):
         return self._label.text()
 
-    @label_text.setter
-    def label_text(self, text):
+    def setLabelText(self, text):
         self._label.setText(text)
 
     def refresh(self):
         # Update cosmetics
-        self._socket.set_colour(self._pin.colour)
-        self._socket.set_shape(self._pin.shape)
-
+        colour = QColor(*self._pin.colour)
+        self._socket.setColor(colour)
+        self._socket.setShape(self._pin.shape)
         self._socket.update()
 
-    @property
-    def parent_node_ui(self):
-        parent = None
-
-        if self._parent_node_ui:
-            parent = self._parent_node_ui()
-
-        return parent
-
-    @parent_node_ui.setter
-    def parent_node_ui(self, node_ui):
-        self.setParentItem(None)
-
-        if self.scene():
-            if self in self.scene().items():
-                self.scene().removeItem(self)
-
-        # Current parent
-        if self._parent_node_ui:
-            parent_node_ui = self._parent_node_ui()
-
-            if self in parent_node_ui._socket_rows:
-                parent_node_ui._socket_rows.remove(self)
-
-        if node_ui:
-            self._parent_node_ui = weakref.ref(node_ui)
-
-            self.setParentItem(node_ui)
-
-            if self not in node_ui._socket_rows:
-                node_ui._socket_rows.append(self)
-
-        else:
-            self._parent_node_ui = None
-
-    def update_layout(self):
+    def updateLayout(self):
         height = self._label.boundingRect().height()
         hook = self._socket
 
-        if hook.mode == "output":
+        if hook.mode() == "output":
             hook_y_pos = (height - hook.boundingRect().height()) / 2.0
 
         else:
@@ -162,7 +123,7 @@ class SocketRow(QGraphicsWidget):
         input_width = self._spacerConstant * 2.0
         self._label.setPos(input_width + self._spacerConstant, 0)
 
-        if hook.mode == "output":
+        if hook.mode() == "output":
             hook.setPos(self._label.pos().x() + self._label.boundingRect().width() + self._spacerConstant,
                         hook_y_pos)
 
@@ -171,23 +132,24 @@ class SocketRow(QGraphicsWidget):
         else:
             self.resize(self._label.pos().x() + self._label.boundingRect().width(), height)
 
-    def on_deleted(self):
+    def onDeleted(self):
         if self._socket:
-            self._socket.on_deleted()
+            self._socket.onDeleted()
 
-        self.parent_node_ui = None
+        #self.parent_node_ui = None # TODO
 
 
-class Node(QGraphicsWidget):
+class QtNode(QGraphicsWidget):
 
     def __init__(self, node, view):
-        QGraphicsWidget.__init__(self)
+        super(QtNode, self).__init__()
 
-        self._spacing_constant = 5.0
+        self._spacingConstant = 5.0
         self._roundness = 3
 
+        self._labelColor = QColor(255, 255, 255)
         self._label = QGraphicsSimpleTextItem(self)
-        self._label.setBrush(self.labels_color)
+        self._label.setBrush(self._labelColor)
         self._label.setText(node.name)
 
         self._selectedColor = QColor(255, 255, 255)
@@ -215,7 +177,7 @@ class Node(QGraphicsWidget):
         self._view = weakref.ref(view)
 
         self._busy = False
-        self._socket_rows = OrderedDict()
+        self._socketRows = OrderedDict()
 
         # Build IO pin socket rows
         for pin_name in node.pin_order:
@@ -226,57 +188,52 @@ class Node(QGraphicsWidget):
                 pin = node.outputs[pin_name]
 
             socket_row = SocketRow(self, pin)
-            self._socket_rows[pin_name] = socket_row
+            self._socketRows[pin_name] = socket_row
 
-        self.update_layout()
+        self.updateLayout()
 
-    @property
     def node(self):
         return self._node
 
-    @property
     def view(self):
         return self._view()
 
-    @property
     def name(self):
         return self._name
 
-    @name.setter
-    def name(self, name):
+    def setName(self, name):
         self._name = name
         self._label.setText(name)
-        self.update_layout()
+        self.updateLayout()
 
-    @property
-    def labels_color(self):
-        return QColor(255, 255, 255)
+    def labelColor(self):
+        return self._labelColor
 
-    def on_deleted(self):
+    def onDeleted(self):
         if self.isSelected():
             self.setSelected(False)
 
-        for socket_row in self._socket_rows.values():
-            socket_row.on_deleted()
+        for socket_row in self._socketRows.values():
+            socket_row.onDeleted()
 
-        self._socket_rows.clear()
+        self._socketRows.clear()
 
     def hoverEnterEvent(self, event):
-        self.view.gui_on_hover_enter(self)
+        self.view().guiOnHoverEnter(self)
 
     def hoverLeaveEvent(self, event):
-        self.view.gui_on_hover_exit(self)
+        self.view().guiOnHoverExit(self)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
-            for socket_row in self._socket_rows.values():
-                socket_row.socket.update_connection_positions()
+            for socket_row in self._socketRows.values():
+                socket_row.socket().updateConnectionPositions()
 
             # Move node
             if not self._busy:
                 self._busy = True
 
-                self.view.gui_on_moved(self)
+                self.view().guiOnMoved(self)
                 self._busy = False
 
         elif change == QGraphicsItem.ItemSelectedHasChanged:
@@ -285,16 +242,16 @@ class Node(QGraphicsWidget):
         return QGraphicsItem.itemChange(self, change, value)
 
     def contextMenuEvent(self, event):
-        self.view.gui_on_node_right_click(self, event)
+        self.view().guiOnNodeRightClick(self, event)
 
     def onSelected(self):
         if self.isSelected():
             self._shapePen.setStyle(Qt.SolidLine)
-            self.view.gui_on_node_selected(self)
+            self.view().guiOnNodeSelected(self)
 
         else:
             self._shapePen.setStyle(Qt.NoPen)
-            self.view.gui_on_node_deselected(self)
+            self.view().guiOnNodeDeselected(self)
 
     def paint(self, painter, option, widget):
         shape = QPainterPath()
@@ -326,7 +283,7 @@ class Node(QGraphicsWidget):
             QGraphicsWidget.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
-        self.view.gui_finished_move()
+        self.view().guiOnFinishedMove()
 
         QGraphicsWidget.mouseReleaseEvent(self, event)
 
@@ -336,23 +293,23 @@ class Node(QGraphicsWidget):
     def dragMoveEvent(self, *args, **kwargs):
         pass
 
-    def get_socket_row(self, name):
-        return self._socket_rows[name]
+    def getSocketRow(self, name):
+        return self._socketRows[name]
 
-    def refresh_socket_rows(self):
-        for socket_row in self._socket_rows.values():
+    def refreshSocketRows(self):
+        for socket_row in self._socketRows.values():
             socket_row.refresh()
 
-    def update_layout(self):
+    def updateLayout(self):
         label_width = self._label.boundingRect().width()
         width = label_width
-        y_pos = self._label.boundingRect().bottom() + self._spacing_constant
+        y_pos = self._label.boundingRect().bottom() + self._spacingConstant
 
-        for socket_row in self._socket_rows.values():
+        for socket_row in self._socketRows.values():
             if socket_row.isVisible():
-                socket_row.update_layout()
+                socket_row.updateLayout()
 
-                socket_row.setPos(self._spacing_constant, y_pos)
+                socket_row.setPos(self._spacingConstant, y_pos)
                 height = socket_row.boundingRect().height()
 
                 y_pos += height
@@ -361,14 +318,14 @@ class Node(QGraphicsWidget):
                 if attributeWidth > width:
                     width = attributeWidth
 
-        for socket_row in self._socket_rows.values():
+        for socket_row in self._socketRows.values():
             if socket_row.isVisible():
-                hook = socket_row.socket
-                if hook.is_output:
+                hook = socket_row.socket()
+                if hook.isOutput():
                     hook.setPos(width - hook.boundingRect().width(), hook.pos().y())
 
-        width = self._spacing_constant + width + self._spacing_constant
-        self._label.setPos((width - label_width) / 2.0, self._spacing_constant)
+        width = self._spacingConstant + width + self._spacingConstant
+        self._label.setPos((width - label_width) / 2.0, self._spacingConstant)
 
-        self.resize(width, y_pos + self._spacing_constant)
+        self.resize(width, y_pos + self._spacingConstant)
         self.update()

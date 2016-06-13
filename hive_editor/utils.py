@@ -86,7 +86,7 @@ def start_value_from_type(data_type):
         raise TypeError(data_type)
 
 
-def get_builder_class_args(hive_cls):
+def get_bind_class_args(hive_cls):
     """Find initialiser arguments for builder (bind) class
 
     :param hive_cls: Hive class
@@ -95,16 +95,16 @@ def get_builder_class_args(hive_cls):
 
     # For each builder, from the bottom of the heirarchy
     # Find class args and add them to the parameter list
-    for builder, builder_class in hive_cls._builders:
-        if builder_class is None:
+    for builder, bind_class in hive_cls._builders:
+        if bind_class is None:
             continue
 
         # Get init func
-        init_func = builder_class.__init__
+        init_func = bind_class.__init__
         arg_types = hive.get_argument_types(init_func)
         arg_options = hive.get_argument_options(init_func)
 
-        cls_signature = signature(builder_class)
+        cls_signature = signature(bind_class)
 
         # Construct argument pairs
         for name, parameter in cls_signature.parameters.items():
@@ -171,7 +171,12 @@ def import_module_from_hive_path(hive_path):
     :param hive_path: hive path 'x.y.HiveName'
     :return HiveImportInfo(module, class_name):
     """
-    module_path, class_name = hive_path.rsplit(".", 1)
+    try:
+        module_path, class_name = hive_path.rsplit(".", 1)
+
+    except ValueError:
+        raise ValueError("Invalid hive path")
+
     return import_module(module_path), class_name
 
 

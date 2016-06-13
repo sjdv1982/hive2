@@ -39,10 +39,8 @@ mod.__file__ = "SomeFile"
 
 from hive_editor.connection import Connection
 test_string = """
-from .imptest.imptest import Imptest
-from .imptest import imptest as X
-print(Imptest, X)
-i = Imptest()
-print(i)
+from .panda_project import launch
 """
 exec(test_string, mod.__dict__)
+
+import sys; sys.path.append("D:/users/angus/documents/pycharmprojects/hive2"); import hive

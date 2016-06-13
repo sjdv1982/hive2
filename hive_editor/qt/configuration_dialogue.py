@@ -12,7 +12,7 @@ class ConfigurationDialogue(QDialog):
         pass
 
     def __init__(self, parent=None):
-        QDialog.__init__(self, parent)
+        super(ConfigurationDialogue, self).__init__(parent)
 
         buttons_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
@@ -33,7 +33,7 @@ class ConfigurationDialogue(QDialog):
         self.value_getters = {}
         self.values = {}
 
-    def add_widget(self, name, data_type=None, default=NoValue, options=None):
+    def addWidget(self, name, data_type=None, default=NoValue, options=None):
         widget, controller = create_widget(data_type, options)
 
         # If has no default, try and guess one

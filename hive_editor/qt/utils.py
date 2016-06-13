@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QSpinBox, QLineEdit, QDoubleSpinBox, QWidget, QHBoxL
 from PyQt5.QtGui import QColor, QIcon, QPixmap
 
 from hive import is_subtype
-from .colour_button import QColorButton
+from .colour_button import ColorButton
 from .code_editor import CodeEditor
 from .key_selector import QKeySelector
 from ..observer import Observable
@@ -181,7 +181,7 @@ def _create_colour():
 
     :param options: permitted option values
     """
-    widget = QColorButton()
+    widget = ColorButton()
 
     layout = QHBoxLayout()
     layout.setSpacing(0.0)

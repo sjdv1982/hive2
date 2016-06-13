@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from hive import validation_enabled_as
-from .utils import hive_import_from_path, get_builder_class_args
+from .utils import hive_import_from_path, get_bind_class_args
 
 
 class InspectorOption:
@@ -218,7 +218,7 @@ class HiveNodeInspector:
             if args_wrapper:
                 yield ("args", self._scrape_wrapper(args_wrapper))
 
-            builder_args = get_builder_class_args(hive_cls)
+            builder_args = get_bind_class_args(hive_cls)
             if builder_args:
                 # Convert options into InspectorOptions
                 options = OrderedDict()

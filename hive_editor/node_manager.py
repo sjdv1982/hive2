@@ -226,6 +226,7 @@ class NodeManager(object):
         self.history.record_command(lambda: self._add_node(node), lambda: self.delete_node(node))
 
     def create_node(self, node_type, reference_path, params=None):
+        print("CREATE", reference_path)
         if node_type == NodeTypes.HIVE:
             return self._create_hive(reference_path, params)
 
@@ -248,6 +249,7 @@ class NodeManager(object):
 
     def _create_hive(self, reference_path, params=None):
         """Create a hive node with the given path"""
+        print("CREATE", reference_path)
         if params is None:
             params = {}
 

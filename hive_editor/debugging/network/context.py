@@ -233,7 +233,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
         assert not containers, "Containers cannot have multiple intersections!"
 
         try:
-            parent_builder_class = containing_hive_ref()._hive_object._hive_parent_class
+            parent_bind_class = containing_hive_ref()._hive_object._hive_parent_class
 
         except AttributeError:
             self._logger.warn("Bee is not a container member")
@@ -245,7 +245,7 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
         # If this fails, not a hivemap hive
         try:
-            loader_result = find_loader_result(parent_builder_class)
+            loader_result = find_loader_result(parent_bind_class)
 
         except ValueError:
             return None

@@ -46,10 +46,10 @@ class RestrictedProperty(object):
         self._fget_restricted = fget_unrestricted
 
     def setter(self, fset):
-        return RestrictedProperty(self._fget, fset, self._fget_restricted)
+        return self.__class__(self._fget, fset, self._fget_restricted)
 
     def restricted_getter(self, fget):
-        return RestrictedProperty(self._fget, self._fset, fget)
+        return self.__class__(self._fget, self._fset, fget)
 
     def __get__(self, instance, cls=None):
         if instance is not None:

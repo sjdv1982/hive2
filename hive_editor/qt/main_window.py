@@ -69,10 +69,10 @@ class ContextAdaptor:
 
 
 class MainWindow(QMainWindow):
-    project_name_template = "Hive Node Editor - {}"
-    hivemap_extension = "hivemap"
-    untitled_file_name = "<Unsaved>"
-    no_project_text = "<No Project>"
+    _projectNameTemplate = "Hive Node Editor - {}"
+    _hivemapExtension = "hivemap"
+    _untitledFileName = "<Unsaved>"
+    _noProjectText = "<No Project>"
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -80,37 +80,37 @@ class MainWindow(QMainWindow):
         status_bar = QStatusBar(self)
         self.setStatusBar(status_bar)
         self.setDockNestingEnabled(True)
-        self.setWindowTitle(self.project_name_template.format(self.no_project_text))
+        self.setWindowTitle(self._projectNameTemplate.format(self._noProjectText))
 
         self.debugger = QtNetworkDebugManager()
-        self.debugger.on_closed_session.subscribe(self._on_closed_debug_session)
-        self.debugger.on_created_session.subscribe(self._on_created_debug_session)
+        self.debugger.on_closed_session.subscribe(self._onClosedDebugSession)
+        self.debugger.on_created_session.subscribe(self._onCreatedDebugSession)
 
         # Add tab widget
         self.tab_widget = TabViewWidget()
         self.setCentralWidget(self.tab_widget)
 
-        self.tab_widget.on_changed.connect(self._on_tab_changed)
-        self.tab_widget.check_tab_closable = self._check_tab_closable
+        self.tab_widget.onTabChanged.connect(self._onTabChanged)
+        self.tab_widget.checkTabClosable = self._checkTabClosable
 
         # Show current hives
         self._project_hives_active_widget = TreeWidget()
-        self._project_hives_active_widget.on_double_click.connect(self._open_project_hive)
+        self._project_hives_active_widget.onDoubleClick.connect(self._openProjectHive)
 
         self._project_hives_inactive_widget = QLabel("No project active")
         self._project_hives_inactive_widget.setAlignment(Qt.AlignCenter)
-        self._project_hives_window = self.create_subwindow("Project", "right",
-                                                           widget=self._project_hives_inactive_widget)
+        self._project_hives_window = self.createSubwindow("Project", "right",
+                                                          widget=self._project_hives_inactive_widget)
 
         self.hive_finder = HiveFinder()
         self._current_hive_list = None
 
-        self._project_directory = None
+        self._projectDirectory = None
         self._project_context = None
 
-        self.update_loaded_hives()
+        self.updateLoadedHives()
 
-        self._setup_menus()
+        self._setupMenus()
 
         self._clipboard = None
 
@@ -122,8 +122,8 @@ class MainWindow(QMainWindow):
 
         # Add Help page
         web_view = QEditorWebView()
-        web_view.on_drag_move.connect(self._filter_web_drop)
-        web_view.on_dropped.connect(self._on_dropped)
+        web_view.onDragMove.connect(self._filterWebDrop)
+        web_view.onDropped.connect(self._onDropped)
 
         url = QUrl("http://agoose77.github.io/hive2/")
         web_view.setUrl(url)
@@ -132,69 +132,59 @@ class MainWindow(QMainWindow):
         self._web_view = web_view
         self.tab_widget.addTab(web_view, "About", closeable=False)
 
-    def _setup_menus(self):
+    def _setupMenus(self):
         menu_bar = self.menuBar()
 
-        self.new_action = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
-                                  triggered=self.add_editor_space)
-        self.load_action = QAction("&Open...", menu_bar, shortcut=QKeySequence.Open, statusTip="Open an existing file",
-                                   triggered=self.open_file)
-        self.save_action = QAction("&Save", menu_bar, shortcut=QKeySequence.Save, statusTip="Save as existing new file",
-                                   triggered=self.save_file)
-        self.save_as_action = QAction("&Save As...", menu_bar, shortcut=QKeySequence.SaveAs,
-                                      statusTip="Save as a new file", triggered=self.save_as_file)
+        self.newAction = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
+                                  triggered=self.addEditorSpace)
+        self.loadAction = QAction("&Open...", menu_bar, shortcut=QKeySequence.Open, statusTip="Open an existing file",
+                                   triggered=self.openFile)
+        self.saveAction = QAction("&Save", menu_bar, shortcut=QKeySequence.Save, statusTip="Save as existing new file",
+                                   triggered=self.saveFile)
+        self.saveAsAction = QAction("&Save As...", menu_bar, shortcut=QKeySequence.SaveAs,
+                                    statusTip="Save as a new file", triggered=self.saveAsFile)
 
-        self.file_menu = QMenu("&File")
-        self.open_project_action = QAction("Open Project", menu_bar, statusTip="Open an existing Hive project",
-                                           triggered=self.open_project, shortcut=QKeySequence("CTRL+SHIFT+O"))
-        self.close_project_action = QAction("Close Project", menu_bar, statusTip="Close the current Hive project",
-                                            triggered=self.close_project)
-        self.refresh_project_action = QAction("Reload Project", menu_bar, statusTip="Reload the current project",
-                                              triggered=self.reload_project, shortcut=QKeySequence("F5"))
-        self.insert_action = QAction("&Insert", menu_bar, shortcut=QKeySequence("RETURN"),
-                                     statusTip="Insert node from path", triggered=self.insert_from_path)
-        self.select_all_action = QAction("Select &All", menu_bar, shortcut=QKeySequence.SelectAll,
-                                         statusTip="Select all nodes", triggered=self.select_all_operation)
-        self.undo_action = QAction("&Undo", menu_bar, shortcut=QKeySequence.Undo, statusTip="Undo last operation",
-                                   triggered=self.undo_operation)
-        self.redo_action = QAction("&Redo", menu_bar, shortcut=QKeySequence.Redo, statusTip="Redo last operation",
-                                   triggered=self.redo_operation)
-        self.copy_action = QAction("&Copy", menu_bar, shortcut=QKeySequence.Copy, statusTip="Copy selected nodes",
-                                   triggered=self.copy_operation)
-        self.cut_action = QAction("Cu&t", menu_bar, shortcut=QKeySequence.Cut, statusTip="Cut selected nodes",
-                                  triggered=self.cut_operation)
-        self.paste_action = QAction("&Paste", menu_bar, shortcut=QKeySequence.Paste, statusTip="Paste selected nodes",
-                                    triggered=self.paste_operation)
+        self.fileMenu = QMenu("&File")
+        self.openProjectAction = QAction("Open Project", menu_bar, statusTip="Open an existing Hive project",
+                                           triggered=self.openProject, shortcut=QKeySequence("CTRL+SHIFT+O"))
+        self.closeProjectAction = QAction("Close Project", menu_bar, statusTip="Close the current Hive project",
+                                            triggered=self.closeProject)
+        self.refreshProjectAction = QAction("Reload Project", menu_bar, statusTip="Reload the current project",
+                                              triggered=self.reloadProject, shortcut=QKeySequence("F5"))
+        self.insertAction = QAction("&Insert", menu_bar, statusTip="Insert node from path", triggered=self.insertFromPath)
+        self.insertAction.setShortcuts((QKeySequence(Qt.Key_Enter), QKeySequence(Qt.Key_Insert)))
+        self.selectAllAction = QAction("Select &All", menu_bar, shortcut=QKeySequence.SelectAll,
+                                       statusTip="Select all nodes", triggered=self.selectAllOperation)
+        self.undoAction = QAction("&Undo", menu_bar, shortcut=QKeySequence.Undo, statusTip="Undo last operation",
+                                   triggered=self.undoOperation)
+        self.redoAction = QAction("&Redo", menu_bar, shortcut=QKeySequence.Redo, statusTip="Redo last operation",
+                                   triggered=self.redoOperation)
+        self.copyAction = QAction("&Copy", menu_bar, shortcut=QKeySequence.Copy, statusTip="Copy selected nodes",
+                                   triggered=self.copyOperation)
+        self.cutAction = QAction("Cu&t", menu_bar, shortcut=QKeySequence.Cut, statusTip="Cut selected nodes",
+                                  triggered=self.cutOperation)
+        self.pasteAction = QAction("&Paste", menu_bar, shortcut=QKeySequence.Paste, statusTip="Paste selected nodes",
+                                    triggered=self.pasteOperation)
 
-        self.edit_menu = QMenu("&Edit")
+        self.editMenu = QMenu("&Edit")
 
-        self.edit_menu.addAction(self.select_all_action)
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction(self.undo_action)
-        self.edit_menu.addAction(self.redo_action)
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction(self.cut_action)
-        self.edit_menu.addAction(self.copy_action)
-        self.edit_menu.addAction(self.paste_action)
+        self.viewMenu = QMenu("&View")
+        self.viewMenu.addAction(self._project_hives_window.toggleViewAction())
 
-        self.view_menu = QMenu("&View")
+        self.runMenu = QMenu("&Run")
+        self.runPandaAction = QAction("Launch &Panda3D", menu_bar,
+                                      shortcut=QKeySequence(self.tr("CTRL+P", "Launch  in Panda3D")),
+                                      triggered=self._launchPanda3D)
+        self.runMenu.addAction(self.runPandaAction)
 
-        self.view_menu.addAction(self._project_hives_window.toggleViewAction())
+        self.helpAction = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
+                                   triggered=self.gotoHelpPage)
 
-        self.run_menu = QMenu("&Run")
-        self.run_panda_action = QAction("Launch &Panda3D", menu_bar,
-                                        shortcut=QKeySequence(self.tr("CTRL+P", "Launch  in Panda3D")),
-                                        triggered=self._launch_panda3d)
-        self.run_menu.addAction(self.run_panda_action)
-
-        self.help_action = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
-                                   triggered=self.goto_help_page)
-
-    def _open_project_hive(self, reference_path):
+    def _openProjectHive(self, reference_path):
         hivemap_file_path = find_file_path_of_hive_path(reference_path)
-        self._open_file(hivemap_file_path)
+        self._openFile(hivemap_file_path)
 
-    def _filter_web_drop(self, event):
+    def _filterWebDrop(self, event):
         """Filter drop events for web view"""
         mime_data = event.mimeData()
 
@@ -204,7 +194,7 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
-    def _on_dropped(self, event, position):
+    def _onDropped(self, event, position):
         mime_data = event.mimeData()
 
         if mime_data.hasFormat('text/uri-list'):
@@ -220,31 +210,31 @@ class MainWindow(QMainWindow):
                     if reply != QMessageBox.Yes:
                         return
 
-                    self._open_project(file_path)
+                    self._openProject(file_path)
 
                 else:
-                    self._open_file(file_path)
+                    self._openFile(file_path)
 
         elif mime_data.hasFormat('text/plain'):
             hivemap_text = mime_data.text()
 
-            editor = self.add_editor_space()
-            editor.load_from_text(hivemap_text)
+            editor = self.addEditorSpace()
+            editor.loadFromText(hivemap_text)
 
         else:
             raise TypeError
 
-    def _launch_panda3d(self):
+    def _launchPanda3D(self):
         """Execute Hivemap inside a Panda hive"""
         interpreter_path = EXECUTABLE_PATH
         editor = self.tab_widget.currentWidget()
 
-        hivemap_path = editor.file_path
+        hivemap_path = editor.filePath()
 
         if hivemap_path is None:
             raise ValueError("Need saved hivemap file to launch in Panda3D")
 
-        if editor.has_unsaved_changes:
+        if editor.hasUnsavedChanges():
             reply = QMessageBox.warning(self, 'Run in Panda3D', "This file has unsaved changes! Are you sure want "
                                                                 "to run the old copy?",
                                         QMessageBox.Yes, QMessageBox.No)
@@ -254,11 +244,12 @@ class MainWindow(QMainWindow):
 
         launch_path = path.join(tools.__path__[0], "launch_panda.py")
         commands = [interpreter_path, launch_path, hivemap_path, "debug"]
-        process = subprocess.Popen(commands)
+        from sys import stderr, stdout
+        process = subprocess.Popen(commands, stderr=stderr, stdout=stdout)
 
     def closeEvent(self, event):
         try:
-            self.close_open_tabs()
+            self.closeOpenTabs()
 
         except PermissionError:
             event.ignore()
@@ -266,53 +257,52 @@ class MainWindow(QMainWindow):
         else:
             event.accept()
 
-    @property
-    def project_directory(self):
-        return self._project_directory
+    def projectDirectory(self):
+        return self._projectDirectory
 
-    def _get_display_name(self, file_path, allow_untitled=True):
+    def _getDisplayName(self, file_path, allow_untitled=True):
         if file_path is None:
             if not allow_untitled:
                 raise ValueError("File name must not be None")
 
-            return self.untitled_file_name
+            return self._untitledFileName
 
         return os.path.basename(file_path)
 
-    def goto_help_page(self):
+    def gotoHelpPage(self):
         webbrowser.open("https://github.com/agoose77/hive2/wiki")
 
-    def select_all_operation(self):
+    def selectAllOperation(self):
         editor = self.tab_widget.currentWidget()
-        editor.select_all()
+        editor.selectAll()
 
-    def undo_operation(self):
+    def undoOperation(self):
         editor = self.tab_widget.currentWidget()
         editor.undo()
 
-    def redo_operation(self):
+    def redoOperation(self):
         editor = self.tab_widget.currentWidget()
         editor.redo()
 
-    def copy_operation(self):
+    def copyOperation(self):
         editor = self.tab_widget.currentWidget()
         self._clipboard = editor.copy()
 
-    def cut_operation(self):
+    def cutOperation(self):
         editor = self.tab_widget.currentWidget()
         self._clipboard = editor.cut()
 
-    def paste_operation(self):
+    def pasteOperation(self):
         editor = self.tab_widget.currentWidget()
         clipboard = self._clipboard
 
         if clipboard is not None:
             editor.paste(clipboard)
 
-    def _check_tab_closable(self, index):
+    def _checkTabClosable(self, index):
         widget = self.tab_widget.widget(index)
 
-        if widget.has_unsaved_changes:
+        if widget.hasUnsavedChanges():
             reply = QMessageBox.warning(self, 'Close File', "This file has unsaved changes. Do you want to close it?",
                                         QMessageBox.Yes, QMessageBox.No)
 
@@ -321,51 +311,53 @@ class MainWindow(QMainWindow):
 
         # Stop debugging if editor is closed
         if self.debugger.session is not None:
-            if widget.file_path:
-                if self.debugger.session.is_debugging_hivemap(widget.file_path):
+            file_path = widget.filePath()
+
+            if file_path:
+                if self.debugger.session.is_debugging_hivemap(file_path):
                     self.debugger.session.close()
 
-        widget.on_exit()
+        widget.onExit()
         return True
 
-    def _on_tab_changed(self, previous_index=None):
+    def _onTabChanged(self, previous_index=None):
         tab_widget = self.tab_widget
 
         # Exit last open view
         if previous_index is not None:
             previous_widget = tab_widget.widget(previous_index)
             if isinstance(previous_widget, NodeEditorSpace):
-                previous_widget.on_exit()
+                previous_widget.onExit()
 
         # Update UI elements
-        self._update_menu_options()
+        self._updateMenuOptions()
 
         widget = tab_widget.currentWidget()
 
         # Replace docstring
         if isinstance(widget, NodeEditorSpace):
-            widget.on_enter()
+            widget.onEnter()
 
-    def add_editor_space(self, *_, file_path=None):
-        editor = NodeEditorSpace(file_path, project_path=self._project_directory)
+    def addEditorSpace(self, *_, file_path=None):
+        editor = NodeEditorSpace(file_path, project_path=self._projectDirectory)
 
-        display_name = self._get_display_name(file_path)
+        display_name = self._getDisplayName(file_path)
         index = self.tab_widget.addTab(editor, display_name)
         self.tab_widget.setCurrentIndex(index)
 
-        editor.on_save_state_updated.connect(partial(self._on_save_state_changed, editor))
-        editor.do_open_file.connect(self._open_file)
-        editor.on_dropped_for_parent.connect(self._on_dropped)
+        editor.onSaveStateUpdated.connect(partial(self.onSaveStateChanged, editor))
+        editor.doOpenFile.connect(self._openFile)
+        editor.onDroppedForParent.connect(self._onDropped)
 
-        editor.update_bee_tree(all_bees)
-        editor.update_hive_tree(self.hive_finder.all_hives)
+        editor.updateBeeTree(all_bees)
+        editor.updateHiveTree(self.hive_finder.all_hives)
 
         # Ask to handle these
-        editor.parent_drop_mime_types = {'text/uri-list', 'text/plain'}
+        editor.setParentDropMimeTypes({'text/uri-list', 'text/plain'})
 
         return editor
 
-    def create_subwindow(self, title, position, closeable=True, widget=None):
+    def createSubwindow(self, title, position, closeable=True, widget=None):
         area_classes = {
             "left": Qt.LeftDockWidgetArea,
             "right": Qt.RightDockWidgetArea,
@@ -386,46 +378,58 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, window)
         return window
 
-    def _update_menu_options(self):
+    def _updateMenuOptions(self):
         show_save = False
         show_save_as = False
 
         menu_bar = self.menuBar()
         menu_bar.clear()
 
-        menu_bar.addMenu(self.file_menu)
-        self.file_menu.clear()
+        menu_bar.addMenu(self.fileMenu)
+        self.fileMenu.clear()
 
-        self.file_menu.addAction(self.open_project_action)
+        menu_bar.addMenu(self.editMenu)
+        self.editMenu.clear()
 
-        if self.project_directory is not None:
-            self.file_menu.addAction(self.refresh_project_action)
-            self.file_menu.addAction(self.close_project_action)
+        self.fileMenu.addAction(self.openProjectAction)
+
+        if self._projectDirectory is not None:
+            self.fileMenu.addAction(self.refreshProjectAction)
+            self.fileMenu.addAction(self.closeProjectAction)
 
         widget = self.tab_widget.currentWidget()
 
         is_node_editor = isinstance(widget, NodeEditorSpace)
         if is_node_editor:
             show_save_as = True
-            show_save = widget.file_path is not None
+            show_save = widget.filePath() is not None
 
-            self.file_menu.addAction(self.insert_action)
-            menu_bar.addMenu(self.edit_menu)
-            menu_bar.addMenu(self.run_menu)
+            self.fileMenu.addAction(self.insertAction)
+            menu_bar.addMenu(self.runMenu)
 
-        self.save_action.setVisible(show_save)
-        self.save_as_action.setVisible(show_save_as)
+            self.editMenu.addAction(self.selectAllAction)
+            self.editMenu.addSeparator()
+            self.editMenu.addAction(self.undoAction)
+            self.editMenu.addAction(self.redoAction)
+            self.editMenu.addSeparator()
+            self.editMenu.addAction(self.cutAction)
+            self.editMenu.addAction(self.copyAction)
+            self.editMenu.addAction(self.pasteAction)
+            self.editMenu.addSeparator()
 
-        self.file_menu.addAction(self.new_action)
-        self.file_menu.addAction(self.load_action)
+        self.saveAction.setVisible(show_save)
+        self.saveAsAction.setVisible(show_save_as)
 
-        self.file_menu.addAction(self.save_action)
-        self.file_menu.addAction(self.save_as_action)
+        self.fileMenu.addAction(self.newAction)
+        self.fileMenu.addAction(self.loadAction)
 
-        menu_bar.addMenu(self.view_menu)
-        menu_bar.addAction(self.help_action)
+        self.fileMenu.addAction(self.saveAction)
+        self.fileMenu.addAction(self.saveAsAction)
 
-    def insert_from_path(self):
+        menu_bar.addMenu(self.viewMenu)
+        menu_bar.addAction(self.helpAction)
+
+    def insertFromPath(self):
         dialogue = QDialog(self)
         layout = QHBoxLayout()
         dialogue.setLayout(layout)
@@ -454,7 +458,7 @@ class MainWindow(QMainWindow):
                 return
 
             reference_path = editor.text()
-            widget.add_node_at_mouse(reference_path, NodeTypes.HIVE)
+            widget.addNodeAtMouse(reference_path, NodeTypes.HIVE)
             dialogue.close()
 
         editor.returnPressed.connect(on_return)
@@ -463,7 +467,7 @@ class MainWindow(QMainWindow):
         dialogue.setAttribute(Qt.WA_DeleteOnClose)
         dialogue.exec_()
 
-    def open_project(self):
+    def openProject(self):
         dialogue = QFileDialog(self, caption="Open Hive Project")
         dialogue.setFileMode(QFileDialog.DirectoryOnly)
         dialogue.setAcceptMode(QFileDialog.AcceptOpen)
@@ -473,21 +477,21 @@ class MainWindow(QMainWindow):
             return
 
         directory_path = dialogue.selectedFiles()[0]
-        self._open_project(directory_path)
+        self._openProject(directory_path)
 
-    def reload_project(self):
-        directory = self.project_directory
-        self._open_project(directory)
+    def reloadProject(self):
+        directory = self._projectDirectory
+        self._openProject(directory)
 
-    def _open_project(self, directory_path):
+    def _openProject(self, directory_path):
         # Close existing tabs
-        self.close_project()
+        self.closeProject()
 
         # Load HIVES from project
         self.hive_finder.additional_paths = {directory_path, }
 
         # Set directory
-        self._project_directory = directory_path
+        self._projectDirectory = directory_path
 
         # Enter import context
         assert self._project_context is None, "Import context should be None!"
@@ -496,25 +500,25 @@ class MainWindow(QMainWindow):
         self._project_context = ContextAdaptor(project_context_manager)
         self._project_context.enter()
 
-        self.update_loaded_hives()
-        self._update_menu_options()
+        self.updateLoadedHives()
+        self._updateMenuOptions()
 
         # Rename window project
-        self.setWindowTitle(self.project_name_template.format(directory_path))
+        self.setWindowTitle(self._projectNameTemplate.format(directory_path))
 
         # Update hives display in project window
         self._project_hives_window.setWidget(self._project_hives_active_widget)
         hives_in_project = self.hive_finder.hives_by_path[directory_path]
         project_hivemaps = [p for p in hives_in_project if module_is_hivemap(__import__(p.rsplit('.', 1)[0]))]
-        self._project_hives_active_widget.set_items(project_hivemaps)
+        self._project_hives_active_widget.setItems(project_hivemaps)
 
-    def close_open_tabs(self):
+    def closeOpenTabs(self):
         while self.tab_widget.count() > 1:
             self.tab_widget.removeTab(1)
 
-    def close_project(self):
+    def closeProject(self):
         # Close open tabs
-        self.close_open_tabs()
+        self.closeOpenTabs()
 
         # If project was open
         if self._project_context:
@@ -523,17 +527,17 @@ class MainWindow(QMainWindow):
             clear_imported_hivemaps()
 
             self.hive_finder.additional_paths.clear()
-            self._project_directory = None
+            self._projectDirectory = None
 
         # Rename window project
-        self.setWindowTitle(self.project_name_template.format(self.no_project_text))
+        self.setWindowTitle(self._projectNameTemplate.format(self._noProjectText))
 
-        self.update_loaded_hives()
-        self._update_menu_options()
+        self.updateLoadedHives()
+        self._updateMenuOptions()
 
         self._project_hives_window.setWidget(self._project_hives_inactive_widget)
 
-    def update_loaded_hives(self):
+    def updateLoadedHives(self):
         """Update the hive list in loaded editors"""
         self.hive_finder.reload()
 
@@ -544,10 +548,10 @@ class MainWindow(QMainWindow):
             widget = self.tab_widget.widget(i)
 
             if isinstance(widget, NodeEditorSpace):
-                widget.update_hive_tree(hives)
-                widget.update_bee_tree(bees)
+                widget.updateHiveTree(hives)
+                widget.updateBeeTree(bees)
 
-    def show_hive_edit_menu(self, hive_widget, reference_path, event):
+    def showHiveEditMenu(self, hive_widget, reference_path, event):
         try:
             hivemap_file_path = find_file_path_of_hive_path(reference_path)
 
@@ -555,14 +559,14 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu(hive_widget)
-        edit_action = menu.addAction("Edit Hivemap")
+        editAction = menu.addAction("Edit Hivemap")
         global_position = hive_widget.mapToGlobal(event.pos())
-        called_action = menu.exec_(global_position)
+        calledAction = menu.exec_(global_position)
 
-        if called_action == edit_action:
-            self._open_file(hivemap_file_path)
+        if calledAction == editAction:
+            self._openFile(hivemap_file_path)
 
-    def _on_save_state_changed(self, editor, has_unsaved_changes):
+    def onSaveStateChanged(self, editor, has_unsaved_changes):
         # Check if already open
         for index in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(index)
@@ -572,7 +576,7 @@ class MainWindow(QMainWindow):
         else:
             raise ValueError()
 
-        file_path = self._get_display_name(editor.file_path)
+        file_path = self._getDisplayName(editor.filePath())
 
         if not has_unsaved_changes:
             self.tab_widget.setTabText(index, file_path)
@@ -580,14 +584,19 @@ class MainWindow(QMainWindow):
         else:
             self.tab_widget.setTabText(index, "{}*".format(file_path))
 
-    def find_editor_of_file(self, file_path):
+    def findEditorOfFile(self, file_path):
+        """Find open editor of file path.
+        Raise ValueError if no editor is found.
+
+        :param file_path: path of file
+        """
         # Check if already open
         for index in range(self.tab_widget.count()):
             widget = self.tab_widget.widget(index)
             if not isinstance(widget, NodeEditorSpace):
                 continue
 
-            widget_file_path = widget.file_path
+            widget_file_path = widget.filePath()
             if widget_file_path is None:
                 continue
 
@@ -597,10 +606,10 @@ class MainWindow(QMainWindow):
 
         raise ValueError("File not open")
 
-    def open_file(self):
+    def openFile(self):
         dialogue = QFileDialog(self, caption="Open Hivemap")
-        dialogue.setDefaultSuffix(self.hivemap_extension)
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self.hivemap_extension)))
+        dialogue.setDefaultSuffix(self._hivemapExtension)
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self._hivemapExtension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptOpen)
 
@@ -608,33 +617,33 @@ class MainWindow(QMainWindow):
             return
 
         file_path = dialogue.selectedFiles()[0]
-        self._open_file(file_path)
+        self._openFile(file_path)
 
-    def _open_file(self, file_path):
+    def _openFile(self, file_path):
         # Check if already open
         try:
-            editor = self.find_editor_of_file(file_path)
+            editor = self.findEditorOfFile(file_path)
             self.tab_widget.setCurrentWidget(editor)
 
         except ValueError:
-            editor = self.add_editor_space(file_path=file_path)
+            editor = self.addEditorSpace(file_path=file_path)
 
             # Rename tab
-            name = self._get_display_name(file_path, allow_untitled=False)
+            name = self._getDisplayName(file_path, allow_untitled=False)
             index = self.tab_widget.currentIndex()
             self.tab_widget.setTabText(index, name)
 
         # Update save UI elements now we have a filename
-        self._update_menu_options()
+        self._updateMenuOptions()
         return editor
 
-    def save_as_file(self):
+    def saveAsFile(self):
         widget = self.tab_widget.currentWidget()
         assert isinstance(widget, NodeEditorSpace)
 
         dialogue = QFileDialog(self, caption="Save Hivemap")
-        dialogue.setDefaultSuffix(self.hivemap_extension)
-        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self.hivemap_extension)))
+        dialogue.setDefaultSuffix(self._hivemapExtension)
+        dialogue.setNameFilter(dialogue.tr("Hivemaps (*.{})".format(self._hivemapExtension)))
         dialogue.setFileMode(QFileDialog.AnyFile)
         dialogue.setAcceptMode(QFileDialog.AcceptSave)
 
@@ -643,39 +652,38 @@ class MainWindow(QMainWindow):
 
         file_path = dialogue.selectedFiles()[0]
 
-        was_untitled = widget.file_path is None
         widget.save(file_path=file_path)
+        widget.setFilePath(file_path)
 
         # Update tab name
-        name = self._get_display_name(file_path, allow_untitled=False)
+        name = self._getDisplayName(file_path, allow_untitled=False)
         index = self.tab_widget.currentIndex()
         self.tab_widget.setTabText(index, name)
 
-        # Update save UI elements now we have a filename
-        if was_untitled:
-            self._update_menu_options()
+        # Update save UI elements (filename may have changed) filename
+        self._updateMenuOptions()
 
         # Refresh hives
-        if self.project_directory is not None:
-            self.update_loaded_hives()
+        if self._projectDirectory is not None:
+            self.updateLoadedHives()
 
-    def save_file(self):
+    def saveFile(self):
         widget = self.tab_widget.currentWidget()
         assert isinstance(widget, NodeEditorSpace)
         widget.save()
 
-    def _on_created_debug_controller(self, debug_controller):
-        editor = self._open_file(debug_controller.file_path)
-        editor.on_debugging_started(debug_controller)
+    def _onCreatedDebugController(self, debug_controller):
+        editor = self._openFile(debug_controller.file_path)
+        editor.onDebuggingStarted(debug_controller)
 
-    def _on_destroyed_debug_controller(self, debug_controller):
-        editor = self.find_editor_of_file(debug_controller.file_path)
-        editor.on_debugging_finished()
+    def _onDestroyedDebugController(self, debug_controller):
+        editor = self.findEditorOfFile(debug_controller.file_path)
+        editor.onDebuggingFinished()
 
-    def _on_created_debug_session(self, debug_session):
-        debug_session.on_created_controller.subscribe(self._on_created_debug_controller)
-        debug_session.on_destroyed_controller.subscribe(self._on_destroyed_debug_controller)
+    def _onCreatedDebugSession(self, debug_session):
+        debug_session.on_created_controller.subscribe(self._onCreatedDebugController)
+        debug_session.on_destroyed_controller.subscribe(self._onDestroyedDebugController)
 
-    def _on_closed_debug_session(self, debug_session):
-        debug_session.on_created_controller.unsubscribe(self._on_created_debug_controller)
-        debug_session.on_destroyed_controller.unsubscribe(self._on_destroyed_debug_controller)
+    def _onClosedDebugSession(self, debug_session):
+        debug_session.on_created_controller.unsubscribe(self._onCreatedDebugController)
+        debug_session.on_destroyed_controller.unsubscribe(self._onDestroyedDebugController)
