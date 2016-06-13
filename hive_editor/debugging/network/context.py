@@ -39,6 +39,7 @@ ContainerBeeReference = namedtuple("ContainerBeeReference", "container_id bee_co
 
 
 class NetworkDebugContext(ReportedDebugContextBase):
+    """Context manager to communicate debug information with remote debugger (server)"""
 
     def __init__(self, logger=None, host=None, port=None):
         self._container_hives = WeakKeyDictionary()
@@ -51,20 +52,28 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._client.on_disconnected.subscribe(self._on_disconnected)
 
         self._breakpoints = {}
+
         if logger is None:
-            logger = getLogger(repr(self))
+            logger = getLogger(__name__)
 
         self._logger = logger
 
     def __enter__(self):
         super().__enter__()
+
         self._client.launch()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._client.stop()
+        try:
+            self._client.stop()
+
+        except Exception:
+            self._logger.exception()
+
         super().__exit__(exc_type, exc_val, exc_tb)
 
     def _clear_breakpoints(self):
+        """Unset all breakpoints and clear them"""
         for breakpoint in self._breakpoints.values():
             self._unset_breakpoint(breakpoint)
 
@@ -73,19 +82,45 @@ class NetworkDebugContext(ReportedDebugContextBase):
     def _on_disconnected(self):
         self._clear_breakpoints()
 
-    def report_trigger(self, source_bee_ref, target_ref):
-        self._on_operation(OpCodes.trigger, source_bee_ref, target_ref)
+    def report_trigger(self, source_bee_ref, target_bee_ref):
+        """Report a trigger operation
 
-    def report_pretrigger(self, source_bee_ref, target_ref):
-        self._on_operation(OpCodes.pretrigger, source_bee_ref, target_ref)
+        :param source_bee_ref: weakref of source bee
+        :param target_bee_ref: weakref of target bee
+        """
+        self._on_operation(OpCodes.trigger, source_bee_ref, target_bee_ref)
+
+    def report_pretrigger(self, source_bee_ref, target_bee_ref):
+        """Report a pre-trigger operation
+
+        :param source_bee_ref: weakref of source bee
+        :param target_bee_ref: weakref of target bee
+        """
+        self._on_operation(OpCodes.pretrigger, source_bee_ref, target_bee_ref)
 
     def report_push_out(self, source_bee_ref, target_ref, data):
+        """Report a push-out operation
+
+        :param source_bee_ref: weakref of source bee
+        :param target_bee_ref: weakref of target bee
+        :param data: data pushed from source bee
+        """
         self._on_operation(OpCodes.push_out, source_bee_ref, target_ref, data)
 
     def report_pull_in(self, source_bee_ref, target_ref, data):
+        """Report a pull-in operation
+
+        :param source_bee_ref: weakref of source bee
+        :param target_bee_ref: weakref of target bee
+        :param data: data pulled from source bee
+        """
         self._on_operation(OpCodes.pull_in, source_bee_ref, target_ref, data)
 
     def _on_received_response(self, response):
+        """Server response callback
+
+        :param response: byte string
+        """
         opcode, = unpack_from('B', response)
         body = response[calcsize('B'):]
 
@@ -102,6 +137,11 @@ class NetworkDebugContext(ReportedDebugContextBase):
             raise ValueError("Invalid OPCODE: '{}'".format(opcode))
 
     def _add_breakpoint(self, message):
+        """Add breakpoint to breakpoints dict (internal)
+
+        :param message: byte string
+        """
+
         container_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
@@ -111,6 +151,10 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._breakpoints[bee_container_ref] = Event()
 
     def _remove_breakpoint(self, message):
+        """Remove breakpoint from breakpoints dict (internal)
+
+        :param message: byte string
+        """
         container_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
         print("DBG::Remove breakpoint!", [bee_container_name])
@@ -120,6 +164,10 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._unset_breakpoint(breakpoint)
 
     def _skip_breakpoint(self, message):
+        """Skip set breakpoint (internal)
+
+        :param message: byte string
+        """
         container_id, = unpack_from('B', message)
         bee_container_name, read_bytes = unpack_pascal_string(message, 1)
 
@@ -130,6 +178,10 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._unset_breakpoint(breakpoint)
 
     def _unset_breakpoint(self, breakpoint):
+        """Attempt to clear a triggered breakpoint
+
+        :param breakpoint: breakpoint info (container id, container name)
+        """
         try:
             breakpoint.set()
             breakpoint.clear()
@@ -138,10 +190,24 @@ class NetworkDebugContext(ReportedDebugContextBase):
             pass
 
     def _send_command(self, opcode, payload):
+        """Send command to server
+
+        :param opcode: opcode integer (byte)
+        :param payload: payload (byte string)
+        """
         serialised = pack('B', opcode) + payload
         self._client.send(serialised)
 
     def _send_operation(self, opcode, root_hive_id, source_container_name, target_container_name, data):
+        """Send operation command to server
+
+        :param opcode: opcode integer (byte)
+        :param root_hive_id: ID of root hive (byte)
+        :param source_container_name: source container name (str)
+        :param target_container_name: target container name (str)
+
+        :param data: payload (byte string)
+        """
         serialised = pack('B', root_hive_id) + pack_pascal_string(source_container_name) + \
                      pack_pascal_string(target_container_name)
 
@@ -151,46 +217,62 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._send_command(opcode, serialised)
 
     def _send_container_hive_id(self, root_hive_id, container_hive_path):
+        """Send command to register hive ID on server. Sends file path of hive
+
+        :param root_hive_id: ID of root hive (byte)
+        :param container_hive_path: file_path of container hive
+        """
         data = pack_pascal_string(container_hive_path) + pack('B', root_hive_id)
         self._send_command(OpCodes.register_root, data)
 
     def _send_hit_breakpoint(self, root_hive_id, container_name):
+        """Send OpCodes.hive_breakpoint command to server
+
+        :param root_hive_id: ID of root hive (byte)
+        :param container_name: name of bee relative to root hive
+        """
         data = pack('B', root_hive_id) + pack_pascal_string(container_name)
         self._send_command(OpCodes.hit_breakpoint, data)
 
     @staticmethod
     def _find_container_candidates(bee):
+        """Find hives containing the hives to which a given bee belongs.
+        e.g SomeHive.OtherHive.FooBee -> {ref(<HiveObject ...>) : (OtherHive, FooBee)}
+
+        :param bee: bee instance
+        """
         if not isinstance(bee, Nameable):
             raise TypeError("Bee is not Nameable")
 
         paths = defaultdict(set)
 
         bee_runtime_infos = bee._hive_runtime_info
-        if bee_runtime_infos is not None:
-            # Iterate over parent infos, find path relative to parent's container (to find parent_node_name.bee_name)
-            for info in bee._hive_runtime_info:
-                parent_ref, bee_name = info
-                parent = parent_ref()
+        if bee_runtime_infos is None:
+            return {}
 
-                parent_runtime_infos = parent._hive_runtime_info
-                if parent_runtime_infos is None:
-                    continue
+        # Iterate over parent infos, find path relative to parent's container (to find parent_node_name.bee_name)
+        for info in bee._hive_runtime_info:
+            parent_ref, bee_name = info
+            parent = parent_ref()
 
-                # For each parent runtime info, store path relative to top-level container
-                for parent_info in parent._hive_runtime_info:
-                    container_ref, node_name = parent_info
+            parent_runtime_infos = parent._hive_runtime_info
+            if parent_runtime_infos is None:
+                continue
 
-                    paths[container_ref].add((node_name, bee_name))
+            # For each parent runtime info, store path relative to top-level container
+            for parent_info in parent._hive_runtime_info:
+                container_ref, node_name = parent_info
+
+                paths[container_ref].add((node_name, bee_name))
 
         return paths
 
-    @staticmethod
-    def _format_container_path(name_path):
-        x, y = name_path
-        return "{}.{}".format(x.lstrip('_'), y.lstrip('_'))
-
     @lru_cache()
     def _get_hivemap_connections(self, file_path):
+        """Parse all connections belonging to hivemap with given file path
+
+        :param file_path: file path of hivemap
+        """
         hivemap = model.Hivemap.fromfile(file_path)
         name_to_hive = {n.identifier: n for n in hivemap.nodes if n.family == "HIVE"}
 
@@ -214,13 +296,17 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
     @lru_cache()
     def _find_container_pair_info(self, source_bee_ref, target_bee_ref):
-        """Find the source bee name, target bee name and container hivemap file_path from two bee references"""
+        """Find the source bee name, target bee name and container hivemap file_path from two bee references
+
+        :return ContainerPairInfo(...)
+        """
         source_bee = source_bee_ref()
         target_bee = target_bee_ref()
 
         source_candidates = self._find_container_candidates(source_bee)
         target_candidates = self._find_container_candidates(target_bee)
 
+        # Find root hives which contain both
         containers = set(source_candidates).intersection(target_candidates)
 
         try:
@@ -250,7 +336,8 @@ class NetworkDebugContext(ReportedDebugContextBase):
         except ValueError:
             return None
 
-        connections = self._get_hivemap_connections(loader_result.module.__file__)
+        hivemap_file_path = loader_result.module.__file__
+        connections = self._get_hivemap_connections(hivemap_file_path)
 
         # Iterate over potential combinations of source names and target names.
         # If they are found in the hivemap connection set, these are the valid names
@@ -262,18 +349,30 @@ class NetworkDebugContext(ReportedDebugContextBase):
 
             source_bee_name = "{}.{}".format(*source_name)
             target_bee_name = "{}.{}".format(*target_name)
-            return ContainerPairInfo(source_bee_name, target_bee_name, file_path)
+            return ContainerPairInfo(source_bee_name, target_bee_name, hivemap_file_path)
 
     @lru_cache()
     def _get_container_hive_id(self, container_hive_path):
-        """Generate a unique id for a given file-path"""
+        """Generate a unique id for a given file-path
+
+        :param container_hive_path: file path of hive
+        """
         hive_id = next(self._id_generator)
         self._send_container_hive_id(hive_id, container_hive_path)
         return hive_id
 
     def _on_operation(self, opcode, source_bee_ref, target_bee_ref, data=None):
+        """Send operation information to server
+
+        :param opcode: opcode integer (byte)
+        :param source_container_name: source container name (str)
+        :param target_container_name: target container name (str)
+
+        :param data: payload (byte string)
+        """
         container_pair_info = self._find_container_pair_info(source_bee_ref, target_bee_ref)
 
+        # We require a container_pair_info object to proceed
         if container_pair_info is None:
             return
 
@@ -285,12 +384,20 @@ class NetworkDebugContext(ReportedDebugContextBase):
         self._send_operation(opcode, container_hive_id, container_pair_info.source_container_name,
                              container_pair_info.target_container_name, data)
 
+        # Check if any breakpoints are set on involved bees
         self._check_for_breakpoint(container_pair_info.source_container_name, container_hive_id,
                                    container_pair_info.hivemap_path)
         self._check_for_breakpoint(container_pair_info.target_container_name, container_hive_id,
                                    container_pair_info.hivemap_path)
 
     def _check_for_breakpoint(self, bee_container_name, container_hive_id, hivemap_path):
+        """Determine if breakpoint exists, and if so, wait for it
+
+        :param bee_container_name: source container name (str)
+        :param container_hive_id: ID of container hive
+        :param hivemap_path: file_path of container hive
+        """
+
         # Check for breakpoint on pin
         bee_container_ref = container_hive_id, bee_container_name
 

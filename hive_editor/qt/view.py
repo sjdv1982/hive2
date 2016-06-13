@@ -497,7 +497,7 @@ class NodeView(QGraphicsView):
     def wheelEvent(self, event):
         degrees = event.angleDelta() / 8
         steps = degrees / self.MOUSE_STEPS
-        self.zoom += self._zoomIncrement * steps.y()
+        self.setZoom(self.zoom() + self._zoomIncrement * steps.y())
 
     def keyPressEvent(self, event):
         button = event.key()

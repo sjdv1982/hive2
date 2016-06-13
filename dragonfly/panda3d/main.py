@@ -11,7 +11,7 @@ from ..event import EventManager, EventHandler
 
 class MainloopClass:
 
-    def __init__(self, max_framerate=60):
+    def __init__(self, tick_rate):
         from direct.showbase.ShowBase import ShowBase
 
         self._base = ShowBase()

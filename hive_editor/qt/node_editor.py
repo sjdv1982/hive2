@@ -54,6 +54,7 @@ class PreviewWidget(QWidget):
         self._layout.addWidget(self._previewView)
 
         self._showSource = QPushButton("Show Source")
+        self._showSource.setToolTip("Display Python source code to produce this Hive")
         self._layout.addWidget(self._showSource)
         self._showSource.clicked.connect(self.doShowCode)
 
