@@ -157,6 +157,10 @@ class IOPin(ProtectedContainer):
         return True
 
     def mimic_other_pin(self, other_pin):
+        """Mimic properties of other pin, such as colour or shape
+        
+        :param other_pin: IOPin object
+        """
         # Update cosmetics for other
         flags = self._mimic_flags
 
@@ -167,17 +171,20 @@ class IOPin(ProtectedContainer):
             self._colour = other_pin.colour
 
     def unmimic_other_pin(self, other_pin):
+        # TODO implement this if necessary
         pass
 
     def add_connection(self, connection):
         assert connection not in self._connections
         self._connections.append(connection)
 
+        # Determine the "other pin" in this connection, relative to this pin
         if connection.output_pin is self:
             other_pin = connection.input_pin
         else:
             other_pin = connection.output_pin
 
+        # Only increment connection count if the other pin is real, or we count virtual pins
         if self._count_proxies or not other_pin.is_virtual:
             self._connection_count += 1
 

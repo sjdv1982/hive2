@@ -16,42 +16,31 @@ colours = [
 ]
 
 
+base_type_colours = {
+    "entity": colours[0],
+    "trigger": colours[1],
+    "id": colours[2],
+    "str": colours[3],
+    "bytes": colours[3],
+    "int": colours[4],
+    "float": colours[5],
+    "bool": colours[6],
+    "vector": colours[7],
+    "matrix": colours[8],
+    "colour": colours[9]
+}
+
+
 def get_colour(data_type):
     """Return the appropriate socket colour for data type"""
     as_tuple = hive.identifier_to_tuple(data_type)
 
     if as_tuple:
         base_type = as_tuple[0]
-
-        if base_type == "entity":
-            return colours[0]
-
-        elif base_type == "trigger":
-            return colours[1]
-
-        elif base_type == "id":
-            return colours[2]
-
-        elif base_type in ("str", "bytes"):
-            return colours[3]
-
-        elif base_type == "int":
-            return colours[4]
-
-        elif base_type == "float":
-            return colours[5]
-
-        elif base_type == "bool":
-            return colours[6]
-
-        elif base_type == "vector":
-            return colours[7]
-
-        elif base_type == "matrix":
-            return colours[8]
-
-        elif base_type == "colour":
-            return colours[9]
+        try:
+            return base_type_colours[base_type]
+        except KeyError:
+            pass
 
     return colours[10]
 
