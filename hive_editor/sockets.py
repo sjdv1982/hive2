@@ -1,7 +1,8 @@
 import hive
+from enum import IntEnum, auto
 
 
-colours = [
+_colours = [
     (255, 255, 95),
     (255, 0, 0),
     (0, 255, 0),
@@ -16,18 +17,18 @@ colours = [
 ]
 
 
-base_type_colours = {
-    "entity": colours[0],
-    "trigger": colours[1],
-    "id": colours[2],
-    "str": colours[3],
-    "bytes": colours[3],
-    "int": colours[4],
-    "float": colours[5],
-    "bool": colours[6],
-    "vector": colours[7],
-    "matrix": colours[8],
-    "colour": colours[9]
+_base_type_colours = {
+    "entity": _colours[0],
+    "trigger": _colours[1],
+    "id": _colours[2],
+    "str": _colours[3],
+    "bytes": _colours[3],
+    "int": _colours[4],
+    "float": _colours[5],
+    "bool": _colours[6],
+    "vector": _colours[7],
+    "matrix": _colours[8],
+    "colour": _colours[9]
 }
 
 
@@ -38,26 +39,29 @@ def get_colour(data_type):
     if as_tuple:
         base_type = as_tuple[0]
         try:
-            return base_type_colours[base_type]
+            return _base_type_colours[base_type]
         except KeyError:
             pass
 
-    return colours[10]
+    return _colours[10]
 
 
-class SocketTypes:
-    circle, square, diamond = range(3)
+class SocketTypes(IntEnum):
+    circle = auto()
+    square = auto()
+    diamond = auto()
+
+
+_mode_shapes = {
+    "pull": SocketTypes.square,
+    "push": SocketTypes.circle,
+    "any": SocketTypes.square
+}
 
 
 def get_shape(mode):
-    if mode == "pull":
-        return SocketTypes.square
-
-    elif mode == "push":
-        return SocketTypes.circle
-
-    elif mode == "any":
-        return SocketTypes.square
-
-    raise ValueError("Invalid mode")
+    try:
+        return _mode_shapes[mode]
+    except KeyError:
+        raise ValueError("Invalid mode")
 

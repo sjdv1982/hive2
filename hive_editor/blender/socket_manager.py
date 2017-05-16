@@ -1,7 +1,7 @@
 from bpy.utils import register_class
 
 from .types import BlenderHiveSocket
-from ..sockets import colours, SocketTypes
+from ..sockets import _colours, SocketTypes
 
 
 class SocketClassManager:
@@ -28,6 +28,6 @@ socket_class_manager = SocketClassManager()
 
 
 def register():
-    for colour in colours:
+    for colour in _colours:
         for socket_type in (SocketTypes.circle, SocketTypes.diamond, SocketTypes.square):
             socket_class_manager.register_socket(socket_type, colour)
