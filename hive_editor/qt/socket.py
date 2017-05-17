@@ -46,7 +46,7 @@ from ..sockets import SocketTypes
 
 class QtSocket(QGraphicsItem):
 
-    def __init__(self, socket_row, mode, shape, hover_text="", order_dependent=False, parent_item=None):
+    def __init__(self, socket_row, mode, shape, hover_text="", parent_item=None):
         # If creating a temporary connection, we create a fake socket, whose parent != socket row
         if parent_item is None:
             parent_item = socket_row
@@ -66,7 +66,6 @@ class QtSocket(QGraphicsItem):
         self._pen = QPen(Qt.NoPen)
 
         self._hoverText = hover_text
-        self._isOrderDependent = order_dependent
 
         self._mixedColor = False
 

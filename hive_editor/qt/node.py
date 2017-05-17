@@ -66,11 +66,11 @@ class SocketRow(QGraphicsWidget):
         socket_type = pin.shape
 
         if pin.io_type == "input":
-            self._socket = QtSocket(self, "input", socket_type, order_dependent=True)
+            self._socket = QtSocket(self, "input", socket_type)
             self._socket.setColor(socket_colour)
 
         else:
-            self._socket = QtSocket(self, "output", socket_type, order_dependent=True)
+            self._socket = QtSocket(self, "output", socket_type)
             self._socket.setColor(socket_colour)
 
         self.setLabelColor(self.defaultColor())
