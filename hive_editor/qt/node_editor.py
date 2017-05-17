@@ -14,7 +14,7 @@ from .configuration_dialogue import ConfigurationDialogue
 from .node import QtNode
 from .panels import FoldingPanel, ConfigurationPanel
 from .tree import TreeWidget
-from .utils import create_widget
+from .widgets import create_widget
 from .view import NodeView, NodePreviewView
 
 from ..code_generator import hivemap_to_python_source

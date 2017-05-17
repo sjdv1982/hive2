@@ -1,22 +1,21 @@
 import os
-import webbrowser
 import subprocess
-
-from sys import executable as EXECUTABLE_PATH
-from os import path
+import webbrowser
 from functools import partial
+from os import path
+from sys import executable as EXECUTABLE_PATH
 
 from PyQt5.QtCore import Qt, QUrl, QStringListModel
+from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtWidgets import (QMainWindow, QStatusBar, QAction, QDialog, QMessageBox, QFileDialog, QCompleter, QLineEdit,
                              QHBoxLayout, QMenu, QDockWidget, QLabel)
-from PyQt5.QtGui import QIcon, QKeySequence
 
 from .debugging import QtNetworkDebugManager
 from .node_editor import NodeEditorSpace
 from .tabs import TabViewWidget
 from .tree import TreeWidget
+from .utils import ContextAdaptor
 from .web_view import QEditorWebView
-
 from .. import tools
 from ..finder import all_bees, HiveFinder
 from ..importer import clear_imported_hivemaps, sys_path_add_context, module_is_hivemap
@@ -40,32 +39,6 @@ def dict_to_delimited(data, delimiter, name_path=()):
 
         elif value is None:
             yield '.'.join(new_name_path)
-
-
-class ContextAdaptor:
-
-    class _States:
-        null = 0
-        inside = 1
-        outside = 2
-
-    def __init__(self, context):
-        self._context = context
-        self._state = self._States.null
-
-    def enter(self):
-        if self._state is not self._States.null:
-            raise RuntimeError("Context invalid")
-
-        self._state = self._States.inside
-        self._context.__enter__()
-
-    def exit(self):
-        if self._state is not self._States.inside:
-            raise RuntimeError("Context invalid")
-
-        self._state = self._States.outside
-        self._context.__exit__(None, None, None)
 
 
 class MainWindow(QMainWindow):
@@ -136,35 +109,36 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
 
         self.newAction = QAction("&New", menu_bar, shortcut=QKeySequence.New, statusTip="Create a new file",
-                                  triggered=self.addEditorSpace)
+                                 triggered=self.addEditorSpace)
         self.loadAction = QAction("&Open...", menu_bar, shortcut=QKeySequence.Open, statusTip="Open an existing file",
-                                   triggered=self.openFile)
+                                  triggered=self.openFile)
         self.saveAction = QAction("&Save", menu_bar, shortcut=QKeySequence.Save, statusTip="Save as existing new file",
-                                   triggered=self.saveFile)
+                                  triggered=self.saveFile)
         self.saveAsAction = QAction("&Save As...", menu_bar, shortcut=QKeySequence.SaveAs,
                                     statusTip="Save as a new file", triggered=self.saveAsFile)
 
         self.fileMenu = QMenu("&File")
         self.openProjectAction = QAction("Open Project", menu_bar, statusTip="Open an existing Hive project",
-                                           triggered=self.openProject, shortcut=QKeySequence("CTRL+SHIFT+O"))
+                                         triggered=self.openProject, shortcut=QKeySequence("CTRL+SHIFT+O"))
         self.closeProjectAction = QAction("Close Project", menu_bar, statusTip="Close the current Hive project",
-                                            triggered=self.closeProject)
+                                          triggered=self.closeProject)
         self.refreshProjectAction = QAction("Reload Project", menu_bar, statusTip="Reload the current project",
-                                              triggered=self.reloadProject, shortcut=QKeySequence("F5"))
-        self.insertAction = QAction("&Insert", menu_bar, statusTip="Insert node from path", triggered=self.insertFromPath)
+                                            triggered=self.reloadProject, shortcut=QKeySequence("F5"))
+        self.insertAction = QAction("&Insert", menu_bar, statusTip="Insert node from path",
+                                    triggered=self.insertFromPath)
         self.insertAction.setShortcuts((QKeySequence(Qt.Key_Enter), QKeySequence(Qt.Key_Insert)))
         self.selectAllAction = QAction("Select &All", menu_bar, shortcut=QKeySequence.SelectAll,
                                        statusTip="Select all nodes", triggered=self.selectAllOperation)
         self.undoAction = QAction("&Undo", menu_bar, shortcut=QKeySequence.Undo, statusTip="Undo last operation",
-                                   triggered=self.undoOperation)
+                                  triggered=self.undoOperation)
         self.redoAction = QAction("&Redo", menu_bar, shortcut=QKeySequence.Redo, statusTip="Redo last operation",
-                                   triggered=self.redoOperation)
+                                  triggered=self.redoOperation)
         self.copyAction = QAction("&Copy", menu_bar, shortcut=QKeySequence.Copy, statusTip="Copy selected nodes",
-                                   triggered=self.copyOperation)
+                                  triggered=self.copyOperation)
         self.cutAction = QAction("Cu&t", menu_bar, shortcut=QKeySequence.Cut, statusTip="Cut selected nodes",
-                                  triggered=self.cutOperation)
+                                 triggered=self.cutOperation)
         self.pasteAction = QAction("&Paste", menu_bar, shortcut=QKeySequence.Paste, statusTip="Paste selected nodes",
-                                    triggered=self.pasteOperation)
+                                   triggered=self.pasteOperation)
 
         self.editMenu = QMenu("&Edit")
 
@@ -178,7 +152,7 @@ class MainWindow(QMainWindow):
         self.runMenu.addAction(self.runPandaAction)
 
         self.helpAction = QAction("&Help", menu_bar, statusTip="Open Help page in browser",
-                                   triggered=self.gotoHelpPage)
+                                  triggered=self.gotoHelpPage)
 
     def _openProjectHive(self, reference_path):
         hivemap_file_path = find_file_path_of_hive_path(reference_path)
@@ -495,9 +469,9 @@ class MainWindow(QMainWindow):
 
         # Enter import context
         assert self._project_context is None, "Import context should be None!"
-        project_context_manager = sys_path_add_context(directory_path)
 
-        self._project_context = ContextAdaptor(project_context_manager)
+        # Hold onto the context manager that adds the directory to sys path, until this project is closed
+        self._project_context = ContextAdaptor(sys_path_add_context(directory_path))
         self._project_context.enter()
 
         self.updateLoadedHives()

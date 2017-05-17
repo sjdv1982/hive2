@@ -4,7 +4,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QFrame, QLineEdit, QPushButton, QScrollArea
 
 from .label import ClickableLabelWidget
-from .utils import create_widget
+from .widgets import create_widget
 
 
 # TODO fix scrolling
