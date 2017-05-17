@@ -144,7 +144,7 @@ class IOPin(ProtectedContainer):
 
         return False
 
-    def can_connect_to(self, other_pin, is_source):
+    def can_connect_to(self, other_pin):
         # If a restricted data type
         for data_type in self._restricted_data_types:
             if identifiers_match(other_pin.data_type, data_type, support_untyped=False):

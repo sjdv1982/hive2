@@ -148,7 +148,7 @@ class NodeManager(object):
             raise NodeConnectionError("Cannot connect to a folded pin")
 
         # Check connection is permitted
-        result = Connection.is_valid_between(output_pin, input_pin)
+        result = Connection.get_connection_type(output_pin, input_pin)
 
         if result == ConnectionType.INVALID:
             raise NodeConnectionError("Can't connect {} to {}".format(output_pin, input_pin))
