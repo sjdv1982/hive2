@@ -1,8 +1,11 @@
-from traceback import print_exc
 from weakref import WeakKeyDictionary
+from logging import getLogger
 
 
-class ObservableInstance(object):
+logger = getLogger(__name__)
+
+
+class ObservableInstance:
     """Implements the Observer pattern to notify arbitrary listeners of events"""
 
     def __init__(self):
@@ -26,11 +29,11 @@ class ObservableInstance(object):
             try:
                 observer(*args, **kwargs)
 
-            except Exception as err:
-                print_exc()
+            except:
+                logger.exception("Unable to invoke observer")
 
 
-class Observable(object):
+class Observable:
     """Descriptor object to instantiate ObservableInstance for class instances"""
 
     def __init__(self):
