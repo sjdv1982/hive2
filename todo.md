@@ -5,5 +5,6 @@
 - [ ] Write guidelines on when to use meta-args vs individual hives, ...
 - [ ] Python parser into nodes
 - [ ] Editor options
-- - x
+  - Configure search paths
+  - Configure pin names (titlized or underscore)
 # honeycomb-mouselook,movement
