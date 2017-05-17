@@ -1,52 +1,54 @@
 from contextlib import contextmanager
 from logging import getLogger
+from enum import auto, IntEnum
 
 from .observer import Observable
 
 
-def unique_id_counter():
-    i = 0
-
-    while True:
-        yield i
-        i += 1
-
-
 class IllegalCommandError(Exception):
-    pass
+    """Exception for command that could not be executed or reversed"""
 
 
-class CommandStates:
-    execute, unexecute = range(2)
+class CommandStates(IntEnum):
+    execute = auto()
+    un_execute = auto()
 
 
 class Command:
 
-    def __init__(self, execute, unexecute):
+    def __init__(self, execute, un_execute):
+        """Command object initialiser
+        
+        :param execute: execution callback
+        :param un_execute: un-execution callback
+        """
         self._execute = execute
-        self._unexecute = unexecute
+        self._un_execute = un_execute
 
-        self._allowed_state = CommandStates.unexecute
+        self._allowed_state = CommandStates.un_execute
 
     def __repr__(self):
-        return "<Command>\n\t{}\n\t{}".format(self._execute, self._unexecute)
+        return "<Command>\n\t{}\n\t{}".format(self._execute, self._un_execute)
 
     def execute(self):
+        """Execute command in forward direction"""
         if self._allowed_state != CommandStates.execute:
             raise IllegalCommandError("Command has already been executed")
 
-        self._allowed_state = CommandStates.unexecute
+        self._allowed_state = CommandStates.un_execute
         self._execute()
 
-    def unexecute(self):
-        if self._allowed_state != CommandStates.unexecute:
-            raise IllegalCommandError("Command has already been unexecuted")
+    def un_execute(self):
+        """Execute command in reverse direction"""
+        if self._allowed_state != CommandStates.un_execute:
+            raise IllegalCommandError("Command has already been un-executed")
 
         self._allowed_state = CommandStates.execute
-        self._unexecute()
+        self._un_execute()
 
 
 class RecursionGuard:
+    """Simple context manager to keep track of depth from initial caller"""
 
     def __init__(self):
         self._depth = 0
@@ -55,10 +57,6 @@ class RecursionGuard:
     def depth(self):
         return self._depth
 
-    @property
-    def is_busy(self):
-        return bool(self._depth)
-
     def __enter__(self):
         self._depth += 1
 
@@ -66,7 +64,7 @@ class RecursionGuard:
         self._depth -= 1
 
 
-class CommandHistoryManager:
+class CommandLogManager:
 
     on_updated = Observable()
 
@@ -75,9 +73,9 @@ class CommandHistoryManager:
             logger = getLogger("{}::{}".format(name, id(self)))
 
         self._logger = logger
-
-        self._current_history = CommandHistory(self._logger, name)
-
+        self._current_history = CommandLog(self._logger, name)
+        # Guards to stop updates being triggered during composite operations,
+        # or commands being recorded during undo/redo operations
         self._update_guard = RecursionGuard()
         self._push_guard = RecursionGuard()
 
@@ -88,21 +86,24 @@ class CommandHistoryManager:
     @contextmanager
     def command_context(self, name):
         composite_name = "{}.{}".format(self._current_history.name, name)
-        history = CommandHistory(self._logger, name=composite_name)
+        history = CommandLog(self._logger, name=composite_name)
 
         self._current_history, old_history = history, self._current_history
         yield self
         self._current_history = old_history
 
-        if not history.has_commands:
-            return
+        # If anything useful was performed, record history object
+        if history.has_commands:
+            self.record_command(history.redo_all, history.undo_all)
 
-        self.record_command(history.redo_all, history.undo_all)
-
-    def record_command(self, execute, unexecute):
-        """Add reversable operation to history"""
-        if not self._push_guard.is_busy:
-            self._current_history.record_command(execute, unexecute)
+    def record_command(self, execute, un_execute):
+        """Add reversable operation to history
+        
+        :param execute: callback to invoke when command is applied
+        :param un_execute: callback to invoke when command is reversed
+        """
+        if not self._push_guard.depth:
+            self._current_history.record_command(execute, un_execute)
             self._on_updated()
 
     def undo(self):
@@ -118,18 +119,19 @@ class CommandHistoryManager:
         self._on_updated()
 
     def _on_updated(self):
-        if self._update_guard.is_busy:
+        if self._update_guard.depth:
             return
 
         with self._update_guard:
             self.on_updated(self.command_id)
 
 
-class OperationHistoryError(Exception):
+class CommandLogError(Exception):
     pass
 
 
-class CommandHistory:
+class CommandLog:
+    """Linear log of reversible operations"""
 
     def __init__(self, logger, name="<main>", limit=200):
         self._commands = []
@@ -138,6 +140,14 @@ class CommandHistory:
 
         self._name = name
         self._logger = logger
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def index(self):
+        return self._index
 
     @property
     def has_commands(self):
@@ -150,14 +160,6 @@ class CommandHistory:
     @property
     def can_undo(self):
         return self._index >= 0
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def index(self):
-        return self._index
 
     @property
     def command_id(self):
@@ -177,20 +179,20 @@ class CommandHistory:
 
     def undo(self):
         if not self.can_undo:
-            raise OperationHistoryError("Cannot undo any more operations")
+            raise CommandLogError("Cannot undo any more operations")
 
         command = self._commands[self._index]
-        command.unexecute()
-
         self._index -= 1
+
+        command.un_execute()
 
     def redo(self):
         if not self.can_redo:
-            raise OperationHistoryError("Cannot redo any more operations")
+            raise CommandLogError("Cannot redo any more operations")
 
         self._index += 1
-
         command = self._commands[self._index]
+
         command.execute()
 
     def record_command(self, execute, unexecute):
@@ -198,18 +200,18 @@ class CommandHistory:
         self._add_command(command)
 
     def _add_command(self, command):
-        # If not at end of stack
+        # If not at end of list, then later commands will be lost, as history must be contiguous in time
         if self._index < len(self._commands) - 1:
-            latest_command = self._commands[self._index]
-
-            self._logger.info("Commands after {} have been lost due to an add command".format(latest_command))
-            self._logger.info(repr(command))
             del self._commands[self._index + 1:]
+            latest_command = self._commands[-1]
+
+            self._logger.info("Commands after {} have been lost due to an add command:\n{!r}"
+                              .format(latest_command, command))
 
         self._commands.append(command)
         self._index += 1
 
-        # Limit length
+        # Limit length to a maximum number of operations
         if len(self._commands) > self._limit:
             # Assume everything atomic, hence only one command to displace
             # Index must be at end, if command list has grown
@@ -217,6 +219,6 @@ class CommandHistory:
             del self._commands[0]
 
     def __repr__(self):
-        return "<History ({})>".format(self.name)
+        return "<CommandLog ({})>".format(self.name)
 
 

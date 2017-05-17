@@ -4,7 +4,7 @@ from keyword import iskeyword
 from .code_generator import parameter_group_array_to_dict, parameter_group_dict_to_array
 from .connection import Connection, ConnectionType
 from .factory import BeeNodeFactory, HiveNodeFactory
-from .history import CommandHistoryManager
+from .history import CommandLogManager
 from .inspector import HiveNodeInspector, BeeNodeInspector
 from .models import model
 from .node import FOLD_NODE_REFERENCE_PATH, NodeTypes
@@ -83,7 +83,7 @@ class NodeManager(object):
 
     def __init__(self, history, logger=None):
         if history is None:
-            history = CommandHistoryManager()
+            history = CommandLogManager()
 
         self.history = history
 

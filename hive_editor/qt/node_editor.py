@@ -18,7 +18,7 @@ from .utils import create_widget
 from .view import NodeView, NodePreviewView
 
 from ..code_generator import hivemap_to_python_source
-from ..history import CommandHistoryManager
+from ..history import CommandLogManager
 from ..inspector import InspectorOption
 from ..utils import find_file_path_of_hive_path, import_module_from_hive_path
 from ..node import MimicFlags, NodeTypes
@@ -216,7 +216,7 @@ class NodeEditorSpace(QMainWindow):
         super(NodeEditorSpace, self).__init__()
 
         self._filePath = file_path
-        self._history = CommandHistoryManager()
+        self._history = CommandLogManager()
         self._history.on_updated.subscribe(self._onHistoryUpdated)
 
         self._nodeManager = NodeManager(self._history)
