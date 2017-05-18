@@ -48,11 +48,12 @@ keymap[Qt.Key_Minus] = "-"
 keymap[Qt.Key_Plus] = "+"
 keymap[Qt.Key_Equal] = "="
 keymap[Qt.Key_Asterisk] = "*"
+#keymap[Qt.Hash] = "#"
 
-keymap[Qt.DownArrow] = 'arrow_down'
-keymap[Qt.LeftArrow] = 'arrow_left'
-keymap[Qt.RightArrow] = 'arrow_right'
-keymap[Qt.UpArrow] = 'arrow_up'
+keymap[Qt.Key_Down] = 'arrow_down'
+keymap[Qt.Key_Left] = 'arrow_left'
+keymap[Qt.Key_Right] = 'arrow_right'
+keymap[Qt.Key_Up] = 'arrow_up'
 
 
 class QKeySelector(QPushButton):

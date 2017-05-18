@@ -1,64 +1,72 @@
-import os
 import sys
-import types
 from contextlib import contextmanager
+from collections import namedtuple
+from importlib.machinery import ModuleSpec
+from importlib.abc import MetaPathFinder, FileLoader
+from os.path import basename, splitext, join, isdir
+from os import listdir
 
-from .code_generator import class_from_filepath
+
+from .code_generator import hivemap_to_python_source
 from .data_views import ListView
-from .utils import find_source_hivemap
+from .utils import underscore_to_camel_case
+from .models import model
 
 
-class HiveModuleLoader:
+HivemapLoaderResult = namedtuple("HivemapLoaderResult", "module cls class_name")
 
-    def __init__(self, path, context):
-        self.path = path
-        self.context = context
-        self.classes = set()
+
+class HivemapModuleLoader(FileLoader):
+    """Loader for hivemaps"""
+
+    def __init__(self, fullname, path):
+        super().__init__(fullname, path)
+
+        self._source = None
+        self.results = []
 
     def clear_cache(self):
-        self.classes.clear()
+        self.results.clear()
 
-    def load_module(self, module_path):
-        with self.context:
-            if module_path not in sys.modules:
-                try:
-                    cls = class_from_filepath(self.path)
+    @staticmethod
+    def _class_name_from_file_path(file_path):
+        file_name = splitext(basename(file_path))[0]
+        return underscore_to_camel_case(file_name)
 
-                except Exception as exc:
-                    raise ImportError(module_path) from exc
+    def get_source(self, fullname):
+        return self._source
 
-                self.classes.add(cls)
+    def exec_module(self, module):
+        name = module.__spec__.name
 
-                try:
-                    package, _ = module_path.rsplit('.', 1)
+        # Load hivemap
+        try:
+            hivemap = model.Hivemap.fromfile(self.path)
 
-                except ValueError:
-                    package = None
+        except Exception as err:
+            print("Unable to load {}".format(self.path))
+            raise ImportError from err
 
-                module = types.ModuleType(module_path, cls.__doc__)
-                module.__file__ = self.path
-                module.__loader__ = self
-                module.__package__ = package
+        class_name = self._class_name_from_file_path(self.path)
+        python_source = self._source = hivemap_to_python_source(hivemap, class_name=class_name)
 
-                setattr(module, cls.__name__, cls)
-                sys.modules[module_path] = module
+        try:
+            exec(python_source, module.__dict__)
 
-            # TODO does this happen?
-            else:
-                raise Exception
+        except Exception as exc:
+            raise ImportError(name) from exc
 
-            return sys.modules[module_path]
+        loader_result = HivemapLoaderResult(module, getattr(module, class_name), class_name)
+        self.results.append(loader_result)
+
+        return module
 
 
-class HiveModuleImporter(object):
+class HivemapModuleFinder(MetaPathFinder):
+    """MetaPathFinder for hivemaps"""
 
     def __init__(self):
-        self._additional_paths = []
         self._loaders = []
-
-    @property
-    def additional_paths(self):
-        return ListView(self._additional_paths)
 
     def invalidate_caches(self):
         for loader in self._loaders:
@@ -66,80 +74,99 @@ class HiveModuleImporter(object):
 
         self._loaders.clear()
 
-    @contextmanager
-    def temporary_relative_context(self, *paths):
-        _old_paths = self._additional_paths
-
-        self._additional_paths = _old_paths + list(paths)
-        yield
-        self._additional_paths = _old_paths
-
     @property
     def loaders(self):
         return ListView(self._loaders)
 
-    def get_path_of_class(self, cls):
+    def find_loader_result_for_class(self, cls):
         for loader in self._loaders:
 
-            if cls in loader.classes:
-                return loader.path
+            for result in loader.results:
+                if result.cls is cls:
+                    return result
 
         raise ValueError("Couldn't find class: {}".format(cls))
 
-    def find_module(self, full_name, path=None):
-        additional_paths = reversed(self._additional_paths)
+    def find_spec(self, fullname, path, target=None):
+        if path is None:
+            path = sys.path
+            import_path = fullname
 
-        try:
-            file_path = find_source_hivemap(full_name, additional_paths)
+        else:
+            import_path = fullname.split('.')[-1]
 
-        except (FileNotFoundError, ValueError):
-            return
+        split_path = import_path.split('.')
+        file_name = "{}.hivemap".format(split_path[-1])
 
-        # Allow relative imports to this module using temporary import context
-        directory = os.path.dirname(file_path)
-        context = self.temporary_relative_context(directory)
+        # Search all paths to find hivemap
+        for root in path:
+            directory = join(root, *split_path[:-1])
 
-        loader = HiveModuleLoader(file_path, context=context)#, register_class=self._register_created_class)
+            if not isdir(directory):
+                continue
+
+            if file_name in listdir(directory):
+                file_path = join(directory, file_name)
+                break
+
+        else:
+            return None
+
+        loader = HivemapModuleLoader(fullname, file_path)
         self._loaders.append(loader)
 
-        return loader
+        spec = ModuleSpec(fullname, loader, origin=file_path, loader_state=None, is_package=False)
+        spec.has_location = True
+
+        return spec
 
 
-_importer = None
+_finder = None
 
 
 def get_hook():
-    return _importer
+    return _finder
+
+
+@contextmanager
+def sys_path_add_context(path):
+    """Add an entry to sys path, and cleanup on exit"""
+    if path in sys.path:
+        return
+
+    sys.path.append(path)
+    yield
+    sys.path.remove(path)
 
 
 def install_hook():
-    global _importer
-    if _importer is not None:
+    global _finder
+    if _finder is not None:
         raise RuntimeError("Import hook already installed!")
 
-    _importer = HiveModuleImporter()
-    sys.meta_path.append(_importer)
-    return _importer
+    _finder = HivemapModuleFinder()
+    sys.meta_path.append(_finder)
+
+    return _finder
 
 
 def uninstall_hook():
-    global _importer
-    if _importer is None:
+    global _finder
+    if _finder is None:
         raise RuntimeError("Import hook has not yet been installed!")
 
-    sys.meta_path.remove(_importer)
+    sys.meta_path.remove(_finder)
 
-    _importer = None
+    _finder = None
 
 
 def clear_imported_hivemaps():
-    to_remove = []
-
-    for name, module in sys.modules.items():
-        if isinstance(module.__loader__, HiveModuleLoader):
-            to_remove.append(name)
+    to_remove = [name for name, module in sys.modules.items() if module_is_hivemap(module)]
 
     for name in to_remove:
         del sys.modules[name]
 
-    class_from_filepath.cache_clear()
+
+def module_is_hivemap(module):
+    """Return True if module is a generated module for a hivemap"""
+    return isinstance(module.__loader__, HivemapModuleLoader)

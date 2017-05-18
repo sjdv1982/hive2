@@ -21,16 +21,16 @@ class Property(Stateful, Bindable, Exportable, Nameable):
     def _hive_stateful_getter(self, run_hive):
         cls = self._cls
 
-        assert cls in run_hive._hive_build_class_instances, cls
-        instance = run_hive._hive_build_class_instances[cls]
+        assert cls in run_hive._hive_build_class_to_instance, cls
+        instance = run_hive._hive_build_class_to_instance[cls]
 
         return getattr(instance, self._attr)
 
     def _hive_stateful_setter(self, run_hive, value):
         cls = self._cls
 
-        assert cls in run_hive._hive_build_class_instances, cls
-        instance = run_hive._hive_build_class_instances[cls]
+        assert cls in run_hive._hive_build_class_to_instance, cls
+        instance = run_hive._hive_build_class_to_instance[cls]
 
         setattr(instance, self._attr, value)
 
@@ -42,8 +42,8 @@ class Property(Stateful, Bindable, Exportable, Nameable):
         self._bound.add(run_hive)
         
         cls = self._cls
-        assert cls in run_hive._hive_build_class_instances, cls #TODO, DEBUG can remove?
-        instance = run_hive._hive_build_class_instances[cls]
+        assert cls in run_hive._hive_build_class_to_instance, cls #TODO, DEBUG can remove?
+        instance = run_hive._hive_build_class_to_instance[cls]
 
         start_value = self.start_value
         if start_value is not None or not hasattr(instance, self._attr):

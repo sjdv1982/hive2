@@ -21,16 +21,16 @@ class FloatingTextWidget(QGraphicsWidget):
         self._dropShadowEffect.setBlurRadius(8.0)
         self._dropShadowEffect.setColor(QColor(0, 0, 0, 50))
 
-        self._spacing_constant = 5.0
+        self._spacingConstant = 5.0
 
-    def update_layout(self):
+    def updateLayout(self):
         width = self._label.boundingRect().width()
         height = self._label.boundingRect().height()
 
-        width = self._spacing_constant + width + self._spacing_constant
-        height = self._spacing_constant + height + self._spacing_constant
+        width = self._spacingConstant + width + self._spacingConstant
+        height = self._spacingConstant + height + self._spacingConstant
 
-        self._label.setPos(self._spacing_constant, self._spacing_constant)
+        self._label.setPos(self._spacingConstant, self._spacingConstant)
 
         self.resize(width, height)
         self.update()
@@ -45,9 +45,9 @@ class FloatingTextWidget(QGraphicsWidget):
         # painter.setPen(self._pen)
         # painter.drawPath(self._path)
 
-    def on_updated(self, center_position, text):
+    def onUpdated(self, center_position, text):
         self._label.setText(text)
-        self.update_layout()
+        self.updateLayout()
 
         rect = self.rect()
 

@@ -1,7 +1,8 @@
 from hive.identifiers import identifiers_match
+from enum import IntEnum
 
 
-class ConnectionType:
+class ConnectionType(IntEnum):
     INVALID = 0
     VALID = 1
     TRIGGER = 2 | VALID
@@ -36,15 +37,20 @@ class Connection:
         return self._is_trigger
 
     @staticmethod
-    def is_valid_between(source, target):
+    def get_connection_type(source, target):
+        """Determine connection type between two pins
+        
+        :param source: IOPin instance
+        :param target: IOPin instance
+        """
         # If source has no mode
         if source.mode == "any":
             # At least one pin must have unique mode
             if target.mode == "any":
                 return ConnectionType.INVALID
 
-        # Both are moded pins
-        elif not target.mode == "any":
+        # Both are modal pins
+        elif target.mode != "any":
             # Modes don't match
             if target.mode != source.mode:
                 return ConnectionType.INVALID
@@ -66,10 +72,7 @@ class Connection:
                 return ConnectionType.TRIGGER
 
         # Ask each pin to validate connection
-        if not source.can_connect_to(target, is_source=True):
-            return ConnectionType.INVALID
-
-        if not target.can_connect_to(source, is_source=False):
+        if not (source.can_connect_to(target) and target.can_connect_to(source)):
             return ConnectionType.INVALID
 
         if not identifiers_match(source.data_type, target.data_type):

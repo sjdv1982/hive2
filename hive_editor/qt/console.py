@@ -19,79 +19,79 @@ def redirect_stderr(stream):
         sys.stderr = old_stderr
 
 
-class QConsole(QWidget):
+class ConsoleWidget(QWidget):
 
     def __init__(self, prefix='>>>', local_dict=None, max_history=15, display_text=""):
-        super().__init__()
+        super(ConsoleWidget, self).__init__()
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.display_widget = QLabel(self)
-        self.display_widget.setFont(QFont("Consolas"))
+        self._displayWidget = QLabel(self)
+        self._displayWidget.setFont(QFont("Consolas"))
 
-        self.scroll_area = QScrollArea(self)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.display_widget)
-        self.scroll_area.setAlignment(Qt.AlignBottom)
+        self._scrollArea = QScrollArea(self)
+        self._scrollArea.setWidgetResizable(True)
+        self._scrollArea.setWidget(self._displayWidget)
+        self._scrollArea.setAlignment(Qt.AlignBottom)
 
-        self.input_widget = QLineEdit(self)
-        self.layout.addWidget(self.scroll_area)
-        self.layout.addWidget(self.input_widget)
+        self._inputWidget = QLineEdit(self)
+        self.layout.addWidget(self._scrollArea)
+        self.layout.addWidget(self._inputWidget)
 
-        self.input_widget.returnPressed.connect(self._on_return)
-        self.scroll_area.verticalScrollBar().rangeChanged.connect(self._on_range_changed)
+        self._inputWidget.returnPressed.connect(self._onReturn)
+        self._scrollArea.verticalScrollBar().rangeChanged.connect(self._onRangeChanged)
 
         if local_dict is None:
             local_dict = {}
 
         self.local_dict = local_dict
-        self.console = InteractiveConsole(local_dict)
+
+        self._console = InteractiveConsole(local_dict)
         self._history = deque(maxlen=max_history)
-        self._max_history = max_history
-        self._current_command = -1
+        self._maxHistory = max_history
+        self._currentCommandIndex = -1
 
         self._text = display_text
-        self.display_widget.setText(self._text)
+        self._displayWidget.setText(self._text)
         self._prefix = prefix
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Up:
-            self._current_command -= 1
+            self._currentCommandIndex -= 1
 
         elif event.key() == Qt.Key_Down:
-            self._current_command += 1
+            self._currentCommandIndex += 1
 
         else:
             return
 
-        self._current_command = max(-len(self._history), min(self._current_command, -1))
+        self._currentCommandIndex = max(-len(self._history), min(self._currentCommandIndex, -1))
 
         if not self._history:
             return
 
-        self.input_widget.setText(self._history[self._current_command])
+        self._inputWidget.setText(self._history[self._currentCommandIndex])
 
-    def _on_range_changed(self):
-        self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+    def _onRangeChanged(self):
+        self._scrollArea.verticalScrollBar().setValue(self._scrollArea.verticalScrollBar().maximum())
 
-    def _on_return(self):
-        command = self.input_widget.text()
+    def _onReturn(self):
+        command = self._inputWidget.text()
 
         self._history.append(command)
-        self._current_command = 0
-        self.input_widget.setText("")
+        self._currentCommandIndex = 0
+        self._inputWidget.setText("")
 
         string_stream = StringIO()
 
         try:
             with redirect_stdout(string_stream), redirect_stderr(string_stream):
                 print(self._prefix, command)
-                self.console.push(command)
+                self._console.push(command)
 
         finally:
             self._text += string_stream.getvalue()
-            self.display_widget.setText(self._text)
-            self.display_widget.update()
-            self.scroll_area.update()
-
+            self._displayWidget.setText(self._text)
+            self._displayWidget.update()
+            self._scrollArea.update()

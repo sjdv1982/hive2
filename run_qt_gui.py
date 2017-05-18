@@ -4,8 +4,9 @@ import sys
 from logging import getLogger, StreamHandler, Formatter, DEBUG
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import Qt
 
-import hive_editor.qt.qdarkstyle as qdarkstyle
+from qdarkstyle import load_stylesheet_pyqt5
 from hive_editor.qt.main_window import MainWindow
 
 
@@ -21,7 +22,7 @@ logger.setLevel(DEBUG)
 if __name__ == "__main__":
     # Create a Qt application
     app = QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    app.setStyleSheet(load_stylesheet_pyqt5())
 
     # Fix for windows tray icon
     app_id = 'hive2.hive2.1.0'
@@ -35,7 +36,7 @@ if __name__ == "__main__":
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     window = MainWindow()
-    window.resize(1024, 768)
+    window.setWindowState(Qt.WindowMaximized)
 
     window.show()
 

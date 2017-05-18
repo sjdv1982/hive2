@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QCursor
 
 
-class QClickableLabel(QLabel):
+class ClickableLabelWidget(QLabel):
     clicked = pyqtSignal()
 
     def leaveEvent(self, event):

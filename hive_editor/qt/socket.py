@@ -44,16 +44,15 @@ from ..node_manager import NodeConnectionError
 from ..sockets import SocketTypes
 
 
-class Socket(QGraphicsItem):
+class QtSocket(QGraphicsItem):
 
-    def __init__(self, socket_row, mode, shape, parent_item=None, hover_text="", order_dependent=False):
-        if parent_item is None:  # parentItem is used by builtinUis.ContainedAttributeUiProxy
+    def __init__(self, socket_row, mode, shape, hover_text="", parent_item=None):
+        # If creating a temporary connection, we create a fake socket, whose parent != socket row
+        if parent_item is None:
             parent_item = socket_row
 
-        QGraphicsItem.__init__(self, parent_item)
-
-        self._parent_node_ui = weakref.ref(socket_row.parent_node_ui)
-        self._parent_socket_row = weakref.ref(socket_row)
+        super(QtSocket, self).__init__(parent_item)
+        self._parentSocketRow = weakref.ref(socket_row)
 
         assert mode in ("input", "output"), mode
         self._mode = mode
@@ -66,10 +65,9 @@ class Socket(QGraphicsItem):
         self._brush = QBrush(self.color())
         self._pen = QPen(Qt.NoPen)
 
-        self._hover_text = hover_text
-        self._is_order_dependent = order_dependent
+        self._hoverText = hover_text
 
-        self.mixed_color = False
+        self._mixedColor = False
 
         self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
 
@@ -78,107 +76,79 @@ class Socket(QGraphicsItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip(hover_text)
 
-        self._dragging_connection = None
+        self._draggingConnection = None
         self._connections = []
 
-    @property
     def mode(self):
         return self._mode
 
-    @property
-    def is_input(self):
+    def isInput(self):
         return self._mode == "input"
 
-    @property
-    def is_output(self):
+    def isOutput(self):
         return self._mode == "output"
 
-    @property
-    def parent_node_ui(self):
-        return self._parent_node_ui()
+    def parentNode(self):
+        return self._parentSocketRow().parentNode()
 
-    @property
-    def parent_socket_row(self):
-        return self._parent_socket_row()
+    def parentSocketRow(self):
+        return self._parentSocketRow()
 
-    @property
-    def border_enabled(self):
+    def borderEnabled(self):
         return self._pen.getStyle() == Qt.SolidLine
 
-    @border_enabled.setter
-    def border_enabled(self, value):
+    def setBorderEnabled(self, value):
         if value:
             self._pen.setStyle(Qt.SolidLine)
 
         else:
             self._pen.setStyle(Qt.NoPen)
 
-    def add_connection(self, connection):
+    def addConnection(self, connection):
         self._connections.append(connection)
 
-    def remove_connection(self, connection):
+    def removeConnection(self, connection):
         self._connections.remove(connection)
 
-    def find_connection(self, socket):
+    def findConnection(self, socket):
         for connection in self._connections:
-            if connection.end_socket is socket:
+            if connection.endSocket() is socket:
                 return connection
 
-            if connection.start_socket is socket:
+            if connection.startSocket() is socket:
                 return connection
 
-    def reorder_connection(self, connection, index):
+    def reorderConnection(self, connection, index):
         current_index = self._connections.index(connection)
         del self._connections[current_index]
         self._connections.insert(index, connection)
 
         # Update all paths
         for _connection in self._connections:
-            _connection.update_path()
+            _connection.updatePath()
             print("UPDATE PATHS")
 
-    def get_index_info(self, connection):
+    def getIndexInfo(self, connection):
         index = self._connections.index(connection)
         return index, len(self._connections)
 
-    def _tabKey(self):
-        pass
-
-    def _bspKey(self):
-        pass
-
-    def _deleteKey(self):
-        pass
-
-    def _on_plus_key(self):
-        pass
-
-    def _on_minus_key(self):
-        pass
-
-    def _numKey(self, num):
-        pass
-
     def hoverEnterEvent(self, event):
-        self.parent_node_ui.view.on_socket_hover_enter(self, event)
+        self.parentNode().view().onSocketHoverEnter(self, event)
 
         for connection in self._connections:
-            connection.on_socket_hover_enter()
+            connection.onSocketHoverEnter()
 
     def hoverLeaveEvent(self, event):
         for connection in self._connections:
-            connection.on_socket_hover_exit()
+            connection.onSocketHoverExit()
 
-        self.parent_node_ui.view.on_socket_hover_exit(self)
+        self.parentNode().view().onSocketHoverExit(self)
 
     def setMixedColor(self, value=True):
-        self.mixed_color = value
+        self._mixedColor = value
 
-    def set_shape(self, shape):
+    def setShape(self, shape):
         self._shape = shape
-
-    def set_colour(self, colour):
-        self.setColor(QColor(*colour))
 
     def setColor(self, color):
         self._color.setRgb(color.red(), color.green(), color.blue())
@@ -198,8 +168,8 @@ class Socket(QGraphicsItem):
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.NoModifier:
             from .connection import Connection
 
-            if self.is_output:
-                connection = self._dragging_connection = Connection(self)
+            if self.isOutput():
+                connection = self._draggingConnection = Connection(self)
                 self.scene().addItem(connection)
                 connection.setActive(False)
                 connection.show()
@@ -207,40 +177,40 @@ class Socket(QGraphicsItem):
         elif event.button() == Qt.MiddleButton or \
                 (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
 
-            self.parent_node_ui.view.gui_on_socket_interact(self)
+            self.parentNode().view().guiOnSocketInteract(self)
 
     def mouseMoveEvent(self, event):
-        connection = self._dragging_connection
+        connection = self._draggingConnection
 
-        if self.is_output and connection is not None:
+        if self.isOutput() and connection is not None:
             mouse_pos = connection.mapFromScene(event.scenePos())
 
-            end_socket = connection.end_socket
+            end_socket = connection.endSocket()
             end_socket.setPos(mouse_pos)
 
-            connection.set_active(False)
-            connection.update_end_pos()
+            connection.setActiveState(False)
+            connection.updateEndPos()
 
         # QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.NoModifier:
-            if self.is_output:
-                connection = self._dragging_connection
+            if self.isOutput():
+                connection = self._draggingConnection
 
-                start_socket = connection.start_socket
-                target_socket = connection.find_closest_socket()
+                start_socket = connection.startSocket()
+                target_socket = connection.findClosestSocket()
 
-                connection.on_deleted()
+                connection.onDeleted()
                 self.scene().removeItem(connection)
 
-                self._dragging_connection = None
+                self._draggingConnection = None
 
                 if target_socket is not None:
-                    node = self.parent_node_ui
+                    node = self.parentNode()
 
                     try:
-                        node.view.gui_create_connection(start_socket, target_socket)
+                        node.view().guiCreateConnection(start_socket, target_socket)
 
                     except NodeConnectionError:
                         pass
@@ -251,16 +221,16 @@ class Socket(QGraphicsItem):
         QGraphicsItem.setVisible(self, flag)
 
         for connection in self._connections:
-            connection.update_visibility()
+            connection.updateVisibility()
 
-    def update_connection_positions(self):
+    def updateConnectionPositions(self):
         """Update connection positions when nodes are moved"""
         for connection in self._connections:
-            if connection.start_socket is self:
-                connection.update_start_pos()
+            if connection.startSocket() is self:
+                connection.updateStartPos()
 
             else:
-                connection.update_end_pos()
+                connection.updateEndPos()
 
     def boundingRect(self):
         return self._rect
@@ -285,12 +255,9 @@ class Socket(QGraphicsItem):
         else:
             raise ValueError(self._shape)
 
-        if self.mixed_color:
+        if self._mixedColor:
             painter.setBrush(painter.brush().color().darker(130))
             painter.drawChord(self._rect, 1 * 16, 180 * 16)
 
-    def on_deleted(self):
+    def onDeleted(self):
         pass
-
-    def contextMenuEvent(self, event):
-        self.parent_node_ui.view.gui_on_socket_right_click(self, event)

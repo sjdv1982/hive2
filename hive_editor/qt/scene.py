@@ -43,17 +43,20 @@ class NodeUIScene(QGraphicsScene):
     def __init__(self, parent=None):
         QGraphicsScene.__init__(self, parent)
 
-        self._background_color = QColor(50, 55, 60)
-        self._grid_pen = QPen(self._background_color.lighter(120))
-        self._first_time_entering = True
-
-        self.zoom = 1.0
-
-        self._grid_pen.setWidth(1)
+        self._backgroundColor = QColor(50, 55, 60)
+        self._gridPen = QPen(self._backgroundColor.lighter(120))
+        self._gridPen.setWidth(1)
+        self._zoom = 1.0
 
         self.setItemIndexMethod(QGraphicsScene.NoIndex)  # fixes bug with scene.removeItem()
-        self.setBackgroundBrush(self._background_color)
+        self.setBackgroundBrush(self._backgroundColor)
         self.setStickyFocus(True)
+
+    def zoom(self):
+        return self._zoom
+
+    def setZoom(self, zoom):
+        self._zoom = zoom
 
     def helpEvent(self, event):
         QGraphicsScene.helpEvent(self, event)
@@ -66,7 +69,7 @@ class NodeUIScene(QGraphicsScene):
             return
 
         QGraphicsScene.drawBackground(self, painter, rect)
-        painter.setPen(self._grid_pen)
+        painter.setPen(self._gridPen)
 
         grid_size = 50
 

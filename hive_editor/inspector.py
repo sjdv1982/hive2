@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from hive import validation_enabled_as
-from .utils import hive_import_from_path, get_builder_class_args
+from .utils import hive_import_from_path, get_bind_class_args
 
 
 class InspectorOption:
@@ -26,27 +26,27 @@ def no_inspector():
 class BeeNodeInspector:
     """Inspect bee nodes for configurable parameters"""
 
-    def __init__(self, find_by_import_path):
-        self._find_by_import_path = find_by_import_path
+    def __init__(self, find_by_reference_path):
+        self._find_by_reference_path = find_by_reference_path
 
     def _find_attributes(self):
-        return self._find_by_import_path("hive.attribute")
+        return self._find_by_reference_path("hive.attribute")
 
-    def inspect(self, import_path):
-        """Inspect the UI attributes available for a bee with the given import path"""
-        root, bee_name = import_path.split(".")
+    def inspect(self, reference_path):
+        """Inspect the UI attributes available for a bee with the given reference path"""
+        root, bee_name = reference_path.split(".")
         assert root == "hive"
 
         inspector = getattr(self, "inspect_{}".format(bee_name))
         return inspector()
 
-    def inspect_configured(self, import_path, params):
+    def inspect_configured(self, reference_path, params):
         """Associate inspection options with assigned values.
 
-        :param import_path: import path of bee
+        :param reference_path: reference path of bee
         :param params: assigned parameters for each inspection stage
         """
-        inspector = self.inspect(import_path)
+        inspector = self.inspect(reference_path)
         param_info = {}
 
         # Find first stage values
@@ -127,20 +127,20 @@ class BeeNodeInspector:
 class HiveNodeInspector:
     """Inspect Hive nodes for configurable parameters"""
 
-    def inspect(self, import_path):
-        """Inspect the UI attribute available for a hive with the given import path
+    def inspect(self, reference_path):
+        """Inspect the UI attribute available for a hive with the given reference path
 
-        :param import_path: import path of Hive class
+        :param reference_path: reference path of Hive class
         """
-        return self._inspect_generator(import_path)
+        return self._inspect_generator(reference_path)
 
-    def inspect_configured(self, import_path, params):
+    def inspect_configured(self, reference_path, params):
         """Associate inspection options with assigned values.
 
-        :param import_path: import path of Hive class
+        :param reference_path: reference path of Hive class
         :param params: assigned parameters for each inspection stage
         """
-        inspector = self.inspect(import_path)
+        inspector = self.inspect(reference_path)
         param_info = {}
 
         # Find first stage values
@@ -180,16 +180,16 @@ class HiveNodeInspector:
 
         return wrapper_options
 
-    def _inspect_generator(self, import_path):
+    def _inspect_generator(self, reference_path):
         """An iterable inspection-stage generator.
 
         Yields each inspection stage as a name, OrderedDict pair.
 
-        :param import_path: import path of Hive class
+        :param reference_path: reference path of Hive class
         """
         with validation_enabled_as(False):
             # Import and prepare hive
-            import_result = hive_import_from_path(import_path)
+            import_result = hive_import_from_path(reference_path)
 
             # If it is a meta-hive-primitive, don't have to get meta args
             if import_result.is_meta_primitive:
@@ -218,7 +218,7 @@ class HiveNodeInspector:
             if args_wrapper:
                 yield ("args", self._scrape_wrapper(args_wrapper))
 
-            builder_args = get_builder_class_args(hive_cls)
+            builder_args = get_bind_class_args(hive_cls)
             if builder_args:
                 # Convert options into InspectorOptions
                 options = OrderedDict()

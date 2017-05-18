@@ -3,42 +3,38 @@ from functools import partial
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QFrame, QLineEdit, QPushButton, QScrollArea
 
-from .label import QClickableLabel
-from .utils import create_widget
+from .label import ClickableLabelWidget
+from .widgets import create_widget
 
 
 # TODO fix scrolling
 class NodeContextPanelBase(QWidget):
 
-    def __init__(self):
-        QWidget.__init__(self)
+    def __init__(self, parent=None):
+        super(NodeContextPanelBase, self).__init__(parent)
 
         self._node = None
-
         self._layout = QFormLayout()
 
         self._widget = QWidget()
         self._widget.setLayout(self._layout)
 
-        self._scroll_widget = QScrollArea()
-        self._scroll_widget.setWidgetResizable(True)
-        self._scroll_widget.setWidget(self._widget)
+        self._scrollWidget = QScrollArea()
+        self._scrollWidget.setWidgetResizable(True)
+        self._scrollWidget.setWidget(self._widget)
 
-        self._main_layout = QVBoxLayout()
-        self._main_layout.addWidget(self._scroll_widget)
-        self.setLayout(self._main_layout)
+        self._mainLayout = QVBoxLayout()
+        self._mainLayout.addWidget(self._scrollWidget)
+        self.setLayout(self._mainLayout)
 
-    @property
     def node(self):
         return self._node
 
-    @node.setter
-    def node(self, node):
+    def setNode(self, node):
         self._node = node
+        self._onNodeUpdated(node)
 
-        self.on_node_updated(node)
-
-    def _clear_layout(self):
+    def _clearLayout(self):
         layout = self._layout
 
         while layout.count():
@@ -46,29 +42,29 @@ class NodeContextPanelBase(QWidget):
             widget = item.widget()
             widget.deleteLater()
 
-    def _update_layout(self, node):
+    def _updateLayout(self, node):
         raise NotImplementedError
 
-    def on_node_updated(self, node):
-        self._clear_layout()
+    def _onNodeUpdated(self, node):
+        self._clearLayout()
 
         if node is None:
             return
 
-        self._update_layout(node)
+        self._updateLayout(node)
 
 
 class ArgumentsPanel(NodeContextPanelBase):
-    do_morph_node = pyqtSignal(object)
-    set_param_value = pyqtSignal(object, str, str, object)
+    doMorphNode = pyqtSignal(object)
+    updateParam = pyqtSignal(object, str, str, object)
 
-    def __init__(self, show_meta=True, show_compact=False):
+    def __init__(self, parent=None, show_meta=True, show_compact=False):
         self._show_meta = show_meta
         self._show_compact = show_compact
 
-        super().__init__()
+        super(ArgumentsPanel, self).__init__(parent)
 
-    def _update_layout(self, node):
+    def _updateLayout(self, node):
         layout = self._layout
 
         # Meta Args
@@ -106,7 +102,7 @@ class ArgumentsPanel(NodeContextPanelBase):
             edit_button = QPushButton('Re-configure')
             edit_button.setToolTip("Re-create this node with new meta-args, and attempt to preserve state")
 
-            edit_button.clicked.connect(lambda: self.do_morph_node.emit(node))
+            edit_button.clicked.connect(lambda: self.doMorphNode.emit(node))
 
             this_layout.addRow(edit_button)
 
@@ -137,7 +133,7 @@ class ArgumentsPanel(NodeContextPanelBase):
                 widget.controller = controller
 
                 def on_changed(value, name=name, wrapper_name=wrapper_name):
-                    self.set_param_value.emit(node, wrapper_name, name, value)
+                    self.updateParam.emit(node, wrapper_name, name, value)
 
                 controller.value = value
                 controller.on_changed.subscribe(on_changed)
@@ -146,43 +142,44 @@ class ArgumentsPanel(NodeContextPanelBase):
 
 
 class ConfigurationPanel(ArgumentsPanel):
-    rename_node = pyqtSignal(object, str)
-    on_import_path_clicked = pyqtSignal(str)
+    doRenameNode = pyqtSignal(object, str)
+    onReferencePathClicked = pyqtSignal(str)
 
-    def _update_layout(self, node):
+    def _updateLayout(self, node):
         layout = self._layout
 
-        widget = QClickableLabel(node.import_path)
-        widget.clicked.connect(partial(self.on_import_path_clicked.emit, node.import_path))
+        widget = ClickableLabelWidget(node.reference_path)
+        widget.setToolTip("Python module path + class name of Hive")
+        widget.clicked.connect(partial(self.onReferencePathClicked.emit, node.reference_path))
 
         widget.setStyleSheet("QLabel {text-decoration: underline; color:#858585; }")
-        layout.addRow(self.tr("Import path"), widget)
+        layout.addRow(self.tr("Reference path"), widget)
 
         widget = QLineEdit()
-        widget.setPlaceholderText(node.name)
-        widget.textChanged.connect(partial(self.rename_node.emit, node))
+        widget.setText(node.name)
+        widget.textChanged.connect(partial(self.doRenameNode.emit, node))
         layout.addRow(self.tr("&Name"), widget)
 
-        super()._update_layout(node)
+        super(ConfigurationPanel, self)._updateLayout(node)
 
 
 class FoldingPanel(NodeContextPanelBase):
-    fold_pin = pyqtSignal(object)
-    unfold_pin = pyqtSignal(object)
+    doFoldPin = pyqtSignal(object)
+    doUnfoldPin = pyqtSignal(object)
 
     # For nested configurations
-    do_morph_node = pyqtSignal(object)
-    set_param_value = pyqtSignal(object, str, str, object)
+    doMorphNode = pyqtSignal(object)
+    updateParam = pyqtSignal(object, str, str, object)
 
-    def _fold_antenna(self, pin):
-        self.fold_pin.emit(pin)
-        self.on_node_updated(pin.node)
+    def _foldAntenna(self, pin):
+        self.doFoldPin.emit(pin)
+        self._onNodeUpdated(pin.node)
 
-    def _unfold_antenna(self, pin):
-        self.unfold_pin.emit(pin)
-        self.on_node_updated(pin.node)
+    def _unfoldAntenna(self, pin):
+        self.doUnfoldPin.emit(pin)
+        self._onNodeUpdated(pin.node)
 
-    def _update_layout(self, node):
+    def _updateLayout(self, node):
         layout = self._layout
 
         for name, pin in node.inputs.items():
@@ -191,27 +188,29 @@ class FoldingPanel(NodeContextPanelBase):
 
             if pin.is_foldable:
                 button = QPushButton("Fol&d")
-                on_clicked = partial(self._fold_antenna, pin)
+                button.setToolTip("Collapse pin (and connected node) into this node.\nCreate node for pin if no node exists")
+                on_clicked = partial(self._foldAntenna, pin)
 
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
             elif pin.is_folded:
                 button = QPushButton("&Unfold")
-                on_clicked = partial(self._unfold_antenna, pin)
+                button.setToolTip("Expand pin (and connected node) out of this node.")
+                on_clicked = partial(self._unfoldAntenna, pin)
 
                 layout.addRow(self.tr(name), button)
                 button.clicked.connect(on_clicked)
 
                 # Display inline configuration of folded pin
                 widget = ArgumentsPanel(show_meta=False, show_compact=True)
-                widget.set_param_value.connect(self.set_param_value)
-                widget.do_morph_node.connect(self.do_morph_node)
+                widget.updateParam.connect(self.updateParam)
+                widget.doMorphNode.connect(self.doMorphNode)
 
                 # Find folded node
                 target_connection = next(iter(pin.connections))
                 target_pin = target_connection.output_pin
-                widget.node = target_pin.node
+                widget.setNode(target_pin.node)
 
                 layout.addWidget(widget)
 

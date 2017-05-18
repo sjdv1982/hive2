@@ -1,18 +1,9 @@
 import hive
-
-
-class ImportHive:
-
-    def __init__(self):
-        pass
+from importlib import import_module
 
 
 def do_import_from_path(self):
-    module_parts = self._import_path.split(".")
-    sub_module_name = module_parts[-1]
-
-    module = __import__(self._import_path, fromlist=[sub_module_name])
-    self._module = module
+    self._module = import_module(self._import_path)
 
 
 def build_import(i, ex, args):

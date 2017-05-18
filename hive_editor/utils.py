@@ -1,5 +1,4 @@
 import ast
-
 import hive
 
 # IO bees
@@ -10,10 +9,9 @@ from hive.output import HiveOutput
 
 from collections import OrderedDict, namedtuple
 from inspect import signature
-from itertools import chain
-from os import path
+from importlib import import_module
 from re import sub as re_sub
-import sys
+
 
 # Factories for types
 type_factories = {
@@ -33,6 +31,7 @@ type_factories = {
 
 ArgOption = namedtuple("ArgOption", ("optional", "default", "options", "data_type"))
 HiveImportResult = namedtuple("HiveImportResult", "cls is_meta_primitive")
+HiveImportInfo = namedtuple("HiveImportInfo", "module class_name")
 
 
 def _get_type_name(value):
@@ -87,7 +86,7 @@ def start_value_from_type(data_type):
         raise TypeError(data_type)
 
 
-def get_builder_class_args(hive_cls):
+def get_bind_class_args(hive_cls):
     """Find initialiser arguments for builder (bind) class
 
     :param hive_cls: Hive class
@@ -96,16 +95,16 @@ def get_builder_class_args(hive_cls):
 
     # For each builder, from the bottom of the heirarchy
     # Find class args and add them to the parameter list
-    for builder, builder_class in hive_cls._builders:
-        if builder_class is None:
+    for builder, bind_class in hive_cls._builders:
+        if bind_class is None:
             continue
 
         # Get init func
-        init_func = builder_class.__init__
+        init_func = bind_class.__init__
         arg_types = hive.get_argument_types(init_func)
         arg_options = hive.get_argument_options(init_func)
 
-        cls_signature = signature(builder_class)
+        cls_signature = signature(bind_class)
 
         # Construct argument pairs
         for name, parameter in cls_signature.parameters.items():
@@ -166,23 +165,30 @@ def get_io_info(hive_object):
     return dict(inputs=inputs, outputs=outputs, pin_order=pin_order)
 
 
-def import_module_from_path(import_path):
-    split_path = import_path.split(".")
-    *module_parts, class_name = split_path
-    import_path = ".".join(module_parts)
-    sub_module_name = module_parts[-1]
+def import_module_from_hive_path(hive_path):
+    """Find module and class name for  hive path
 
-    return __import__(import_path, fromlist=[sub_module_name]), class_name
-
-
-def hive_import_from_path(import_path):
-    module, class_name = import_module_from_path(import_path)
-
+    :param hive_path: hive path 'x.y.HiveName'
+    :return HiveImportInfo(module, class_name):
+    """
     try:
-        cls = getattr(module, class_name)
+        module_path, class_name = hive_path.rsplit(".", 1)
 
-    except AttributeError as err:
-        raise ImportError from err
+    except ValueError:
+        raise ValueError("Invalid hive path")
+
+    return import_module(module_path), class_name
+
+
+def hive_import_from_path(hive_path):
+    """Import Hive class from hive path
+
+    :param hive_path: hive path 'x.y.HiveName'
+    :return HiveImportResult(cls, is_meta_primitive):
+    """
+    module, class_name = import_module_from_hive_path(hive_path)
+
+    cls = getattr(module, class_name)
 
     is_meta_primitive = issubclass(cls, hive.MetaHivePrimitive)
     assert is_meta_primitive or issubclass(cls, hive.HiveBuilder)
@@ -190,32 +196,22 @@ def hive_import_from_path(import_path):
     return HiveImportResult(cls, is_meta_primitive)
 
 
-def import_path_to_hivemap_path(import_path, additional_paths):
-    module_path, class_name = import_path.rsplit(".", 1)
+def find_file_path_of_hive_path(hive_path):
+    """Find file path for a particular hive path
 
-    try:
-        return find_source_hivemap(module_path, additional_paths)
+    :param hive_path: 'x.y.HiveName'
+    :return str:
+    """
+    from .importer import module_is_hivemap
 
-    except FileNotFoundError:
-        raise ValueError
+    module_path, class_name = hive_path.rsplit(".", 1)
+    module = import_module(module_path)
 
+    if module_is_hivemap(module):
+        return module.__file__
 
-def find_source_hivemap(module_path, additional_paths=()):
-    *root_path, module_name = module_path.split(".")
-
-    file_name = "{}.hivemap".format(module_name)
-    root_path.append(file_name)
-
-    template_file_path = path.join(*root_path)
-
-    # Most of our interesting files are on sys.path, towards the end
-    for directory in chain(additional_paths, reversed(sys.path)):
-        file_path = path.join(directory, template_file_path)
-
-        if path.exists(file_path):
-            return file_path
-
-    raise FileNotFoundError("No hivemap for '{}' exists".format(module_path))
+    else:
+        raise ValueError("No hivemap for '{}' exists".format(module_path))
 
 
 def hive_object_instance_from_import_result(import_result, params):

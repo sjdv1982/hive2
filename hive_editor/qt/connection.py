@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsItem
 from PyQt5.QtCore import QPointF, Qt, QLineF, QRectF, QSizeF, QTimer
 from PyQt5.QtGui import QPainterPath, QVector2D, QPen, QColor
 
-from .socket import Socket
+from .socket import QtSocket
 
 
 def cartesian_to_polar(x, y):
@@ -47,8 +47,8 @@ def interpolate_tangents(t1, t2):
 
 
 class Connection(QGraphicsItem):
-    _start_socket = None
-    _end_socket = None
+    _startSocket = None
+    _endSocket = None
 
     def __init__(self, start_socket, end_socket=None, id_=None, style="solid", curve=True):
         QGraphicsItem.__init__(self, None)
@@ -60,98 +60,96 @@ class Connection(QGraphicsItem):
 
         self._rect = QRectF(0, 0, 0, 0)
 
-        self._is_temp_connection = False
+        self._isTempConnection = False
 
         self._path = QPainterPath()
 
-        self._active_style = style
+        self._activeStyle = style
         self._curve = curve
-        self._is_active = False
+        self._isActive = False
 
         self._color = start_socket.colorRef()
         self._pen = QPen(self._color)
 
-        self._pen_width_inactive = 2
-        self._pen_width_active = 4
-        self._pen_width_blink = 8
+        self._penWidthInactive = 2
+        self._penWidthActive = 4
+        self._penWidthBlink = 8
 
-        self._pen_width = self._pen_width_inactive
+        self._penWidth = self._penWidthInactive
 
-        self.set_start_socket(start_socket)
+        self.setStartSocket(start_socket)
 
-        self._key_points = []
+        self._keyPoints = []
 
-        self._center_widget = None
+        self._centerWidget = None
 
         if end_socket is None:
             # creating a dummy endHook for temporary connection dragging, 
             #  the "input" and shape/style parameters have no effect
-            end_mode = "output" if start_socket.is_input else "input"
-            end_socket = Socket(start_socket.parent_socket_row, end_mode, start_socket._shape, parent_item=self)
+            end_mode = "output" if start_socket.isInput() else "input"
+            end_socket = QtSocket(start_socket.parentSocketRow(), end_mode, start_socket._shape, parent_item=self)
             end_socket.boundingRect().setSize(QSizeF(2.0, 2.0))
-            self._is_temp_connection = True
+            self._isTempConnection = True
 
-        self.set_end_socket(end_socket)
+        self.setEndConnection(end_socket)
 
-        self.update_start_pos()
+        self.updateStartPos()
 
         self.setZValue(-1.0)
-        self.set_active(False)
+        self.setActiveState(False)
 
         self._blink_depth = 0
 
-    @property
-    def start_socket(self):
-        if self._start_socket is None:
+    def startSocket(self):
+        if self._startSocket is None:
             return None
 
-        return self._start_socket()
+        return self._startSocket()
 
-    @property
-    def end_socket(self):
-        if self._end_socket is None:
+    def endSocket(self):
+        if self._endSocket is None:
             return None
 
-        return self._end_socket()
+        return self._endSocket()
 
     @property
     def index(self):
-        index, total = self.start_socket.get_index_info(self)
+        index, total = self.startSocket().getIndexInfo(self)
         return index
 
     @property
     def is_active(self):
-        return self._is_active
+        return self._isActive
 
     def boundingRect(self):
         return self._rect
 
-    def set_key_points(self, interpoints):
+    def setKeyPoints(self, interpoints):
         s = self.scenePos()
         sx, sy = s.x(), s.y()
-        self._key_points = [QPointF(x - sx, -y - sy) for x, y in interpoints]
+        self._keyPoints = [QPointF(x - sx, -y - sy) for x, y in interpoints]
 
-    def insert_key_point(self, index, coordinate):
+    def insertKeyPoint(self, index, coordinate):
         if index is None:
-            self._key_points.append(coordinate)
+            self._keyPoints.append(coordinate)
         else:
-            self._key_points.insert(index, coordinate)
+            self._keyPoints.insert(index, coordinate)
 
-    def remove_key_point(self, index):
-        self._key_points.pop(self._key_points)
+    def removeKeyPoint(self, index):
+        self._keyPoints.pop(self._keyPoints)
 
-    def find_nearest_key_points(self, coordinate):
+    def findNearestKeyPoints(self, coordinate):
         points = []
 
-        start_socket = self._start_socket()
+        start_socket = self._startSocket()
         start_pos = start_socket.scenePos() + start_socket.boundingRect().center()
         points.append(start_pos)
 
-        points += self._key_points
+        points += self._keyPoints
         distances = [(i, sub(point, coordinate)) for i, point in enumerate(points)]
 
-        if self.end_socket:
-            end_socket = self.end_socket
+        if self.endSocket():
+            end_socket = self.endSocket()
             end_position = end_socket.scenePos() + end_socket.boundingRect().center()
             distances.append((-1, self._difDistance(end_position, coordinate)))
 
@@ -161,9 +159,9 @@ class Connection(QGraphicsItem):
         distances.sort(key=lambda item: item[1])
         return distances[0][0], distances[1][0]
 
-    def intersects_circle(self, position, rect, size):
+    def intersectsCircle(self, position, rect, size):
         size_sqr = size ** 2
-        scene_translation = self.start_socket.sceneTransform()
+        scene_translation = self.startSocket().sceneTransform()
         connection_rect = scene_translation.mapRect(self._rect)
 
         # Line circle intersection test http://i.stack.imgur.com/P556i.png
@@ -204,8 +202,8 @@ class Connection(QGraphicsItem):
                     if dist_path_sqr < size_sqr:
                         return self
 
-    def intersects_line(self, line, path_rect):
-        scene_translation = self.start_socket.sceneTransform()
+    def intersectsLine(self, line, path_rect):
+        scene_translation = self.startSocket().sceneTransform()
         connection_rect = scene_translation.mapRect(self._rect)
 
         if connection_rect.contains(path_rect) or path_rect.contains(connection_rect) \
@@ -238,7 +236,7 @@ class Connection(QGraphicsItem):
                 previous_point = point
 
     def blink(self, time):
-        self._pen.setWidth(self._pen_width_blink)
+        self._pen.setWidth(self._penWidthBlink)
         self.update()
 
         timer = QTimer()
@@ -248,24 +246,24 @@ class Connection(QGraphicsItem):
 
             # Allow multiple blinks without flashing
             if not self._blink_depth:
-                self._pen.setWidth(self._pen_width)
+                self._pen.setWidth(self._penWidth)
                 self.update()
 
         self._blink_depth += 1
         timer.singleShot(1000 * time, on_finished)
 
-    def set_active(self, active):
+    def setActiveState(self, active):
         assert active in (True, False), active
 
         if active:
-            self._pen_width = self._pen_width_active
+            self._penWidth = self._penWidthActive
 
         else:
-            self._pen_width = self._pen_width_inactive
+            self._penWidth = self._penWidthInactive
 
-        self._pen.setWidth(self._pen_width)
+        self._pen.setWidth(self._penWidth)
 
-        value = self._active_style
+        value = self._activeStyle
 
         if value == "dashed":
             self._pen.setStyle(Qt.DashLine)
@@ -279,27 +277,27 @@ class Connection(QGraphicsItem):
         else:
             raise ValueError("Unknown pen style '%s'" % value)
 
-        self._is_active = active
+        self._isActive = active
         self.update()
 
-    def on_deleted(self):
-        self.set_end_socket(None)
-        self.set_start_socket(None)
+    def onDeleted(self):
+        self.setEndConnection(None)
+        self.setStartSocket(None)
 
-    def update_start_pos(self):
-        start_socket = self.start_socket
+    def updateStartPos(self):
+        start_socket = self.startSocket()
         self.setPos(start_socket.scenePos() + start_socket.boundingRect().center())
 
-        self.update_path()
+        self.updatePath()
 
-    def update_end_pos(self):
-        self.update_path()
+    def updateEndPos(self):
+        self.updatePath()
 
-    def update_visibility(self):
-        visible = self.start_socket.isVisible() and self.end_socket.isVisible()
+    def updateVisibility(self):
+        visible = self.startSocket().isVisible() and self.endSocket().isVisible()
         self.setVisible(visible)
 
-    def set_color(self, color):
+    def setColor(self, color):
         if isinstance(color, tuple):
             color = QColor(*color)
 
@@ -308,42 +306,48 @@ class Connection(QGraphicsItem):
 
         self._color = color
 
-    def set_start_socket(self, socket):
-        if self.start_socket:
-            self.start_socket.remove_connection(self)
+    def setStartSocket(self, socket):
+        if self.startSocket():
+            self.startSocket().removeConnection(self)
 
-        self._start_socket = None
-
-        if socket is not None:
-            self._start_socket = weakref.ref(socket)
-            socket.add_connection(self)
-
-    def set_end_socket(self, socket):
-        if self.end_socket:
-            self.end_socket.remove_connection(self)
-
-        self._end_socket = None
+        self._startSocket = None
 
         if socket is not None:
-            self._end_socket = weakref.ref(socket)
-            socket.add_connection(self)
+            self._startSocket = weakref.ref(socket)
+            socket.addConnection(self)
 
-    def find_closest_socket(self):
+    def setEndConnection(self, socket):
+        if self.endSocket():
+            self.endSocket().removeConnection(self)
+
+        self._endSocket = None
+
+        if socket is not None:
+            self._endSocket = weakref.ref(socket)
+            socket.addConnection(self)
+
+    def setCenterWidget(self, widget):
+        self._centerWidget = widget
+
+    def centerWidget(self):
+        return self._centerWidget
+
+    def findClosestSocket(self):
         closest_socket = None
 
-        colliding_items = self.end_socket.collidingItems(Qt.IntersectsItemBoundingRect)
+        colliding_items = self.endSocket().collidingItems(Qt.IntersectsItemBoundingRect)
 
         for colliding_item in colliding_items:
-            if isinstance(colliding_item, Socket):
-                if colliding_item.is_input and colliding_item.isVisible():
+            if isinstance(colliding_item, QtSocket):
+                if colliding_item.isInput() and colliding_item.isVisible():
                     closest_socket = colliding_item
 
                 break
 
         return closest_socket
 
-    def update_path(self):
-        end_hook = self.end_socket
+    def updatePath(self):
+        end_hook = self.endSocket()
 
         if end_hook is None:
             return
@@ -352,21 +356,21 @@ class Connection(QGraphicsItem):
         end_pos = self.mapFromItem(end_hook, 0.0, 0.0) + end_hook.boundingRect().center()
 
         if self._curve:
-            if not self._key_points:
+            if not self._keyPoints:
                 tangent_length = (abs(end_pos.x()) / 2.0) + (abs(end_pos.y()) / 4.0)
                 tangent_length2 = tangent_length
 
             else:
-                first_pos = self._key_points[0]
+                first_pos = self._keyPoints[0]
                 tangent_length = (abs(first_pos.x()) / 2.0) + (abs(first_pos.y()) / 4.0)
-                last_pos = self._key_points[-1]
+                last_pos = self._keyPoints[-1]
                 last_segment = end_pos - last_pos
                 tangent_length2 = (abs(last_segment.x()) / 2.0) + (abs(last_segment.y()) / 4.0)
 
             spread = 60.0 / 180.0 * pi
 
             # Find connection index
-            index, number_connections = self.start_socket.get_index_info(self)
+            index, number_connections = self.startSocket().getIndexInfo(self)
 
             dev = (index - number_connections / 2.0 + 0.5) * min(spread, pi / (number_connections + 2))
             tx = tangent_length * cos(dev)
@@ -387,23 +391,23 @@ class Connection(QGraphicsItem):
         rect = path.boundingRect().adjusted(-stroke_width, -stroke_width, stroke_width, stroke_width)
 
         # draw widget
-        center_widget = self._center_widget
+        center_widget = self._centerWidget
 
         if center_widget is not None:
             center = path.pointAtPercent(0.5)
-            center_widget.on_updated(center, text=str(self.index))
+            center_widget.onUpdated(center, text=str(self.index))
 
         self._path = path
         self._rect = rect
 
-    def on_socket_hover_enter(self):
-        center_widget = self._center_widget
+    def onSocketHoverEnter(self):
+        center_widget = self._centerWidget
 
         if center_widget is not None:
             center_widget.setVisible(True)
 
-    def on_socket_hover_exit(self):
-        center_widget = self._center_widget
+    def onSocketHoverExit(self):
+        center_widget = self._centerWidget
         if center_widget is not None:
             center_widget.setVisible(False)
 

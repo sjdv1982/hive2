@@ -1,22 +1,20 @@
 import os
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from fnmatch import filter
-from inspect import isclass, ismodule, getmembers
+from inspect import isclass, getmembers
+from importlib import import_module
 
 import dragonfly
 import hive
 
 
-def _keys_to_dict(keys):
-    return OrderedDict([(k, None) for k in keys])
-
+GUI_CONF_FILENAME = "robots.txt"
 
 _hive_lib_dir = os.path.dirname(dragonfly.__path__[0])
-found_bees = {"hive": _keys_to_dict(["attribute", "antenna", "output", "entry", "hook", "triggerfunc", "modifier",
-                                     "pull_in", "pull_out", "push_in", "push_out"])}
+all_bees = ['hive.attribute', 'hive.antenna', 'hive.output', 'hive.entry', 'hive.hook', 'hive.triggerfunc',
+            'hive.modifier', 'hive.pull_in', 'hive.pull_out', 'hive.push_in', 'hive.push_out']
 
-ROBOTS_TEXT = "robots.txt"
-FinderPathEntry = namedtuple("FinderPair", "name file_path")
+FinderPathElement = namedtuple("FinderPathElement", "name file_path")
 
 
 class HiveFinder:
@@ -26,11 +24,22 @@ class HiveFinder:
         self._root_paths = {_hive_lib_dir, }
         self.additional_paths = set(additional_paths)
 
+        self._path_to_hives = None
+        self._all_hives = None
+
     @staticmethod
     def create_initial_search_path(path):
-        return FinderPathEntry(None, path),
+        return FinderPathElement(None, path),
 
-    def _recurse(self, search_path, modules=None, _tracked_classes=None):
+    @property
+    def all_hives(self):
+        return self._all_hives.copy()
+
+    @property
+    def hives_by_path(self):
+        return self._path_to_hives.copy()
+
+    def _recurse(self, search_path, results=None, _tracked_classes=None):
         """Recursively find hive names from module path.
 
         Write to dict the qualified name of the package, with a set of Hive class names.
@@ -39,11 +48,18 @@ class HiveFinder:
         E.g "dragonfly/std/buffer/Buffer" -> {"dragonfly": {"std": {"Buffer": None}}}
 
         :param search_path: tuple of FinderPathEntry items (first element is root, name unused)
-        :param modules: dictionary of modules to write to
+        :param results: dictionary of modules to write to
         :param _tracked_classes: set of found classes (to avoid revisiting)
         """
         assert search_path, "Invalid start path"
         assert isinstance(search_path, tuple), "Search path must be immutable"
+
+        # Initialise data
+        if results is None:
+            results = []
+
+        if _tracked_classes is None:
+            _tracked_classes = set()
 
         current_entry = search_path[-1]
         current_module_path = current_entry.file_path
@@ -54,19 +70,12 @@ class HiveFinder:
 
         names_from_root = tuple(p.name for p in following_root)
 
-        print("Searching {}...".format(current_module_path))
+        print("Searching {}".format(current_module_path))
         all_file_names = os.listdir(current_module_path)
-
-        # Initialse data
-        if modules is None:
-            modules = OrderedDict()
-
-        if _tracked_classes is None:
-            _tracked_classes = set()
 
         # Allow hiding of files from HIVE GUI
         try:
-            with open(os.path.join(current_module_path, ROBOTS_TEXT)) as robots:
+            with open(os.path.join(current_module_path, GUI_CONF_FILENAME)) as robots:
                 lines = [l.strip() for l in robots]
 
             all_file_names = [filename for pattern in lines for filename in filter(all_file_names, pattern)]
@@ -91,63 +100,68 @@ class HiveFinder:
                 if name.startswith('.'):
                     continue
 
-            # Ignore invalid file types
-            elif extension[1:] not in {'py', 'hivemap'}:
+            elif extension not in {".py", ".hivemap"}:
                 continue
 
             names_to_module = names_from_root + (name,)
             import_path = '.'.join(names_to_module)
 
+            # Although modules can be imported using __import__ or importlib.import_module with non-identifier names
+            # It is not safe and breaks the code generator
+            if not all(x.isidentifier() for x in names_to_module):
+                print("Invalid identifier for module: {}".format(import_path))
+                continue
+
             # Import the module
             try:
-                module = __import__(import_path, fromlist=[name])
+                module = import_module(import_path)
 
-            except ImportError as err:
+            except Exception as err:
                 print("Couldn't import {}".format(import_path))
                 import traceback
 
                 traceback.print_exc()
                 continue
 
-            # Get (/create) sub module dict
-            sub_modules = modules
-
-            for entry_name in names_to_module:
-                try:
-                    sub_modules = sub_modules[entry_name]
-
-                except KeyError:
-                    sub_modules[entry_name] = sub_modules = OrderedDict()
-
             # Search module members
             for name, value in sorted(getmembers(module)):
+                if not isclass(value):
+                    continue
+
                 if name.startswith('_'):
                     continue
 
-                if isclass(value):
-                    if value in _tracked_classes:
-                        continue
+                if value in _tracked_classes:
+                    continue
 
-                    if (issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder) or \
-                            (issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive):
-                        sub_modules[name] = None
-                        _tracked_classes.add(value)
+                if not ((issubclass(value, hive.HiveBuilder) and value is not hive.HiveBuilder) or
+                        (issubclass(value, hive.MetaHivePrimitive) and value is not hive.MetaHivePrimitive)):
+                    continue
 
-            # Recurse to child directory, but only if nothing was handled by Python
+                hive_reference_path = '{}.{}'.format(import_path, name)
+                results.append(hive_reference_path)
+                _tracked_classes.add(value)
+
+            # Recurse to child directory
             if is_directory:
-                print("Traverse", current_file_path)
-                new_path_entry = FinderPathEntry(file_name, current_file_path)
+                new_path_entry = FinderPathElement(file_name, current_file_path)
                 new_search_path = search_path + (new_path_entry,)
-                self._recurse(new_search_path, modules, _tracked_classes)
+                self._recurse(new_search_path, results, _tracked_classes)
 
-        return modules
+        return results
 
-    def find_hives(self):
-        tree = OrderedDict()
+    def reload(self):
+        path_to_hives = {}
+        all_hives = []
 
         # Import stdlib modules
         for base_directory_path in self._root_paths | self.additional_paths:
+            path_to_hives[base_directory_path] = path_hives = []
             search_path = self.create_initial_search_path(base_directory_path)
-            self._recurse(search_path, modules=tree)
+            self._recurse(search_path, results=path_hives)
 
-        return tree
+            # Update total hives too
+            all_hives.extend(path_hives)
+
+        self._path_to_hives = path_to_hives
+        self._all_hives = all_hives

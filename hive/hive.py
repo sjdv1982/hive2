@@ -1,10 +1,9 @@
 from collections import defaultdict
-from inspect import signature
 from weakref import ref
 
 from .classes import (HiveInternalWrapper, HiveExportableWrapper, HiveArgsWrapper, HiveMetaArgsWrapper, ResolveBee,
                       HiveClassProxy)
-from .compatability import next
+from .compatability import next, validate_signature
 from .connect import connect, ConnectionCandidate
 from .identifiers import identifiers_match
 from .manager import (bee_register_context, get_mode, hive_mode_as, get_building_hive, building_hive_as, \
@@ -13,14 +12,12 @@ from .mixins import *
 from .policies import MatchmakingPolicyError
 
 
-def generate_bee_name():
+def gen_sequence_bee_names():
+    """Sequential generator of "bee names"""
     i = 0
     while True:
         i += 1
-        yield "bee {}".format(i)
-
-
-it_generate_bee_name = generate_bee_name()
+        yield "anonymous_bee_{}".format(i)
 
 
 class RuntimeHiveInstantiator(Bindable):
@@ -46,7 +43,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
 
     _hive_bee_name = ()
     _hive_object = None
-    _hive_build_class_instances = None
+    _hive_build_class_to_instance = None
     _hive_bee_instances = None
     _bee_names = None
     _drones = None
@@ -54,7 +51,7 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
     def __init__(self, hive_object, builders):
         self._hive_bee_name = hive_object._hive_bee_name
         self._hive_object = hive_object
-        self._hive_build_class_instances = {}
+        self._hive_build_class_to_instance = {}
         self._hive_bee_instances = {}
         self._bee_names = ["_drones"]
         self._drones = []
@@ -67,12 +64,12 @@ class RuntimeHive(ConnectSourceDerived, ConnectTargetDerived, TriggerSource, Tri
             for builder, builder_cls in builders:
 
                 if builder_cls is not None:
-                    assert builder_cls not in self._hive_build_class_instances, builder_cls
+                    assert builder_cls not in self._hive_build_class_to_instance, builder_cls
 
                     # Do not initialise instance yet
                     build_class_instance = builder_cls.__new__(builder_cls)
 
-                    self._hive_build_class_instances[builder_cls] = build_class_instance
+                    self._hive_build_class_to_instance[builder_cls] = build_class_instance
                     self._drones.append(build_class_instance)
 
                     build_class_instance.__init__(*args, **kwargs)
@@ -208,10 +205,9 @@ class HiveObject(Exportable, ConnectSourceDerived, ConnectTargetDerived, Trigger
         # Check build functions are valid
         for builder, builder_cls in self._hive_parent_class._builders:
             if builder_cls is not None:
-                init_signature = signature(builder_cls)
 
                 try:
-                    init_signature.bind(*self._hive_builder_args, **self._hive_builder_kwargs)
+                    validate_signature(builder_cls, *self._hive_builder_args, **self._hive_builder_kwargs)
 
                 except TypeError as err:
                     raise TypeError("{}.{}".format(builder_cls.__name__, err.args[0]))
@@ -380,6 +376,25 @@ F
         return self
 
 
+def validate_external_name(attr_name):
+    """Raise AttributeError if attribute name belongs to HiveObject or RuntimeHive"""
+    if hasattr(HiveObject, attr_name):
+        raise AttributeError('Cannot overwrite special attribute HiveObject.{}'.format(attr_name))
+
+    if hasattr(RuntimeHive, attr_name):
+        raise AttributeError('Cannot overwrite special attribute RuntimeHive.{}'.format(attr_name))
+
+
+def validate_internal_name(attr_name):
+    """Raise AttributeError if attribute name prefixed with underscore belongs to HiveObject or RuntimeHive"""
+    internal_name = "_{}".format(attr_name)
+    if hasattr(HiveObject, internal_name):
+        raise AttributeError('Cannot overwrite special attribute HiveObject.{}'.format(attr_name))
+
+    if hasattr(RuntimeHive, internal_name):
+        raise AttributeError('Cannot overwrite special attribute RuntimeHive.{}'.format(attr_name))
+
+
 class MetaHivePrimitive(object):
     """Primitive container to instantiate Hive with particular meta arguments"""
 
@@ -446,8 +461,10 @@ class HiveBuilder(object):
         hive_object_cls_name = "HiveObject<{}>".format(cls.__name__)
         hive_object_cls = type(hive_object_cls_name, (HiveObject,), hive_object_dict)
 
-        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls)
-        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls)
+        hive_object_cls._hive_i = internals = HiveInternalWrapper(hive_object_cls,
+                                                                  validator=lambda n, v: validate_internal_name(n))
+        hive_object_cls._hive_ex = externals = HiveExportableWrapper(hive_object_cls,
+                                                                     validator=lambda n, v: validate_external_name(n))
         hive_object_cls._hive_args = args = HiveArgsWrapper(hive_object_cls)
 
         # Get frozen meta args
@@ -480,19 +497,9 @@ class HiveBuilder(object):
 
             cls._hive_build_namespace(hive_object_cls)
 
+            # Root hives build
             if is_root:
-                tracked_policies = []
-
-                cls._hive_build_connectivity(hive_object_cls, tracked_policies)
-
-                if get_validation_enabled():
-                    for bee, policy in tracked_policies:
-                        try:
-                            policy.validate()
-
-                        except MatchmakingPolicyError:
-                            print("Error in validating policy of {}".format(bee))
-                            raise
+                cls._hive_build_connectivity(hive_object_cls)
 
         # Find anonymous bees
         anonymous_bees = set(registered_bees)
@@ -503,13 +510,15 @@ class HiveBuilder(object):
                 anonymous_bees.remove(bee)
 
         # Save anonymous bees to internal wrapper, with unique names
+
+        sequential_bee_names = gen_sequence_bee_names()
         for bee in registered_bees:
             if bee not in anonymous_bees:
                 continue
 
             # Find unique name for bee
             while True:
-                bee_name = next(it_generate_bee_name)
+                bee_name = next(sequential_bee_names)
                 if not hasattr(internals, bee_name):
                     break
 
@@ -539,8 +548,7 @@ class HiveBuilder(object):
         return hive_object_cls
 
     @classmethod
-    def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies, plugin_map=None, socket_map=None,
-                                 is_root=True):
+    def _hive_build_connectivity(cls, resolved_hive_object, tracked_policies=None, plugin_map=None, socket_map=None):
         """Connect plugins and sockets together by identifier.
 
         If children allow importing of namespace, pass namespace to children.
@@ -550,6 +558,8 @@ class HiveBuilder(object):
 
         # For children of the root hive, we must connect relative to top-most hive
         # This is for the top level (building) hive
+        is_root = tracked_policies is None
+
         if is_root:
             exported_to_parent = set()
 
@@ -557,6 +567,7 @@ class HiveBuilder(object):
             socket_map = defaultdict(list)
 
             bee_source = externals
+            tracked_policies = []
 
         # This method call applies to a HiveObject instance (bee_source)
         else:
@@ -670,7 +681,17 @@ class HiveBuilder(object):
 
         # Now export to child hives
         for child in child_hives:
-            cls._hive_build_connectivity(child, tracked_policies, plugin_map, socket_map, is_root=False)
+            cls._hive_build_connectivity(child, tracked_policies, plugin_map, socket_map)
+
+        # Validate policies
+        if get_validation_enabled():
+            for bee, policy in tracked_policies:
+                try:
+                    policy.validate()
+
+                except MatchmakingPolicyError:
+                    print("Error in validating policy of {}".format(bee))
+                    raise
 
     @classmethod
     def _hive_build_namespace(cls, hive_object_cls):

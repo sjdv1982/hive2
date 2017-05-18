@@ -1,5 +1,8 @@
-from traceback import print_exc
 from weakref import WeakKeyDictionary
+from logging import getLogger
+
+
+logger = getLogger(__name__)
 
 
 class ObservableInstance:
@@ -26,8 +29,8 @@ class ObservableInstance:
             try:
                 observer(*args, **kwargs)
 
-            except Exception as err:
-                print_exc()
+            except:
+                logger.exception("Unable to invoke observer")
 
 
 class Observable:

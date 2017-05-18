@@ -36,7 +36,6 @@ class Bindable(object):
 
 
 class Nameable(object):
-
     _hive_runtime_info = None
 
     def add_runtime_info(self, parent, name):

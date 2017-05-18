@@ -5,69 +5,88 @@ from PyQt5.QtWidgets import QTreeWidget, QAbstractItemView, QTreeWidgetItem
 
 
 class TreeWidget(QTreeWidget):
-    on_selected = pyqtSignal(str)
-    on_right_click = pyqtSignal(str, QEvent)
+    onSelected = pyqtSignal(str)
+    onDoubleClick = pyqtSignal(str)
+    onRightClick = pyqtSignal(str, QEvent)
 
     def __init__(self, parent=None):
-        QTreeWidget.__init__(self, parent)
+        super(TreeWidget, self).__init__(parent)
+
         self.setColumnCount(1)
         self.setHeaderHidden(True)
 
         self._keys = []
-        self.all_items = {}
-        self._widget_id_to_key = {}
+        self._allItems = {}
+        self._widgetIdToKey = {}
         self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.itemPressed.connect(self._on_item_pressed)
+        self.itemPressed.connect(self._onItemClicked)
+        self.itemDoubleClicked.connect(self._onItemDoubleClicked)
         self.setDragEnabled(True)
+
+    def clear(self):
+        self._keys.clear()
+        self._allItems.clear()
+        self._widgetIdToKey.clear()
+
+        super(TreeWidget, self).clear()
 
     def contextMenuEvent(self, event):
         item = self.selectedItems()[0]
 
         try:
-            key = self._widget_id_to_key[id(item)]
+            key = self._widgetIdToKey[id(item)]
 
         except KeyError:
             return
 
         path = '.'.join(key)
-        self.on_right_click.emit(path, event)
+        self.onRightClick.emit(path, event)
 
-    def _on_item_pressed(self, item, column):
-        if id(item) in self._widget_id_to_key:
-            key = self._widget_id_to_key[id(item)]
+    def _onItemClicked(self, item, column):
+        if id(item) in self._widgetIdToKey:
+            key = self._widgetIdToKey[id(item)]
 
             path = '.'.join(key)
-            self.on_selected.emit(path)
+            self.onSelected.emit(path)
 
             self.setDragEnabled(True)
         else:
             self.setDragEnabled(False)
 
-    def load_items(self, item_dict, path=()):
-        for name, child in item_dict.items():
-            full_path = path + (name,)
+    def _onItemDoubleClicked(self, item, column):
+        if id(item) in self._widgetIdToKey:
+            key = self._widgetIdToKey[id(item)]
 
-            if isinstance(child, dict):
-                self.load_items(child, full_path)
+            path = '.'.join(key)
+            self.onDoubleClick.emit(path)
 
-            else:
-                assert child is None
-                self.append(full_path)
+            self.setDragEnabled(True)
+        else:
+            self.setDragEnabled(False)
 
-    def append(self, key):
+    def setItems(self, items):
+        self.clear()
+
+        for item in items:
+            self.append(item)
+
+    def append(self, path):
+        assert isinstance(path, str)
+
+        key = path.split('.')
         assert key not in self._keys
         head, tail = key[0], key[1:]
 
-        if head not in self.all_items:
+        if head not in self._allItems:
             item = QTreeWidgetItem()
             item.setText(0, head)
-            self.all_items[head] = item
+            self._allItems[head] = item
 
             self.addTopLevelItem(item)
             widget = item
 
         else:
-            widget = self.all_items[head]
+            widget = self._allItems[head]
 
         prev = (head,)
 
@@ -75,47 +94,48 @@ class TreeWidget(QTreeWidget):
             head, tail = tail[0], tail[1:]
             phead = prev + (head,)
 
-            if phead not in self.all_items:
+            if phead not in self._allItems:
                 item = QTreeWidgetItem()
                 item.setText(0, head)
                 widget.addChild(item)
-                self.all_items[phead] = item
+                self._allItems[phead] = item
                 widget = item
 
             else:
-                widget = self.all_items[phead]
+                widget = self._allItems[phead]
 
             prev = phead
 
         key = tuple(key)
 
         self._keys.append(key)
-        self._widget_id_to_key[id(widget)] = key
+        self._widgetIdToKey[id(widget)] = key
 
-    def _remove_empty_group(self, group):
+    def _removeEmptyGroup(self, group):
         g = len(group)
-        nr_items = len([k for k in self.all_items.keys() if k[:g] == group])
+        nr_items = len([k for k in self._allItems.keys() if k[:g] == group])
         min = 1 if g > 1 else 0
         if nr_items == min:
             if len(group) == 1:
                 group = group[0]
-                w = self.all_items.pop(group)
+                w = self._allItems.pop(group)
                 ind = self.indexOfTopLevelItem(w)
                 self.takeTopLevelItem(ind)
             else:
-                w = self.all_items.pop(group)
+                w = self._allItems.pop(group)
                 parent = group[:-1]
                 if len(parent) == 1: parent = parent[0]
-                ww = self.all_items[parent]
+                ww = self._allItems[parent]
                 ww.removeChild(w)
 
-    def remove(self, key):
-        key = tuple(key)
+    def remove(self, path):
+        assert isinstance(path, str)
+        key = path.split('.')
         assert key in self._keys
 
         self._keys.remove(key)
-        item = self.all_items.pop(key)
-        self._widget_id_to_key.pop(id(item))
+        item = self._allItems.pop(key)
+        self._widgetIdToKey.pop(id(item))
 
         if len(key) == 1:
             ind = self.indexOfTopLevelItem(item)
@@ -126,9 +146,9 @@ class TreeWidget(QTreeWidget):
             if len(parent) == 1:
                 parent = parent[0]
 
-            ww = self.all_items[parent]
+            ww = self._allItems[parent]
             ww.removeChild(item)
 
         for n in range(len(key), 0, -1):
             group = key[:n]
-            self._remove_empty_group(group)
+            self._removeEmptyGroup(group)
